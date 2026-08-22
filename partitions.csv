@@ -1,0 +1,7 @@
+# 自定义分区表(8MB Flash):
+# 把 factory app 分区扩到 4MB,容纳生字卡大字体。
+# 前段 nvs/phy 保持 ESP-IDF 默认偏移,避免影响已有数据。
+# Name,   Type, SubType, Offset,   Size,     Flags
+nvs,      data, nvs,     0x9000,   0x6000,
+phy_init, data, phy,     0xf000,   0x1000,
+factory,  app,  factory, 0x10000,  0x400000,

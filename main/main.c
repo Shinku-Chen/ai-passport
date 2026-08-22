@@ -22,6 +22,7 @@ static const demo_entry_t DEMOS[] = {
     { "Button",  demo_button_enter,  demo_button_exit,  demo_button_key  },
     { "Audio",   demo_audio_enter,   demo_audio_exit,   demo_audio_key   },
     { "Battery", demo_battery_enter, demo_battery_exit, demo_battery_key },
+    { "Shengzi", demo_shengzi_enter, demo_shengzi_exit, demo_shengzi_key },
 };
 #define DEMO_COUNT (sizeof(DEMOS) / sizeof(DEMOS[0]))
 
@@ -34,6 +35,7 @@ static lv_obj_t *s_rows[DEMO_COUNT];
 static lv_obj_t *s_mascot;
 static int  s_sel;                 // 当前选中项
 static int  s_active = -1;         // 当前所在演示页;-1 = 在菜单
+static bool s_direct_app = false;  // 直进模式:开机直接进生字卡应用,不显示菜单
 
 static void menu_refresh(void) {
     for (size_t i = 0; i < DEMO_COUNT; i++) {
@@ -49,9 +51,16 @@ static void menu_refresh(void) {
 static void menu_build(void) {
     s_menu_scr = ui_pixel_screen_create("FoloToy");
 
+    // 菜单项坐标,按需动态适配:最多 6 项,2 列;第 5、6 项单独一行。
     for (size_t i = 0; i < DEMO_COUNT; i++) {
-        int x = 11 + (int)(i % 2) * 112;
-        int y = 58 + (int)(i / 2) * 86;
+        int x, y;
+        if (i < 4) {                 // 前 4 项: 2x2 网格
+            x = 11 + (int)(i % 2) * 112;
+            y = 58 + (int)(i / 2) * 86;
+        } else {                     // 第 5 项起: 单独居中,逐行下移
+            x = 69;
+            y = 230 + (int)(i - 4) * 84;
+        }
         s_cards[i] = ui_pixel_panel_create(s_menu_scr, x, y, 102, 72, UI_PAPER);
         s_rows[i] = lv_label_create(s_cards[i]);
         lv_obj_set_style_text_font(s_rows[i], &lv_font_montserrat_20, 0);
@@ -59,7 +68,7 @@ static void menu_build(void) {
         lv_obj_center(s_rows[i]);
     }
 
-    s_mascot = ui_pixel_mascot_create(s_menu_scr, 101, 238);
+    s_mascot = ui_pixel_mascot_create(s_menu_scr, 196, 258);
 
     menu_refresh();
     lv_screen_load(s_menu_scr);
@@ -76,7 +85,8 @@ static void on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user) {
     if (!bsp_lvgl_lock(500)) return;
 
     if (s_active >= 0) {
-        if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG) {     // 统一返回
+        // 直进应用模式: 长按 OK 不返回菜单,全部交给应用处理(生字卡自己决定)。
+        if (!s_direct_app && btn == BSP_BTN_OK && ev == BSP_BTN_LONG) {  // 统一返回
             DEMOS[s_active].exit();
             enter_menu();
         } else {
@@ -120,9 +130,13 @@ void app_main(void) {
     s_ok[1] = (bsp_button_init(on_key, NULL) == ESP_OK);
     s_ok[2] = (bsp_audio_init() == ESP_OK);
     s_ok[3] = (bsp_battery_init() == ESP_OK);
+    s_ok[4] = true;                                   // 生字卡为纯软件功能,显示/按键就绪即可用
 
-    if (bsp_lvgl_lock(1000)) { enter_menu(); bsp_lvgl_unlock(); }
+    // 直进模式: 开机直接进生字卡应用,不做菜单。长按 OK 不返回菜单,由应用自己处理。
+    s_direct_app = true;
+    s_active = 4;   // 对应 DEMOS 里 Shengzi 的索引
+    if (bsp_lvgl_lock(1000)) { DEMOS[s_active].enter(); bsp_lvgl_unlock(); }
 
-    ESP_LOGI(TAG, "就绪:Display=%d Button=%d Audio=%d Battery=%d",
-             s_ok[0], s_ok[1], s_ok[2], s_ok[3]);
+    ESP_LOGI(TAG, "就绪:Display=%d Button=%d Audio=%d Battery=%d Shengzi=%d (直进应用)",
+             s_ok[0], s_ok[1], s_ok[2], s_ok[3], s_ok[4]);
 }

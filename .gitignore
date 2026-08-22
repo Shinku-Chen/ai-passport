@@ -4,3 +4,11 @@ sdkconfig.old
 managed_components/
 dependencies.lock
 .vscode/
+.idea/
+# 本机临时构建/烧录脚本(不入库)
+*_main.bat
+rebuild_full.bat
+flash_main.bat
+monitor_main.bat
+build_main.bat
+size_main.bat

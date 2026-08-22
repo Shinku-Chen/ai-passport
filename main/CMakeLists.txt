@@ -6,6 +6,11 @@ idf_component_register(
          "demo_button.c"
          "demo_audio.c"
          "demo_battery.c"
+         "demo_shengzi.c"
+         "sz_data.c"
+         "fonts/sz_big.c"
+         "fonts/sz_small.c"
+         "gen/sz_cards_table.c"
     INCLUDE_DIRS "."
-    REQUIRES bsp
+    REQUIRES bsp nvs_flash
 )
