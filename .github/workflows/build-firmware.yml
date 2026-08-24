@@ -44,7 +44,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: diag-${{ github.ref_name }}
-          path: build/_firmware_filelist.txt
+          path: build/
           if-no-files-found: warn
 
       - name: Upload artifact (branch push)
