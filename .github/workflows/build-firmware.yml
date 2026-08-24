@@ -32,11 +32,14 @@ jobs:
           echo "=== bins ==="
           find build -name '*.bin' -o -name '*.elf' | head -50
 
+      - name: Set artifact name
+        run: echo "ARTIFACT_NAME=passport-${GITHUB_REF_NAME//\//-}" >> "$GITHUB_ENV"
+
       - name: Upload artifact (branch push)
         if: github.ref_type == 'branch'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: passport-${{ github.ref_name }}
+          name: ${{ env.ARTIFACT_NAME }}
           path: |
             build/**/*.bin
             build/*.bin
