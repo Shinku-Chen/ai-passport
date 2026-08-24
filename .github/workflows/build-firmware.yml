@@ -25,22 +25,27 @@ jobs:
           esp_idf_version: v5.5.3
           target: esp32c3
 
-      - name: Collect firmware artifacts
+      - name: List build artifacts
         run: |
+          echo "=== build dir ==="
           ls -la build/
-          # 主 app bin 由 idf.py build 生成，作为发布产物（跨步骤不依赖 $IDF_PATH / esptool）
-          cp build/FoloToy-AI-Passport.bin "build/passport_${GITHUB_REF_NAME//\//-}.bin"
+          echo "=== bins ==="
+          find build -name '*.bin' -o -name '*.elf' | head -50
 
       - name: Upload artifact (branch push)
         if: github.ref_type == 'branch'
         uses: actions/upload-artifact@v4
         with:
           name: passport-${{ github.ref_name }}
-          path: build/*.bin
+          path: |
+            build/**/*.bin
+            build/*.bin
 
       - name: Create release (tag push)
         if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
           name: "${{ github.ref_name }}"
-          files: build/*.bin
+          files: |
+            build/**/*.bin
+            build/*.bin
