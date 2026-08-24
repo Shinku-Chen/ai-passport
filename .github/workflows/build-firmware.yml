@@ -28,10 +28,8 @@ jobs:
       - name: Collect firmware artifacts
         run: |
           ls -la build/
-          # 合并 app + bootloader + partition-table 为单 bin，便于烧录
-          python "$IDF_PATH/components/esptool_py/esptool/esptool.py" merge_bin \
-            -o "build/passport_${GITHUB_REF_NAME//\//-}.bin" \
-            @build/flasher_args.json || cp build/FoloToy-AI-Passport.bin build/passport.bin
+          # 主 app bin 由 idf.py build 生成，作为发布产物（跨步骤不依赖 $IDF_PATH / esptool）
+          cp build/FoloToy-AI-Passport.bin "build/passport_${GITHUB_REF_NAME//\//-}.bin"
 
       - name: Upload artifact (branch push)
         if: github.ref_type == 'branch'
