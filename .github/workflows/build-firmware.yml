@@ -26,26 +26,11 @@ jobs:
           target: esp32c3
 
       - name: List build artifacts
-        shell: bash
         run: |
-          set +e
-          echo "=== pwd ==="
-          pwd
-          echo "=== build dir top ==="
-          ls -la build/ 2>&1 || echo "NO build/ dir at repo root"
-          echo "=== all files under build/ (or repo) ==="
-          find build -type f 2>/dev/null | sort | head -100
-          echo "=== firmware outputs ==="
-          find . \( -name '*.bin' -o -name '*.elf' \) -type f 2>/dev/null | sort | tee build/_firmware_filelist.txt || true
-          echo "=== done listing ==="
-
-      - name: Upload diagnostics (branch push)
-        if: github.ref_type == 'branch'
-        uses: actions/upload-artifact@v4
-        with:
-          name: diag-${{ github.ref_name }}
-          path: build/
-          if-no-files-found: warn
+          echo "=== build dir ==="
+          ls -la build/
+          echo "=== bins ==="
+          find build -name '*.bin' -o -name '*.elf' | head -50
 
       - name: Upload artifact (branch push)
         if: github.ref_type == 'branch'
@@ -55,8 +40,6 @@ jobs:
           path: |
             build/**/*.bin
             build/*.bin
-            build/**/*.elf
-            build/*.elf
 
       - name: Create release (tag push)
         if: github.ref_type == 'tag'
@@ -66,5 +49,3 @@ jobs:
           files: |
             build/**/*.bin
             build/*.bin
-            build/**/*.elf
-            build/*.elf
