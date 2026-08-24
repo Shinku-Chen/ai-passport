@@ -26,16 +26,18 @@ jobs:
           target: esp32c3
 
       - name: List build artifacts
+        shell: bash
         run: |
+          set +e
+          echo "=== pwd ==="
+          pwd
           echo "=== build dir top ==="
-          ls -la build/
-          echo "=== all files under build/ (top 100) ==="
-          find build -type f | sort | head -100
+          ls -la build/ 2>&1 || echo "NO build/ dir at repo root"
+          echo "=== all files under build/ (or repo) ==="
+          find build -type f 2>/dev/null | sort | head -100
           echo "=== firmware outputs ==="
-          find build \( -name '*.bin' -o -name '*.elf' -o -name '*.map' \) -type f | sort | tee build/_firmware_filelist.txt
-          shopt -s nullglob
-          arr=(build/*.bin build/**/*.bin)
-          echo "=== bin glob count: ${#arr[@]} ==="
+          find . \( -name '*.bin' -o -name '*.elf' \) -type f 2>/dev/null | sort | tee build/_firmware_filelist.txt || true
+          echo "=== done listing ==="
 
       - name: Upload diagnostics (branch push)
         if: github.ref_type == 'branch'
