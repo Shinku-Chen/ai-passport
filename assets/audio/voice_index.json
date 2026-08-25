@@ -1,0 +1,528 @@
+[
+  {
+    "dir": "刘华强语音包老板你这瓜多少钱一斤",
+    "dir_id": 0,
+    "files": [
+      {
+        "name": "两块钱一斤",
+        "src": "两块钱一斤.mp3",
+        "path": "dir00/clip00.adpcm",
+        "samples": 14245,
+        "duration": 1.033,
+        "compressed_bytes": 7123
+      },
+      {
+        "name": "你TM劈我瓜是吧",
+        "src": "你TM劈我瓜是吧.mp3",
+        "path": "dir00/clip01.adpcm",
+        "samples": 21124,
+        "duration": 1.32,
+        "compressed_bytes": 10562
+      },
+      {
+        "name": "你TM故意找茬是不是？",
+        "src": "你TM故意找茬是不是？.mp3",
+        "path": "dir00/clip02.adpcm",
+        "samples": 25375,
+        "duration": 1.66,
+        "compressed_bytes": 12688
+      },
+      {
+        "name": "你嫌贵我还嫌贵呢",
+        "src": "你嫌贵我还嫌贵呢.mp3",
+        "path": "dir00/clip03.adpcm",
+        "samples": 25169,
+        "duration": 1.66,
+        "compressed_bytes": 12585
+      },
+      {
+        "name": "你故意找茬是不是？",
+        "src": "你故意找茬是不是？.mp3",
+        "path": "dir00/clip04.adpcm",
+        "samples": 26793,
+        "duration": 1.686,
+        "compressed_bytes": 13397
+      },
+      {
+        "name": "你瞧瞧现在那有瓜呀",
+        "src": "你瞧瞧现在那有瓜呀.mp3",
+        "path": "dir00/clip05.adpcm",
+        "samples": 24822,
+        "duration": 1.608,
+        "compressed_bytes": 12411
+      },
+      {
+        "name": "你要不要吧！",
+        "src": "你要不要吧！.mp3",
+        "path": "dir00/clip06.adpcm",
+        "samples": 14544,
+        "duration": 0.928,
+        "compressed_bytes": 7272
+      },
+      {
+        "name": "你要不要吧？",
+        "src": "你要不要吧？.mp3",
+        "path": "dir00/clip07.adpcm",
+        "samples": 17044,
+        "duration": 1.163,
+        "compressed_bytes": 8522
+      },
+      {
+        "name": "你要不要？！",
+        "src": "你要不要？！.mp3",
+        "path": "dir00/clip08.adpcm",
+        "samples": 10047,
+        "duration": 0.772,
+        "compressed_bytes": 5024
+      },
+      {
+        "name": "你说的这瓜要是生的你自己吞进去",
+        "src": "你说的这瓜要是生的你自己吞进去.mp3",
+        "path": "dir00/clip09.adpcm",
+        "samples": 52923,
+        "duration": 3.515,
+        "compressed_bytes": 26462
+      },
+      {
+        "name": "你这哪够15斤你的秤有问题啊",
+        "src": "你这哪够15斤你的秤有问题啊.mp3",
+        "path": "dir00/clip10.adpcm",
+        "samples": 35587,
+        "duration": 2.339,
+        "compressed_bytes": 17794
+      },
+      {
+        "name": "你这瓜要是熟我肯定要啊",
+        "src": "你这瓜要是熟我肯定要啊.mp3",
+        "path": "dir00/clip11.adpcm",
+        "samples": 27088,
+        "duration": 1.817,
+        "compressed_bytes": 13544
+      },
+      {
+        "name": "吸铁石",
+        "src": "吸铁石.mp3",
+        "path": "dir00/clip12.adpcm",
+        "samples": 9082,
+        "duration": 0.928,
+        "compressed_bytes": 4541
+      },
+      {
+        "name": "哥们",
+        "src": "哥们.mp3",
+        "path": "dir00/clip13.adpcm",
+        "samples": 7083,
+        "duration": 0.484,
+        "compressed_bytes": 3542
+      },
+      {
+        "name": "我开水果摊的能卖你生瓜蛋子？",
+        "src": "我开水果摊的能卖你生瓜蛋子？.mp3",
+        "path": "dir00/clip14.adpcm",
+        "samples": 43404,
+        "duration": 2.757,
+        "compressed_bytes": 21702
+      },
+      {
+        "name": "我问你这瓜保熟吗？",
+        "src": "我问你这瓜保熟吗？.mp3",
+        "path": "dir00/clip15.adpcm",
+        "samples": 29460,
+        "duration": 1.947,
+        "compressed_bytes": 14730
+      },
+      {
+        "name": "给我挑一个",
+        "src": "给我挑一个.mp3",
+        "path": "dir00/clip16.adpcm",
+        "samples": 9757,
+        "duration": 0.798,
+        "compressed_bytes": 4879
+      },
+      {
+        "name": "要是不熟我自己吃了它",
+        "src": "要是不熟我自己吃了它.mp3",
+        "path": "dir00/clip17.adpcm",
+        "samples": 41857,
+        "duration": 2.679,
+        "compressed_bytes": 20929
+      },
+      {
+        "name": "这个怎么样",
+        "src": "这个怎么样.mp3",
+        "path": "dir00/clip18.adpcm",
+        "samples": 10840,
+        "duration": 0.693,
+        "compressed_bytes": 5420
+      },
+      {
+        "name": "这瓜保熟吗",
+        "src": "这瓜保熟吗.mp3",
+        "path": "dir00/clip19.adpcm",
+        "samples": 14449,
+        "duration": 0.955,
+        "compressed_bytes": 7225
+      },
+      {
+        "name": "这瓜多少钱一斤？",
+        "src": "这瓜多少钱一斤？.mp3",
+        "path": "dir00/clip20.adpcm",
+        "samples": 18441,
+        "duration": 1.163,
+        "compressed_bytes": 9221
+      },
+      {
+        "name": "这瓜皮是金子做的？",
+        "src": "这瓜皮是金子做的？.mp3",
+        "path": "dir00/clip21.adpcm",
+        "samples": 37695,
+        "duration": 2.391,
+        "compressed_bytes": 18848
+      },
+      {
+        "name": "这都是大棚的瓜",
+        "src": "这都是大棚的瓜.mp3",
+        "path": "dir00/clip22.adpcm",
+        "samples": 18610,
+        "duration": 1.268,
+        "compressed_bytes": 9305
+      },
+      {
+        "name": "那它要是不熟怎么办啊",
+        "src": "那它要是不熟怎么办啊.mp3",
+        "path": "dir00/clip23.adpcm",
+        "samples": 22306,
+        "duration": 1.581,
+        "compressed_bytes": 11153
+      }
+    ],
+    "dir_ascii": "dir00"
+  },
+  {
+    "dir": "王世坚语音包",
+    "dir_id": 1,
+    "files": [
+      {
+        "name": "《没出息》",
+        "src": "《没出息》.mp3",
+        "path": "dir01/clip00.adpcm",
+        "samples": 400659,
+        "duration": 25.095,
+        "compressed_bytes": 200330
+      },
+      {
+        "name": "不得了诶",
+        "src": "不得了诶.mp3",
+        "path": "dir01/clip01.adpcm",
+        "samples": 16368,
+        "duration": 1.023,
+        "compressed_bytes": 8184
+      },
+      {
+        "name": "专搞这种鸟事",
+        "src": "专搞这种🐦事.mp3",
+        "path": "dir01/clip02.adpcm",
+        "samples": 23184,
+        "duration": 1.449,
+        "compressed_bytes": 11592
+      },
+      {
+        "name": "为什么要睁眼说瞎话呢",
+        "src": "为什么要睁眼说瞎话呢.mp3",
+        "path": "dir01/clip03.adpcm",
+        "samples": 38784,
+        "duration": 2.424,
+        "compressed_bytes": 19392
+      },
+      {
+        "name": "他一呼你们百诺",
+        "src": "他一呼你们百诺.mp3",
+        "path": "dir01/clip04.adpcm",
+        "samples": 29216,
+        "duration": 1.826,
+        "compressed_bytes": 14608
+      },
+      {
+        "name": "他火了",
+        "src": "他火了.mp3",
+        "path": "dir01/clip05.adpcm",
+        "samples": 11504,
+        "duration": 0.719,
+        "compressed_bytes": 5752
+      },
+      {
+        "name": "他玩得起我们玩不起吗",
+        "src": "他玩得起我们玩不起吗.mp3",
+        "path": "dir01/clip06.adpcm",
+        "samples": 35040,
+        "duration": 2.19,
+        "compressed_bytes": 17520
+      },
+      {
+        "name": "你在哭什么哭",
+        "src": "你在哭什么哭.mp3",
+        "path": "dir01/clip07.adpcm",
+        "samples": 26544,
+        "duration": 1.659,
+        "compressed_bytes": 13272
+      },
+      {
+        "name": "你在哽咽什么啦",
+        "src": "你在哽咽什么啦.mp3",
+        "path": "dir01/clip08.adpcm",
+        "samples": 29808,
+        "duration": 1.863,
+        "compressed_bytes": 14904
+      },
+      {
+        "name": "你就是谎话的源头诶",
+        "src": "你就是谎话的源头诶.mp3",
+        "path": "dir01/clip09.adpcm",
+        "samples": 39152,
+        "duration": 2.447,
+        "compressed_bytes": 19576
+      },
+      {
+        "name": "你懂",
+        "src": "你懂.mp3",
+        "path": "dir01/clip10.adpcm",
+        "samples": 8640,
+        "duration": 0.54,
+        "compressed_bytes": 4320
+      },
+      {
+        "name": "你要不要道歉",
+        "src": "你要不要道歉.mp3",
+        "path": "dir01/clip11.adpcm",
+        "samples": 14400,
+        "duration": 0.9,
+        "compressed_bytes": 7200
+      },
+      {
+        "name": "你讲这个都这个都完全讲不过去",
+        "src": "你讲这个都这个都完全讲不过去.mp3",
+        "path": "dir01/clip12.adpcm",
+        "samples": 71856,
+        "duration": 4.491,
+        "compressed_bytes": 35928
+      },
+      {
+        "name": "你那一些讲话用词噢还蛮高雅的",
+        "src": "你那一些讲话用词噢还蛮高雅的.mp3",
+        "path": "dir01/clip13.adpcm",
+        "samples": 83567,
+        "duration": 5.223,
+        "compressed_bytes": 41784
+      },
+      {
+        "name": "像鬼画符",
+        "src": "像鬼画符.mp3",
+        "path": "dir01/clip14.adpcm",
+        "samples": 27440,
+        "duration": 1.715,
+        "compressed_bytes": 13720
+      },
+      {
+        "name": "噢这个问到我的死穴",
+        "src": "噢这个问到我的死穴.mp3",
+        "path": "dir01/clip15.adpcm",
+        "samples": 26720,
+        "duration": 1.67,
+        "compressed_bytes": 13360
+      },
+      {
+        "name": "天底下有这种事",
+        "src": "天底下有这种事.mp3",
+        "path": "dir01/clip16.adpcm",
+        "samples": 19631,
+        "duration": 1.227,
+        "compressed_bytes": 9816
+      },
+      {
+        "name": "就是这么简单",
+        "src": "就是这么简单.mp3",
+        "path": "dir01/clip17.adpcm",
+        "samples": 23616,
+        "duration": 1.476,
+        "compressed_bytes": 11808
+      },
+      {
+        "name": "干不了什么好事",
+        "src": "干不了什么好事.mp3",
+        "path": "dir01/clip18.adpcm",
+        "samples": 24032,
+        "duration": 1.502,
+        "compressed_bytes": 12016
+      },
+      {
+        "name": "意外不意外",
+        "src": "意外不意外.mp3",
+        "path": "dir01/clip19.adpcm",
+        "samples": 21856,
+        "duration": 1.366,
+        "compressed_bytes": 10928
+      },
+      {
+        "name": "懂你就是都不做啊",
+        "src": "懂你就是都不做啊.mp3",
+        "path": "dir01/clip20.adpcm",
+        "samples": 28271,
+        "duration": 1.767,
+        "compressed_bytes": 14136
+      },
+      {
+        "name": "我真是不声唏嘘了",
+        "src": "我真是不声唏嘘了.mp3",
+        "path": "dir01/clip21.adpcm",
+        "samples": 31600,
+        "duration": 1.975,
+        "compressed_bytes": 15800
+      },
+      {
+        "name": "本来应该从从容容游刃有余",
+        "src": "本来应该从从容容游刃有余.mp3",
+        "path": "dir01/clip22.adpcm",
+        "samples": 59040,
+        "duration": 3.69,
+        "compressed_bytes": 29520
+      },
+      {
+        "name": "正事不干",
+        "src": "正事不干.mp3",
+        "path": "dir01/clip23.adpcm",
+        "samples": 23712,
+        "duration": 1.482,
+        "compressed_bytes": 11856
+      },
+      {
+        "name": "比划了半天什么都没做到",
+        "src": "比划了半天什么都没做到.mp3",
+        "path": "dir01/clip24.adpcm",
+        "samples": 55824,
+        "duration": 3.489,
+        "compressed_bytes": 27912
+      },
+      {
+        "name": "没出息",
+        "src": "没出息.mp3",
+        "path": "dir01/clip25.adpcm",
+        "samples": 24815,
+        "duration": 1.551,
+        "compressed_bytes": 12408
+      },
+      {
+        "name": "没有最扯只有更扯",
+        "src": "没有最扯只有更扯.mp3",
+        "path": "dir01/clip26.adpcm",
+        "samples": 58704,
+        "duration": 3.669,
+        "compressed_bytes": 29352
+      },
+      {
+        "name": "爱怎么做就怎么做",
+        "src": "爱怎么做就怎么做.mp3",
+        "path": "dir01/clip27.adpcm",
+        "samples": 28144,
+        "duration": 1.759,
+        "compressed_bytes": 14072
+      },
+      {
+        "name": "现在是匆匆忙忙",
+        "src": "现在是匆匆忙忙.mp3",
+        "path": "dir01/clip28.adpcm",
+        "samples": 32200,
+        "duration": 2.013,
+        "compressed_bytes": 16100
+      },
+      {
+        "name": "现在火烧到屁股了",
+        "src": "现在火烧到屁股了.mp3",
+        "path": "dir01/clip29.adpcm",
+        "samples": 22976,
+        "duration": 1.436,
+        "compressed_bytes": 11488
+      },
+      {
+        "name": "睁眼说瞎话",
+        "src": "睁眼说瞎话.mp3",
+        "path": "dir01/clip30.adpcm",
+        "samples": 25232,
+        "duration": 1.577,
+        "compressed_bytes": 12616
+      },
+      {
+        "name": "老天有眼呐",
+        "src": "老天有眼呐.mp3",
+        "path": "dir01/clip31.adpcm",
+        "samples": 20432,
+        "duration": 1.277,
+        "compressed_bytes": 10216
+      },
+      {
+        "name": "自由发挥",
+        "src": "自由发挥.mp3",
+        "path": "dir01/clip32.adpcm",
+        "samples": 23872,
+        "duration": 1.492,
+        "compressed_bytes": 11936
+      },
+      {
+        "name": "莫名其妙到极点",
+        "src": "莫名其妙到极点.mp3",
+        "path": "dir01/clip33.adpcm",
+        "samples": 30032,
+        "duration": 1.877,
+        "compressed_bytes": 15016
+      },
+      {
+        "name": "这个叫妖修",
+        "src": "这个叫妖修.mp3",
+        "path": "dir01/clip34.adpcm",
+        "samples": 20448,
+        "duration": 1.278,
+        "compressed_bytes": 10224
+      },
+      {
+        "name": "这是在扮演上帝耶",
+        "src": "这是在扮演上帝耶.mp3",
+        "path": "dir01/clip35.adpcm",
+        "samples": 26896,
+        "duration": 1.681,
+        "compressed_bytes": 13448
+      },
+      {
+        "name": "这是裁判兼球员耶",
+        "src": "这是裁判兼球员耶.mp3",
+        "path": "dir01/clip36.adpcm",
+        "samples": 32400,
+        "duration": 2.025,
+        "compressed_bytes": 16200
+      },
+      {
+        "name": "连滚带爬",
+        "src": "连滚带爬.mp3",
+        "path": "dir01/clip37.adpcm",
+        "samples": 33360,
+        "duration": 2.085,
+        "compressed_bytes": 16680
+      },
+      {
+        "name": "都是在你手上啊",
+        "src": "都是在你手上啊.mp3",
+        "path": "dir01/clip38.adpcm",
+        "samples": 25296,
+        "duration": 1.581,
+        "compressed_bytes": 12648
+      },
+      {
+        "name": "长他人威风灭自己志气",
+        "src": "长他人威风灭自己志气.mp3",
+        "path": "dir01/clip39.adpcm",
+        "samples": 62272,
+        "duration": 3.892,
+        "compressed_bytes": 31136
+      }
+    ],
+    "dir_ascii": "dir01"
+  }
+]

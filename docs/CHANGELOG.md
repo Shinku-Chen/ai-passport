@@ -6,6 +6,10 @@
 
 ## Unreleased
 
+- Introduced the **Voice Keychain** product application as the boot target: the firmware now launches directly into a three-view sound-keychain UI (directory browser → sound list → settings) instead of the peripheral demo menu, so Wi-Fi, BLE, and the demo pages were removed. Added `main/voice_app.c` and `main/voice_app.h`, rewrote `main.c`, and exposed a repeat `HOLD` button event in `bsp_button.h`/`bsp_button.c` to support long-press scrolling.
+- Added a dedicated SPIFFS data partition (`voicefs`, 3 MB at `0x310000`) in `partitions.csv` for compressed voice data, and mounted it through `esp_vfs_spiffs_register` (SPIFFS is an ESP-IDF built-in component, avoiding the unavailable `espressif/esp_littlefs` registry entry).
+- Added `tools/encode_voice.py`: decodes `assets/project/**` audio (mp3/ogg/wav) with miniaudio, resamples to 8 kHz mono, applies a low-pass filter, trims silence, encodes IMA-ADPCM 4-bit, writes per-clip `.adpcm` files, generates `main/voice_index.h` (compile-time path/name/length table) plus `assets/audio/voice_index.json`, and packs a `voicefs.img` via ESP-IDF `spiffsgen.py`. Non-BMP characters (e.g. the `🐦`) are replaced with readable Chinese so the CJK UI does not show missing glyphs.
+- Added a CJK/Chinese UI subset font (`main/fonts/voice_cjk.c`, Noto Sans CJK SC subset) for rendering Chinese directory and voice names, wired into `main/CMakeLists.txt` and enabled via `LV_LVGL_H_INCLUDE_SIMPLE`.
 - Simplified the tracked repository root: moved GitHub-recognized community documents into `.github/`, moved the changelog into `docs/`, updated every reference, and added a root-document allowlist to repository checks.
 - Repository-wide language policy: every maintained Markdown default `.md` file is English, Simplified Chinese uses a paired `.zh_CN.md`, and both provide language switches. Static checks reject missing peers, missing switches, and Chinese prose in English defaults.
 - Phase one of the AI development workflow: streamlined task-based context routing, unified local/CI validation, added PR checks and a template, and committed the dependency lock for reproducible builds.

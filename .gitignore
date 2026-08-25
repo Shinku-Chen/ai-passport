@@ -4,3 +4,15 @@ sdkconfig.old
 managed_components/
 .vscode/
 .idea/
+
+# 原始语音素材不入库(用户自有资产); 只提交 tools/encode_voice.py 转码后的产物。
+assets/project/
+# SPIFFS 数据分区镜像可由 tools/encode_voice.py 重新生成, 不入库。
+assets/audio/voicefs.img
+# 非本功能的一次性分析产物(外部临时文件), 不入库。
+tools/_analyze_voice.py
+tools/_voice_analysis.json
+tools/_voice_analysis.log
+
+# Cindy 多会话运行时 worktree 目录, 不入库。
+.cindy-worktrees/
