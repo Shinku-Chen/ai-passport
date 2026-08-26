@@ -135,7 +135,7 @@ idf_component_register(
         "libopus/silk/fixed/schur_FIX.c"
         "libopus/silk/fixed/vector_ops_FIX.c"
         "libopus/silk/fixed/warped_autocorrelation_FIX.c"
-    INCLUDE_DIRS "include" "libopus/include"
+    INCLUDE_DIRS "libopus/include"
     REQUIRES freertos
 )
 
