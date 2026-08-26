@@ -9,6 +9,14 @@ Open it and instantly play one of hundreds of Chinese voice clips from dozens of
 character packs — jojo, meme cat, Liu Huaqiang, Haji Mi, Nailong, Xiao Ming
 Jian Mo, and more.
 
+## Publish information
+
+- **Title**: Voice Keychain
+- **Description**: a sound-effects keychain that turns the AI Passport into a
+  pocket audio player; press OK to play one of hundreds of Chinese voice clips
+  from dozens of character packs.
+- **Cover**: `voice-keychain-cover.png` (PNG, 1024×1024).
+
 ## What it does
 
 - **Character directory**: browse all character packs as a scrollable list. Each
