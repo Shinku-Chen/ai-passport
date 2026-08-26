@@ -1,0 +1,41 @@
+# Voice Keychain (音效钥匙扣)
+
+A sound-effects keychain that turns the AI Passport into a pocket audio player.
+Open it and instantly play one of hundreds of Chinese voice clips from dozens of
+character packs — jojo, meme cat, Liu Huaqiang, Haji Mi, Nailong, Xiao Ming
+Jian Mo, and more.
+
+## What it does
+
+- **Character directory**: browse all character packs as a scrollable list. Each
+  entry is a pack of voice clips (e.g. jojo, MC, meme猫, 刘华强, 刘海柱, 卡丘米雪儿,
+  卢音, 印度阿三, 吉伊卡哇, 哈基米, 奶龙, 宝宝肚肚打雷, 小团团, 小明剑魔).
+- **Clip list**: enter a pack to see its clips by name.
+- **One-tap playback**: press OK to play the selected clip; built-in decoding
+  plays 16 kHz mono Opus audio.
+- **Settings** (hold OK): show current battery percentage and voltage, and
+  adjust the playback volume.
+
+## Interaction
+
+Three keys drive the whole app. A top bar shows the title and, on the home
+screen, the battery percentage (e.g. `97%`).
+
+- **UP / DOWN**: move selection.
+- **OK**: enter a directory / select a clip / play.
+- **OK (hold)**: open settings, or go back.
+
+Long entries scroll horizontally so the full name is readable; the selected row
+is highlighted in blue.
+
+## Source
+
+`feature/voice-keychain` branch of this repository. Main implementation in
+`main/voice_app.c`, with the clip index in `main/voice_index.h` and Opus audio
+embedded as a merged firmware image.
+
+## Cover
+
+`voice-keychain-cover.png` (PNG, 1024×1024) shows the device screen displaying
+the character directory, surrounded by the toy keychains and button toys that
+the app plays.
