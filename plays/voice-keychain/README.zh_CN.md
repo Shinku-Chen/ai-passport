@@ -1,3 +1,7 @@
+<p align="right">
+  <strong>简体中文</strong> · <a href="README.md">English</a>
+</p>
+
 # 音效钥匙扣 (Voice Keychain)
 
 一款音效钥匙扣，把 AI Passport 变成随身音效播放器。开机就能播几十个角色包、

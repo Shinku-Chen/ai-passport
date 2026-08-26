@@ -1,4 +1,8 @@
-# Voice Keychain (音效钥匙扣)
+<p align="right">
+  <a href="README.zh_CN.md">简体中文</a> · <strong>English</strong>
+</p>
+
+# Voice Keychain
 
 A sound-effects keychain that turns the AI Passport into a pocket audio player.
 Open it and instantly play one of hundreds of Chinese voice clips from dozens of
@@ -8,8 +12,9 @@ Jian Mo, and more.
 ## What it does
 
 - **Character directory**: browse all character packs as a scrollable list. Each
-  entry is a pack of voice clips (e.g. jojo, MC, meme猫, 刘华强, 刘海柱, 卡丘米雪儿,
-  卢音, 印度阿三, 吉伊卡哇, 哈基米, 奶龙, 宝宝肚肚打雷, 小团团, 小明剑魔).
+  entry is a pack of voice clips (e.g. jojo, MC, meme cat, Liu Huaqiang,
+  Liu Haizhu, Kaqiu Mixue'er, Luyin, Indian A-san, Ji Yi Kawai, Haji Mi,
+  Nailong, Bao Bao Duda Leilei, Xiao TuanTuan, Xiao Ming Jian Mo).
 - **Clip list**: enter a pack to see its clips by name.
 - **One-tap playback**: press OK to play the selected clip; built-in decoding
   plays 16 kHz mono Opus audio.
