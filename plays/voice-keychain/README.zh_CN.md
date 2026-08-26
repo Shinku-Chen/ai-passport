@@ -29,7 +29,10 @@
 ## 源码
 
 本仓库的 `feature/voice-keychain` 分支。主要实现在 `main/voice_app.c`，
-片段索引在 `main/voice_index.h`，Opus 音频以合并固件镜像形式内嵌。
+片段索引在 `main/voice_index.h`。Opus 音频存放在 `voicefs` SPIFFS 数据分区
+（`esp_vfs_spiffs_register`，挂载于 `/voices`，烧录在 `0x210000`），
+用标准 POSIX `fopen`/`fread` 路径读取；应用烧录的是合并固件镜像，
+数据分区需单独烧录。
 
 ## 封面
 
