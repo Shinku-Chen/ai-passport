@@ -28,9 +28,8 @@
 
 ## 源码
 
-- **仓库**：<https://github.com/FoloToy/ai-passport>
-- **分支**：`feature/voice-keychain`
-- **路径**：`main/voice_app.c`（片段索引在 `main/voice_index.h`）
+- **源码**：<https://github.com/Shinku-Chen/ai-passport/tree/feature/voice-keychain>，
+  入口文件 `main/voice_app.c`（片段索引在 `main/voice_index.h`）
 
 Opus 音频存放在 `voicefs` SPIFFS 数据分区（`esp_vfs_spiffs_register`，挂载于
 `/voices`，烧录在 `0x210000`），用标准 POSIX `fopen`/`fread` 路径读取；应用

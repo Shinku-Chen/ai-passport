@@ -35,9 +35,8 @@ is highlighted in blue.
 
 ## Source
 
-- **Repository**: <https://github.com/FoloToy/ai-passport>
-- **Branch**: `feature/voice-keychain`
-- **Path**: `main/voice_app.c` (clip index in `main/voice_index.h`)
+- **Source**: <https://github.com/Shinku-Chen/ai-passport/tree/feature/voice-keychain>,
+  entry file `main/voice_app.c` (clip index in `main/voice_index.h`)
 
 The Opus audio clips live in a `voicefs` SPIFFS data partition
 (`esp_vfs_spiffs_register`, mounted at `/voices`, flashed at `0x210000`), read
