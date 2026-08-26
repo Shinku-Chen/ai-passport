@@ -1,528 +1,7106 @@
 [
   {
-    "dir": "刘华强语音包老板你这瓜多少钱一斤",
+    "dir": "jojo",
     "dir_id": 0,
+    "dir_ascii": "dir00",
+    "files": [
+      {
+        "name": "ACT3",
+        "src": "ACT3.mp3",
+        "path": "dir00/clip00.opus",
+        "samples": 52480,
+        "duration": 3.28,
+        "compressed_bytes": 6635
+      },
+      {
+        "name": "不不不",
+        "src": "不不不.mp3",
+        "path": "dir00/clip01.opus",
+        "samples": 50720,
+        "duration": 3.17,
+        "compressed_bytes": 6334
+      },
+      {
+        "name": "世界",
+        "src": "世界.mp3",
+        "path": "dir00/clip02.opus",
+        "samples": 30560,
+        "duration": 1.91,
+        "compressed_bytes": 3822
+      },
+      {
+        "name": "世界卫生大会",
+        "src": "世界卫生大会.mp3",
+        "path": "dir00/clip03.opus",
+        "samples": 136480,
+        "duration": 8.53,
+        "compressed_bytes": 13506
+      },
+      {
+        "name": "东京托马雷",
+        "src": "东京托马雷.mp3",
+        "path": "dir00/clip04.opus",
+        "samples": 29440,
+        "duration": 1.84,
+        "compressed_bytes": 3680
+      },
+      {
+        "name": "什扎阿",
+        "src": "什扎阿.mp3",
+        "path": "dir00/clip05.opus",
+        "samples": 46720,
+        "duration": 2.92,
+        "compressed_bytes": 5873
+      },
+      {
+        "name": "令人沮丧的一天",
+        "src": "令人沮丧的一天.mp3",
+        "path": "dir00/clip06.opus",
+        "samples": 84160,
+        "duration": 5.26,
+        "compressed_bytes": 7598
+      },
+      {
+        "name": "住口",
+        "src": "住口.mp3",
+        "path": "dir00/clip07.opus",
+        "samples": 18400,
+        "duration": 1.15,
+        "compressed_bytes": 2335
+      },
+      {
+        "name": "你明白吗",
+        "src": "你明白吗.mp3",
+        "path": "dir00/clip08.opus",
+        "samples": 58240,
+        "duration": 3.64,
+        "compressed_bytes": 5752
+      },
+      {
+        "name": "佩西",
+        "src": "佩西.mp3",
+        "path": "dir00/clip09.opus",
+        "samples": 58240,
+        "duration": 3.64,
+        "compressed_bytes": 5695
+      },
+      {
+        "name": "兆丰",
+        "src": "兆丰.mp3",
+        "path": "dir00/clip10.opus",
+        "samples": 66240,
+        "duration": 4.14,
+        "compressed_bytes": 6437
+      },
+      {
+        "name": "再见",
+        "src": "再见.mp3",
+        "path": "dir00/clip11.opus",
+        "samples": 27680,
+        "duration": 1.73,
+        "compressed_bytes": 3437
+      },
+      {
+        "name": "再见jojo",
+        "src": "再见jojo.mp3",
+        "path": "dir00/clip12.opus",
+        "samples": 31680,
+        "duration": 1.98,
+        "compressed_bytes": 3865
+      },
+      {
+        "name": "分解",
+        "src": "分解.mp3",
+        "path": "dir00/clip13.opus",
+        "samples": 48320,
+        "duration": 3.02,
+        "compressed_bytes": 6010
+      },
+      {
+        "name": "割礼",
+        "src": "割礼.mp3",
+        "path": "dir00/clip14.opus",
+        "samples": 19040,
+        "duration": 1.19,
+        "compressed_bytes": 2164
+      },
+      {
+        "name": "卡尔斯笑",
+        "src": "卡尔斯笑.mp3",
+        "path": "dir00/clip15.opus",
+        "samples": 38080,
+        "duration": 2.38,
+        "compressed_bytes": 4781
+      },
+      {
+        "name": "压路机",
+        "src": "压路机.mp3",
+        "path": "dir00/clip16.opus",
+        "samples": 38560,
+        "duration": 2.41,
+        "compressed_bytes": 4899
+      },
+      {
+        "name": "咬扎杜斯托",
+        "src": "咬扎杜斯托.mp3",
+        "path": "dir00/clip17.opus",
+        "samples": 20800,
+        "duration": 1.3,
+        "compressed_bytes": 2600
+      },
+      {
+        "name": "哦不",
+        "src": "哦不.mp3",
+        "path": "dir00/clip18.opus",
+        "samples": 28160,
+        "duration": 1.76,
+        "compressed_bytes": 3550
+      },
+      {
+        "name": "哦，不旧",
+        "src": "哦，不旧.mp3",
+        "path": "dir00/clip19.opus",
+        "samples": 38560,
+        "duration": 2.41,
+        "compressed_bytes": 4925
+      },
+      {
+        "name": "嘿宝贝",
+        "src": "嘿宝贝.mp3",
+        "path": "dir00/clip20.opus",
+        "samples": 21280,
+        "duration": 1.33,
+        "compressed_bytes": 2643
+      },
+      {
+        "name": "回音ACT3",
+        "src": "回音ACT3.mp3",
+        "path": "dir00/clip21.opus",
+        "samples": 27040,
+        "duration": 1.69,
+        "compressed_bytes": 3525
+      },
+      {
+        "name": "地狱2你",
+        "src": "地狱2你.mp3",
+        "path": "dir00/clip22.opus",
+        "samples": 45440,
+        "duration": 2.84,
+        "compressed_bytes": 5724
+      },
+      {
+        "name": "基拉主题 1",
+        "src": "基拉主题 1.mp3",
+        "path": "dir00/clip23.opus",
+        "samples": 186080,
+        "duration": 11.63,
+        "compressed_bytes": 18438
+      },
+      {
+        "name": "基拉主题 2",
+        "src": "基拉主题 2.mp3",
+        "path": "dir00/clip24.opus",
+        "samples": 242560,
+        "duration": 15.16,
+        "compressed_bytes": 23836
+      },
+      {
+        "name": "壮烈成仁",
+        "src": "壮烈成仁.mp3",
+        "path": "dir00/clip25.opus",
+        "samples": 33440,
+        "duration": 2.09,
+        "compressed_bytes": 4296
+      },
+      {
+        "name": "多拉拉拉",
+        "src": "多拉拉拉.mp3",
+        "path": "dir00/clip26.opus",
+        "samples": 27680,
+        "duration": 1.73,
+        "compressed_bytes": 3455
+      },
+      {
+        "name": "大量",
+        "src": "大量.mp3",
+        "path": "dir00/clip27.opus",
+        "samples": 23680,
+        "duration": 1.48,
+        "compressed_bytes": 2984
+      },
+      {
+        "name": "天堂之门",
+        "src": "天堂之门.mp3",
+        "path": "dir00/clip28.opus",
+        "samples": 40320,
+        "duration": 2.52,
+        "compressed_bytes": 5020
+      },
+      {
+        "name": "小脚",
+        "src": "小脚.mp3",
+        "path": "dir00/clip29.opus",
+        "samples": 30560,
+        "duration": 1.91,
+        "compressed_bytes": 3897
+      },
+      {
+        "name": "尼埃斯",
+        "src": "尼埃斯.mp3",
+        "path": "dir00/clip30.opus",
+        "samples": 25920,
+        "duration": 1.62,
+        "compressed_bytes": 3213
+      },
+      {
+        "name": "尼格伦达约",
+        "src": "尼格伦达约.mp3",
+        "path": "dir00/clip31.opus",
+        "samples": 35680,
+        "duration": 2.23,
+        "compressed_bytes": 4631
+      },
+      {
+        "name": "山毛榉",
+        "src": "山毛榉.mp3",
+        "path": "dir00/clip32.opus",
+        "samples": 25280,
+        "duration": 1.58,
+        "compressed_bytes": 3174
+      },
+      {
+        "name": "布拉卡莫诺加",
+        "src": "布拉卡莫诺加.mp3",
+        "path": "dir00/clip33.opus",
+        "samples": 34560,
+        "duration": 2.16,
+        "compressed_bytes": 4500
+      },
+      {
+        "name": "年轻的年轻迪奥",
+        "src": "年轻的年轻迪奥.mp3",
+        "path": "dir00/clip34.opus",
+        "samples": 15520,
+        "duration": 0.97,
+        "compressed_bytes": 2082
+      },
+      {
+        "name": "忧郁蓝调",
+        "src": "忧郁蓝调.mp3",
+        "path": "dir00/clip35.opus",
+        "samples": 80640,
+        "duration": 5.04,
+        "compressed_bytes": 7916
+      },
+      {
+        "name": "快乐的尤雷皮约拉皮库内",
+        "src": "快乐的尤雷皮约拉皮库内.mp3",
+        "path": "dir00/clip36.opus",
+        "samples": 36800,
+        "duration": 2.3,
+        "compressed_bytes": 4778
+      },
+      {
+        "name": "性感手枪",
+        "src": "性感手枪.mp3",
+        "path": "dir00/clip37.opus",
+        "samples": 76000,
+        "duration": 4.75,
+        "compressed_bytes": 7357
+      },
+      {
+        "name": "我很饥渴",
+        "src": "我很饥渴.mp3",
+        "path": "dir00/clip38.opus",
+        "samples": 58240,
+        "duration": 3.64,
+        "compressed_bytes": 5705
+      },
+      {
+        "name": "我拒绝",
+        "src": "我拒绝.mp3",
+        "path": "dir00/clip39.opus",
+        "samples": 47840,
+        "duration": 2.99,
+        "compressed_bytes": 5639
+      },
+      {
+        "name": "我是",
+        "src": "我是.mp3",
+        "path": "dir00/clip40.opus",
+        "samples": 40320,
+        "duration": 2.52,
+        "compressed_bytes": 5127
+      },
+      {
+        "name": "我是一个不悲伤的人",
+        "src": "我是一个不悲伤的人.mp3",
+        "path": "dir00/clip41.opus",
+        "samples": 52480,
+        "duration": 3.28,
+        "compressed_bytes": 6741
+      },
+      {
+        "name": "我的天啊",
+        "src": "我的天啊.mp3",
+        "path": "dir00/clip42.opus",
+        "samples": 47200,
+        "duration": 2.95,
+        "compressed_bytes": 6063
+      },
+      {
+        "name": "戒指",
+        "src": "戒指.mp3",
+        "path": "dir00/clip43.opus",
+        "samples": 95040,
+        "duration": 5.94,
+        "compressed_bytes": 9521
+      },
+      {
+        "name": "手效应",
+        "src": "手效应.mp3",
+        "path": "dir00/clip44.opus",
+        "samples": 29440,
+        "duration": 1.84,
+        "compressed_bytes": 3449
+      },
+      {
+        "name": "托比欧嘟嘟嘟",
+        "src": "托比欧嘟嘟嘟.mp3",
+        "path": "dir00/clip45.opus",
+        "samples": 169280,
+        "duration": 10.58,
+        "compressed_bytes": 16763
+      },
+      {
+        "name": "日主题",
+        "src": "日主题.mp3",
+        "path": "dir00/clip46.opus",
+        "samples": 372640,
+        "duration": 23.29,
+        "compressed_bytes": 36654
+      },
+      {
+        "name": "时间停止",
+        "src": "时间停止.mp3",
+        "path": "dir00/clip47.opus",
+        "samples": 37440,
+        "duration": 2.34,
+        "compressed_bytes": 4651
+      },
+      {
+        "name": "时间又会流动",
+        "src": "时间又会流动.mp3",
+        "path": "dir00/clip48.opus",
+        "samples": 28800,
+        "duration": 1.8,
+        "compressed_bytes": 3635
+      },
+      {
+        "name": "明星白金世界",
+        "src": "明星白金世界.mp3",
+        "path": "dir00/clip49.opus",
+        "samples": 89280,
+        "duration": 5.58,
+        "compressed_bytes": 8417
+      },
+      {
+        "name": "是_是_是",
+        "src": "是_是_是.mp3",
+        "path": "dir00/clip50.opus",
+        "samples": 68480,
+        "duration": 4.28,
+        "compressed_bytes": 6543
+      },
+      {
+        "name": "是_是_是_哦_我的上帝",
+        "src": "是_是_是_哦_我的上帝.mp3",
+        "path": "dir00/clip51.opus",
+        "samples": 74880,
+        "duration": 4.68,
+        "compressed_bytes": 7263
+      },
+      {
+        "name": "杀手皇后",
+        "src": "杀手皇后.mp3",
+        "path": "dir00/clip52.opus",
+        "samples": 23680,
+        "duration": 1.48,
+        "compressed_bytes": 3024
+      },
+      {
+        "name": "欣加库欣加库",
+        "src": "欣加库欣加库.mp3",
+        "path": "dir00/clip53.opus",
+        "samples": 28800,
+        "duration": 1.8,
+        "compressed_bytes": 3712
+      },
+      {
+        "name": "歪歪扭扭",
+        "src": "歪歪扭扭.mp3",
+        "path": "dir00/clip54.opus",
+        "samples": 28800,
+        "duration": 1.8,
+        "compressed_bytes": 3576
+      },
+      {
+        "name": "死亡电台",
+        "src": "死亡电台.mp3",
+        "path": "dir00/clip55.opus",
+        "samples": 48320,
+        "duration": 3.02,
+        "compressed_bytes": 6206
+      },
+      {
+        "name": "河野乔鲁诺乔瓦娜丹羽梦我阿鲁",
+        "src": "河野乔鲁诺乔瓦娜丹羽梦我阿鲁.mp3",
+        "path": "dir00/clip56.opus",
+        "samples": 40960,
+        "duration": 2.56,
+        "compressed_bytes": 5129
+      },
+      {
+        "name": "深红之王",
+        "src": "深红之王.mp3",
+        "path": "dir00/clip57.opus",
+        "samples": 19040,
+        "duration": 1.19,
+        "compressed_bytes": 2475
+      },
+      {
+        "name": "现在现在现在",
+        "src": "现在现在现在.mp3",
+        "path": "dir00/clip58.opus",
+        "samples": 24800,
+        "duration": 1.55,
+        "compressed_bytes": 3120
+      },
+      {
+        "name": "疯狂钻石",
+        "src": "疯狂钻石.mp3",
+        "path": "dir00/clip59.opus",
+        "samples": 31680,
+        "duration": 1.98,
+        "compressed_bytes": 4125
+      },
+      {
+        "name": "白金之星世界",
+        "src": "白金之星世界.mp3",
+        "path": "dir00/clip60.opus",
+        "samples": 15040,
+        "duration": 0.94,
+        "compressed_bytes": 1875
+      },
+      {
+        "name": "盖尔托·德苏哟",
+        "src": "盖尔托·德苏哟.mp3",
+        "path": "dir00/clip61.opus",
+        "samples": 21920,
+        "duration": 1.37,
+        "compressed_bytes": 2788
+      },
+      {
+        "name": "矢田藏",
+        "src": "矢田藏.mp3",
+        "path": "dir00/clip62.opus",
+        "samples": 44960,
+        "duration": 2.81,
+        "compressed_bytes": 5914
+      },
+      {
+        "name": "科诺恶魔达",
+        "src": "科诺恶魔达.mp3",
+        "path": "dir00/clip63.opus",
+        "samples": 21920,
+        "duration": 1.37,
+        "compressed_bytes": 2875
+      },
+      {
+        "name": "科诺迪奥加",
+        "src": "科诺迪奥加.mp3",
+        "path": "dir00/clip64.opus",
+        "samples": 50720,
+        "duration": 3.17,
+        "compressed_bytes": 6507
+      },
+      {
+        "name": "科诺迪奥达",
+        "src": "科诺迪奥达.mp3",
+        "path": "dir00/clip65.opus",
+        "samples": 16640,
+        "duration": 1.04,
+        "compressed_bytes": 2099
+      },
+      {
+        "name": "秒数",
+        "src": "秒数.mp3",
+        "path": "dir00/clip66.opus",
+        "samples": 224000,
+        "duration": 14.0,
+        "compressed_bytes": 21984
+      },
+      {
+        "name": "穆达穆达日",
+        "src": "穆达穆达日.mp3",
+        "path": "dir00/clip67.opus",
+        "samples": 54720,
+        "duration": 3.42,
+        "compressed_bytes": 6886
+      },
+      {
+        "name": "第三爆弹",
+        "src": "第三爆弹.mp3",
+        "path": "dir00/clip68.opus",
+        "samples": 41440,
+        "duration": 2.59,
+        "compressed_bytes": 5168
+      },
+      {
+        "name": "紫烟",
+        "src": "紫烟.mp3",
+        "path": "dir00/clip69.opus",
+        "samples": 25920,
+        "duration": 1.62,
+        "compressed_bytes": 3160
+      },
+      {
+        "name": "紫色隐者",
+        "src": "紫色隐者.mp3",
+        "path": "dir00/clip70.opus",
+        "samples": 29920,
+        "duration": 1.87,
+        "compressed_bytes": 3774
+      },
+      {
+        "name": "红色魔术师",
+        "src": "红色魔术师.mp3",
+        "path": "dir00/clip71.opus",
+        "samples": 31680,
+        "duration": 1.98,
+        "compressed_bytes": 3951
+      },
+      {
+        "name": "红龙",
+        "src": "红龙.mp3",
+        "path": "dir00/clip72.opus",
+        "samples": 42560,
+        "duration": 2.66,
+        "compressed_bytes": 5471
+      },
+      {
+        "name": "继续吧，乔斯塔尔先生",
+        "src": "继续吧，乔斯塔尔先生.mp3",
+        "path": "dir00/clip73.opus",
+        "samples": 39200,
+        "duration": 2.45,
+        "compressed_bytes": 5032
+      },
+      {
+        "name": "绯红之王",
+        "src": "绯红之王.mp3",
+        "path": "dir00/clip74.opus",
+        "samples": 58240,
+        "duration": 3.64,
+        "compressed_bytes": 5406
+      },
+      {
+        "name": "绿色法皇",
+        "src": "绿色法皇.mp3",
+        "path": "dir00/clip75.opus",
+        "samples": 19040,
+        "duration": 1.19,
+        "compressed_bytes": 2395
+      },
+      {
+        "name": "美洲虎",
+        "src": "美洲虎.mp3",
+        "path": "dir00/clip76.opus",
+        "samples": 52960,
+        "duration": 3.31,
+        "compressed_bytes": 6921
+      },
+      {
+        "name": "翡翠飞溅",
+        "src": "翡翠飞溅.mp3",
+        "path": "dir00/clip77.opus",
+        "samples": 22400,
+        "duration": 1.4,
+        "compressed_bytes": 2796
+      },
+      {
+        "name": "耀西",
+        "src": "耀西.mp3",
+        "path": "dir00/clip78.opus",
+        "samples": 177920,
+        "duration": 11.12,
+        "compressed_bytes": 17508
+      },
+      {
+        "name": "航空史密斯",
+        "src": "航空史密斯.mp3",
+        "path": "dir00/clip79.opus",
+        "samples": 55840,
+        "duration": 3.49,
+        "compressed_bytes": 5255
+      },
+      {
+        "name": "药丸人",
+        "src": "药丸人.mp3",
+        "path": "dir00/clip80.opus",
+        "samples": 99680,
+        "duration": 6.23,
+        "compressed_bytes": 8840
+      },
+      {
+        "name": "血流",
+        "src": "血流.mp3",
+        "path": "dir00/clip81.opus",
+        "samples": 29920,
+        "duration": 1.87,
+        "compressed_bytes": 3720
+      },
+      {
+        "name": "让我们杀了大锄",
+        "src": "让我们杀了大锄.mp3",
+        "path": "dir00/clip82.opus",
+        "samples": 42080,
+        "duration": 2.63,
+        "compressed_bytes": 5363
+      },
+      {
+        "name": "语言非常语言",
+        "src": "语言非常语言.mp3",
+        "path": "dir00/clip83.opus",
+        "samples": 27680,
+        "duration": 1.73,
+        "compressed_bytes": 3493
+      },
+      {
+        "name": "贵妇人",
+        "src": "贵妇人.mp3",
+        "path": "dir00/clip84.opus",
+        "samples": 55360,
+        "duration": 3.46,
+        "compressed_bytes": 5372
+      },
+      {
+        "name": "辣妹",
+        "src": "辣妹.mp3",
+        "path": "dir00/clip85.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 3829
+      },
+      {
+        "name": "这是安魂曲",
+        "src": "这是安魂曲.mp3",
+        "path": "dir00/clip86.opus",
+        "samples": 33920,
+        "duration": 2.12,
+        "compressed_bytes": 4213
+      },
+      {
+        "name": "这是最好的高点",
+        "src": "这是最好的高点.mp3",
+        "path": "dir00/clip87.opus",
+        "samples": 62240,
+        "duration": 3.89,
+        "compressed_bytes": 6112
+      },
+      {
+        "name": "迪奥",
+        "src": "迪奥.mp3",
+        "path": "dir00/clip88.opus",
+        "samples": 30560,
+        "duration": 1.91,
+        "compressed_bytes": 3778
+      },
+      {
+        "name": "选择你的当前",
+        "src": "选择你的当前.mp3",
+        "path": "dir00/clip89.opus",
+        "samples": 24160,
+        "duration": 1.51,
+        "compressed_bytes": 3084
+      },
+      {
+        "name": "金属制品",
+        "src": "金属制品.mp3",
+        "path": "dir00/clip90.opus",
+        "samples": 48960,
+        "duration": 3.06,
+        "compressed_bytes": 6062
+      },
+      {
+        "name": "钢链手指",
+        "src": "钢链手指.mp3",
+        "path": "dir00/clip91.opus",
+        "samples": 65120,
+        "duration": 4.07,
+        "compressed_bytes": 6343
+      },
+      {
+        "name": "银色战车",
+        "src": "银色战车.mp3",
+        "path": "dir00/clip92.opus",
+        "samples": 45440,
+        "duration": 2.84,
+        "compressed_bytes": 5680
+      },
+      {
+        "name": "镜中人",
+        "src": "镜中人.mp3",
+        "path": "dir00/clip93.opus",
+        "samples": 31680,
+        "duration": 1.98,
+        "compressed_bytes": 4040
+      },
+      {
+        "name": "雷罗雷罗利奥",
+        "src": "雷罗雷罗利奥.mp3",
+        "path": "dir00/clip94.opus",
+        "samples": 25920,
+        "duration": 1.62,
+        "compressed_bytes": 3260
+      },
+      {
+        "name": "非常_尼库",
+        "src": "非常_尼库.mp3",
+        "path": "dir00/clip95.opus",
+        "samples": 46080,
+        "duration": 2.88,
+        "compressed_bytes": 5756
+      },
+      {
+        "name": "骗子的味道",
+        "src": "骗子的味道.mp3",
+        "path": "dir00/clip96.opus",
+        "samples": 114560,
+        "duration": 7.16,
+        "compressed_bytes": 11175
+      },
+      {
+        "name": "黄金体验",
+        "src": "黄金体验.mp3",
+        "path": "dir00/clip97.opus",
+        "samples": 59840,
+        "duration": 3.74,
+        "compressed_bytes": 5742
+      }
+    ]
+  },
+  {
+    "dir": "MC",
+    "dir_id": 1,
+    "dir_ascii": "dir01",
+    "files": [
+      {
+        "name": "(打击1)",
+        "src": "(打击1).mp3",
+        "path": "dir01/clip00.opus",
+        "samples": 8640,
+        "duration": 0.54,
+        "compressed_bytes": 742
+      },
+      {
+        "name": "(打击2)",
+        "src": "(打击2).mp3",
+        "path": "dir01/clip01.opus",
+        "samples": 8640,
+        "duration": 0.54,
+        "compressed_bytes": 832
+      },
+      {
+        "name": "(打击3)",
+        "src": "(打击3).mp3",
+        "path": "dir01/clip02.opus",
+        "samples": 8640,
+        "duration": 0.54,
+        "compressed_bytes": 724
+      },
+      {
+        "name": "(淘汰)",
+        "src": "(淘汰).mp3",
+        "path": "dir01/clip03.opus",
+        "samples": 8640,
+        "duration": 0.54,
+        "compressed_bytes": 971
+      },
+      {
+        "name": "呵(短暂)",
+        "src": "呵(短暂).mp3",
+        "path": "dir01/clip04.opus",
+        "samples": 8640,
+        "duration": 0.54,
+        "compressed_bytes": 886
+      },
+      {
+        "name": "哎(生气)",
+        "src": "哎(生气).mp3",
+        "path": "dir01/clip05.opus",
+        "samples": 11520,
+        "duration": 0.72,
+        "compressed_bytes": 1269
+      },
+      {
+        "name": "哼(吃惊)",
+        "src": "哼(吃惊).mp3",
+        "path": "dir01/clip06.opus",
+        "samples": 12640,
+        "duration": 0.79,
+        "compressed_bytes": 1485
+      },
+      {
+        "name": "嗯(撒娇)",
+        "src": "嗯(撒娇).mp3",
+        "path": "dir01/clip07.opus",
+        "samples": 9760,
+        "duration": 0.61,
+        "compressed_bytes": 1099
+      },
+      {
+        "name": "嗯哼",
+        "src": "嗯哼.mp3",
+        "path": "dir01/clip08.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 1940
+      },
+      {
+        "name": "豁(无语)",
+        "src": "豁(无语).mp3",
+        "path": "dir01/clip09.opus",
+        "samples": 11520,
+        "duration": 0.72,
+        "compressed_bytes": 1381
+      },
+      {
+        "name": "贺(开心)",
+        "src": "贺(开心).mp3",
+        "path": "dir01/clip10.opus",
+        "samples": 14400,
+        "duration": 0.9,
+        "compressed_bytes": 1544
+      },
+      {
+        "name": "贺(无奈)",
+        "src": "贺(无奈).mp3",
+        "path": "dir01/clip11.opus",
+        "samples": 16640,
+        "duration": 1.04,
+        "compressed_bytes": 1974
+      },
+      {
+        "name": "额(呆呆)",
+        "src": "额(呆呆).mp3",
+        "path": "dir01/clip12.opus",
+        "samples": 11520,
+        "duration": 0.72,
+        "compressed_bytes": 1110
+      },
+      {
+        "name": "（打击4)",
+        "src": "（打击4).mp3",
+        "path": "dir01/clip13.opus",
+        "samples": 8640,
+        "duration": 0.54,
+        "compressed_bytes": 771
+      }
+    ]
+  },
+  {
+    "dir": "meme猫",
+    "dir_id": 2,
+    "dir_ascii": "dir02",
+    "files": [
+      {
+        "name": "CHIP猫",
+        "src": "CHIP猫.mp3",
+        "path": "dir02/clip00.opus",
+        "samples": 97920,
+        "duration": 6.12,
+        "compressed_bytes": 9545
+      },
+      {
+        "name": "HAPPY猫",
+        "src": "HAPPY猫.mp3",
+        "path": "dir02/clip01.opus",
+        "samples": 105920,
+        "duration": 6.62,
+        "compressed_bytes": 10587
+      },
+      {
+        "name": "huh猫",
+        "src": "huh猫.mp3",
+        "path": "dir02/clip02.opus",
+        "samples": 8640,
+        "duration": 0.54,
+        "compressed_bytes": 952
+      },
+      {
+        "name": "oi猫",
+        "src": "oi猫.mp3",
+        "path": "dir02/clip03.opus",
+        "samples": 7520,
+        "duration": 0.47,
+        "compressed_bytes": 901
+      },
+      {
+        "name": "八格牙路",
+        "src": "八格牙路.mp3",
+        "path": "dir02/clip04.opus",
+        "samples": 22560,
+        "duration": 1.41,
+        "compressed_bytes": 2935
+      },
+      {
+        "name": "吐舌羊_1_1",
+        "src": "吐舌羊_1_1.mp3",
+        "path": "dir02/clip05.opus",
+        "samples": 29440,
+        "duration": 1.84,
+        "compressed_bytes": 3764
+      },
+      {
+        "name": "吐舌羊_1_2",
+        "src": "吐舌羊_1_2.mp3",
+        "path": "dir02/clip06.opus",
+        "samples": 112960,
+        "duration": 7.06,
+        "compressed_bytes": 11017
+      },
+      {
+        "name": "咕咕嘎嘎",
+        "src": "咕咕嘎嘎.mp3",
+        "path": "dir02/clip07.opus",
+        "samples": 16640,
+        "duration": 1.04,
+        "compressed_bytes": 2089
+      },
+      {
+        "name": "哇哇猫",
+        "src": "哇哇猫.mp3",
+        "path": "dir02/clip08.opus",
+        "samples": 54720,
+        "duration": 3.42,
+        "compressed_bytes": 7114
+      },
+      {
+        "name": "哭泣猫",
+        "src": "哭泣猫.mp3",
+        "path": "dir02/clip09.opus",
+        "samples": 41440,
+        "duration": 2.59,
+        "compressed_bytes": 5356
+      },
+      {
+        "name": "啊喔猫",
+        "src": "啊喔猫.mp3",
+        "path": "dir02/clip10.opus",
+        "samples": 66240,
+        "duration": 4.14,
+        "compressed_bytes": 6454
+      },
+      {
+        "name": "啊嘿猫_1",
+        "src": "啊嘿猫_1.mp3",
+        "path": "dir02/clip11.opus",
+        "samples": 71360,
+        "duration": 4.46,
+        "compressed_bytes": 6477
+      },
+      {
+        "name": "坏笑狗_1",
+        "src": "坏笑狗_1.mp3",
+        "path": "dir02/clip12.opus",
+        "samples": 75520,
+        "duration": 4.72,
+        "compressed_bytes": 7055
+      },
+      {
+        "name": "坏笑鼠",
+        "src": "坏笑鼠.mp3",
+        "path": "dir02/clip13.opus",
+        "samples": 40960,
+        "duration": 2.56,
+        "compressed_bytes": 5212
+      },
+      {
+        "name": "外婆猫_1",
+        "src": "外婆猫_1.mp3",
+        "path": "dir02/clip14.opus",
+        "samples": 15520,
+        "duration": 0.97,
+        "compressed_bytes": 2034
+      },
+      {
+        "name": "大司马猫",
+        "src": "大司马猫.mp3",
+        "path": "dir02/clip15.opus",
+        "samples": 56480,
+        "duration": 3.53,
+        "compressed_bytes": 5514
+      },
+      {
+        "name": "大笑狗",
+        "src": "大笑狗.mp3",
+        "path": "dir02/clip16.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 3950
+      },
+      {
+        "name": "妈妈鼠",
+        "src": "妈妈鼠.mp3",
+        "path": "dir02/clip17.opus",
+        "samples": 33440,
+        "duration": 2.09,
+        "compressed_bytes": 4256
+      },
+      {
+        "name": "妲己猫",
+        "src": "妲己猫.mp3",
+        "path": "dir02/clip18.opus",
+        "samples": 44960,
+        "duration": 2.81,
+        "compressed_bytes": 5885
+      },
+      {
+        "name": "委屈猫",
+        "src": "委屈猫.mp3",
+        "path": "dir02/clip19.opus",
+        "samples": 10400,
+        "duration": 0.65,
+        "compressed_bytes": 1272
+      },
+      {
+        "name": "害羞猫",
+        "src": "害羞猫.mp3",
+        "path": "dir02/clip20.opus",
+        "samples": 50720,
+        "duration": 3.17,
+        "compressed_bytes": 6512
+      },
+      {
+        "name": "巴巴博一",
+        "src": "巴巴博一.mp3",
+        "path": "dir02/clip21.opus",
+        "samples": 15520,
+        "duration": 0.97,
+        "compressed_bytes": 1898
+      },
+      {
+        "name": "希特勒猫",
+        "src": "希特勒猫.mp3",
+        "path": "dir02/clip22.opus",
+        "samples": 81280,
+        "duration": 5.08,
+        "compressed_bytes": 8054
+      },
+      {
+        "name": "德语猫",
+        "src": "德语猫.mp3",
+        "path": "dir02/clip23.opus",
+        "samples": 44960,
+        "duration": 2.81,
+        "compressed_bytes": 5891
+      },
+      {
+        "name": "我的刀盾",
+        "src": "我的刀盾.mp3",
+        "path": "dir02/clip24.opus",
+        "samples": 18400,
+        "duration": 1.15,
+        "compressed_bytes": 2399
+      },
+      {
+        "name": "招呼猫",
+        "src": "招呼猫.mp3",
+        "path": "dir02/clip25.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 3354
+      },
+      {
+        "name": "歪比巴卜",
+        "src": "歪比巴卜.mp3",
+        "path": "dir02/clip26.opus",
+        "samples": 16320,
+        "duration": 1.02,
+        "compressed_bytes": 2145
+      },
+      {
+        "name": "比比拉布",
+        "src": "比比拉布.mp3",
+        "path": "dir02/clip27.opus",
+        "samples": 14240,
+        "duration": 0.89,
+        "compressed_bytes": 1843
+      },
+      {
+        "name": "特辣海藻",
+        "src": "特辣海藻.mp3",
+        "path": "dir02/clip28.opus",
+        "samples": 78880,
+        "duration": 4.93,
+        "compressed_bytes": 7780
+      },
+      {
+        "name": "痞老板_1",
+        "src": "痞老板_1.mp3",
+        "path": "dir02/clip29.opus",
+        "samples": 67360,
+        "duration": 4.21,
+        "compressed_bytes": 6324
+      },
+      {
+        "name": "癫笑猫",
+        "src": "癫笑猫.mp3",
+        "path": "dir02/clip30.opus",
+        "samples": 51200,
+        "duration": 3.2,
+        "compressed_bytes": 6633
+      },
+      {
+        "name": "瞌睡猫",
+        "src": "瞌睡猫.mp3",
+        "path": "dir02/clip31.opus",
+        "samples": 44320,
+        "duration": 2.77,
+        "compressed_bytes": 5333
+      },
+      {
+        "name": "紫滋猫",
+        "src": "紫滋猫.mp3",
+        "path": "dir02/clip32.opus",
+        "samples": 39200,
+        "duration": 2.45,
+        "compressed_bytes": 4936
+      },
+      {
+        "name": "老吴猫_1_1",
+        "src": "老吴猫_1_1.mp3",
+        "path": "dir02/clip33.opus",
+        "samples": 69760,
+        "duration": 4.36,
+        "compressed_bytes": 6854
+      },
+      {
+        "name": "质问猫",
+        "src": "质问猫.mp3",
+        "path": "dir02/clip34.opus",
+        "samples": 40320,
+        "duration": 2.52,
+        "compressed_bytes": 5132
+      },
+      {
+        "name": "跺脚猫",
+        "src": "跺脚猫.mp3",
+        "path": "dir02/clip35.opus",
+        "samples": 52960,
+        "duration": 3.31,
+        "compressed_bytes": 6508
+      },
+      {
+        "name": "逆转猫_1",
+        "src": "逆转猫_1.mp3",
+        "path": "dir02/clip36.opus",
+        "samples": 39200,
+        "duration": 2.45,
+        "compressed_bytes": 5038
+      },
+      {
+        "name": "香蕉猫",
+        "src": "香蕉猫.mp3",
+        "path": "dir02/clip37.opus",
+        "samples": 53600,
+        "duration": 3.35,
+        "compressed_bytes": 6923
+      },
+      {
+        "name": "魔性笑1",
+        "src": "魔性笑1.mp3",
+        "path": "dir02/clip38.opus",
+        "samples": 27520,
+        "duration": 1.72,
+        "compressed_bytes": 3502
+      },
+      {
+        "name": "魔性笑2",
+        "src": "魔性笑2.mp3",
+        "path": "dir02/clip39.opus",
+        "samples": 27200,
+        "duration": 1.7,
+        "compressed_bytes": 3418
+      },
+      {
+        "name": "魔性笑3",
+        "src": "魔性笑3.mp3",
+        "path": "dir02/clip40.opus",
+        "samples": 25120,
+        "duration": 1.57,
+        "compressed_bytes": 3090
+      }
+    ]
+  },
+  {
+    "dir": "刘华强",
+    "dir_id": 3,
+    "dir_ascii": "dir03",
     "files": [
       {
         "name": "两块钱一斤",
         "src": "两块钱一斤.mp3",
-        "path": "dir00/clip00.adpcm",
-        "samples": 14245,
-        "duration": 1.033,
-        "compressed_bytes": 7123
+        "path": "dir03/clip00.opus",
+        "samples": 17920,
+        "duration": 1.12,
+        "compressed_bytes": 2056
       },
       {
         "name": "你TM劈我瓜是吧",
         "src": "你TM劈我瓜是吧.mp3",
-        "path": "dir00/clip01.adpcm",
-        "samples": 21124,
-        "duration": 1.32,
-        "compressed_bytes": 10562
+        "path": "dir03/clip01.opus",
+        "samples": 22400,
+        "duration": 1.4,
+        "compressed_bytes": 2888
       },
       {
         "name": "你TM故意找茬是不是？",
         "src": "你TM故意找茬是不是？.mp3",
-        "path": "dir00/clip02.adpcm",
-        "samples": 25375,
-        "duration": 1.66,
-        "compressed_bytes": 12688
+        "path": "dir03/clip02.opus",
+        "samples": 28160,
+        "duration": 1.76,
+        "compressed_bytes": 3505
       },
       {
         "name": "你嫌贵我还嫌贵呢",
         "src": "你嫌贵我还嫌贵呢.mp3",
-        "path": "dir00/clip03.adpcm",
-        "samples": 25169,
-        "duration": 1.66,
-        "compressed_bytes": 12585
+        "path": "dir03/clip03.opus",
+        "samples": 28160,
+        "duration": 1.76,
+        "compressed_bytes": 3450
       },
       {
         "name": "你故意找茬是不是？",
         "src": "你故意找茬是不是？.mp3",
-        "path": "dir00/clip04.adpcm",
-        "samples": 26793,
-        "duration": 1.686,
-        "compressed_bytes": 13397
+        "path": "dir03/clip04.opus",
+        "samples": 28160,
+        "duration": 1.76,
+        "compressed_bytes": 3577
       },
       {
         "name": "你瞧瞧现在那有瓜呀",
         "src": "你瞧瞧现在那有瓜呀.mp3",
-        "path": "dir00/clip05.adpcm",
-        "samples": 24822,
-        "duration": 1.608,
-        "compressed_bytes": 12411
+        "path": "dir03/clip05.opus",
+        "samples": 27040,
+        "duration": 1.69,
+        "compressed_bytes": 3404
       },
       {
         "name": "你要不要吧！",
         "src": "你要不要吧！.mp3",
-        "path": "dir00/clip06.adpcm",
-        "samples": 14544,
-        "duration": 0.928,
-        "compressed_bytes": 7272
+        "path": "dir03/clip06.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 2084
       },
       {
         "name": "你要不要吧？",
         "src": "你要不要吧？.mp3",
-        "path": "dir00/clip07.adpcm",
-        "samples": 17044,
-        "duration": 1.163,
-        "compressed_bytes": 8522
+        "path": "dir03/clip07.opus",
+        "samples": 20160,
+        "duration": 1.26,
+        "compressed_bytes": 2445
       },
       {
         "name": "你要不要？！",
         "src": "你要不要？！.mp3",
-        "path": "dir00/clip08.adpcm",
-        "samples": 10047,
-        "duration": 0.772,
-        "compressed_bytes": 5024
+        "path": "dir03/clip08.opus",
+        "samples": 13760,
+        "duration": 0.86,
+        "compressed_bytes": 1515
       },
       {
         "name": "你说的这瓜要是生的你自己吞进去",
         "src": "你说的这瓜要是生的你自己吞进去.mp3",
-        "path": "dir00/clip09.adpcm",
-        "samples": 52923,
-        "duration": 3.515,
-        "compressed_bytes": 26462
+        "path": "dir03/clip09.opus",
+        "samples": 57600,
+        "duration": 3.6,
+        "compressed_bytes": 5319
       },
       {
         "name": "你这哪够15斤你的秤有问题啊",
         "src": "你这哪够15斤你的秤有问题啊.mp3",
-        "path": "dir00/clip10.adpcm",
-        "samples": 35587,
-        "duration": 2.339,
-        "compressed_bytes": 17794
+        "path": "dir03/clip10.opus",
+        "samples": 38560,
+        "duration": 2.41,
+        "compressed_bytes": 4898
       },
       {
         "name": "你这瓜要是熟我肯定要啊",
         "src": "你这瓜要是熟我肯定要啊.mp3",
-        "path": "dir00/clip11.adpcm",
-        "samples": 27088,
-        "duration": 1.817,
-        "compressed_bytes": 13544
+        "path": "dir03/clip11.opus",
+        "samples": 30560,
+        "duration": 1.91,
+        "compressed_bytes": 3722
       },
       {
         "name": "吸铁石",
         "src": "吸铁石.mp3",
-        "path": "dir00/clip12.adpcm",
-        "samples": 9082,
-        "duration": 0.928,
-        "compressed_bytes": 4541
+        "path": "dir03/clip12.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 1570
       },
       {
         "name": "哥们",
         "src": "哥们.mp3",
-        "path": "dir00/clip13.adpcm",
-        "samples": 7083,
-        "duration": 0.484,
-        "compressed_bytes": 3542
+        "path": "dir03/clip13.opus",
+        "samples": 9280,
+        "duration": 0.58,
+        "compressed_bytes": 1044
       },
       {
         "name": "我开水果摊的能卖你生瓜蛋子？",
         "src": "我开水果摊的能卖你生瓜蛋子？.mp3",
-        "path": "dir00/clip14.adpcm",
-        "samples": 43404,
-        "duration": 2.757,
-        "compressed_bytes": 21702
+        "path": "dir03/clip14.opus",
+        "samples": 45440,
+        "duration": 2.84,
+        "compressed_bytes": 5832
       },
       {
         "name": "我问你这瓜保熟吗？",
         "src": "我问你这瓜保熟吗？.mp3",
-        "path": "dir00/clip15.adpcm",
-        "samples": 29460,
-        "duration": 1.947,
-        "compressed_bytes": 14730
+        "path": "dir03/clip15.opus",
+        "samples": 32800,
+        "duration": 2.05,
+        "compressed_bytes": 4106
       },
       {
         "name": "给我挑一个",
         "src": "给我挑一个.mp3",
-        "path": "dir00/clip16.adpcm",
-        "samples": 9757,
-        "duration": 0.798,
-        "compressed_bytes": 4879
+        "path": "dir03/clip16.opus",
+        "samples": 14400,
+        "duration": 0.9,
+        "compressed_bytes": 1505
       },
       {
         "name": "要是不熟我自己吃了它",
         "src": "要是不熟我自己吃了它.mp3",
-        "path": "dir00/clip17.adpcm",
-        "samples": 41857,
-        "duration": 2.679,
-        "compressed_bytes": 20929
+        "path": "dir03/clip17.opus",
+        "samples": 44320,
+        "duration": 2.77,
+        "compressed_bytes": 5653
       },
       {
         "name": "这个怎么样",
         "src": "这个怎么样.mp3",
-        "path": "dir00/clip18.adpcm",
-        "samples": 10840,
-        "duration": 0.693,
-        "compressed_bytes": 5420
+        "path": "dir03/clip18.opus",
+        "samples": 12640,
+        "duration": 0.79,
+        "compressed_bytes": 1472
       },
       {
         "name": "这瓜保熟吗",
         "src": "这瓜保熟吗.mp3",
-        "path": "dir00/clip19.adpcm",
-        "samples": 14449,
-        "duration": 0.955,
-        "compressed_bytes": 7225
+        "path": "dir03/clip19.opus",
+        "samples": 16640,
+        "duration": 1.04,
+        "compressed_bytes": 1998
       },
       {
         "name": "这瓜多少钱一斤？",
         "src": "这瓜多少钱一斤？.mp3",
-        "path": "dir00/clip20.adpcm",
-        "samples": 18441,
-        "duration": 1.163,
-        "compressed_bytes": 9221
+        "path": "dir03/clip20.opus",
+        "samples": 20160,
+        "duration": 1.26,
+        "compressed_bytes": 2447
       },
       {
         "name": "这瓜皮是金子做的？",
         "src": "这瓜皮是金子做的？.mp3",
-        "path": "dir00/clip21.adpcm",
-        "samples": 37695,
-        "duration": 2.391,
-        "compressed_bytes": 18848
+        "path": "dir03/clip21.opus",
+        "samples": 39680,
+        "duration": 2.48,
+        "compressed_bytes": 5091
       },
       {
         "name": "这都是大棚的瓜",
         "src": "这都是大棚的瓜.mp3",
-        "path": "dir00/clip22.adpcm",
-        "samples": 18610,
-        "duration": 1.268,
-        "compressed_bytes": 9305
+        "path": "dir03/clip22.opus",
+        "samples": 21920,
+        "duration": 1.37,
+        "compressed_bytes": 2646
       },
       {
         "name": "那它要是不熟怎么办啊",
         "src": "那它要是不熟怎么办啊.mp3",
-        "path": "dir00/clip23.adpcm",
-        "samples": 22306,
-        "duration": 1.581,
-        "compressed_bytes": 11153
+        "path": "dir03/clip23.opus",
+        "samples": 26560,
+        "duration": 1.66,
+        "compressed_bytes": 3125
       }
-    ],
-    "dir_ascii": "dir00"
+    ]
   },
   {
-    "dir": "王世坚语音包",
-    "dir_id": 1,
+    "dir": "刘海柱",
+    "dir_id": 4,
+    "dir_ascii": "dir04",
+    "files": [
+      {
+        "name": "人家本来就傻",
+        "src": "人家本来就傻.mp3",
+        "path": "dir04/clip00.opus",
+        "samples": 36320,
+        "duration": 2.27,
+        "compressed_bytes": 4598
+      },
+      {
+        "name": "什么tm玩啊",
+        "src": "什么tm玩啊.mp3",
+        "path": "dir04/clip01.opus",
+        "samples": 41440,
+        "duration": 2.59,
+        "compressed_bytes": 5303
+      },
+      {
+        "name": "今天我非jb砍死你",
+        "src": "今天我非jb砍死你.mp3",
+        "path": "dir04/clip02.opus",
+        "samples": 120320,
+        "duration": 7.52,
+        "compressed_bytes": 11976
+      },
+      {
+        "name": "你刘大爷混了这么些年",
+        "src": "你刘大爷混了这么些年.mp3",
+        "path": "dir04/clip03.opus",
+        "samples": 152000,
+        "duration": 9.5,
+        "compressed_bytes": 14691
+      },
+      {
+        "name": "你来跟我要人？",
+        "src": "你来跟我要人？.mp3",
+        "path": "dir04/clip04.opus",
+        "samples": 42560,
+        "duration": 2.66,
+        "compressed_bytes": 5376
+      },
+      {
+        "name": "你还tm揍人家",
+        "src": "你还tm揍人家.mp3",
+        "path": "dir04/clip05.opus",
+        "samples": 29440,
+        "duration": 1.84,
+        "compressed_bytes": 3692
+      },
+      {
+        "name": "傻子不是人啊",
+        "src": "傻子不是人啊.mp3",
+        "path": "dir04/clip06.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 3831
+      },
+      {
+        "name": "傻子不是爹妈养的啊",
+        "src": "傻子不是爹妈养的啊.mp3",
+        "path": "dir04/clip07.opus",
+        "samples": 78400,
+        "duration": 4.9,
+        "compressed_bytes": 7606
+      },
+      {
+        "name": "全jb给你们剁了",
+        "src": "全jb给你们剁了.mp3",
+        "path": "dir04/clip08.opus",
+        "samples": 86400,
+        "duration": 5.4,
+        "compressed_bytes": 8410
+      },
+      {
+        "name": "大煞笔",
+        "src": "大煞笔.mp3",
+        "path": "dir04/clip09.opus",
+        "samples": 27040,
+        "duration": 1.69,
+        "compressed_bytes": 3445
+      },
+      {
+        "name": "我艹nm",
+        "src": "我艹nm.mp3",
+        "path": "dir04/clip10.opus",
+        "samples": 63360,
+        "duration": 3.96,
+        "compressed_bytes": 6142
+      },
+      {
+        "name": "我艹nm1",
+        "src": "我艹nm1.mp3",
+        "path": "dir04/clip11.opus",
+        "samples": 47840,
+        "duration": 2.99,
+        "compressed_bytes": 5962
+      },
+      {
+        "name": "我艹nm的",
+        "src": "我艹nm的.mp3",
+        "path": "dir04/clip12.opus",
+        "samples": 43200,
+        "duration": 2.7,
+        "compressed_bytes": 5446
+      },
+      {
+        "name": "我艹你妈",
+        "src": "我艹你妈.mp3",
+        "path": "dir04/clip13.opus",
+        "samples": 29440,
+        "duration": 1.84,
+        "compressed_bytes": 3587
+      },
+      {
+        "name": "找我干jb啥",
+        "src": "找我干jb啥.mp3",
+        "path": "dir04/clip14.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 3905
+      },
+      {
+        "name": "找我干鸡毛",
+        "src": "找我干鸡毛.mp3",
+        "path": "dir04/clip15.opus",
+        "samples": 55360,
+        "duration": 3.46,
+        "compressed_bytes": 5203
+      },
+      {
+        "name": "滚犊子",
+        "src": "滚犊子.mp3",
+        "path": "dir04/clip16.opus",
+        "samples": 28800,
+        "duration": 1.8,
+        "compressed_bytes": 3499
+      },
+      {
+        "name": "给我站那你个SB",
+        "src": "给我站那你个SB.mp3",
+        "path": "dir04/clip17.opus",
+        "samples": 42560,
+        "duration": 2.66,
+        "compressed_bytes": 5468
+      },
+      {
+        "name": "给白傻子买瓜子去",
+        "src": "给白傻子买瓜子去.mp3",
+        "path": "dir04/clip18.opus",
+        "samples": 29440,
+        "duration": 1.84,
+        "compressed_bytes": 3759
+      },
+      {
+        "name": "能听懂人话不",
+        "src": "能听懂人话不.mp3",
+        "path": "dir04/clip19.opus",
+        "samples": 40960,
+        "duration": 2.56,
+        "compressed_bytes": 5124
+      },
+      {
+        "name": "艹你妈",
+        "src": "艹你妈.mp3",
+        "path": "dir04/clip20.opus",
+        "samples": 27680,
+        "duration": 1.73,
+        "compressed_bytes": 3374
+      },
+      {
+        "name": "跟你个小b仔跟谁俩呢",
+        "src": "跟你个小b仔跟谁俩呢.mp3",
+        "path": "dir04/clip21.opus",
+        "samples": 57600,
+        "duration": 3.6,
+        "compressed_bytes": 5483
+      },
+      {
+        "name": "还tm有你们干不出来的吗",
+        "src": "还tm有你们干不出来的吗.mp3",
+        "path": "dir04/clip22.opus",
+        "samples": 110080,
+        "duration": 6.88,
+        "compressed_bytes": 10779
+      }
+    ]
+  },
+  {
+    "dir": "卡丘米雪儿",
+    "dir_id": 5,
+    "dir_ascii": "dir05",
+    "files": [
+      {
+        "name": "你为什么不帮忙？（委屈）",
+        "src": "你为什么不帮忙？（委屈）.mp3",
+        "path": "dir05/clip00.opus",
+        "samples": 46080,
+        "duration": 2.88,
+        "compressed_bytes": 5821
+      },
+      {
+        "name": "卡啦比丘就放心交给我守护吧",
+        "src": "卡啦比丘就放心交给我守护吧.mp3",
+        "path": "dir05/clip01.opus",
+        "samples": 39680,
+        "duration": 2.48,
+        "compressed_bytes": 5184
+      },
+      {
+        "name": "卡拉game",
+        "src": "卡拉game.mp3",
+        "path": "dir05/clip02.opus",
+        "samples": 466560,
+        "duration": 29.16,
+        "compressed_bytes": 45096
+      },
+      {
+        "name": "卡拉彼丘",
+        "src": "卡拉彼丘.mp3",
+        "path": "dir05/clip03.opus",
+        "samples": 24800,
+        "duration": 1.55,
+        "compressed_bytes": 2518
+      },
+      {
+        "name": "受击",
+        "src": "受击.mp3",
+        "path": "dir05/clip04.opus",
+        "samples": 58240,
+        "duration": 3.64,
+        "compressed_bytes": 5336
+      },
+      {
+        "name": "呜啦呜啦",
+        "src": "呜啦呜啦.mp3",
+        "path": "dir05/clip05.opus",
+        "samples": 13760,
+        "duration": 0.86,
+        "compressed_bytes": 1648
+      },
+      {
+        "name": "唐笑",
+        "src": "唐笑.mp3",
+        "path": "dir05/clip06.opus",
+        "samples": 50720,
+        "duration": 3.17,
+        "compressed_bytes": 5553
+      },
+      {
+        "name": "啊~",
+        "src": "啊~.mp3",
+        "path": "dir05/clip07.opus",
+        "samples": 24160,
+        "duration": 1.51,
+        "compressed_bytes": 3270
+      },
+      {
+        "name": "啊哈",
+        "src": "啊哈.mp3",
+        "path": "dir05/clip08.opus",
+        "samples": 79520,
+        "duration": 4.97,
+        "compressed_bytes": 6641
+      },
+      {
+        "name": "啊哈哈哈",
+        "src": "啊哈哈哈.mp3",
+        "path": "dir05/clip09.opus",
+        "samples": 23040,
+        "duration": 1.44,
+        "compressed_bytes": 2849
+      },
+      {
+        "name": "啊哈哈哈2",
+        "src": "啊哈哈哈2.mp3",
+        "path": "dir05/clip10.opus",
+        "samples": 39200,
+        "duration": 2.45,
+        "compressed_bytes": 5119
+      },
+      {
+        "name": "喵！",
+        "src": "喵！.mp3",
+        "path": "dir05/clip11.opus",
+        "samples": 6880,
+        "duration": 0.43,
+        "compressed_bytes": 789
+      },
+      {
+        "name": "嗯嗯嗯",
+        "src": "嗯嗯嗯.mp3",
+        "path": "dir05/clip12.opus",
+        "samples": 29920,
+        "duration": 1.87,
+        "compressed_bytes": 3806
+      },
+      {
+        "name": "嗯摩擦着感觉很舒服",
+        "src": "嗯摩擦着感觉很舒服.mp3",
+        "path": "dir05/clip13.opus",
+        "samples": 61600,
+        "duration": 3.85,
+        "compressed_bytes": 6130
+      },
+      {
+        "name": "嘎啦game不是这样",
+        "src": "嘎啦game不是这样.mp3",
+        "path": "dir05/clip14.opus",
+        "samples": 24160,
+        "duration": 1.51,
+        "compressed_bytes": 3221
+      },
+      {
+        "name": "嘿~我的名字叫米雪儿",
+        "src": "嘿~我的名字叫米雪儿.mp3",
+        "path": "dir05/clip15.opus",
+        "samples": 32800,
+        "duration": 2.05,
+        "compressed_bytes": 4039
+      },
+      {
+        "name": "嘿嘿",
+        "src": "嘿嘿.mp3",
+        "path": "dir05/clip16.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 1991
+      },
+      {
+        "name": "嘿嘿哈哈哈",
+        "src": "嘿嘿哈哈哈.mp3",
+        "path": "dir05/clip17.opus",
+        "samples": 39680,
+        "duration": 2.48,
+        "compressed_bytes": 5102
+      },
+      {
+        "name": "嘿嘿嘿嘿",
+        "src": "嘿嘿嘿嘿.mp3",
+        "path": "dir05/clip18.opus",
+        "samples": 40960,
+        "duration": 2.56,
+        "compressed_bytes": 5234
+      },
+      {
+        "name": "嘿嘿等等",
+        "src": "嘿嘿等等.mp3",
+        "path": "dir05/clip19.opus",
+        "samples": 15520,
+        "duration": 0.97,
+        "compressed_bytes": 1986
+      },
+      {
+        "name": "它就宕机了",
+        "src": "它就宕机了.mp3",
+        "path": "dir05/clip20.opus",
+        "samples": 33440,
+        "duration": 2.09,
+        "compressed_bytes": 4310
+      },
+      {
+        "name": "快来救我谁来救救我啊",
+        "src": "快来救我谁来救救我啊.mp3",
+        "path": "dir05/clip21.opus",
+        "samples": 55360,
+        "duration": 3.46,
+        "compressed_bytes": 7201
+      },
+      {
+        "name": "我会全力以赴的",
+        "src": "我会全力以赴的.mp3",
+        "path": "dir05/clip22.opus",
+        "samples": 21280,
+        "duration": 1.33,
+        "compressed_bytes": 2755
+      },
+      {
+        "name": "新人注意",
+        "src": "新人注意.mp3",
+        "path": "dir05/clip23.opus",
+        "samples": 412480,
+        "duration": 25.78,
+        "compressed_bytes": 40800
+      },
+      {
+        "name": "果咩内",
+        "src": "果咩内.mp3",
+        "path": "dir05/clip24.opus",
+        "samples": 112320,
+        "duration": 7.02,
+        "compressed_bytes": 9719
+      },
+      {
+        "name": "梦话",
+        "src": "梦话.mp3",
+        "path": "dir05/clip25.opus",
+        "samples": 108320,
+        "duration": 6.77,
+        "compressed_bytes": 10730
+      },
+      {
+        "name": "欢迎你的到来",
+        "src": "欢迎你的到来.mp3",
+        "path": "dir05/clip26.opus",
+        "samples": 17280,
+        "duration": 1.08,
+        "compressed_bytes": 2105
+      },
+      {
+        "name": "欢迎回家",
+        "src": "欢迎回家.mp3",
+        "path": "dir05/clip27.opus",
+        "samples": 17920,
+        "duration": 1.12,
+        "compressed_bytes": 2201
+      },
+      {
+        "name": "洗大锅",
+        "src": "洗大锅.mp3",
+        "path": "dir05/clip28.opus",
+        "samples": 31680,
+        "duration": 1.98,
+        "compressed_bytes": 3580
+      },
+      {
+        "name": "火力大喵",
+        "src": "火力大喵.mp3",
+        "path": "dir05/clip29.opus",
+        "samples": 43200,
+        "duration": 2.7,
+        "compressed_bytes": 4474
+      },
+      {
+        "name": "烦恼消散啦",
+        "src": "烦恼消散啦.mp3",
+        "path": "dir05/clip30.opus",
+        "samples": 19040,
+        "duration": 1.19,
+        "compressed_bytes": 2414
+      },
+      {
+        "name": "诶嘿嘿嘿",
+        "src": "诶嘿嘿嘿.mp3",
+        "path": "dir05/clip31.opus",
+        "samples": 39200,
+        "duration": 2.45,
+        "compressed_bytes": 5057
+      },
+      {
+        "name": "那个",
+        "src": "那个.mp3",
+        "path": "dir05/clip32.opus",
+        "samples": 6400,
+        "duration": 0.4,
+        "compressed_bytes": 732
+      },
+      {
+        "name": "阵亡",
+        "src": "阵亡.mp3",
+        "path": "dir05/clip33.opus",
+        "samples": 90400,
+        "duration": 5.65,
+        "compressed_bytes": 7703
+      },
+      {
+        "name": "额~好像不太对",
+        "src": "额~好像不太对.mp3",
+        "path": "dir05/clip34.opus",
+        "samples": 42560,
+        "duration": 2.66,
+        "compressed_bytes": 5071
+      },
+      {
+        "name": "魔术",
+        "src": "魔术.mp3",
+        "path": "dir05/clip35.opus",
+        "samples": 284000,
+        "duration": 17.75,
+        "compressed_bytes": 28174
+      }
+    ]
+  },
+  {
+    "dir": "卢音",
+    "dir_id": 6,
+    "dir_ascii": "dir06",
+    "files": [
+      {
+        "name": "LBWS牛逼",
+        "src": "LBWS牛逼.mp3",
+        "path": "dir06/clip00.opus",
+        "samples": 19040,
+        "duration": 1.19,
+        "compressed_bytes": 2513
+      },
+      {
+        "name": "不要停",
+        "src": "不要停.mp3",
+        "path": "dir06/clip01.opus",
+        "samples": 37440,
+        "duration": 2.34,
+        "compressed_bytes": 4839
+      },
+      {
+        "name": "伞兵一号",
+        "src": "伞兵一号.mp3",
+        "path": "dir06/clip02.opus",
+        "samples": 47840,
+        "duration": 2.99,
+        "compressed_bytes": 6121
+      },
+      {
+        "name": "伞兵三号",
+        "src": "伞兵三号.mp3",
+        "path": "dir06/clip03.opus",
+        "samples": 38080,
+        "duration": 2.38,
+        "compressed_bytes": 4914
+      },
+      {
+        "name": "伞兵二号",
+        "src": "伞兵二号.mp3",
+        "path": "dir06/clip04.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 3984
+      },
+      {
+        "name": "伞兵四号",
+        "src": "伞兵四号.mp3",
+        "path": "dir06/clip05.opus",
+        "samples": 44320,
+        "duration": 2.77,
+        "compressed_bytes": 5725
+      },
+      {
+        "name": "你好",
+        "src": "你好.mp3",
+        "path": "dir06/clip06.opus",
+        "samples": 8640,
+        "duration": 0.54,
+        "compressed_bytes": 1086
+      },
+      {
+        "name": "你有吗",
+        "src": "你有🔫吗.mp3",
+        "path": "dir06/clip07.opus",
+        "samples": 11520,
+        "duration": 0.72,
+        "compressed_bytes": 1399
+      },
+      {
+        "name": "听见吗",
+        "src": "听见吗.mp3",
+        "path": "dir06/clip08.opus",
+        "samples": 18400,
+        "duration": 1.15,
+        "compressed_bytes": 2291
+      },
+      {
+        "name": "嗯~",
+        "src": "嗯~.mp3",
+        "path": "dir06/clip09.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 1998
+      },
+      {
+        "name": "嘿嘿",
+        "src": "嘿嘿.mp3",
+        "path": "dir06/clip10.opus",
+        "samples": 19040,
+        "duration": 1.19,
+        "compressed_bytes": 2459
+      },
+      {
+        "name": "嘿嘿2",
+        "src": "嘿嘿2.mp3",
+        "path": "dir06/clip11.opus",
+        "samples": 15040,
+        "duration": 0.94,
+        "compressed_bytes": 1802
+      },
+      {
+        "name": "就是这种",
+        "src": "就是这种.mp3",
+        "path": "dir06/clip12.opus",
+        "samples": 27040,
+        "duration": 1.69,
+        "compressed_bytes": 3400
+      },
+      {
+        "name": "我有",
+        "src": "我有.mp3",
+        "path": "dir06/clip13.opus",
+        "samples": 10880,
+        "duration": 0.68,
+        "compressed_bytes": 1298
+      },
+      {
+        "name": "拉闸",
+        "src": "拉闸.mp3",
+        "path": "dir06/clip14.opus",
+        "samples": 14400,
+        "duration": 0.9,
+        "compressed_bytes": 1712
+      },
+      {
+        "name": "撒泡尿",
+        "src": "撒泡尿.mp3",
+        "path": "dir06/clip15.opus",
+        "samples": 12640,
+        "duration": 0.79,
+        "compressed_bytes": 1421
+      },
+      {
+        "name": "有人吗",
+        "src": "有人吗.mp3",
+        "path": "dir06/clip16.opus",
+        "samples": 9760,
+        "duration": 0.61,
+        "compressed_bytes": 1171
+      },
+      {
+        "name": "有点骚",
+        "src": "有点骚.mp3",
+        "path": "dir06/clip17.opus",
+        "samples": 16640,
+        "duration": 1.04,
+        "compressed_bytes": 2116
+      },
+      {
+        "name": "来战斗",
+        "src": "来战斗.mp3",
+        "path": "dir06/clip18.opus",
+        "samples": 22400,
+        "duration": 1.4,
+        "compressed_bytes": 2825
+      },
+      {
+        "name": "溜了",
+        "src": "溜了.mp3",
+        "path": "dir06/clip19.opus",
+        "samples": 19040,
+        "duration": 1.19,
+        "compressed_bytes": 2237
+      },
+      {
+        "name": "滚",
+        "src": "滚.mp3",
+        "path": "dir06/clip20.opus",
+        "samples": 8000,
+        "duration": 0.5,
+        "compressed_bytes": 909
+      },
+      {
+        "name": "玩柠檬",
+        "src": "玩柠檬.mp3",
+        "path": "dir06/clip21.opus",
+        "samples": 28160,
+        "duration": 1.76,
+        "compressed_bytes": 3490
+      },
+      {
+        "name": "疯狗",
+        "src": "疯狗.mp3",
+        "path": "dir06/clip22.opus",
+        "samples": 9760,
+        "duration": 0.61,
+        "compressed_bytes": 1101
+      },
+      {
+        "name": "笑着玩",
+        "src": "笑着玩.mp3",
+        "path": "dir06/clip23.opus",
+        "samples": 12160,
+        "duration": 0.76,
+        "compressed_bytes": 1514
+      },
+      {
+        "name": "继续",
+        "src": "继续.mp3",
+        "path": "dir06/clip24.opus",
+        "samples": 25280,
+        "duration": 1.58,
+        "compressed_bytes": 3138
+      },
+      {
+        "name": "老板",
+        "src": "老板.mp3",
+        "path": "dir06/clip25.opus",
+        "samples": 10400,
+        "duration": 0.65,
+        "compressed_bytes": 1260
+      },
+      {
+        "name": "草",
+        "src": "草.mp3",
+        "path": "dir06/clip26.opus",
+        "samples": 12640,
+        "duration": 0.79,
+        "compressed_bytes": 1625
+      },
+      {
+        "name": "要装B",
+        "src": "要装B.mp3",
+        "path": "dir06/clip27.opus",
+        "samples": 32800,
+        "duration": 2.05,
+        "compressed_bytes": 4188
+      },
+      {
+        "name": "让我兴奋",
+        "src": "让我兴奋.mp3",
+        "path": "dir06/clip28.opus",
+        "samples": 33440,
+        "duration": 2.09,
+        "compressed_bytes": 4228
+      },
+      {
+        "name": "说话呀",
+        "src": "说话呀.mp3",
+        "path": "dir06/clip29.opus",
+        "samples": 21920,
+        "duration": 1.37,
+        "compressed_bytes": 2620
+      },
+      {
+        "name": "象拔蚌",
+        "src": "象拔蚌.mp3",
+        "path": "dir06/clip30.opus",
+        "samples": 13280,
+        "duration": 0.83,
+        "compressed_bytes": 1625
+      },
+      {
+        "name": "贼好吃",
+        "src": "贼好吃.mp3",
+        "path": "dir06/clip31.opus",
+        "samples": 8640,
+        "duration": 0.54,
+        "compressed_bytes": 1028
+      },
+      {
+        "name": "贼尴尬",
+        "src": "贼尴尬.mp3",
+        "path": "dir06/clip32.opus",
+        "samples": 51200,
+        "duration": 3.2,
+        "compressed_bytes": 6527
+      },
+      {
+        "name": "走开",
+        "src": "走开.mp3",
+        "path": "dir06/clip33.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 1585
+      },
+      {
+        "name": "跑步",
+        "src": "跑步.mp3",
+        "path": "dir06/clip34.opus",
+        "samples": 10880,
+        "duration": 0.68,
+        "compressed_bytes": 1261
+      },
+      {
+        "name": "跳",
+        "src": "跳.mp3",
+        "path": "dir06/clip35.opus",
+        "samples": 9760,
+        "duration": 0.61,
+        "compressed_bytes": 1109
+      },
+      {
+        "name": "这么牛",
+        "src": "这么牛.mp3",
+        "path": "dir06/clip36.opus",
+        "samples": 27680,
+        "duration": 1.73,
+        "compressed_bytes": 3447
+      },
+      {
+        "name": "这么直接",
+        "src": "这么直接.mp3",
+        "path": "dir06/clip37.opus",
+        "samples": 13280,
+        "duration": 0.83,
+        "compressed_bytes": 1577
+      },
+      {
+        "name": "顶你个肺",
+        "src": "顶你个肺.mp3",
+        "path": "dir06/clip38.opus",
+        "samples": 18400,
+        "duration": 1.15,
+        "compressed_bytes": 2295
+      },
+      {
+        "name": "骚",
+        "src": "骚🐷.mp3",
+        "path": "dir06/clip39.opus",
+        "samples": 32320,
+        "duration": 2.02,
+        "compressed_bytes": 4064
+      }
+    ]
+  },
+  {
+    "dir": "印度阿三",
+    "dir_id": 7,
+    "dir_ascii": "dir07",
+    "files": [
+      {
+        "name": "bia里",
+        "src": "bia里.mp3",
+        "path": "dir07/clip00.opus",
+        "samples": 17280,
+        "duration": 1.08,
+        "compressed_bytes": 2004
+      },
+      {
+        "name": "呀里给sei",
+        "src": "呀里给sei.mp3",
+        "path": "dir07/clip01.opus",
+        "samples": 32800,
+        "duration": 2.05,
+        "compressed_bytes": 3764
+      },
+      {
+        "name": "嘎猴打黑~",
+        "src": "嘎猴打黑~.mp3",
+        "path": "dir07/clip02.opus",
+        "samples": 31680,
+        "duration": 1.98,
+        "compressed_bytes": 3770
+      },
+      {
+        "name": "嘟噜噜",
+        "src": "嘟噜噜.mp3",
+        "path": "dir07/clip03.opus",
+        "samples": 51200,
+        "duration": 3.2,
+        "compressed_bytes": 6546
+      },
+      {
+        "name": "嘟噜噜2",
+        "src": "嘟噜噜2.mp3",
+        "path": "dir07/clip04.opus",
+        "samples": 54720,
+        "duration": 3.42,
+        "compressed_bytes": 7040
+      },
+      {
+        "name": "改sei",
+        "src": "改sei.mp3",
+        "path": "dir07/clip05.opus",
+        "samples": 17280,
+        "duration": 1.08,
+        "compressed_bytes": 1912
+      },
+      {
+        "name": "改红~",
+        "src": "改红~.mp3",
+        "path": "dir07/clip06.opus",
+        "samples": 11520,
+        "duration": 0.72,
+        "compressed_bytes": 1334
+      },
+      {
+        "name": "灭欧呀啦也~",
+        "src": "灭欧呀啦也~.mp3",
+        "path": "dir07/clip07.opus",
+        "samples": 35200,
+        "duration": 2.2,
+        "compressed_bytes": 3993
+      },
+      {
+        "name": "猴呀猴笨~",
+        "src": "猴呀猴笨~.mp3",
+        "path": "dir07/clip08.opus",
+        "samples": 30560,
+        "duration": 1.91,
+        "compressed_bytes": 3741
+      },
+      {
+        "name": "猴打黑",
+        "src": "猴打黑.mp3",
+        "path": "dir07/clip09.opus",
+        "samples": 30560,
+        "duration": 1.91,
+        "compressed_bytes": 3407
+      },
+      {
+        "name": "猴打黑~",
+        "src": "猴打黑~.mp3",
+        "path": "dir07/clip10.opus",
+        "samples": 29440,
+        "duration": 1.84,
+        "compressed_bytes": 3235
+      },
+      {
+        "name": "给sei~",
+        "src": "给sei~.mp3",
+        "path": "dir07/clip11.opus",
+        "samples": 16640,
+        "duration": 1.04,
+        "compressed_bytes": 1923
+      },
+      {
+        "name": "苦力",
+        "src": "苦力.mp3",
+        "path": "dir07/clip12.opus",
+        "samples": 13280,
+        "duration": 0.83,
+        "compressed_bytes": 1591
+      },
+      {
+        "name": "迪哒",
+        "src": "迪哒.mp3",
+        "path": "dir07/clip13.opus",
+        "samples": 17280,
+        "duration": 1.08,
+        "compressed_bytes": 2041
+      },
+      {
+        "name": "阿kei",
+        "src": "阿kei.mp3",
+        "path": "dir07/clip14.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 1942
+      },
+      {
+        "name": "阿三清唱两句1",
+        "src": "阿三清唱两句1.mp3",
+        "path": "dir07/clip15.opus",
+        "samples": 125600,
+        "duration": 7.85,
+        "compressed_bytes": 12164
+      },
+      {
+        "name": "阿三清唱两句2",
+        "src": "阿三清唱两句2.mp3",
+        "path": "dir07/clip16.opus",
+        "samples": 252320,
+        "duration": 15.77,
+        "compressed_bytes": 23528
+      },
+      {
+        "name": "鲁公",
+        "src": "鲁公.mp3",
+        "path": "dir07/clip17.opus",
+        "samples": 12160,
+        "duration": 0.76,
+        "compressed_bytes": 1405
+      }
+    ]
+  },
+  {
+    "dir": "吉伊卡哇",
+    "dir_id": 8,
+    "dir_ascii": "dir08",
+    "files": [
+      {
+        "name": "K啦K啦",
+        "src": "K啦K啦.mp3",
+        "path": "dir08/clip00.opus",
+        "samples": 44960,
+        "duration": 2.81,
+        "compressed_bytes": 5459
+      },
+      {
+        "name": "oi",
+        "src": "oi.mp3",
+        "path": "dir08/clip01.opus",
+        "samples": 8640,
+        "duration": 0.54,
+        "compressed_bytes": 1129
+      },
+      {
+        "name": "乌乌拉拉乌拉乌拉拉呀哈呀哈",
+        "src": "乌乌拉拉乌拉乌拉拉呀哈呀哈.mp3",
+        "path": "dir08/clip02.opus",
+        "samples": 82880,
+        "duration": 5.18,
+        "compressed_bytes": 7332
+      },
+      {
+        "name": "乌呀咦哈",
+        "src": "乌呀咦哈.mp3",
+        "path": "dir08/clip03.opus",
+        "samples": 49600,
+        "duration": 3.1,
+        "compressed_bytes": 4041
+      },
+      {
+        "name": "乌拉",
+        "src": "乌拉.mp3",
+        "path": "dir08/clip04.opus",
+        "samples": 14400,
+        "duration": 0.9,
+        "compressed_bytes": 1260
+      },
+      {
+        "name": "乌拉呀哈呀哈乌拉",
+        "src": "乌拉呀哈呀哈乌拉.mp3",
+        "path": "dir08/clip05.opus",
+        "samples": 47840,
+        "duration": 2.99,
+        "compressed_bytes": 6091
+      },
+      {
+        "name": "乌拉拉",
+        "src": "乌拉拉.mp3",
+        "path": "dir08/clip06.opus",
+        "samples": 19040,
+        "duration": 1.19,
+        "compressed_bytes": 2070
+      },
+      {
+        "name": "乌玛",
+        "src": "乌玛.mp3",
+        "path": "dir08/clip07.opus",
+        "samples": 13280,
+        "duration": 0.83,
+        "compressed_bytes": 1658
+      },
+      {
+        "name": "吉伊宝宝演唱会纯享版",
+        "src": "吉伊宝宝演唱会纯享版.mp3",
+        "path": "dir08/clip08.opus",
+        "samples": 200480,
+        "duration": 12.53,
+        "compressed_bytes": 19288
+      },
+      {
+        "name": "吓",
+        "src": "吓.mp3",
+        "path": "dir08/clip09.opus",
+        "samples": 19040,
+        "duration": 1.19,
+        "compressed_bytes": 2210
+      },
+      {
+        "name": "吼哇里",
+        "src": "吼哇里.mp3",
+        "path": "dir08/clip10.opus",
+        "samples": 26560,
+        "duration": 1.66,
+        "compressed_bytes": 3387
+      },
+      {
+        "name": "呀哈",
+        "src": "呀哈.mp3",
+        "path": "dir08/clip11.opus",
+        "samples": 15040,
+        "duration": 0.94,
+        "compressed_bytes": 1677
+      },
+      {
+        "name": "呀哈哈",
+        "src": "呀哈哈.mp3",
+        "path": "dir08/clip12.opus",
+        "samples": 19520,
+        "duration": 1.22,
+        "compressed_bytes": 1957
+      },
+      {
+        "name": "呺呜",
+        "src": "呺呜.mp3",
+        "path": "dir08/clip13.opus",
+        "samples": 10400,
+        "duration": 0.65,
+        "compressed_bytes": 1151
+      },
+      {
+        "name": "咦哒哒哒",
+        "src": "咦哒哒哒.mp3",
+        "path": "dir08/clip14.opus",
+        "samples": 12160,
+        "duration": 0.76,
+        "compressed_bytes": 1449
+      },
+      {
+        "name": "哇",
+        "src": "哇.mp3",
+        "path": "dir08/clip15.opus",
+        "samples": 11520,
+        "duration": 0.72,
+        "compressed_bytes": 1343
+      },
+      {
+        "name": "哈？",
+        "src": "哈？.mp3",
+        "path": "dir08/clip16.opus",
+        "samples": 17280,
+        "duration": 1.08,
+        "compressed_bytes": 1861
+      },
+      {
+        "name": "哦哈呦(短)",
+        "src": "哦哈呦(短).mp3",
+        "path": "dir08/clip17.opus",
+        "samples": 10400,
+        "duration": 0.65,
+        "compressed_bytes": 1231
+      },
+      {
+        "name": "哦哈呦(长)",
+        "src": "哦哈呦(长).mp3",
+        "path": "dir08/clip18.opus",
+        "samples": 15040,
+        "duration": 0.94,
+        "compressed_bytes": 1658
+      },
+      {
+        "name": "哦嘟嘟",
+        "src": "哦嘟嘟.mp3",
+        "path": "dir08/clip19.opus",
+        "samples": 31680,
+        "duration": 1.98,
+        "compressed_bytes": 2856
+      },
+      {
+        "name": "哼嗯",
+        "src": "哼嗯.mp3",
+        "path": "dir08/clip20.opus",
+        "samples": 12160,
+        "duration": 0.76,
+        "compressed_bytes": 1245
+      },
+      {
+        "name": "啊咧啊咧",
+        "src": "啊咧啊咧.mp3",
+        "path": "dir08/clip21.opus",
+        "samples": 11520,
+        "duration": 0.72,
+        "compressed_bytes": 1147
+      },
+      {
+        "name": "啊嘟嘟",
+        "src": "啊嘟嘟.mp3",
+        "path": "dir08/clip22.opus",
+        "samples": 19520,
+        "duration": 1.22,
+        "compressed_bytes": 1716
+      },
+      {
+        "name": "喃哒",
+        "src": "喃哒.mp3",
+        "path": "dir08/clip23.opus",
+        "samples": 22400,
+        "duration": 1.4,
+        "compressed_bytes": 2825
+      },
+      {
+        "name": "喵1",
+        "src": "喵1.mp3",
+        "path": "dir08/clip24.opus",
+        "samples": 17280,
+        "duration": 1.08,
+        "compressed_bytes": 2132
+      },
+      {
+        "name": "喵10",
+        "src": "喵10.mp3",
+        "path": "dir08/clip25.opus",
+        "samples": 11520,
+        "duration": 0.72,
+        "compressed_bytes": 1135
+      },
+      {
+        "name": "喵2",
+        "src": "喵2.mp3",
+        "path": "dir08/clip26.opus",
+        "samples": 15040,
+        "duration": 0.94,
+        "compressed_bytes": 1683
+      },
+      {
+        "name": "喵3",
+        "src": "喵3.mp3",
+        "path": "dir08/clip27.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 1858
+      },
+      {
+        "name": "喵4",
+        "src": "喵4.mp3",
+        "path": "dir08/clip28.opus",
+        "samples": 12160,
+        "duration": 0.76,
+        "compressed_bytes": 979
+      },
+      {
+        "name": "喵5",
+        "src": "喵5.mp3",
+        "path": "dir08/clip29.opus",
+        "samples": 18400,
+        "duration": 1.15,
+        "compressed_bytes": 2221
+      },
+      {
+        "name": "喵6",
+        "src": "喵6.mp3",
+        "path": "dir08/clip30.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 1863
+      },
+      {
+        "name": "喵7",
+        "src": "喵7.mp3",
+        "path": "dir08/clip31.opus",
+        "samples": 18400,
+        "duration": 1.15,
+        "compressed_bytes": 1660
+      },
+      {
+        "name": "喵8",
+        "src": "喵8.mp3",
+        "path": "dir08/clip32.opus",
+        "samples": 6880,
+        "duration": 0.43,
+        "compressed_bytes": 752
+      },
+      {
+        "name": "喵9",
+        "src": "喵9.mp3",
+        "path": "dir08/clip33.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 2101
+      },
+      {
+        "name": "嗬？",
+        "src": "嗬？.mp3",
+        "path": "dir08/clip34.opus",
+        "samples": 17280,
+        "duration": 1.08,
+        "compressed_bytes": 1776
+      },
+      {
+        "name": "嗯？",
+        "src": "嗯？.mp3",
+        "path": "dir08/clip35.opus",
+        "samples": 8000,
+        "duration": 0.5,
+        "compressed_bytes": 822
+      },
+      {
+        "name": "嗳",
+        "src": "嗳.mp3",
+        "path": "dir08/clip36.opus",
+        "samples": 11520,
+        "duration": 0.72,
+        "compressed_bytes": 1225
+      },
+      {
+        "name": "嘿咻1",
+        "src": "嘿咻1.mp3",
+        "path": "dir08/clip37.opus",
+        "samples": 19520,
+        "duration": 1.22,
+        "compressed_bytes": 2084
+      },
+      {
+        "name": "嘿咻2",
+        "src": "嘿咻2.mp3",
+        "path": "dir08/clip38.opus",
+        "samples": 27040,
+        "duration": 1.69,
+        "compressed_bytes": 2884
+      },
+      {
+        "name": "嘿撒",
+        "src": "嘿撒.mp3",
+        "path": "dir08/clip39.opus",
+        "samples": 11520,
+        "duration": 0.72,
+        "compressed_bytes": 1100
+      },
+      {
+        "name": "噗噜",
+        "src": "噗噜.mp3",
+        "path": "dir08/clip40.opus",
+        "samples": 8640,
+        "duration": 0.54,
+        "compressed_bytes": 782
+      },
+      {
+        "name": "噗噜噜噜噜",
+        "src": "噗噜噜噜噜.mp3",
+        "path": "dir08/clip41.opus",
+        "samples": 17280,
+        "duration": 1.08,
+        "compressed_bytes": 2111
+      },
+      {
+        "name": "小黑睡着了",
+        "src": "小黑睡着了.mp3",
+        "path": "dir08/clip42.opus",
+        "samples": 28160,
+        "duration": 1.76,
+        "compressed_bytes": 2804
+      },
+      {
+        "name": "怎怎瓦坎奶",
+        "src": "怎怎瓦坎奶.mp3",
+        "path": "dir08/clip43.opus",
+        "samples": 21280,
+        "duration": 1.33,
+        "compressed_bytes": 2689
+      },
+      {
+        "name": "恰噢",
+        "src": "恰噢.mp3",
+        "path": "dir08/clip44.opus",
+        "samples": 101440,
+        "duration": 6.34,
+        "compressed_bytes": 9238
+      },
+      {
+        "name": "拜拜",
+        "src": "拜拜.mp3",
+        "path": "dir08/clip45.opus",
+        "samples": 14400,
+        "duration": 0.9,
+        "compressed_bytes": 1581
+      },
+      {
+        "name": "欸",
+        "src": "欸.mp3",
+        "path": "dir08/clip46.opus",
+        "samples": 12640,
+        "duration": 0.79,
+        "compressed_bytes": 1506
+      },
+      {
+        "name": "滋滋灭",
+        "src": "滋滋灭.mp3",
+        "path": "dir08/clip47.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 1836
+      },
+      {
+        "name": "炸毛",
+        "src": "炸毛.mp3",
+        "path": "dir08/clip48.opus",
+        "samples": 13760,
+        "duration": 0.86,
+        "compressed_bytes": 1785
+      },
+      {
+        "name": "瓦坎奶",
+        "src": "瓦坎奶.mp3",
+        "path": "dir08/clip49.opus",
+        "samples": 13760,
+        "duration": 0.86,
+        "compressed_bytes": 1515
+      },
+      {
+        "name": "突噜里拉",
+        "src": "突噜里拉.mp3",
+        "path": "dir08/clip50.opus",
+        "samples": 31680,
+        "duration": 1.98,
+        "compressed_bytes": 3722
+      },
+      {
+        "name": "笑",
+        "src": "笑.mp3",
+        "path": "dir08/clip51.opus",
+        "samples": 24800,
+        "duration": 1.55,
+        "compressed_bytes": 3068
+      },
+      {
+        "name": "纳尼纳尼",
+        "src": "纳尼纳尼.mp3",
+        "path": "dir08/clip52.opus",
+        "samples": 13280,
+        "duration": 0.83,
+        "compressed_bytes": 1595
+      },
+      {
+        "name": "羊粑粑",
+        "src": "羊粑粑.mp3",
+        "path": "dir08/clip53.opus",
+        "samples": 32800,
+        "duration": 2.05,
+        "compressed_bytes": 3140
+      },
+      {
+        "name": "羊羊粑粑噜啦啦ze",
+        "src": "羊羊粑粑噜啦啦ze.mp3",
+        "path": "dir08/clip54.opus",
+        "samples": 85760,
+        "duration": 5.36,
+        "compressed_bytes": 7327
+      },
+      {
+        "name": "耶",
+        "src": "耶.mp3",
+        "path": "dir08/clip55.opus",
+        "samples": 9760,
+        "duration": 0.61,
+        "compressed_bytes": 1189
+      },
+      {
+        "name": "诶休",
+        "src": "诶休.mp3",
+        "path": "dir08/clip56.opus",
+        "samples": 14400,
+        "duration": 0.9,
+        "compressed_bytes": 1644
+      },
+      {
+        "name": "诶嘿嘿",
+        "src": "诶嘿嘿.mp3",
+        "path": "dir08/clip57.opus",
+        "samples": 25920,
+        "duration": 1.62,
+        "compressed_bytes": 3185
+      },
+      {
+        "name": "达拉里拉",
+        "src": "达拉里拉.mp3",
+        "path": "dir08/clip58.opus",
+        "samples": 21280,
+        "duration": 1.33,
+        "compressed_bytes": 2656
+      },
+      {
+        "name": "迷蝶",
+        "src": "迷蝶.mp3",
+        "path": "dir08/clip59.opus",
+        "samples": 58720,
+        "duration": 3.67,
+        "compressed_bytes": 5635
+      },
+      {
+        "name": "鸭蛋",
+        "src": "鸭蛋.mp3",
+        "path": "dir08/clip60.opus",
+        "samples": 12160,
+        "duration": 0.76,
+        "compressed_bytes": 1464
+      }
+    ]
+  },
+  {
+    "dir": "哈基米",
+    "dir_id": 9,
+    "dir_ascii": "dir09",
+    "files": [
+      {
+        "name": "C哩歌",
+        "src": "C哩歌.mp3",
+        "path": "dir09/clip00.opus",
+        "samples": 259200,
+        "duration": 16.2,
+        "compressed_bytes": 25679
+      },
+      {
+        "name": "WOW",
+        "src": "WOW.mp3",
+        "path": "dir09/clip01.opus",
+        "samples": 15520,
+        "duration": 0.97,
+        "compressed_bytes": 1970
+      },
+      {
+        "name": "出卖歌",
+        "src": "出卖歌.mp3",
+        "path": "dir09/clip02.opus",
+        "samples": 430880,
+        "duration": 26.93,
+        "compressed_bytes": 42705
+      },
+      {
+        "name": "刚枪歌",
+        "src": "刚枪歌.mp3",
+        "path": "dir09/clip03.opus",
+        "samples": 161920,
+        "duration": 10.12,
+        "compressed_bytes": 16030
+      },
+      {
+        "name": "南北豆",
+        "src": "南北豆.mp3",
+        "path": "dir09/clip04.opus",
+        "samples": 21280,
+        "duration": 1.33,
+        "compressed_bytes": 2611
+      },
+      {
+        "name": "叮咚叮咚哈基米_1",
+        "src": "叮咚叮咚哈基米_1.mp3",
+        "path": "dir09/clip05.opus",
+        "samples": 38560,
+        "duration": 2.41,
+        "compressed_bytes": 5018
+      },
+      {
+        "name": "呵呵呵呵",
+        "src": "呵呵呵呵.mp3",
+        "path": "dir09/clip06.opus",
+        "samples": 36800,
+        "duration": 2.3,
+        "compressed_bytes": 4710
+      },
+      {
+        "name": "哈基哈基",
+        "src": "哈基哈基.mp3",
+        "path": "dir09/clip07.opus",
+        "samples": 42080,
+        "duration": 2.63,
+        "compressed_bytes": 5402
+      },
+      {
+        "name": "哈基歌",
+        "src": "哈基歌.mp3",
+        "path": "dir09/clip08.opus",
+        "samples": 337600,
+        "duration": 21.1,
+        "compressed_bytes": 33318
+      },
+      {
+        "name": "哈基米",
+        "src": "哈基米.mp3",
+        "path": "dir09/clip09.opus",
+        "samples": 35200,
+        "duration": 2.2,
+        "compressed_bytes": 4501
+      },
+      {
+        "name": "哈基米哟",
+        "src": "哈基米哟.mp3",
+        "path": "dir09/clip10.opus",
+        "samples": 19520,
+        "duration": 1.22,
+        "compressed_bytes": 2564
+      },
+      {
+        "name": "哈基米山歌",
+        "src": "哈基米山歌.mp3",
+        "path": "dir09/clip11.opus",
+        "samples": 244800,
+        "duration": 15.3,
+        "compressed_bytes": 24058
+      },
+      {
+        "name": "哈基米雪冰城",
+        "src": "哈基米雪冰城.mp3",
+        "path": "dir09/clip12.opus",
+        "samples": 313920,
+        "duration": 19.62,
+        "compressed_bytes": 31153
+      },
+      {
+        "name": "哦耶哦耶",
+        "src": "哦耶哦耶.mp3",
+        "path": "dir09/clip13.opus",
+        "samples": 41440,
+        "duration": 2.59,
+        "compressed_bytes": 5300
+      },
+      {
+        "name": "哦耶歌",
+        "src": "哦耶歌.mp3",
+        "path": "dir09/clip14.opus",
+        "samples": 254080,
+        "duration": 15.88,
+        "compressed_bytes": 25100
+      },
+      {
+        "name": "噢耶",
+        "src": "噢耶.mp3",
+        "path": "dir09/clip15.opus",
+        "samples": 17280,
+        "duration": 1.08,
+        "compressed_bytes": 2117
+      },
+      {
+        "name": "基米朵朵开",
+        "src": "基米朵朵开.mp3",
+        "path": "dir09/clip16.opus",
+        "samples": 359360,
+        "duration": 22.46,
+        "compressed_bytes": 35700
+      },
+      {
+        "name": "大吉大利",
+        "src": "大吉大利.mp3",
+        "path": "dir09/clip17.opus",
+        "samples": 271840,
+        "duration": 16.99,
+        "compressed_bytes": 26839
+      },
+      {
+        "name": "大狗一段带一段",
+        "src": "大狗一段带一段.mp3",
+        "path": "dir09/clip18.opus",
+        "samples": 40320,
+        "duration": 2.52,
+        "compressed_bytes": 5063
+      },
+      {
+        "name": "小跳哈基米",
+        "src": "小跳哈基米.mp3",
+        "path": "dir09/clip19.opus",
+        "samples": 292000,
+        "duration": 18.25,
+        "compressed_bytes": 28762
+      },
+      {
+        "name": "山坡歌",
+        "src": "山坡歌.mp3",
+        "path": "dir09/clip20.opus",
+        "samples": 288640,
+        "duration": 18.04,
+        "compressed_bytes": 28253
+      },
+      {
+        "name": "广西大诗",
+        "src": "广西大诗.mp3",
+        "path": "dir09/clip21.opus",
+        "samples": 399680,
+        "duration": 24.98,
+        "compressed_bytes": 39661
+      },
+      {
+        "name": "我很快就",
+        "src": "我很快就.mp3",
+        "path": "dir09/clip22.opus",
+        "samples": 21920,
+        "duration": 1.37,
+        "compressed_bytes": 2740
+      },
+      {
+        "name": "曼波曼波",
+        "src": "曼波曼波.mp3",
+        "path": "dir09/clip23.opus",
+        "samples": 39200,
+        "duration": 2.45,
+        "compressed_bytes": 5088
+      },
+      {
+        "name": "曼波越大越难保",
+        "src": "曼波越大越难保.mp3",
+        "path": "dir09/clip24.opus",
+        "samples": 38560,
+        "duration": 2.41,
+        "compressed_bytes": 4340
+      },
+      {
+        "name": "梦中歌",
+        "src": "梦中歌.mp3",
+        "path": "dir09/clip25.opus",
+        "samples": 260320,
+        "duration": 16.27,
+        "compressed_bytes": 25844
+      },
+      {
+        "name": "欧玛叽哩叮咚鸡",
+        "src": "欧玛叽哩叮咚鸡.mp3",
+        "path": "dir09/clip26.opus",
+        "samples": 38560,
+        "duration": 2.41,
+        "compressed_bytes": 4885
+      },
+      {
+        "name": "沉默歌",
+        "src": "沉默歌.mp3",
+        "path": "dir09/clip27.opus",
+        "samples": 251200,
+        "duration": 15.7,
+        "compressed_bytes": 24786
+      },
+      {
+        "name": "漫波",
+        "src": "漫波.mp3",
+        "path": "dir09/clip28.opus",
+        "samples": 12160,
+        "duration": 0.76,
+        "compressed_bytes": 1401
+      },
+      {
+        "name": "漫波歌",
+        "src": "漫波歌.mp3",
+        "path": "dir09/clip29.opus",
+        "samples": 267840,
+        "duration": 16.74,
+        "compressed_bytes": 26583
+      },
+      {
+        "name": "神里绫华",
+        "src": "神里绫华.mp3",
+        "path": "dir09/clip30.opus",
+        "samples": 33920,
+        "duration": 2.12,
+        "compressed_bytes": 4365
+      },
+      {
+        "name": "离开",
+        "src": "离开.mp3",
+        "path": "dir09/clip31.opus",
+        "samples": 154400,
+        "duration": 9.65,
+        "compressed_bytes": 15066
+      },
+      {
+        "name": "私人笑声",
+        "src": "私人笑声.mp3",
+        "path": "dir09/clip32.opus",
+        "samples": 25280,
+        "duration": 1.58,
+        "compressed_bytes": 3237
+      },
+      {
+        "name": "纯享版",
+        "src": "纯享版.mp3",
+        "path": "dir09/clip33.opus",
+        "samples": 197600,
+        "duration": 12.35,
+        "compressed_bytes": 19144
+      },
+      {
+        "name": "读完依赖",
+        "src": "读完依赖.mp3",
+        "path": "dir09/clip34.opus",
+        "samples": 75520,
+        "duration": 4.72,
+        "compressed_bytes": 7567
+      },
+      {
+        "name": "阿米诺斯",
+        "src": "阿米诺斯.mp3",
+        "path": "dir09/clip35.opus",
+        "samples": 21280,
+        "duration": 1.33,
+        "compressed_bytes": 2697
+      },
+      {
+        "name": "阿西哈难绿哈亚库",
+        "src": "阿西哈难绿哈亚库.mp3",
+        "path": "dir09/clip36.opus",
+        "samples": 40320,
+        "duration": 2.52,
+        "compressed_bytes": 5051
+      },
+      {
+        "name": "香蕉歌",
+        "src": "香蕉歌.mp3",
+        "path": "dir09/clip37.opus",
+        "samples": 247040,
+        "duration": 15.44,
+        "compressed_bytes": 24256
+      },
+      {
+        "name": "马云歌",
+        "src": "马云歌.mp3",
+        "path": "dir09/clip38.opus",
+        "samples": 473440,
+        "duration": 29.59,
+        "compressed_bytes": 46510
+      },
+      {
+        "name": "黎明歌",
+        "src": "黎明歌.mp3",
+        "path": "dir09/clip39.opus",
+        "samples": 303040,
+        "duration": 18.94,
+        "compressed_bytes": 30072
+      }
+    ]
+  },
+  {
+    "dir": "奶龙",
+    "dir_id": 10,
+    "dir_ascii": "dir10",
+    "files": [
+      {
+        "name": "么么么么哒",
+        "src": "么么么么哒.mp3",
+        "path": "dir10/clip00.opus",
+        "samples": 39200,
+        "duration": 2.45,
+        "compressed_bytes": 4149
+      },
+      {
+        "name": "今天又是收获满满的一天",
+        "src": "今天又是收获满满的一天.mp3",
+        "path": "dir10/clip01.opus",
+        "samples": 48320,
+        "duration": 3.02,
+        "compressed_bytes": 6005
+      },
+      {
+        "name": "你会吗",
+        "src": "你会吗.mp3",
+        "path": "dir10/clip02.opus",
+        "samples": 13280,
+        "duration": 0.83,
+        "compressed_bytes": 1627
+      },
+      {
+        "name": "你在干嘛呢",
+        "src": "你在干嘛呢.mp3",
+        "path": "dir10/clip03.opus",
+        "samples": 21920,
+        "duration": 1.37,
+        "compressed_bytes": 2763
+      },
+      {
+        "name": "你怎么能这个样子_1",
+        "src": "你怎么能这个样子_1.mp3",
+        "path": "dir10/clip04.opus",
+        "samples": 31680,
+        "duration": 1.98,
+        "compressed_bytes": 4068
+      },
+      {
+        "name": "你才是奶龙",
+        "src": "你才是奶龙.mp3",
+        "path": "dir10/clip05.opus",
+        "samples": 28800,
+        "duration": 1.8,
+        "compressed_bytes": 3589
+      },
+      {
+        "name": "你是奶龙",
+        "src": "你是奶龙.mp3",
+        "path": "dir10/clip06.opus",
+        "samples": 17280,
+        "duration": 1.08,
+        "compressed_bytes": 2218
+      },
+      {
+        "name": "你竟然都会",
+        "src": "你竟然都会.mp3",
+        "path": "dir10/clip07.opus",
+        "samples": 24160,
+        "duration": 1.51,
+        "compressed_bytes": 3219
+      },
+      {
+        "name": "你过来呀",
+        "src": "你过来呀.mp3",
+        "path": "dir10/clip08.opus",
+        "samples": 27040,
+        "duration": 1.69,
+        "compressed_bytes": 3566
+      },
+      {
+        "name": "关你屁事呀",
+        "src": "关你屁事呀.mp3",
+        "path": "dir10/clip09.opus",
+        "samples": 24160,
+        "duration": 1.51,
+        "compressed_bytes": 3036
+      },
+      {
+        "name": "可恶",
+        "src": "可恶.mp3",
+        "path": "dir10/clip10.opus",
+        "samples": 12160,
+        "duration": 0.76,
+        "compressed_bytes": 1513
+      },
+      {
+        "name": "呕吐",
+        "src": "呕吐.mp3",
+        "path": "dir10/clip11.opus",
+        "samples": 21920,
+        "duration": 1.37,
+        "compressed_bytes": 2681
+      },
+      {
+        "name": "咕咕",
+        "src": "咕咕.mp3",
+        "path": "dir10/clip12.opus",
+        "samples": 23040,
+        "duration": 1.44,
+        "compressed_bytes": 2673
+      },
+      {
+        "name": "哎",
+        "src": "哎.mp3",
+        "path": "dir10/clip13.opus",
+        "samples": 13280,
+        "duration": 0.83,
+        "compressed_bytes": 1477
+      },
+      {
+        "name": "哼哪有那么丑，人家明明是小可爱",
+        "src": "哼哪有那么丑，人家明明是小可爱.mp3",
+        "path": "dir10/clip14.opus",
+        "samples": 77120,
+        "duration": 4.82,
+        "compressed_bytes": 7315
+      },
+      {
+        "name": "哼欺龙太甚",
+        "src": "哼欺龙太甚.mp3",
+        "path": "dir10/clip15.opus",
+        "samples": 38560,
+        "duration": 2.41,
+        "compressed_bytes": 4448
+      },
+      {
+        "name": "噗噗噗",
+        "src": "噗噗噗.mp3",
+        "path": "dir10/clip16.opus",
+        "samples": 27040,
+        "duration": 1.69,
+        "compressed_bytes": 3437
+      },
+      {
+        "name": "大家叫我奶龙身体会变彩虹",
+        "src": "大家叫我奶龙身体会变彩虹.mp3",
+        "path": "dir10/clip17.opus",
+        "samples": 46080,
+        "duration": 2.88,
+        "compressed_bytes": 5797
+      },
+      {
+        "name": "奶奶",
+        "src": "奶奶.mp3",
+        "path": "dir10/clip18.opus",
+        "samples": 35680,
+        "duration": 2.23,
+        "compressed_bytes": 4720
+      },
+      {
+        "name": "奶龙咆哮",
+        "src": "奶龙咆哮.mp3",
+        "path": "dir10/clip19.opus",
+        "samples": 50720,
+        "duration": 3.17,
+        "compressed_bytes": 6546
+      },
+      {
+        "name": "奶龙奶龙_1",
+        "src": "奶龙奶龙_1.mp3",
+        "path": "dir10/clip20.opus",
+        "samples": 21920,
+        "duration": 1.37,
+        "compressed_bytes": 2843
+      },
+      {
+        "name": "奶龙奶龙紫啧",
+        "src": "奶龙奶龙紫啧.mp3",
+        "path": "dir10/clip21.opus",
+        "samples": 32800,
+        "duration": 2.05,
+        "compressed_bytes": 4088
+      },
+      {
+        "name": "娃哄",
+        "src": "娃哄.mp3",
+        "path": "dir10/clip22.opus",
+        "samples": 15520,
+        "duration": 0.97,
+        "compressed_bytes": 1871
+      },
+      {
+        "name": "带给大家欢乐多",
+        "src": "带给大家欢乐多.mp3",
+        "path": "dir10/clip23.opus",
+        "samples": 42080,
+        "duration": 2.63,
+        "compressed_bytes": 5366
+      },
+      {
+        "name": "恶龙咆哮",
+        "src": "恶龙咆哮.mp3",
+        "path": "dir10/clip24.opus",
+        "samples": 72640,
+        "duration": 4.54,
+        "compressed_bytes": 7108
+      },
+      {
+        "name": "我会喷火",
+        "src": "我会喷火.mp3",
+        "path": "dir10/clip25.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 2052
+      },
+      {
+        "name": "我又不傻",
+        "src": "我又不傻.mp3",
+        "path": "dir10/clip26.opus",
+        "samples": 23040,
+        "duration": 1.44,
+        "compressed_bytes": 2853
+      },
+      {
+        "name": "我只吃一点点",
+        "src": "我只吃一点点.mp3",
+        "path": "dir10/clip27.opus",
+        "samples": 37440,
+        "duration": 2.34,
+        "compressed_bytes": 4414
+      },
+      {
+        "name": "我才是奶龙",
+        "src": "我才是奶龙.mp3",
+        "path": "dir10/clip28.opus",
+        "samples": 24160,
+        "duration": 1.51,
+        "compressed_bytes": 3182
+      },
+      {
+        "name": "我是农村小萌龙",
+        "src": "我是农村小萌龙.mp3",
+        "path": "dir10/clip29.opus",
+        "samples": 41440,
+        "duration": 2.59,
+        "compressed_bytes": 5417
+      },
+      {
+        "name": "我是奶龙",
+        "src": "我是奶龙.mp3",
+        "path": "dir10/clip30.opus",
+        "samples": 21280,
+        "duration": 1.33,
+        "compressed_bytes": 2817
+      },
+      {
+        "name": "我本来就不是人呀",
+        "src": "我本来就不是人呀.mp3",
+        "path": "dir10/clip31.opus",
+        "samples": 28800,
+        "duration": 1.8,
+        "compressed_bytes": 3700
+      },
+      {
+        "name": "我没有脖子没有腰我就是个球球",
+        "src": "我没有脖子没有腰我就是个球球.mp3",
+        "path": "dir10/clip32.opus",
+        "samples": 92160,
+        "duration": 5.76,
+        "compressed_bytes": 8884
+      },
+      {
+        "name": "我的大肚肚真的很酷酷",
+        "src": "我的大肚肚真的很酷酷.mp3",
+        "path": "dir10/clip33.opus",
+        "samples": 54080,
+        "duration": 3.38,
+        "compressed_bytes": 6806
+      },
+      {
+        "name": "我肚子好饿哦什么时候开饭呐",
+        "src": "我肚子好饿哦什么时候开饭呐.mp3",
+        "path": "dir10/clip34.opus",
+        "samples": 61600,
+        "duration": 3.85,
+        "compressed_bytes": 5944
+      },
+      {
+        "name": "我还会变身呢",
+        "src": "我还会变身呢.mp3",
+        "path": "dir10/clip35.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 4039
+      },
+      {
+        "name": "真拿你没办法",
+        "src": "真拿你没办法.mp3",
+        "path": "dir10/clip36.opus",
+        "samples": 28800,
+        "duration": 1.8,
+        "compressed_bytes": 3300
+      },
+      {
+        "name": "紫啧_1",
+        "src": "紫啧_1.mp3",
+        "path": "dir10/clip37.opus",
+        "samples": 12640,
+        "duration": 0.79,
+        "compressed_bytes": 1471
+      },
+      {
+        "name": "紫啧我是奶龙",
+        "src": "紫啧我是奶龙.mp3",
+        "path": "dir10/clip38.opus",
+        "samples": 34560,
+        "duration": 2.16,
+        "compressed_bytes": 4460
+      },
+      {
+        "name": "自己吓自己",
+        "src": "自己吓自己.mp3",
+        "path": "dir10/clip39.opus",
+        "samples": 25280,
+        "duration": 1.58,
+        "compressed_bytes": 3112
+      },
+      {
+        "name": "这是什么捏",
+        "src": "这是什么捏.mp3",
+        "path": "dir10/clip40.opus",
+        "samples": 27680,
+        "duration": 1.73,
+        "compressed_bytes": 2945
+      },
+      {
+        "name": "鹅",
+        "src": "鹅.mp3",
+        "path": "dir10/clip41.opus",
+        "samples": 8000,
+        "duration": 0.5,
+        "compressed_bytes": 885
+      }
+    ]
+  },
+  {
+    "dir": "宝宝肚肚打雷",
+    "dir_id": 11,
+    "dir_ascii": "dir11",
+    "files": [
+      {
+        "name": "rap",
+        "src": "rap.mp3",
+        "path": "dir11/clip00.opus",
+        "samples": 433760,
+        "duration": 27.11,
+        "compressed_bytes": 43229
+      },
+      {
+        "name": "你就是野猪亨利",
+        "src": "你就是野猪亨利.mp3",
+        "path": "dir11/clip01.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 3897
+      },
+      {
+        "name": "出示健康码",
+        "src": "出示健康码.mp3",
+        "path": "dir11/clip02.opus",
+        "samples": 27040,
+        "duration": 1.69,
+        "compressed_bytes": 3540
+      },
+      {
+        "name": "叮咚鸡",
+        "src": "叮咚鸡.mp3",
+        "path": "dir11/clip03.opus",
+        "samples": 17280,
+        "duration": 1.08,
+        "compressed_bytes": 2176
+      },
+      {
+        "name": "叮咚鸡Music",
+        "src": "叮咚鸡Music.mp3",
+        "path": "dir11/clip04.opus",
+        "samples": 149120,
+        "duration": 9.32,
+        "compressed_bytes": 14663
+      },
+      {
+        "name": "大狗叫",
+        "src": "大狗叫.mp3",
+        "path": "dir11/clip05.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 1986
+      },
+      {
+        "name": "宝宝肚肚又打雷",
+        "src": "宝宝肚肚又打雷.mp3",
+        "path": "dir11/clip06.opus",
+        "samples": 38560,
+        "duration": 2.41,
+        "compressed_bytes": 4926
+      },
+      {
+        "name": "宝宝肚肚打雷了",
+        "src": "宝宝肚肚打雷了.mp3",
+        "path": "dir11/clip07.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 3925
+      },
+      {
+        "name": "宝宝肚肚打雷啦",
+        "src": "宝宝肚肚打雷啦.mp3",
+        "path": "dir11/clip08.opus",
+        "samples": 31680,
+        "duration": 1.98,
+        "compressed_bytes": 4030
+      },
+      {
+        "name": "带身份证",
+        "src": "带身份证.mp3",
+        "path": "dir11/clip09.opus",
+        "samples": 16640,
+        "duration": 1.04,
+        "compressed_bytes": 2222
+      },
+      {
+        "name": "带雨伞",
+        "src": "带雨伞.mp3",
+        "path": "dir11/clip10.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 2003
+      },
+      {
+        "name": "带鼠鸡",
+        "src": "带鼠鸡.mp3",
+        "path": "dir11/clip11.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 2050
+      },
+      {
+        "name": "手机前冒烟小姑娘",
+        "src": "手机前冒烟小姑娘.mp3",
+        "path": "dir11/clip12.opus",
+        "samples": 31680,
+        "duration": 1.98,
+        "compressed_bytes": 3994
+      },
+      {
+        "name": "手机和平精英",
+        "src": "手机和平精英.mp3",
+        "path": "dir11/clip13.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 3908
+      },
+      {
+        "name": "打打宝宝雷雷啦",
+        "src": "打打宝宝雷雷啦.mp3",
+        "path": "dir11/clip14.opus",
+        "samples": 29920,
+        "duration": 1.87,
+        "compressed_bytes": 3813
+      },
+      {
+        "name": "打打宝宝雷雷啦2",
+        "src": "打打宝宝雷雷啦2.mp3",
+        "path": "dir11/clip15.opus",
+        "samples": 29920,
+        "duration": 1.87,
+        "compressed_bytes": 3751
+      },
+      {
+        "name": "标题党狂就是狂",
+        "src": "标题党狂就是狂.mp3",
+        "path": "dir11/clip16.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 3949
+      },
+      {
+        "name": "楼上的下来搞核酸",
+        "src": "楼上的下来搞核酸.mp3",
+        "path": "dir11/clip17.opus",
+        "samples": 30560,
+        "duration": 1.91,
+        "compressed_bytes": 3858
+      },
+      {
+        "name": "没有人叫你老弟",
+        "src": "没有人叫你老弟.mp3",
+        "path": "dir11/clip18.opus",
+        "samples": 31680,
+        "duration": 1.98,
+        "compressed_bytes": 3966
+      },
+      {
+        "name": "没有双小眼睛",
+        "src": "没有双小眼睛.mp3",
+        "path": "dir11/clip19.opus",
+        "samples": 32320,
+        "duration": 2.02,
+        "compressed_bytes": 4060
+      },
+      {
+        "name": "游戏越打越年轻",
+        "src": "游戏越打越年轻.mp3",
+        "path": "dir11/clip20.opus",
+        "samples": 33440,
+        "duration": 2.09,
+        "compressed_bytes": 4253
+      },
+      {
+        "name": "给我点个外卖吃",
+        "src": "给我点个外卖吃.mp3",
+        "path": "dir11/clip21.opus",
+        "samples": 38560,
+        "duration": 2.41,
+        "compressed_bytes": 4959
+      },
+      {
+        "name": "肚肚宝宝打雷了",
+        "src": "肚肚宝宝打雷了.mp3",
+        "path": "dir11/clip22.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 3968
+      },
+      {
+        "name": "肚肚宝宝打雷啦",
+        "src": "肚肚宝宝打雷啦.mp3",
+        "path": "dir11/clip23.opus",
+        "samples": 29920,
+        "duration": 1.87,
+        "compressed_bytes": 3820
+      },
+      {
+        "name": "能顶你一辈子id",
+        "src": "能顶你一辈子id.mp3",
+        "path": "dir11/clip24.opus",
+        "samples": 31680,
+        "duration": 1.98,
+        "compressed_bytes": 4063
+      },
+      {
+        "name": "连起麦像条恶狼",
+        "src": "连起麦像条恶狼.mp3",
+        "path": "dir11/clip25.opus",
+        "samples": 31680,
+        "duration": 1.98,
+        "compressed_bytes": 4003
+      },
+      {
+        "name": "都叫你小学生",
+        "src": "都叫你小学生.mp3",
+        "path": "dir11/clip26.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 3892
+      },
+      {
+        "name": "问你有什么实力",
+        "src": "问你有什么实力.mp3",
+        "path": "dir11/clip27.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 3935
+      },
+      {
+        "name": "雷到心情烦",
+        "src": "雷到心情烦.mp3",
+        "path": "dir11/clip28.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 3911
+      },
+      {
+        "name": "雷雷宝宝打肚肚",
+        "src": "雷雷宝宝打肚肚.mp3",
+        "path": "dir11/clip29.opus",
+        "samples": 30560,
+        "duration": 1.91,
+        "compressed_bytes": 3886
+      },
+      {
+        "name": "雷雷宝宝打肚肚2",
+        "src": "雷雷宝宝打肚肚2.mp3",
+        "path": "dir11/clip30.opus",
+        "samples": 31680,
+        "duration": 1.98,
+        "compressed_bytes": 3989
+      }
+    ]
+  },
+  {
+    "dir": "小团团",
+    "dir_id": 12,
+    "dir_ascii": "dir12",
+    "files": [
+      {
+        "name": "么么哒~",
+        "src": "么么哒~.mp3",
+        "path": "dir12/clip00.opus",
+        "samples": 75520,
+        "duration": 4.72,
+        "compressed_bytes": 7415
+      },
+      {
+        "name": "今天的不开心就到此为止吧，明天依旧光芒万丈噢宝贝",
+        "src": "今天的不开心就到此为止吧，明天依旧光芒万丈噢宝贝.mp3",
+        "path": "dir12/clip01.opus",
+        "samples": 97280,
+        "duration": 6.08,
+        "compressed_bytes": 9550
+      },
+      {
+        "name": "从今天开始就让我带你吃喝玩乐到处游玩吧",
+        "src": "从今天开始就让我带你吃喝玩乐到处游玩吧.mp3",
+        "path": "dir12/clip02.opus",
+        "samples": 77120,
+        "duration": 4.82,
+        "compressed_bytes": 7754
+      },
+      {
+        "name": "他跟你太客气了，够了够啦",
+        "src": "他跟你太客气了，够了够啦.mp3",
+        "path": "dir12/clip03.opus",
+        "samples": 42080,
+        "duration": 2.63,
+        "compressed_bytes": 5354
+      },
+      {
+        "name": "何，这是嘛呀？",
+        "src": "何，这是嘛呀？.mp3",
+        "path": "dir12/clip04.opus",
+        "samples": 25920,
+        "duration": 1.62,
+        "compressed_bytes": 3306
+      },
+      {
+        "name": "你也太厉害了吧，啊",
+        "src": "你也太厉害了吧，啊.mp3",
+        "path": "dir12/clip05.opus",
+        "samples": 56480,
+        "duration": 3.53,
+        "compressed_bytes": 5512
+      },
+      {
+        "name": "你有car我就上你的car，你没car我们就一起去找car行吗",
+        "src": "你有car我就上你的car，你没car我们就一起去找car行吗.mp3",
+        "path": "dir12/clip06.opus",
+        "samples": 66240,
+        "duration": 4.14,
+        "compressed_bytes": 6469
+      },
+      {
+        "name": "兄弟们撤退咯，进圈啦",
+        "src": "兄弟们撤退咯，进圈啦.mp3",
+        "path": "dir12/clip07.opus",
+        "samples": 48960,
+        "duration": 3.06,
+        "compressed_bytes": 6228
+      },
+      {
+        "name": "别怂啊，一起上不怕他  我保护你",
+        "src": "别怂啊，一起上不怕他  我保护你.mp3",
+        "path": "dir12/clip08.opus",
+        "samples": 81760,
+        "duration": 5.11,
+        "compressed_bytes": 7988
+      },
+      {
+        "name": "前面很危险，你先上吧 我会在后面保护你",
+        "src": "前面很危险，你先上吧 我会在后面保护你.mp3",
+        "path": "dir12/clip09.opus",
+        "samples": 52480,
+        "duration": 3.28,
+        "compressed_bytes": 6751
+      },
+      {
+        "name": "古德猫宁",
+        "src": "古德猫宁.mp3",
+        "path": "dir12/clip10.opus",
+        "samples": 29440,
+        "duration": 1.84,
+        "compressed_bytes": 3829
+      },
+      {
+        "name": "哈喽",
+        "src": "哈喽.mp3",
+        "path": "dir12/clip11.opus",
+        "samples": 23040,
+        "duration": 1.44,
+        "compressed_bytes": 2893
+      },
+      {
+        "name": "哈喽，我是一条小团团",
+        "src": "哈喽，我是一条小团团.mp3",
+        "path": "dir12/clip12.opus",
+        "samples": 37440,
+        "duration": 2.34,
+        "compressed_bytes": 4807
+      },
+      {
+        "name": "哥哥，你可以帮我找辆车吗",
+        "src": "哥哥，你可以帮我找辆车吗.mp3",
+        "path": "dir12/clip13.opus",
+        "samples": 54720,
+        "duration": 3.42,
+        "compressed_bytes": 6933
+      },
+      {
+        "name": "哼",
+        "src": "哼.mp3",
+        "path": "dir12/clip14.opus",
+        "samples": 10880,
+        "duration": 0.68,
+        "compressed_bytes": 1334
+      },
+      {
+        "name": "啦啦啦啦~耶耶耶",
+        "src": "啦啦啦啦~耶耶耶.mp3",
+        "path": "dir12/clip15.opus",
+        "samples": 91520,
+        "duration": 5.72,
+        "compressed_bytes": 9066
+      },
+      {
+        "name": "嗯~",
+        "src": "嗯~.mp3",
+        "path": "dir12/clip16.opus",
+        "samples": 18400,
+        "duration": 1.15,
+        "compressed_bytes": 2200
+      },
+      {
+        "name": "嗯~这很棒",
+        "src": "嗯~这很棒.mp3",
+        "path": "dir12/clip17.opus",
+        "samples": 47840,
+        "duration": 2.99,
+        "compressed_bytes": 6005
+      },
+      {
+        "name": "嘿~喂嘟嘟嘟",
+        "src": "嘿~喂嘟嘟嘟.mp3",
+        "path": "dir12/clip18.opus",
+        "samples": 40320,
+        "duration": 2.52,
+        "compressed_bytes": 5010
+      },
+      {
+        "name": "嘿嘿我也有车，快上我的车",
+        "src": "嘿嘿我也有车，快上我的车.mp3",
+        "path": "dir12/clip19.opus",
+        "samples": 51840,
+        "duration": 3.24,
+        "compressed_bytes": 6584
+      },
+      {
+        "name": "大哥别杀我",
+        "src": "大哥别杀我.mp3",
+        "path": "dir12/clip20.opus",
+        "samples": 487840,
+        "duration": 30.49,
+        "compressed_bytes": 48274
+      },
+      {
+        "name": "大风车",
+        "src": "大风车.mp3",
+        "path": "dir12/clip21.opus",
+        "samples": 254080,
+        "duration": 15.88,
+        "compressed_bytes": 25170
+      },
+      {
+        "name": "奈斯奈斯",
+        "src": "奈斯奈斯.mp3",
+        "path": "dir12/clip22.opus",
+        "samples": 27680,
+        "duration": 1.73,
+        "compressed_bytes": 3453
+      },
+      {
+        "name": "好像有人，小心一点（小声说）",
+        "src": "好像有人，小心一点（小声说）.mp3",
+        "path": "dir12/clip23.opus",
+        "samples": 88640,
+        "duration": 5.54,
+        "compressed_bytes": 8735
+      },
+      {
+        "name": "开麦开麦玩游戏就得开麦",
+        "src": "开麦开麦玩游戏就得开麦.mp3",
+        "path": "dir12/clip24.opus",
+        "samples": 59360,
+        "duration": 3.71,
+        "compressed_bytes": 5778
+      },
+      {
+        "name": "当当当",
+        "src": "当当当.mp3",
+        "path": "dir12/clip25.opus",
+        "samples": 245920,
+        "duration": 15.37,
+        "compressed_bytes": 24268
+      },
+      {
+        "name": "快来找我我们集合一下吧",
+        "src": "快来找我我们集合一下吧.mp3",
+        "path": "dir12/clip26.opus",
+        "samples": 73120,
+        "duration": 4.57,
+        "compressed_bytes": 7173
+      },
+      {
+        "name": "我单方面宣布，以后你就是我的亲弟弟",
+        "src": "我单方面宣布，以后你就是我的亲弟弟.mp3",
+        "path": "dir12/clip27.opus",
+        "samples": 77760,
+        "duration": 4.86,
+        "compressed_bytes": 7635
+      },
+      {
+        "name": "我太难了，快救救我",
+        "src": "我太难了，快救救我.mp3",
+        "path": "dir12/clip28.opus",
+        "samples": 44960,
+        "duration": 2.81,
+        "compressed_bytes": 5749
+      },
+      {
+        "name": "我太难了，我不想吃鸡屁股",
+        "src": "我太难了，我不想吃鸡屁股.mp3",
+        "path": "dir12/clip29.opus",
+        "samples": 74880,
+        "duration": 4.68,
+        "compressed_bytes": 7341
+      },
+      {
+        "name": "我才不跟他计较呢，哼！",
+        "src": "我才不跟他计较呢，哼！.mp3",
+        "path": "dir12/clip30.opus",
+        "samples": 35200,
+        "duration": 2.2,
+        "compressed_bytes": 4342
+      },
+      {
+        "name": "我的妈呀，这么多人啊",
+        "src": "我的妈呀，这么多人啊.mp3",
+        "path": "dir12/clip31.opus",
+        "samples": 31680,
+        "duration": 1.98,
+        "compressed_bytes": 3997
+      },
+      {
+        "name": "我觉得我可以打过他，相信我好吗",
+        "src": "我觉得我可以打过他，相信我好吗.mp3",
+        "path": "dir12/clip32.opus",
+        "samples": 42560,
+        "duration": 2.66,
+        "compressed_bytes": 5472
+      },
+      {
+        "name": "我这里有好东西噢，你们要吗",
+        "src": "我这里有好东西噢，你们要吗.mp3",
+        "path": "dir12/clip33.opus",
+        "samples": 54080,
+        "duration": 3.38,
+        "compressed_bytes": 7002
+      },
+      {
+        "name": "拜拜~",
+        "src": "拜拜~.mp3",
+        "path": "dir12/clip34.opus",
+        "samples": 60480,
+        "duration": 3.78,
+        "compressed_bytes": 5912
+      },
+      {
+        "name": "爱了爱了~啾咪",
+        "src": "爱了爱了~啾咪.mp3",
+        "path": "dir12/clip35.opus",
+        "samples": 41440,
+        "duration": 2.59,
+        "compressed_bytes": 5302
+      },
+      {
+        "name": "艾瑞巴蒂！嗨起来吧！",
+        "src": "艾瑞巴蒂！嗨起来吧！.mp3",
+        "path": "dir12/clip36.opus",
+        "samples": 27680,
+        "duration": 1.73,
+        "compressed_bytes": 3552
+      },
+      {
+        "name": "这世界太美好了，我爱这个世界",
+        "src": "这世界太美好了，我爱这个世界.mp3",
+        "path": "dir12/clip37.opus",
+        "samples": 64480,
+        "duration": 4.03,
+        "compressed_bytes": 6304
+      },
+      {
+        "name": "这么美的美女你都下得去手啊，哼！",
+        "src": "这么美的美女你都下得去手啊，哼！.mp3",
+        "path": "dir12/clip38.opus",
+        "samples": 49600,
+        "duration": 3.1,
+        "compressed_bytes": 6268
+      },
+      {
+        "name": "这就没意思了，这就没意思了",
+        "src": "这就没意思了，这就没意思了.mp3",
+        "path": "dir12/clip39.opus",
+        "samples": 61600,
+        "duration": 3.85,
+        "compressed_bytes": 5951
+      },
+      {
+        "name": "这谁受得了啊",
+        "src": "这谁受得了啊.mp3",
+        "path": "dir12/clip40.opus",
+        "samples": 40320,
+        "duration": 2.52,
+        "compressed_bytes": 5118
+      },
+      {
+        "name": "错了错了，对不起",
+        "src": "错了错了，对不起.mp3",
+        "path": "dir12/clip41.opus",
+        "samples": 59840,
+        "duration": 3.74,
+        "compressed_bytes": 5847
+      },
+      {
+        "name": "骑上我心爱的小摩托",
+        "src": "骑上我心爱的小摩托.mp3",
+        "path": "dir12/clip42.opus",
+        "samples": 315040,
+        "duration": 19.69,
+        "compressed_bytes": 31299
+      }
+    ]
+  },
+  {
+    "dir": "小明剑魔",
+    "dir_id": 13,
+    "dir_ascii": "dir13",
+    "files": [
+      {
+        "name": "0杠3",
+        "src": "0杠3.mp3",
+        "path": "dir13/clip00.opus",
+        "samples": 10880,
+        "duration": 0.68,
+        "compressed_bytes": 1318
+      },
+      {
+        "name": "mm我要这个",
+        "src": "mm我要这个.mp3",
+        "path": "dir13/clip01.opus",
+        "samples": 23680,
+        "duration": 1.48,
+        "compressed_bytes": 3040
+      },
+      {
+        "name": "mm看有花",
+        "src": "mm看有花.mp3",
+        "path": "dir13/clip02.opus",
+        "samples": 24160,
+        "duration": 1.51,
+        "compressed_bytes": 3245
+      },
+      {
+        "name": "MVP MVP",
+        "src": "MVP MVP.mp3",
+        "path": "dir13/clip03.opus",
+        "samples": 78400,
+        "duration": 4.9,
+        "compressed_bytes": 7719
+      },
+      {
+        "name": "MVP",
+        "src": "MVP.mp3",
+        "path": "dir13/clip04.opus",
+        "samples": 21280,
+        "duration": 1.33,
+        "compressed_bytes": 2619
+      },
+      {
+        "name": "七连败找问题",
+        "src": "七连败找问题.mp3",
+        "path": "dir13/clip05.opus",
+        "samples": 43200,
+        "duration": 2.7,
+        "compressed_bytes": 5527
+      },
+      {
+        "name": "三点零三点零",
+        "src": "三点零三点零.mp3",
+        "path": "dir13/clip06.opus",
+        "samples": 76640,
+        "duration": 4.79,
+        "compressed_bytes": 7424
+      },
+      {
+        "name": "为什么你会上不去",
+        "src": "为什么你会上不去.mp3",
+        "path": "dir13/clip07.opus",
+        "samples": 21920,
+        "duration": 1.37,
+        "compressed_bytes": 2771
+      },
+      {
+        "name": "为什么别人欺负你",
+        "src": "为什么别人欺负你.mp3",
+        "path": "dir13/clip08.opus",
+        "samples": 25280,
+        "duration": 1.58,
+        "compressed_bytes": 3234
+      },
+      {
+        "name": "为什么评分比我高",
+        "src": "为什么评分比我高.mp3",
+        "path": "dir13/clip09.opus",
+        "samples": 23680,
+        "duration": 1.48,
+        "compressed_bytes": 2976
+      },
+      {
+        "name": "买不起房也找问题",
+        "src": "买不起房也找问题.mp3",
+        "path": "dir13/clip10.opus",
+        "samples": 42080,
+        "duration": 2.63,
+        "compressed_bytes": 5449
+      },
+      {
+        "name": "什么都找自己问题",
+        "src": "什么都找自己问题.mp3",
+        "path": "dir13/clip11.opus",
+        "samples": 110080,
+        "duration": 6.88,
+        "compressed_bytes": 10819
+      },
+      {
+        "name": "作业写完了没有",
+        "src": "作业写完了没有.mp3",
+        "path": "dir13/clip12.opus",
+        "samples": 17280,
+        "duration": 1.08,
+        "compressed_bytes": 2175
+      },
+      {
+        "name": "你m做饭这个月评分3.0",
+        "src": "你m做饭这个月评分3.0.mp3",
+        "path": "dir13/clip13.opus",
+        "samples": 38080,
+        "duration": 2.38,
+        "compressed_bytes": 4856
+      },
+      {
+        "name": "你m是不是躺赢",
+        "src": "你m是不是躺赢🐶.mp3",
+        "path": "dir13/clip14.opus",
+        "samples": 42560,
+        "duration": 2.66,
+        "compressed_bytes": 5425
+      },
+      {
+        "name": "内个内个嘿命贵",
+        "src": "内个内个嘿命贵.mp3",
+        "path": "dir13/clip15.opus",
+        "samples": 28160,
+        "duration": 1.76,
+        "compressed_bytes": 3623
+      },
+      {
+        "name": "去洗点阳光青提",
+        "src": "去洗点阳光青提.mp3",
+        "path": "dir13/clip16.opus",
+        "samples": 25280,
+        "duration": 1.58,
+        "compressed_bytes": 3207
+      },
+      {
+        "name": "呜呜呜",
+        "src": "呜呜呜.mp3",
+        "path": "dir13/clip17.opus",
+        "samples": 22400,
+        "duration": 1.4,
+        "compressed_bytes": 2721
+      },
+      {
+        "name": "哎呦",
+        "src": "哎呦.mp3",
+        "path": "dir13/clip18.opus",
+        "samples": 21280,
+        "duration": 1.33,
+        "compressed_bytes": 2593
+      },
+      {
+        "name": "啊一看评分",
+        "src": "啊一看评分.mp3",
+        "path": "dir13/clip19.opus",
+        "samples": 25280,
+        "duration": 1.58,
+        "compressed_bytes": 3125
+      },
+      {
+        "name": "啊能这样算吗",
+        "src": "啊能这样算吗.mp3",
+        "path": "dir13/clip20.opus",
+        "samples": 28160,
+        "duration": 1.76,
+        "compressed_bytes": 3490
+      },
+      {
+        "name": "回答我",
+        "src": "回答我.mp3",
+        "path": "dir13/clip21.opus",
+        "samples": 15520,
+        "duration": 0.97,
+        "compressed_bytes": 1889
+      },
+      {
+        "name": "因为人家是通讯录",
+        "src": "因为人家是通讯录.mp3",
+        "path": "dir13/clip22.opus",
+        "samples": 22400,
+        "duration": 1.4,
+        "compressed_bytes": 2824
+      },
+      {
+        "name": "因为它比我嘿",
+        "src": "因为它比我嘿.mp3",
+        "path": "dir13/clip23.opus",
+        "samples": 22400,
+        "duration": 1.4,
+        "compressed_bytes": 2866
+      },
+      {
+        "name": "奎桑提",
+        "src": "奎桑提.mp3",
+        "path": "dir13/clip24.opus",
+        "samples": 13760,
+        "duration": 0.86,
+        "compressed_bytes": 1713
+      },
+      {
+        "name": "对线队友炸了",
+        "src": "对线队友炸了.mp3",
+        "path": "dir13/clip25.opus",
+        "samples": 42080,
+        "duration": 2.63,
+        "compressed_bytes": 5412
+      },
+      {
+        "name": "开一局",
+        "src": "开一局.mp3",
+        "path": "dir13/clip26.opus",
+        "samples": 20160,
+        "duration": 1.26,
+        "compressed_bytes": 2505
+      },
+      {
+        "name": "我q是顺发的吗",
+        "src": "我q是顺发的吗.mp3",
+        "path": "dir13/clip27.opus",
+        "samples": 21280,
+        "duration": 1.33,
+        "compressed_bytes": 2669
+      },
+      {
+        "name": "我老爸",
+        "src": "我老爸.mp3",
+        "path": "dir13/clip28.opus",
+        "samples": 21920,
+        "duration": 1.37,
+        "compressed_bytes": 2671
+      },
+      {
+        "name": "我老爸得了",
+        "src": "我老爸得了.mp3",
+        "path": "dir13/clip29.opus",
+        "samples": 15040,
+        "duration": 0.94,
+        "compressed_bytes": 1871
+      },
+      {
+        "name": "所以评分比我高",
+        "src": "所以评分比我高.mp3",
+        "path": "dir13/clip30.opus",
+        "samples": 22400,
+        "duration": 1.4,
+        "compressed_bytes": 2857
+      },
+      {
+        "name": "找问题找问题",
+        "src": "找问题找问题.mp3",
+        "path": "dir13/clip31.opus",
+        "samples": 49600,
+        "duration": 3.1,
+        "compressed_bytes": 6361
+      },
+      {
+        "name": "看着我眼睛北鼻",
+        "src": "看着我眼睛北鼻.mp3",
+        "path": "dir13/clip32.opus",
+        "samples": 24160,
+        "duration": 1.51,
+        "compressed_bytes": 3004
+      },
+      {
+        "name": "神经病神经病",
+        "src": "神经病神经病.mp3",
+        "path": "dir13/clip33.opus",
+        "samples": 75520,
+        "duration": 4.72,
+        "compressed_bytes": 7499
+      },
+      {
+        "name": "翻盘局mvp",
+        "src": "翻盘局mvp.mp3",
+        "path": "dir13/clip34.opus",
+        "samples": 22400,
+        "duration": 1.4,
+        "compressed_bytes": 2897
+      },
+      {
+        "name": "表情印在阳光青提",
+        "src": "表情印在阳光青提.mp3",
+        "path": "dir13/clip35.opus",
+        "samples": 44320,
+        "duration": 2.77,
+        "compressed_bytes": 5725
+      },
+      {
+        "name": "设计师",
+        "src": "设计师.mp3",
+        "path": "dir13/clip36.opus",
+        "samples": 52960,
+        "duration": 3.31,
+        "compressed_bytes": 6738
+      },
+      {
+        "name": "评分低就种族歧视",
+        "src": "评分低就种族歧视.mp3",
+        "path": "dir13/clip37.opus",
+        "samples": 26560,
+        "duration": 1.66,
+        "compressed_bytes": 3449
+      },
+      {
+        "name": "评分萌萌",
+        "src": "评分萌萌.mp3",
+        "path": "dir13/clip38.opus",
+        "samples": 32800,
+        "duration": 2.05,
+        "compressed_bytes": 4068
+      },
+      {
+        "name": "说剑魔超模的",
+        "src": "说剑魔超模的🐶.mp3",
+        "path": "dir13/clip39.opus",
+        "samples": 29440,
+        "duration": 1.84,
+        "compressed_bytes": 3762
+      },
+      {
+        "name": "躺赢",
+        "src": "躺赢🐶.mp3",
+        "path": "dir13/clip40.opus",
+        "samples": 21920,
+        "duration": 1.37,
+        "compressed_bytes": 2735
+      },
+      {
+        "name": "躺赢躺赢",
+        "src": "躺赢🐶躺赢🐶.mp3",
+        "path": "dir13/clip41.opus",
+        "samples": 77120,
+        "duration": 4.82,
+        "compressed_bytes": 7545
+      },
+      {
+        "name": "这个月评分3.0",
+        "src": "这个月评分3.0.mp3",
+        "path": "dir13/clip42.opus",
+        "samples": 44320,
+        "duration": 2.77,
+        "compressed_bytes": 5816
+      },
+      {
+        "name": "问剑魔q会不会扣",
+        "src": "问剑魔q会不会扣.mp3",
+        "path": "dir13/clip43.opus",
+        "samples": 44320,
+        "duration": 2.77,
+        "compressed_bytes": 5672
+      }
+    ]
+  },
+  {
+    "dir": "库里",
+    "dir_id": 14,
+    "dir_ascii": "dir14",
+    "files": [
+      {
+        "name": "Crossover很呦西",
+        "src": "Crossover很呦西.mp3",
+        "path": "dir14/clip00.opus",
+        "samples": 37440,
+        "duration": 2.34,
+        "compressed_bytes": 4804
+      },
+      {
+        "name": "what a发可",
+        "src": "what a发可.mp3",
+        "path": "dir14/clip01.opus",
+        "samples": 20160,
+        "duration": 1.26,
+        "compressed_bytes": 2626
+      },
+      {
+        "name": "一起呐喊苍天大地",
+        "src": "一起呐喊苍天大地.mp3",
+        "path": "dir14/clip02.opus",
+        "samples": 38080,
+        "duration": 2.38,
+        "compressed_bytes": 4946
+      },
+      {
+        "name": "一起呐喊苍天大地2",
+        "src": "一起呐喊苍天大地2.mp3",
+        "path": "dir14/clip03.opus",
+        "samples": 37440,
+        "duration": 2.34,
+        "compressed_bytes": 4860
+      },
+      {
+        "name": "一起来大声喊MVP",
+        "src": "一起来大声喊MVP.mp3",
+        "path": "dir14/clip04.opus",
+        "samples": 38560,
+        "duration": 2.41,
+        "compressed_bytes": 5043
+      },
+      {
+        "name": "三分三分手起刀落",
+        "src": "三分三分手起刀落.mp3",
+        "path": "dir14/clip05.opus",
+        "samples": 38560,
+        "duration": 2.41,
+        "compressed_bytes": 5055
+      },
+      {
+        "name": "三分球投得你没脾气",
+        "src": "三分球投得你没脾气.mp3",
+        "path": "dir14/clip06.opus",
+        "samples": 43200,
+        "duration": 2.7,
+        "compressed_bytes": 5617
+      },
+      {
+        "name": "不知道该如何是好",
+        "src": "不知道该如何是好.mp3",
+        "path": "dir14/clip07.opus",
+        "samples": 39200,
+        "duration": 2.45,
+        "compressed_bytes": 5140
+      },
+      {
+        "name": "你款拽酷炫的三分球",
+        "src": "你款拽酷炫的三分球.mp3",
+        "path": "dir14/clip08.opus",
+        "samples": 33920,
+        "duration": 2.12,
+        "compressed_bytes": 4402
+      },
+      {
+        "name": "你狂拽酷炫的球技",
+        "src": "你狂拽酷炫的球技.mp3",
+        "path": "dir14/clip09.opus",
+        "samples": 43200,
+        "duration": 2.7,
+        "compressed_bytes": 5565
+      },
+      {
+        "name": "关键时刻比分落后",
+        "src": "关键时刻比分落后.mp3",
+        "path": "dir14/clip10.opus",
+        "samples": 39680,
+        "duration": 2.48,
+        "compressed_bytes": 5153
+      },
+      {
+        "name": "又一个三分球",
+        "src": "又一个三分球.mp3",
+        "path": "dir14/clip11.opus",
+        "samples": 76000,
+        "duration": 4.75,
+        "compressed_bytes": 7469
+      },
+      {
+        "name": "啦啦啦啦",
+        "src": "啦啦啦啦.mp3",
+        "path": "dir14/clip12.opus",
+        "samples": 38080,
+        "duration": 2.38,
+        "compressed_bytes": 4743
+      },
+      {
+        "name": "啦啦啦啦1",
+        "src": "啦啦啦啦1.mp3",
+        "path": "dir14/clip13.opus",
+        "samples": 40960,
+        "duration": 2.56,
+        "compressed_bytes": 5348
+      },
+      {
+        "name": "啦啦啦啦2",
+        "src": "啦啦啦啦2.mp3",
+        "path": "dir14/clip14.opus",
+        "samples": 39680,
+        "duration": 2.48,
+        "compressed_bytes": 4956
+      },
+      {
+        "name": "啦啦啦啦3",
+        "src": "啦啦啦啦3.mp3",
+        "path": "dir14/clip15.opus",
+        "samples": 39200,
+        "duration": 2.45,
+        "compressed_bytes": 5129
+      },
+      {
+        "name": "干得对手很伤心",
+        "src": "干得对手很伤心.mp3",
+        "path": "dir14/clip16.opus",
+        "samples": 36320,
+        "duration": 2.27,
+        "compressed_bytes": 4641
+      },
+      {
+        "name": "库里库里库里",
+        "src": "库里库里库里.mp3",
+        "path": "dir14/clip17.opus",
+        "samples": 38080,
+        "duration": 2.38,
+        "compressed_bytes": 4978
+      },
+      {
+        "name": "库里库里库里2",
+        "src": "库里库里库里2.mp3",
+        "path": "dir14/clip18.opus",
+        "samples": 39680,
+        "duration": 2.48,
+        "compressed_bytes": 5180
+      },
+      {
+        "name": "我们永远都支持你",
+        "src": "我们永远都支持你.mp3",
+        "path": "dir14/clip19.opus",
+        "samples": 37440,
+        "duration": 2.34,
+        "compressed_bytes": 4763
+      },
+      {
+        "name": "技术能日天的库里",
+        "src": "技术能日天的库里.mp3",
+        "path": "dir14/clip20.opus",
+        "samples": 40320,
+        "duration": 2.52,
+        "compressed_bytes": 5194
+      },
+      {
+        "name": "无视防守上演神迹",
+        "src": "无视防守上演神迹.mp3",
+        "path": "dir14/clip21.opus",
+        "samples": 40320,
+        "duration": 2.52,
+        "compressed_bytes": 5230
+      },
+      {
+        "name": "来来来看我库里表演",
+        "src": "来来来看我库里表演.mp3",
+        "path": "dir14/clip22.opus",
+        "samples": 40320,
+        "duration": 2.52,
+        "compressed_bytes": 5244
+      },
+      {
+        "name": "漂亮的假动作很帅气",
+        "src": "漂亮的假动作很帅气.mp3",
+        "path": "dir14/clip23.opus",
+        "samples": 38560,
+        "duration": 2.41,
+        "compressed_bytes": 4983
+      },
+      {
+        "name": "表达球迷的一丝敬意",
+        "src": "表达球迷的一丝敬意.mp3",
+        "path": "dir14/clip24.opus",
+        "samples": 38080,
+        "duration": 2.38,
+        "compressed_bytes": 4861
+      },
+      {
+        "name": "让对手蒙圈的三分球",
+        "src": "让对手蒙圈的三分球.mp3",
+        "path": "dir14/clip25.opus",
+        "samples": 42080,
+        "duration": 2.63,
+        "compressed_bytes": 5402
+      },
+      {
+        "name": "让我们拜膜的三分球",
+        "src": "让我们拜膜的三分球.mp3",
+        "path": "dir14/clip26.opus",
+        "samples": 39200,
+        "duration": 2.45,
+        "compressed_bytes": 5090
+      },
+      {
+        "name": "请以此歌向偶像致敬",
+        "src": "请以此歌向偶像致敬.mp3",
+        "path": "dir14/clip27.opus",
+        "samples": 39680,
+        "duration": 2.48,
+        "compressed_bytes": 5046
+      },
+      {
+        "name": "这就是我们的库里",
+        "src": "这就是我们的库里.mp3",
+        "path": "dir14/clip28.opus",
+        "samples": 39680,
+        "duration": 2.48,
+        "compressed_bytes": 5141
+      }
+    ]
+  },
+  {
+    "dir": "我要验牌法国赌神",
+    "dir_id": 15,
+    "dir_ascii": "dir15",
+    "files": [
+      {
+        "name": "不用看了",
+        "src": "不用看了.mp3",
+        "path": "dir15/clip00.opus",
+        "samples": 14400,
+        "duration": 0.9,
+        "compressed_bytes": 1803
+      },
+      {
+        "name": "你跟他赌那我干什么",
+        "src": "你跟他赌那我干什么.mp3",
+        "path": "dir15/clip01.opus",
+        "samples": 24800,
+        "duration": 1.55,
+        "compressed_bytes": 3085
+      },
+      {
+        "name": "小儿科",
+        "src": "小儿科.mp3",
+        "path": "dir15/clip02.opus",
+        "samples": 15040,
+        "duration": 0.94,
+        "compressed_bytes": 1816
+      },
+      {
+        "name": "小瘪三",
+        "src": "小瘪三.mp3",
+        "path": "dir15/clip03.opus",
+        "samples": 17280,
+        "duration": 1.08,
+        "compressed_bytes": 2101
+      },
+      {
+        "name": "开牌",
+        "src": "开牌.mp3",
+        "path": "dir15/clip04.opus",
+        "samples": 9760,
+        "duration": 0.61,
+        "compressed_bytes": 1171
+      },
+      {
+        "name": "开牌啊",
+        "src": "开牌啊.mp3",
+        "path": "dir15/clip05.opus",
+        "samples": 13280,
+        "duration": 0.83,
+        "compressed_bytes": 1588
+      },
+      {
+        "name": "我要烟牌",
+        "src": "我要烟牌.mp3",
+        "path": "dir15/clip06.opus",
+        "samples": 21920,
+        "duration": 1.37,
+        "compressed_bytes": 2732
+      },
+      {
+        "name": "我要验牌",
+        "src": "我要验牌.mp3",
+        "path": "dir15/clip07.opus",
+        "samples": 19040,
+        "duration": 1.19,
+        "compressed_bytes": 2327
+      },
+      {
+        "name": "牌",
+        "src": "牌.mp3",
+        "path": "dir15/clip08.opus",
+        "samples": 8640,
+        "duration": 0.54,
+        "compressed_bytes": 933
+      },
+      {
+        "name": "牌没有问题",
+        "src": "牌没有问题.mp3",
+        "path": "dir15/clip09.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 2078
+      },
+      {
+        "name": "给我擦皮鞋",
+        "src": "给我擦皮鞋.mp3",
+        "path": "dir15/clip10.opus",
+        "samples": 19520,
+        "duration": 1.22,
+        "compressed_bytes": 2458
+      }
+    ]
+  },
+  {
+    "dir": "柚子厨",
+    "dir_id": 16,
+    "dir_ascii": "dir16",
+    "files": [
+      {
+        "name": "不要看不要看我",
+        "src": "不要看不要看我.mp3",
+        "path": "dir16/clip00.opus",
+        "samples": 60480,
+        "duration": 3.78,
+        "compressed_bytes": 6076
+      },
+      {
+        "name": "不要紧",
+        "src": "不要紧.mp3",
+        "path": "dir16/clip01.opus",
+        "samples": 19520,
+        "duration": 1.22,
+        "compressed_bytes": 2432
+      },
+      {
+        "name": "不，应该不可能，但是嗯",
+        "src": "不，应该不可能，但是嗯.mp3",
+        "path": "dir16/clip02.opus",
+        "samples": 84640,
+        "duration": 5.29,
+        "compressed_bytes": 8188
+      },
+      {
+        "name": "主人刚才摸的是本座前的骨头！",
+        "src": "主人刚才摸的是本座前的骨头！.mp3",
+        "path": "dir16/clip03.opus",
+        "samples": 79520,
+        "duration": 4.97,
+        "compressed_bytes": 7970
+      },
+      {
+        "name": "主人！！！",
+        "src": "主人！！！.mp3",
+        "path": "dir16/clip04.opus",
+        "samples": 73120,
+        "duration": 4.57,
+        "compressed_bytes": 7208
+      },
+      {
+        "name": "主人，你要不也来试试？",
+        "src": "主人，你要不也来试试？.mp3",
+        "path": "dir16/clip05.opus",
+        "samples": 47840,
+        "duration": 2.99,
+        "compressed_bytes": 5907
+      },
+      {
+        "name": "但你心里想了，看你脸上的表情就知道你刚才在想，我没觉得，我摸到胸部了啊",
+        "src": "但你心里想了，看你脸上的表情就知道你刚才在想，我没觉得，我摸到胸部了啊.mp3",
+        "path": "dir16/clip06.opus",
+        "samples": 100800,
+        "duration": 6.3,
+        "compressed_bytes": 9889
+      },
+      {
+        "name": "你你说什么？你你是在愚弄本座吗？",
+        "src": "你你说什么？你你是在愚弄本座吗？.mp3",
+        "path": "dir16/clip07.opus",
+        "samples": 92160,
+        "duration": 5.76,
+        "compressed_bytes": 9032
+      },
+      {
+        "name": "你这？",
+        "src": "你这？.mp3",
+        "path": "dir16/clip08.opus",
+        "samples": 24160,
+        "duration": 1.51,
+        "compressed_bytes": 2732
+      },
+      {
+        "name": "再说了，硬的是骨头！",
+        "src": "再说了，硬的是骨头！.mp3",
+        "path": "dir16/clip09.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 4080
+      },
+      {
+        "name": "到外面去，本座要和你单挑",
+        "src": "到外面去，本座要和你单挑.mp3",
+        "path": "dir16/clip10.opus",
+        "samples": 41440,
+        "duration": 2.59,
+        "compressed_bytes": 5086
+      },
+      {
+        "name": "可可恶",
+        "src": "可可恶.mp3",
+        "path": "dir16/clip11.opus",
+        "samples": 56960,
+        "duration": 3.56,
+        "compressed_bytes": 5279
+      },
+      {
+        "name": "呜呜呜啊啊啊",
+        "src": "呜呜呜啊啊啊.mp3",
+        "path": "dir16/clip12.opus",
+        "samples": 82400,
+        "duration": 5.15,
+        "compressed_bytes": 7727
+      },
+      {
+        "name": "咦咦诶主主主人",
+        "src": "咦咦诶主主主人.mp3",
+        "path": "dir16/clip13.opus",
+        "samples": 111200,
+        "duration": 6.95,
+        "compressed_bytes": 9173
+      },
+      {
+        "name": "咦竟然推出去那么远，真的碰得到？",
+        "src": "咦竟然推出去那么远，真的碰得到？.mp3",
+        "path": "dir16/clip14.opus",
+        "samples": 104320,
+        "duration": 6.52,
+        "compressed_bytes": 9125
+      },
+      {
+        "name": "咳咳，我要说了噢",
+        "src": "咳咳，我要说了噢.mp3",
+        "path": "dir16/clip15.opus",
+        "samples": 27680,
+        "duration": 1.73,
+        "compressed_bytes": 3099
+      },
+      {
+        "name": "哈喽",
+        "src": "哈喽.mp3",
+        "path": "dir16/clip16.opus",
+        "samples": 13280,
+        "duration": 0.83,
+        "compressed_bytes": 1601
+      },
+      {
+        "name": "哼",
+        "src": "哼.mp3",
+        "path": "dir16/clip17.opus",
+        "samples": 10400,
+        "duration": 0.65,
+        "compressed_bytes": 1220
+      },
+      {
+        "name": "唔唔好疼",
+        "src": "唔唔好疼.mp3",
+        "path": "dir16/clip18.opus",
+        "samples": 50720,
+        "duration": 3.17,
+        "compressed_bytes": 6368
+      },
+      {
+        "name": "唔早上好",
+        "src": "唔早上好.mp3",
+        "path": "dir16/clip19.opus",
+        "samples": 51840,
+        "duration": 3.24,
+        "compressed_bytes": 6515
+      },
+      {
+        "name": "啊啊啊",
+        "src": "啊啊啊.mp3",
+        "path": "dir16/clip20.opus",
+        "samples": 47200,
+        "duration": 2.95,
+        "compressed_bytes": 5801
+      },
+      {
+        "name": "啊有地？",
+        "src": "啊有地？.mp3",
+        "path": "dir16/clip21.opus",
+        "samples": 29920,
+        "duration": 1.87,
+        "compressed_bytes": 3357
+      },
+      {
+        "name": "当然了",
+        "src": "当然了.mp3",
+        "path": "dir16/clip22.opus",
+        "samples": 36800,
+        "duration": 2.3,
+        "compressed_bytes": 4076
+      },
+      {
+        "name": "想不通，本座都没法好好思考了",
+        "src": "想不通，本座都没法好好思考了.mp3",
+        "path": "dir16/clip23.opus",
+        "samples": 103040,
+        "duration": 6.44,
+        "compressed_bytes": 9916
+      },
+      {
+        "name": "我在网上搜索得知大城市流行这样说，难道不是吗",
+        "src": "我在网上搜索得知大城市流行这样说，难道不是吗.mp3",
+        "path": "dir16/clip24.opus",
+        "samples": 85760,
+        "duration": 5.36,
+        "compressed_bytes": 8267
+      },
+      {
+        "name": "所以本座才让你摸的",
+        "src": "所以本座才让你摸的.mp3",
+        "path": "dir16/clip25.opus",
+        "samples": 64000,
+        "duration": 4.0,
+        "compressed_bytes": 6263
+      },
+      {
+        "name": "早上好，有地",
+        "src": "早上好，有地.mp3",
+        "path": "dir16/clip26.opus",
+        "samples": 42080,
+        "duration": 2.63,
+        "compressed_bytes": 5315
+      },
+      {
+        "name": "有地，哈喽",
+        "src": "有地，哈喽.mp3",
+        "path": "dir16/clip27.opus",
+        "samples": 32800,
+        "duration": 2.05,
+        "compressed_bytes": 3680
+      },
+      {
+        "name": "来吧，想摸哪里都可以",
+        "src": "来吧，想摸哪里都可以.mp3",
+        "path": "dir16/clip28.opus",
+        "samples": 55360,
+        "duration": 3.46,
+        "compressed_bytes": 7029
+      },
+      {
+        "name": "果然如此！",
+        "src": "果然如此！.mp3",
+        "path": "dir16/clip29.opus",
+        "samples": 25280,
+        "duration": 1.58,
+        "compressed_bytes": 3083
+      },
+      {
+        "name": "竟然一边道歉一边损人！",
+        "src": "竟然一边道歉一边损人！.mp3",
+        "path": "dir16/clip30.opus",
+        "samples": 48960,
+        "duration": 3.06,
+        "compressed_bytes": 6282
+      },
+      {
+        "name": "而且本座能把你推出去，这也很奇怪啊",
+        "src": "而且本座能把你推出去，这也很奇怪啊.mp3",
+        "path": "dir16/clip31.opus",
+        "samples": 58720,
+        "duration": 3.67,
+        "compressed_bytes": 5847
+      },
+      {
+        "name": "而且请你放心，我昨天已经 认真查过朋友之间的问候语了",
+        "src": "而且请你放心，我昨天已经 认真查过朋友之间的问候语了.mp3",
+        "path": "dir16/clip32.opus",
+        "samples": 82400,
+        "duration": 5.15,
+        "compressed_bytes": 8011
+      },
+      {
+        "name": "被摸了 ，竟然被摸了",
+        "src": "被摸了 ，竟然被摸了.mp3",
+        "path": "dir16/clip33.opus",
+        "samples": 58720,
+        "duration": 3.67,
+        "compressed_bytes": 5710
+      },
+      {
+        "name": "还还还不是主人摸本座的胸部！",
+        "src": "还还还不是主人摸本座的胸部！.mp3",
+        "path": "dir16/clip34.opus",
+        "samples": 72000,
+        "duration": 4.5,
+        "compressed_bytes": 6922
+      },
+      {
+        "name": "都说了随便摸",
+        "src": "都说了随便摸.mp3",
+        "path": "dir16/clip35.opus",
+        "samples": 29920,
+        "duration": 1.87,
+        "compressed_bytes": 3496
+      }
+    ]
+  },
+  {
+    "dir": "牛来",
+    "dir_id": 17,
+    "dir_ascii": "dir17",
+    "files": [
+      {
+        "name": "妈妈",
+        "src": "妈妈.wav",
+        "path": "dir17/clip00.opus",
+        "samples": 40800,
+        "duration": 2.55,
+        "compressed_bytes": 5282
+      },
+      {
+        "name": "牛来",
+        "src": "牛来.wav",
+        "path": "dir17/clip01.opus",
+        "samples": 21600,
+        "duration": 1.35,
+        "compressed_bytes": 2829
+      }
+    ]
+  },
+  {
+    "dir": "王世坚",
+    "dir_id": 18,
+    "dir_ascii": "dir18",
     "files": [
       {
         "name": "《没出息》",
         "src": "《没出息》.mp3",
-        "path": "dir01/clip00.adpcm",
-        "samples": 400659,
-        "duration": 25.095,
-        "compressed_bytes": 200330
+        "path": "dir18/clip00.opus",
+        "samples": 403200,
+        "duration": 25.2,
+        "compressed_bytes": 39163
       },
       {
         "name": "不得了诶",
         "src": "不得了诶.mp3",
-        "path": "dir01/clip01.adpcm",
-        "samples": 16368,
-        "duration": 1.023,
-        "compressed_bytes": 8184
+        "path": "dir18/clip01.opus",
+        "samples": 17920,
+        "duration": 1.12,
+        "compressed_bytes": 2165
       },
       {
         "name": "专搞这种鸟事",
         "src": "专搞这种🐦事.mp3",
-        "path": "dir01/clip02.adpcm",
-        "samples": 23184,
-        "duration": 1.449,
-        "compressed_bytes": 11592
+        "path": "dir18/clip02.opus",
+        "samples": 24800,
+        "duration": 1.55,
+        "compressed_bytes": 3033
       },
       {
         "name": "为什么要睁眼说瞎话呢",
         "src": "为什么要睁眼说瞎话呢.mp3",
-        "path": "dir01/clip03.adpcm",
-        "samples": 38784,
-        "duration": 2.424,
-        "compressed_bytes": 19392
+        "path": "dir18/clip03.opus",
+        "samples": 40320,
+        "duration": 2.52,
+        "compressed_bytes": 5038
       },
       {
         "name": "他一呼你们百诺",
         "src": "他一呼你们百诺.mp3",
-        "path": "dir01/clip04.adpcm",
-        "samples": 29216,
-        "duration": 1.826,
-        "compressed_bytes": 14608
+        "path": "dir18/clip04.opus",
+        "samples": 30560,
+        "duration": 1.91,
+        "compressed_bytes": 3827
       },
       {
         "name": "他火了",
         "src": "他火了.mp3",
-        "path": "dir01/clip05.adpcm",
-        "samples": 11504,
-        "duration": 0.719,
-        "compressed_bytes": 5752
+        "path": "dir18/clip05.opus",
+        "samples": 12640,
+        "duration": 0.79,
+        "compressed_bytes": 1588
       },
       {
         "name": "他玩得起我们玩不起吗",
         "src": "他玩得起我们玩不起吗.mp3",
-        "path": "dir01/clip06.adpcm",
-        "samples": 35040,
-        "duration": 2.19,
-        "compressed_bytes": 17520
+        "path": "dir18/clip06.opus",
+        "samples": 36320,
+        "duration": 2.27,
+        "compressed_bytes": 4691
       },
       {
         "name": "你在哭什么哭",
         "src": "你在哭什么哭.mp3",
-        "path": "dir01/clip07.adpcm",
-        "samples": 26544,
-        "duration": 1.659,
-        "compressed_bytes": 13272
+        "path": "dir18/clip07.opus",
+        "samples": 28160,
+        "duration": 1.76,
+        "compressed_bytes": 3499
       },
       {
         "name": "你在哽咽什么啦",
         "src": "你在哽咽什么啦.mp3",
-        "path": "dir01/clip08.adpcm",
-        "samples": 29808,
-        "duration": 1.863,
-        "compressed_bytes": 14904
+        "path": "dir18/clip08.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 3965
       },
       {
         "name": "你就是谎话的源头诶",
         "src": "你就是谎话的源头诶.mp3",
-        "path": "dir01/clip09.adpcm",
-        "samples": 39152,
-        "duration": 2.447,
-        "compressed_bytes": 19576
+        "path": "dir18/clip09.opus",
+        "samples": 40320,
+        "duration": 2.52,
+        "compressed_bytes": 5193
       },
       {
         "name": "你懂",
         "src": "你懂.mp3",
-        "path": "dir01/clip10.adpcm",
-        "samples": 8640,
-        "duration": 0.54,
-        "compressed_bytes": 4320
+        "path": "dir18/clip10.opus",
+        "samples": 9760,
+        "duration": 0.61,
+        "compressed_bytes": 1223
       },
       {
         "name": "你要不要道歉",
         "src": "你要不要道歉.mp3",
-        "path": "dir01/clip11.adpcm",
-        "samples": 14400,
-        "duration": 0.9,
-        "compressed_bytes": 7200
+        "path": "dir18/clip11.opus",
+        "samples": 15520,
+        "duration": 0.97,
+        "compressed_bytes": 1907
       },
       {
         "name": "你讲这个都这个都完全讲不过去",
         "src": "你讲这个都这个都完全讲不过去.mp3",
-        "path": "dir01/clip12.adpcm",
-        "samples": 71856,
-        "duration": 4.491,
-        "compressed_bytes": 35928
+        "path": "dir18/clip12.opus",
+        "samples": 73120,
+        "duration": 4.57,
+        "compressed_bytes": 7131
       },
       {
         "name": "你那一些讲话用词噢还蛮高雅的",
         "src": "你那一些讲话用词噢还蛮高雅的.mp3",
-        "path": "dir01/clip13.adpcm",
-        "samples": 83567,
-        "duration": 5.223,
-        "compressed_bytes": 41784
+        "path": "dir18/clip13.opus",
+        "samples": 85280,
+        "duration": 5.33,
+        "compressed_bytes": 8211
       },
       {
         "name": "像鬼画符",
         "src": "像鬼画符.mp3",
-        "path": "dir01/clip14.adpcm",
-        "samples": 27440,
-        "duration": 1.715,
-        "compressed_bytes": 13720
+        "path": "dir18/clip14.opus",
+        "samples": 28800,
+        "duration": 1.8,
+        "compressed_bytes": 3709
       },
       {
         "name": "噢这个问到我的死穴",
         "src": "噢这个问到我的死穴.mp3",
-        "path": "dir01/clip15.adpcm",
-        "samples": 26720,
-        "duration": 1.67,
-        "compressed_bytes": 13360
+        "path": "dir18/clip15.opus",
+        "samples": 28160,
+        "duration": 1.76,
+        "compressed_bytes": 3594
       },
       {
         "name": "天底下有这种事",
         "src": "天底下有这种事.mp3",
-        "path": "dir01/clip16.adpcm",
-        "samples": 19631,
-        "duration": 1.227,
-        "compressed_bytes": 9816
+        "path": "dir18/clip16.opus",
+        "samples": 21280,
+        "duration": 1.33,
+        "compressed_bytes": 2610
       },
       {
         "name": "就是这么简单",
         "src": "就是这么简单.mp3",
-        "path": "dir01/clip17.adpcm",
-        "samples": 23616,
-        "duration": 1.476,
-        "compressed_bytes": 11808
+        "path": "dir18/clip17.opus",
+        "samples": 24800,
+        "duration": 1.55,
+        "compressed_bytes": 3074
       },
       {
         "name": "干不了什么好事",
         "src": "干不了什么好事.mp3",
-        "path": "dir01/clip18.adpcm",
-        "samples": 24032,
-        "duration": 1.502,
-        "compressed_bytes": 12016
+        "path": "dir18/clip18.opus",
+        "samples": 25280,
+        "duration": 1.58,
+        "compressed_bytes": 3244
       },
       {
         "name": "意外不意外",
         "src": "意外不意外.mp3",
-        "path": "dir01/clip19.adpcm",
-        "samples": 21856,
-        "duration": 1.366,
-        "compressed_bytes": 10928
+        "path": "dir18/clip19.opus",
+        "samples": 23040,
+        "duration": 1.44,
+        "compressed_bytes": 2886
       },
       {
         "name": "懂你就是都不做啊",
         "src": "懂你就是都不做啊.mp3",
-        "path": "dir01/clip20.adpcm",
-        "samples": 28271,
-        "duration": 1.767,
-        "compressed_bytes": 14136
+        "path": "dir18/clip20.opus",
+        "samples": 29920,
+        "duration": 1.87,
+        "compressed_bytes": 3710
       },
       {
         "name": "我真是不声唏嘘了",
         "src": "我真是不声唏嘘了.mp3",
-        "path": "dir01/clip21.adpcm",
-        "samples": 31600,
-        "duration": 1.975,
-        "compressed_bytes": 15800
+        "path": "dir18/clip21.opus",
+        "samples": 32800,
+        "duration": 2.05,
+        "compressed_bytes": 4194
       },
       {
         "name": "本来应该从从容容游刃有余",
         "src": "本来应该从从容容游刃有余.mp3",
-        "path": "dir01/clip22.adpcm",
-        "samples": 59040,
-        "duration": 3.69,
-        "compressed_bytes": 29520
+        "path": "dir18/clip22.opus",
+        "samples": 60480,
+        "duration": 3.78,
+        "compressed_bytes": 5888
       },
       {
         "name": "正事不干",
         "src": "正事不干.mp3",
-        "path": "dir01/clip23.adpcm",
-        "samples": 23712,
-        "duration": 1.482,
-        "compressed_bytes": 11856
+        "path": "dir18/clip23.opus",
+        "samples": 25280,
+        "duration": 1.58,
+        "compressed_bytes": 3120
       },
       {
         "name": "比划了半天什么都没做到",
         "src": "比划了半天什么都没做到.mp3",
-        "path": "dir01/clip24.adpcm",
-        "samples": 55824,
-        "duration": 3.489,
-        "compressed_bytes": 27912
+        "path": "dir18/clip24.opus",
+        "samples": 56960,
+        "duration": 3.56,
+        "compressed_bytes": 5565
       },
       {
         "name": "没出息",
         "src": "没出息.mp3",
-        "path": "dir01/clip25.adpcm",
-        "samples": 24815,
-        "duration": 1.551,
-        "compressed_bytes": 12408
+        "path": "dir18/clip25.opus",
+        "samples": 26560,
+        "duration": 1.66,
+        "compressed_bytes": 3299
       },
       {
         "name": "没有最扯只有更扯",
         "src": "没有最扯只有更扯.mp3",
-        "path": "dir01/clip26.adpcm",
-        "samples": 58704,
-        "duration": 3.669,
-        "compressed_bytes": 29352
+        "path": "dir18/clip26.opus",
+        "samples": 59840,
+        "duration": 3.74,
+        "compressed_bytes": 5808
       },
       {
         "name": "爱怎么做就怎么做",
         "src": "爱怎么做就怎么做.mp3",
-        "path": "dir01/clip27.adpcm",
-        "samples": 28144,
-        "duration": 1.759,
-        "compressed_bytes": 14072
+        "path": "dir18/clip27.opus",
+        "samples": 29440,
+        "duration": 1.84,
+        "compressed_bytes": 3720
       },
       {
         "name": "现在是匆匆忙忙",
         "src": "现在是匆匆忙忙.mp3",
-        "path": "dir01/clip28.adpcm",
-        "samples": 32200,
-        "duration": 2.013,
-        "compressed_bytes": 16100
+        "path": "dir18/clip28.opus",
+        "samples": 33440,
+        "duration": 2.09,
+        "compressed_bytes": 4228
       },
       {
         "name": "现在火烧到屁股了",
         "src": "现在火烧到屁股了.mp3",
-        "path": "dir01/clip29.adpcm",
-        "samples": 22976,
-        "duration": 1.436,
-        "compressed_bytes": 11488
+        "path": "dir18/clip29.opus",
+        "samples": 24160,
+        "duration": 1.51,
+        "compressed_bytes": 3094
       },
       {
         "name": "睁眼说瞎话",
         "src": "睁眼说瞎话.mp3",
-        "path": "dir01/clip30.adpcm",
-        "samples": 25232,
-        "duration": 1.577,
-        "compressed_bytes": 12616
+        "path": "dir18/clip30.opus",
+        "samples": 26560,
+        "duration": 1.66,
+        "compressed_bytes": 3338
       },
       {
         "name": "老天有眼呐",
         "src": "老天有眼呐.mp3",
-        "path": "dir01/clip31.adpcm",
-        "samples": 20432,
-        "duration": 1.277,
-        "compressed_bytes": 10216
+        "path": "dir18/clip31.opus",
+        "samples": 21920,
+        "duration": 1.37,
+        "compressed_bytes": 2686
       },
       {
         "name": "自由发挥",
         "src": "自由发挥.mp3",
-        "path": "dir01/clip32.adpcm",
-        "samples": 23872,
-        "duration": 1.492,
-        "compressed_bytes": 11936
+        "path": "dir18/clip32.opus",
+        "samples": 25280,
+        "duration": 1.58,
+        "compressed_bytes": 3212
       },
       {
         "name": "莫名其妙到极点",
         "src": "莫名其妙到极点.mp3",
-        "path": "dir01/clip33.adpcm",
-        "samples": 30032,
-        "duration": 1.877,
-        "compressed_bytes": 15016
+        "path": "dir18/clip33.opus",
+        "samples": 31680,
+        "duration": 1.98,
+        "compressed_bytes": 3912
       },
       {
         "name": "这个叫妖修",
         "src": "这个叫妖修.mp3",
-        "path": "dir01/clip34.adpcm",
-        "samples": 20448,
-        "duration": 1.278,
-        "compressed_bytes": 10224
+        "path": "dir18/clip34.opus",
+        "samples": 21920,
+        "duration": 1.37,
+        "compressed_bytes": 2748
       },
       {
         "name": "这是在扮演上帝耶",
         "src": "这是在扮演上帝耶.mp3",
-        "path": "dir01/clip35.adpcm",
-        "samples": 26896,
-        "duration": 1.681,
-        "compressed_bytes": 13448
+        "path": "dir18/clip35.opus",
+        "samples": 28160,
+        "duration": 1.76,
+        "compressed_bytes": 3526
       },
       {
         "name": "这是裁判兼球员耶",
         "src": "这是裁判兼球员耶.mp3",
-        "path": "dir01/clip36.adpcm",
-        "samples": 32400,
-        "duration": 2.025,
-        "compressed_bytes": 16200
+        "path": "dir18/clip36.opus",
+        "samples": 33920,
+        "duration": 2.12,
+        "compressed_bytes": 4372
       },
       {
         "name": "连滚带爬",
         "src": "连滚带爬.mp3",
-        "path": "dir01/clip37.adpcm",
-        "samples": 33360,
-        "duration": 2.085,
-        "compressed_bytes": 16680
+        "path": "dir18/clip37.opus",
+        "samples": 34560,
+        "duration": 2.16,
+        "compressed_bytes": 4379
       },
       {
         "name": "都是在你手上啊",
         "src": "都是在你手上啊.mp3",
-        "path": "dir01/clip38.adpcm",
-        "samples": 25296,
-        "duration": 1.581,
-        "compressed_bytes": 12648
+        "path": "dir18/clip38.opus",
+        "samples": 26560,
+        "duration": 1.66,
+        "compressed_bytes": 3449
       },
       {
         "name": "长他人威风灭自己志气",
         "src": "长他人威风灭自己志气.mp3",
-        "path": "dir01/clip39.adpcm",
-        "samples": 62272,
-        "duration": 3.892,
-        "compressed_bytes": 31136
+        "path": "dir18/clip39.opus",
+        "samples": 64000,
+        "duration": 4.0,
+        "compressed_bytes": 6238
       }
-    ],
-    "dir_ascii": "dir01"
+    ]
+  },
+  {
+    "dir": "科比",
+    "dir_id": 19,
+    "dir_ascii": "dir19",
+    "files": [
+      {
+        "name": "man",
+        "src": "man.mp3",
+        "path": "dir19/clip00.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 1942
+      },
+      {
+        "name": "man叫",
+        "src": "man叫.mp3",
+        "path": "dir19/clip01.opus",
+        "samples": 117440,
+        "duration": 7.34,
+        "compressed_bytes": 11567
+      },
+      {
+        "name": "What can",
+        "src": "What can.mp3",
+        "path": "dir19/clip02.opus",
+        "samples": 12640,
+        "duration": 0.79,
+        "compressed_bytes": 1530
+      },
+      {
+        "name": "啵",
+        "src": "啵.mp3",
+        "path": "dir19/clip03.opus",
+        "samples": 9760,
+        "duration": 0.61,
+        "compressed_bytes": 1087
+      },
+      {
+        "name": "持续man",
+        "src": "持续man.mp3",
+        "path": "dir19/clip04.opus",
+        "samples": 365760,
+        "duration": 22.86,
+        "compressed_bytes": 35801
+      },
+      {
+        "name": "曼巴out",
+        "src": "曼巴out.mp3",
+        "path": "dir19/clip05.opus",
+        "samples": 10880,
+        "duration": 0.68,
+        "compressed_bytes": 1308
+      },
+      {
+        "name": "曼巴变音1",
+        "src": "曼巴变音1.mp3",
+        "path": "dir19/clip06.opus",
+        "samples": 153280,
+        "duration": 9.58,
+        "compressed_bytes": 14972
+      },
+      {
+        "name": "曼巴变音10",
+        "src": "曼巴变音10.mp3",
+        "path": "dir19/clip07.opus",
+        "samples": 153280,
+        "duration": 9.58,
+        "compressed_bytes": 15013
+      },
+      {
+        "name": "曼巴变音11",
+        "src": "曼巴变音11.mp3",
+        "path": "dir19/clip08.opus",
+        "samples": 153280,
+        "duration": 9.58,
+        "compressed_bytes": 14849
+      },
+      {
+        "name": "曼巴变音12",
+        "src": "曼巴变音12.mp3",
+        "path": "dir19/clip09.opus",
+        "samples": 153280,
+        "duration": 9.58,
+        "compressed_bytes": 15053
+      },
+      {
+        "name": "曼巴变音13",
+        "src": "曼巴变音13.mp3",
+        "path": "dir19/clip10.opus",
+        "samples": 89920,
+        "duration": 5.62,
+        "compressed_bytes": 8708
+      },
+      {
+        "name": "曼巴变音14",
+        "src": "曼巴变音14.mp3",
+        "path": "dir19/clip11.opus",
+        "samples": 153280,
+        "duration": 9.58,
+        "compressed_bytes": 14867
+      },
+      {
+        "name": "曼巴变音15",
+        "src": "曼巴变音15.mp3",
+        "path": "dir19/clip12.opus",
+        "samples": 130720,
+        "duration": 8.17,
+        "compressed_bytes": 12810
+      },
+      {
+        "name": "曼巴变音16",
+        "src": "曼巴变音16.mp3",
+        "path": "dir19/clip13.opus",
+        "samples": 164160,
+        "duration": 10.26,
+        "compressed_bytes": 15952
+      },
+      {
+        "name": "曼巴变音17",
+        "src": "曼巴变音17.mp3",
+        "path": "dir19/clip14.opus",
+        "samples": 256320,
+        "duration": 16.02,
+        "compressed_bytes": 24652
+      },
+      {
+        "name": "曼巴变音18",
+        "src": "曼巴变音18.mp3",
+        "path": "dir19/clip15.opus",
+        "samples": 153280,
+        "duration": 9.58,
+        "compressed_bytes": 14951
+      },
+      {
+        "name": "曼巴变音19",
+        "src": "曼巴变音19.mp3",
+        "path": "dir19/clip16.opus",
+        "samples": 153280,
+        "duration": 9.58,
+        "compressed_bytes": 14910
+      },
+      {
+        "name": "曼巴变音2",
+        "src": "曼巴变音2.mp3",
+        "path": "dir19/clip17.opus",
+        "samples": 78400,
+        "duration": 4.9,
+        "compressed_bytes": 7572
+      },
+      {
+        "name": "曼巴变音20",
+        "src": "曼巴变音20.mp3",
+        "path": "dir19/clip18.opus",
+        "samples": 153280,
+        "duration": 9.58,
+        "compressed_bytes": 14760
+      },
+      {
+        "name": "曼巴变音21",
+        "src": "曼巴变音21.mp3",
+        "path": "dir19/clip19.opus",
+        "samples": 171680,
+        "duration": 10.73,
+        "compressed_bytes": 16757
+      },
+      {
+        "name": "曼巴变音22",
+        "src": "曼巴变音22.mp3",
+        "path": "dir19/clip20.opus",
+        "samples": 153280,
+        "duration": 9.58,
+        "compressed_bytes": 14902
+      },
+      {
+        "name": "曼巴变音3",
+        "src": "曼巴变音3.mp3",
+        "path": "dir19/clip21.opus",
+        "samples": 263840,
+        "duration": 16.49,
+        "compressed_bytes": 25530
+      },
+      {
+        "name": "曼巴变音4",
+        "src": "曼巴变音4.mp3",
+        "path": "dir19/clip22.opus",
+        "samples": 153280,
+        "duration": 9.58,
+        "compressed_bytes": 14878
+      },
+      {
+        "name": "曼巴变音5",
+        "src": "曼巴变音5.mp3",
+        "path": "dir19/clip23.opus",
+        "samples": 153280,
+        "duration": 9.58,
+        "compressed_bytes": 14773
+      },
+      {
+        "name": "曼巴变音6",
+        "src": "曼巴变音6.mp3",
+        "path": "dir19/clip24.opus",
+        "samples": 153280,
+        "duration": 9.58,
+        "compressed_bytes": 14907
+      },
+      {
+        "name": "曼巴变音7",
+        "src": "曼巴变音7.mp3",
+        "path": "dir19/clip25.opus",
+        "samples": 153280,
+        "duration": 9.58,
+        "compressed_bytes": 14862
+      },
+      {
+        "name": "曼巴变音8",
+        "src": "曼巴变音8.mp3",
+        "path": "dir19/clip26.opus",
+        "samples": 153280,
+        "duration": 9.58,
+        "compressed_bytes": 14847
+      },
+      {
+        "name": "曼巴变音9",
+        "src": "曼巴变音9.mp3",
+        "path": "dir19/clip27.opus",
+        "samples": 171680,
+        "duration": 10.73,
+        "compressed_bytes": 16735
+      },
+      {
+        "name": "曼巴笑声",
+        "src": "曼巴笑声.mp3",
+        "path": "dir19/clip28.opus",
+        "samples": 17920,
+        "duration": 1.12,
+        "compressed_bytes": 2281
+      },
+      {
+        "name": "直升机",
+        "src": "直升机.mp3",
+        "path": "dir19/clip29.opus",
+        "samples": 134720,
+        "duration": 8.42,
+        "compressed_bytes": 12702
+      }
+    ]
+  },
+  {
+    "dir": "纸片人捷风",
+    "dir_id": 20,
+    "dir_ascii": "dir20",
+    "files": [
+      {
+        "name": "boyboyb",
+        "src": "boyboyb.mp3",
+        "path": "dir20/clip00.opus",
+        "samples": 118080,
+        "duration": 7.38,
+        "compressed_bytes": 11772
+      },
+      {
+        "name": "不死鸟哈哈哈",
+        "src": "不死鸟哈哈哈.mp3",
+        "path": "dir20/clip01.opus",
+        "samples": 29920,
+        "duration": 1.87,
+        "compressed_bytes": 3887
+      },
+      {
+        "name": "不过你是不是忘记封墙了",
+        "src": "不过你是不是忘记封墙了.mp3",
+        "path": "dir20/clip02.opus",
+        "samples": 36320,
+        "duration": 2.27,
+        "compressed_bytes": 4741
+      },
+      {
+        "name": "你已被剥夺力量",
+        "src": "你已被剥夺力量.mp3",
+        "path": "dir20/clip03.opus",
+        "samples": 29920,
+        "duration": 1.87,
+        "compressed_bytes": 3759
+      },
+      {
+        "name": "你快点跪下给对面道歉",
+        "src": "你快点跪下给对面道歉.mp3",
+        "path": "dir20/clip04.opus",
+        "samples": 40320,
+        "duration": 2.52,
+        "compressed_bytes": 5205
+      },
+      {
+        "name": "你没事乱扔什么闪啊",
+        "src": "你没事乱扔什么闪啊.mp3",
+        "path": "dir20/clip05.opus",
+        "samples": 33440,
+        "duration": 2.09,
+        "compressed_bytes": 4427
+      },
+      {
+        "name": "别怕还有我呢",
+        "src": "别怕还有我呢.mp3",
+        "path": "dir20/clip06.opus",
+        "samples": 27040,
+        "duration": 1.69,
+        "compressed_bytes": 3457
+      },
+      {
+        "name": "别挡我的路_1",
+        "src": "别挡我的路_1.mp3",
+        "path": "dir20/clip07.opus",
+        "samples": 29920,
+        "duration": 1.87,
+        "compressed_bytes": 3915
+      },
+      {
+        "name": "呃_1",
+        "src": "呃_1.mp3",
+        "path": "dir20/clip08.opus",
+        "samples": 12640,
+        "duration": 0.79,
+        "compressed_bytes": 1617
+      },
+      {
+        "name": "呜呜我要不死鸟我要不死鸟",
+        "src": "呜呜我要不死鸟我要不死鸟.mp3",
+        "path": "dir20/clip09.opus",
+        "samples": 56960,
+        "duration": 3.56,
+        "compressed_bytes": 5672
+      },
+      {
+        "name": "呜呜贤者我要抱抱",
+        "src": "呜呜贤者我要抱抱.mp3",
+        "path": "dir20/clip10.opus",
+        "samples": 46720,
+        "duration": 2.92,
+        "compressed_bytes": 6086
+      },
+      {
+        "name": "呜我就要贤者",
+        "src": "呜我就要贤者.mp3",
+        "path": "dir20/clip11.opus",
+        "samples": 39200,
+        "duration": 2.45,
+        "compressed_bytes": 5119
+      },
+      {
+        "name": "咦嘻嘻嘻嘻（诡异的笑声）",
+        "src": "咦嘻嘻嘻嘻（诡异的笑声）.mp3",
+        "path": "dir20/clip12.opus",
+        "samples": 46720,
+        "duration": 2.92,
+        "compressed_bytes": 6066
+      },
+      {
+        "name": "哈哈哈2",
+        "src": "哈哈哈2.mp3",
+        "path": "dir20/clip13.opus",
+        "samples": 18400,
+        "duration": 1.15,
+        "compressed_bytes": 2353
+      },
+      {
+        "name": "哈哈哈_1",
+        "src": "哈哈哈_1.mp3",
+        "path": "dir20/clip14.opus",
+        "samples": 20800,
+        "duration": 1.3,
+        "compressed_bytes": 2719
+      },
+      {
+        "name": "哈哈我要跟贤者玩",
+        "src": "哈哈我要跟贤者玩.mp3",
+        "path": "dir20/clip15.opus",
+        "samples": 33440,
+        "duration": 2.09,
+        "compressed_bytes": 4505
+      },
+      {
+        "name": "哎刀马刀马",
+        "src": "哎刀马刀马.mp3",
+        "path": "dir20/clip16.opus",
+        "samples": 32800,
+        "duration": 2.05,
+        "compressed_bytes": 4230
+      },
+      {
+        "name": "哎刀马刀马2",
+        "src": "哎刀马刀马2.mp3",
+        "path": "dir20/clip17.opus",
+        "samples": 32320,
+        "duration": 2.02,
+        "compressed_bytes": 4190
+      },
+      {
+        "name": "哎刀马刀马刀马",
+        "src": "哎刀马刀马刀马.mp3",
+        "path": "dir20/clip18.opus",
+        "samples": 65120,
+        "duration": 4.07,
+        "compressed_bytes": 6432
+      },
+      {
+        "name": "哎呀我就唱嘿嘿嘿",
+        "src": "哎呀我就唱嘿嘿嘿.mp3",
+        "path": "dir20/clip19.opus",
+        "samples": 76640,
+        "duration": 4.79,
+        "compressed_bytes": 7443
+      },
+      {
+        "name": "哎呀气死我了",
+        "src": "哎呀气死我了.mp3",
+        "path": "dir20/clip20.opus",
+        "samples": 29440,
+        "duration": 1.84,
+        "compressed_bytes": 3978
+      },
+      {
+        "name": "哎呀贤者你别丢下我",
+        "src": "哎呀贤者你别丢下我.mp3",
+        "path": "dir20/clip21.opus",
+        "samples": 36800,
+        "duration": 2.3,
+        "compressed_bytes": 4937
+      },
+      {
+        "name": "啊我就要跟贤者玩我就要玩",
+        "src": "啊我就要跟贤者玩我就要玩.mp3",
+        "path": "dir20/clip22.opus",
+        "samples": 70240,
+        "duration": 4.39,
+        "compressed_bytes": 7068
+      },
+      {
+        "name": "啊这对嘛",
+        "src": "啊这对嘛.mp3",
+        "path": "dir20/clip23.opus",
+        "samples": 19040,
+        "duration": 1.19,
+        "compressed_bytes": 2438
+      },
+      {
+        "name": "啊？！",
+        "src": "啊？！.mp3",
+        "path": "dir20/clip24.opus",
+        "samples": 9760,
+        "duration": 0.61,
+        "compressed_bytes": 1297
+      },
+      {
+        "name": "啊？！！",
+        "src": "啊？！！.mp3",
+        "path": "dir20/clip25.opus",
+        "samples": 12640,
+        "duration": 0.79,
+        "compressed_bytes": 1658
+      },
+      {
+        "name": "嘿嘿嘿",
+        "src": "嘿嘿嘿.mp3",
+        "path": "dir20/clip26.opus",
+        "samples": 18400,
+        "duration": 1.15,
+        "compressed_bytes": 2315
+      },
+      {
+        "name": "嘿嘿嘿_1",
+        "src": "嘿嘿嘿_1.mp3",
+        "path": "dir20/clip27.opus",
+        "samples": 24800,
+        "duration": 1.55,
+        "compressed_bytes": 3297
+      },
+      {
+        "name": "囊囊囊囊囊囊",
+        "src": "囊囊囊囊囊囊.mp3",
+        "path": "dir20/clip28.opus",
+        "samples": 69760,
+        "duration": 4.36,
+        "compressed_bytes": 6739
+      },
+      {
+        "name": "我不要跟贤者玩了讨厌！",
+        "src": "我不要跟贤者玩了讨厌！.mp3",
+        "path": "dir20/clip29.opus",
+        "samples": 47840,
+        "duration": 2.99,
+        "compressed_bytes": 6145
+      },
+      {
+        "name": "挨刀马DJ2",
+        "src": "挨刀马DJ2.mp3",
+        "path": "dir20/clip30.opus",
+        "samples": 408320,
+        "duration": 25.52,
+        "compressed_bytes": 40388
+      },
+      {
+        "name": "棒棒棒2",
+        "src": "棒棒棒2.mp3",
+        "path": "dir20/clip31.opus",
+        "samples": 36320,
+        "duration": 2.27,
+        "compressed_bytes": 4796
+      },
+      {
+        "name": "棒棒棒棒",
+        "src": "棒棒棒棒.mp3",
+        "path": "dir20/clip32.opus",
+        "samples": 21280,
+        "duration": 1.33,
+        "compressed_bytes": 2784
+      },
+      {
+        "name": "棒棒棒棒！",
+        "src": "棒棒棒棒！.mp3",
+        "path": "dir20/clip33.opus",
+        "samples": 32800,
+        "duration": 2.05,
+        "compressed_bytes": 4106
+      },
+      {
+        "name": "欸嘿嘿",
+        "src": "欸嘿嘿.mp3",
+        "path": "dir20/clip34.opus",
+        "samples": 20160,
+        "duration": 1.26,
+        "compressed_bytes": 2610
+      },
+      {
+        "name": "气死我了",
+        "src": "气死我了.mp3",
+        "path": "dir20/clip35.opus",
+        "samples": 11520,
+        "duration": 0.72,
+        "compressed_bytes": 1458
+      },
+      {
+        "name": "沉默不是代表我的错",
+        "src": "沉默不是代表我的错.mp3",
+        "path": "dir20/clip36.opus",
+        "samples": 233920,
+        "duration": 14.62,
+        "compressed_bytes": 23278
+      },
+      {
+        "name": "耶这又来个黑铁",
+        "src": "耶这又来个黑铁.mp3",
+        "path": "dir20/clip37.opus",
+        "samples": 32320,
+        "duration": 2.02,
+        "compressed_bytes": 4049
+      },
+      {
+        "name": "苏坡爱豆的笑容",
+        "src": "苏坡爱豆的笑容.mp3",
+        "path": "dir20/clip38.opus",
+        "samples": 134240,
+        "duration": 8.39,
+        "compressed_bytes": 13327
+      },
+      {
+        "name": "诶呀呀",
+        "src": "诶呀呀.mp3",
+        "path": "dir20/clip39.opus",
+        "samples": 28800,
+        "duration": 1.8,
+        "compressed_bytes": 3798
+      },
+      {
+        "name": "诶呀气死我了",
+        "src": "诶呀气死我了.mp3",
+        "path": "dir20/clip40.opus",
+        "samples": 39200,
+        "duration": 2.45,
+        "compressed_bytes": 5153
+      },
+      {
+        "name": "诶我大招呢但我还有枪呢",
+        "src": "诶我大招呢但我还有枪呢.mp3",
+        "path": "dir20/clip41.opus",
+        "samples": 49600,
+        "duration": 3.1,
+        "compressed_bytes": 6464
+      },
+      {
+        "name": "诶谢谢你啊",
+        "src": "诶谢谢你啊.mp3",
+        "path": "dir20/clip42.opus",
+        "samples": 23680,
+        "duration": 1.48,
+        "compressed_bytes": 3058
+      },
+      {
+        "name": "贤者你看我",
+        "src": "贤者你看我.mp3",
+        "path": "dir20/clip43.opus",
+        "samples": 36320,
+        "duration": 2.27,
+        "compressed_bytes": 4544
+      },
+      {
+        "name": "那你想怎么样",
+        "src": "那你想怎么样.mp3",
+        "path": "dir20/clip44.opus",
+        "samples": 28160,
+        "duration": 1.76,
+        "compressed_bytes": 3681
+      },
+      {
+        "name": "那你能怎么样",
+        "src": "那你能怎么样.mp3",
+        "path": "dir20/clip45.opus",
+        "samples": 20160,
+        "duration": 1.26,
+        "compressed_bytes": 2626
+      },
+      {
+        "name": "难道他真的是赋能哥",
+        "src": "难道他真的是赋能哥.mp3",
+        "path": "dir20/clip46.opus",
+        "samples": 26560,
+        "duration": 1.66,
+        "compressed_bytes": 3447
+      },
+      {
+        "name": "颗秒",
+        "src": "颗秒.mp3",
+        "path": "dir20/clip47.opus",
+        "samples": 24160,
+        "duration": 1.51,
+        "compressed_bytes": 3194
+      },
+      {
+        "name": "颗秒2",
+        "src": "颗秒2.mp3",
+        "path": "dir20/clip48.opus",
+        "samples": 20160,
+        "duration": 1.26,
+        "compressed_bytes": 2685
+      },
+      {
+        "name": "鸡蛋里并没有放葱（犯错）",
+        "src": "鸡蛋里并没有放葱（犯错）.mp3",
+        "path": "dir20/clip49.opus",
+        "samples": 268480,
+        "duration": 16.78,
+        "compressed_bytes": 26738
+      }
+    ]
+  },
+  {
+    "dir": "金坷垃",
+    "dir_id": 21,
+    "dir_ascii": "dir21",
+    "files": [
+      {
+        "name": "一袋能顶两袋三",
+        "src": "一袋能顶两袋三.mp3",
+        "path": "dir21/clip00.opus",
+        "samples": 38560,
+        "duration": 2.41,
+        "compressed_bytes": 4957
+      },
+      {
+        "name": "不流失",
+        "src": "不流失.mp3",
+        "path": "dir21/clip01.opus",
+        "samples": 15040,
+        "duration": 0.94,
+        "compressed_bytes": 1910
+      },
+      {
+        "name": "不能打架",
+        "src": "不能打架.mp3",
+        "path": "dir21/clip02.opus",
+        "samples": 19040,
+        "duration": 1.19,
+        "compressed_bytes": 2321
+      },
+      {
+        "name": "不能打架2",
+        "src": "不能打架2.mp3",
+        "path": "dir21/clip03.opus",
+        "samples": 28160,
+        "duration": 1.76,
+        "compressed_bytes": 3345
+      },
+      {
+        "name": "不蒸发",
+        "src": "不蒸发.mp3",
+        "path": "dir21/clip04.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 2014
+      },
+      {
+        "name": "你们想干什么",
+        "src": "你们想干什么.mp3",
+        "path": "dir21/clip05.opus",
+        "samples": 25280,
+        "duration": 1.58,
+        "compressed_bytes": 3232
+      },
+      {
+        "name": "你们日本",
+        "src": "你们日本.mp3",
+        "path": "dir21/clip06.opus",
+        "samples": 19040,
+        "duration": 1.19,
+        "compressed_bytes": 2321
+      },
+      {
+        "name": "再也不像美国进口啦",
+        "src": "再也不像美国进口啦.mp3",
+        "path": "dir21/clip07.opus",
+        "samples": 40960,
+        "duration": 2.56,
+        "compressed_bytes": 5240
+      },
+      {
+        "name": "别想啦",
+        "src": "别想啦.mp3",
+        "path": "dir21/clip08.opus",
+        "samples": 17280,
+        "duration": 1.08,
+        "compressed_bytes": 2187
+      },
+      {
+        "name": "哈哈哈哈",
+        "src": "哈哈哈哈.mp3",
+        "path": "dir21/clip09.opus",
+        "samples": 32800,
+        "duration": 2.05,
+        "compressed_bytes": 4178
+      },
+      {
+        "name": "对美国农业危害大",
+        "src": "对美国农业危害大.mp3",
+        "path": "dir21/clip10.opus",
+        "samples": 37440,
+        "duration": 2.34,
+        "compressed_bytes": 4713
+      },
+      {
+        "name": "小鬼子真不傻",
+        "src": "小鬼子真不傻.mp3",
+        "path": "dir21/clip11.opus",
+        "samples": 32800,
+        "duration": 2.05,
+        "compressed_bytes": 4158
+      },
+      {
+        "name": "小麦亩产一千八",
+        "src": "小麦亩产一千八.mp3",
+        "path": "dir21/clip12.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 3963
+      },
+      {
+        "name": "必须要有金坷垃",
+        "src": "必须要有金坷垃.mp3",
+        "path": "dir21/clip13.opus",
+        "samples": 35680,
+        "duration": 2.23,
+        "compressed_bytes": 4513
+      },
+      {
+        "name": "必须要有金坷垃2",
+        "src": "必须要有金坷垃2.mp3",
+        "path": "dir21/clip14.opus",
+        "samples": 29920,
+        "duration": 1.87,
+        "compressed_bytes": 3773
+      },
+      {
+        "name": "怎么种庄稼",
+        "src": "怎么种庄稼.mp3",
+        "path": "dir21/clip15.opus",
+        "samples": 19520,
+        "duration": 1.22,
+        "compressed_bytes": 2479
+      },
+      {
+        "name": "我们的",
+        "src": "我们的.mp3",
+        "path": "dir21/clip16.opus",
+        "samples": 15040,
+        "duration": 0.94,
+        "compressed_bytes": 1880
+      },
+      {
+        "name": "我们都要支援他",
+        "src": "我们都要支援他.mp3",
+        "path": "dir21/clip17.opus",
+        "samples": 33920,
+        "duration": 2.12,
+        "compressed_bytes": 4316
+      },
+      {
+        "name": "我要金坷垃",
+        "src": "我要金坷垃.mp3",
+        "path": "dir21/clip18.opus",
+        "samples": 21920,
+        "duration": 1.37,
+        "compressed_bytes": 2720
+      },
+      {
+        "name": "我要金坷垃2",
+        "src": "我要金坷垃2.mp3",
+        "path": "dir21/clip19.opus",
+        "samples": 24160,
+        "duration": 1.51,
+        "compressed_bytes": 3058
+      },
+      {
+        "name": "日本的粮食",
+        "src": "日本的粮食.mp3",
+        "path": "dir21/clip20.opus",
+        "samples": 20160,
+        "duration": 1.26,
+        "compressed_bytes": 2577
+      },
+      {
+        "name": "日本资源太缺乏",
+        "src": "日本资源太缺乏.mp3",
+        "path": "dir21/clip21.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 4000
+      },
+      {
+        "name": "是我的",
+        "src": "是我的.mp3",
+        "path": "dir21/clip22.opus",
+        "samples": 17280,
+        "duration": 1.08,
+        "compressed_bytes": 2196
+      },
+      {
+        "name": "氮麟钾",
+        "src": "氮麟钾.mp3",
+        "path": "dir21/clip23.opus",
+        "samples": 17280,
+        "duration": 1.08,
+        "compressed_bytes": 2157
+      },
+      {
+        "name": "没有金坷垃",
+        "src": "没有金坷垃.mp3",
+        "path": "dir21/clip24.opus",
+        "samples": 19520,
+        "duration": 1.22,
+        "compressed_bytes": 2503
+      },
+      {
+        "name": "狡猾",
+        "src": "狡猾.mp3",
+        "path": "dir21/clip25.opus",
+        "samples": 20800,
+        "duration": 1.3,
+        "compressed_bytes": 2541
+      },
+      {
+        "name": "狡猾2",
+        "src": "狡猾2.mp3",
+        "path": "dir21/clip26.opus",
+        "samples": 17920,
+        "duration": 1.12,
+        "compressed_bytes": 2199
+      },
+      {
+        "name": "用了金坷垃2",
+        "src": "用了金坷垃2.mp3",
+        "path": "dir21/clip27.opus",
+        "samples": 24160,
+        "duration": 1.51,
+        "compressed_bytes": 3054
+      },
+      {
+        "name": "直接肥料都涨价",
+        "src": "直接肥料都涨价.mp3",
+        "path": "dir21/clip28.opus",
+        "samples": 28160,
+        "duration": 1.76,
+        "compressed_bytes": 3636
+      },
+      {
+        "name": "绝不能给他",
+        "src": "绝不能给他.mp3",
+        "path": "dir21/clip29.opus",
+        "samples": 25920,
+        "duration": 1.62,
+        "compressed_bytes": 3233
+      },
+      {
+        "name": "肥料参了金坷垃",
+        "src": "肥料参了金坷垃.mp3",
+        "path": "dir21/clip30.opus",
+        "samples": 35680,
+        "duration": 2.23,
+        "compressed_bytes": 4548
+      },
+      {
+        "name": "肥料参了金坷垃2",
+        "src": "肥料参了金坷垃2.mp3",
+        "path": "dir21/clip31.opus",
+        "samples": 29920,
+        "duration": 1.87,
+        "compressed_bytes": 3764
+      },
+      {
+        "name": "肥料参了金坷垃3",
+        "src": "肥料参了金坷垃3.mp3",
+        "path": "dir21/clip32.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 3951
+      },
+      {
+        "name": "能吸收两米下地",
+        "src": "能吸收两米下地.mp3",
+        "path": "dir21/clip33.opus",
+        "samples": 30560,
+        "duration": 1.91,
+        "compressed_bytes": 3907
+      },
+      {
+        "name": "谁说对了就给他",
+        "src": "谁说对了就给他.mp3",
+        "path": "dir21/clip34.opus",
+        "samples": 32800,
+        "duration": 2.05,
+        "compressed_bytes": 4186
+      },
+      {
+        "name": "金坷垃",
+        "src": "金坷垃.mp3",
+        "path": "dir21/clip35.opus",
+        "samples": 14400,
+        "duration": 0.9,
+        "compressed_bytes": 1843
+      },
+      {
+        "name": "金坷垃2",
+        "src": "金坷垃2.mp3",
+        "path": "dir21/clip36.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 2028
+      },
+      {
+        "name": "金坷垃…",
+        "src": "金坷垃….mp3",
+        "path": "dir21/clip37.opus",
+        "samples": 25280,
+        "duration": 1.58,
+        "compressed_bytes": 3175
+      },
+      {
+        "name": "金坷垃……",
+        "src": "金坷垃…….mp3",
+        "path": "dir21/clip38.opus",
+        "samples": 17280,
+        "duration": 1.08,
+        "compressed_bytes": 2120
+      },
+      {
+        "name": "金坷垃好处都有啥",
+        "src": "金坷垃好处都有啥.mp3",
+        "path": "dir21/clip39.opus",
+        "samples": 36320,
+        "duration": 2.27,
+        "compressed_bytes": 4651
+      },
+      {
+        "name": "金坷垃给了他",
+        "src": "金坷垃给了他.mp3",
+        "path": "dir21/clip40.opus",
+        "samples": 27040,
+        "duration": 1.69,
+        "compressed_bytes": 3355
+      },
+      {
+        "name": "零浪费",
+        "src": "零浪费.mp3",
+        "path": "dir21/clip41.opus",
+        "samples": 19520,
+        "duration": 1.22,
+        "compressed_bytes": 2444
+      },
+      {
+        "name": "非洲农业不发达",
+        "src": "非洲农业不发达.mp3",
+        "path": "dir21/clip42.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 3940
+      },
+      {
+        "name": "非洲农民不发达",
+        "src": "非洲农民不发达.mp3",
+        "path": "dir21/clip43.opus",
+        "samples": 27040,
+        "duration": 1.69,
+        "compressed_bytes": 3423
+      }
+    ]
+  },
+  {
+    "dir": "高松灯",
+    "dir_id": 22,
+    "dir_ascii": "dir22",
+    "files": [
+      {
+        "name": "Rikki～",
+        "src": "Rikki～.mp3",
+        "path": "dir22/clip00.opus",
+        "samples": 25280,
+        "duration": 1.58,
+        "compressed_bytes": 3181
+      },
+      {
+        "name": "不要",
+        "src": "不要.mp3",
+        "path": "dir22/clip01.opus",
+        "samples": 18400,
+        "duration": 1.15,
+        "compressed_bytes": 2110
+      },
+      {
+        "name": "为什么要演奏春日影",
+        "src": "为什么要演奏春日影.mp3",
+        "path": "dir22/clip02.opus",
+        "samples": 39680,
+        "duration": 2.48,
+        "compressed_bytes": 4993
+      },
+      {
+        "name": "偶内盖",
+        "src": "偶内盖.mp3",
+        "path": "dir22/clip03.opus",
+        "samples": 20160,
+        "duration": 1.26,
+        "compressed_bytes": 2516
+      },
+      {
+        "name": "咕咕嘎嘎合集",
+        "src": "咕咕嘎嘎合集.mp3",
+        "path": "dir22/clip04.opus",
+        "samples": 232640,
+        "duration": 14.54,
+        "compressed_bytes": 22726
+      },
+      {
+        "name": "咕咕嘎嘎！！！（超绝尾音）",
+        "src": "咕咕嘎嘎！！！（超绝尾音）.mp3",
+        "path": "dir22/clip05.opus",
+        "samples": 64000,
+        "duration": 4.0,
+        "compressed_bytes": 6424
+      },
+      {
+        "name": "咕咕嘎嘎！（喷怒）",
+        "src": "咕咕嘎嘎！（喷怒）.mp3",
+        "path": "dir22/clip06.opus",
+        "samples": 32320,
+        "duration": 2.02,
+        "compressed_bytes": 4100
+      },
+      {
+        "name": "咕咕嘎嘎（沉重）",
+        "src": "咕咕嘎嘎（沉重）.mp3",
+        "path": "dir22/clip07.opus",
+        "samples": 31040,
+        "duration": 1.94,
+        "compressed_bytes": 4054
+      },
+      {
+        "name": "咕！咕！嘎嘎！（忍无可忍）",
+        "src": "咕！咕！嘎嘎！（忍无可忍）.mp3",
+        "path": "dir22/clip08.opus",
+        "samples": 37440,
+        "duration": 2.34,
+        "compressed_bytes": 5079
+      },
+      {
+        "name": "咪咪咪",
+        "src": "咪咪咪.mp3",
+        "path": "dir22/clip09.opus",
+        "samples": 304160,
+        "duration": 19.01,
+        "compressed_bytes": 30324
+      },
+      {
+        "name": "哈？",
+        "src": "哈？.mp3",
+        "path": "dir22/clip10.opus",
+        "samples": 18400,
+        "duration": 1.15,
+        "compressed_bytes": 2350
+      },
+      {
+        "name": "唐笑",
+        "src": "唐笑.mp3",
+        "path": "dir22/clip11.opus",
+        "samples": 115200,
+        "duration": 7.2,
+        "compressed_bytes": 11456
+      },
+      {
+        "name": "囊囊囊",
+        "src": "囊囊囊.mp3",
+        "path": "dir22/clip12.opus",
+        "samples": 120320,
+        "duration": 7.52,
+        "compressed_bytes": 11924
+      },
+      {
+        "name": "天空",
+        "src": "天空.mp3",
+        "path": "dir22/clip13.opus",
+        "samples": 276480,
+        "duration": 17.28,
+        "compressed_bytes": 27515
+      },
+      {
+        "name": "希腊奶",
+        "src": "希腊奶.mp3",
+        "path": "dir22/clip14.opus",
+        "samples": 25280,
+        "duration": 1.58,
+        "compressed_bytes": 3315
+      },
+      {
+        "name": "我从南极来",
+        "src": "我从南极来.mp3",
+        "path": "dir22/clip15.opus",
+        "samples": 305280,
+        "duration": 19.08,
+        "compressed_bytes": 29520
+      },
+      {
+        "name": "我要拉黑他",
+        "src": "我要拉黑他.mp3",
+        "path": "dir22/clip16.opus",
+        "samples": 15040,
+        "duration": 0.94,
+        "compressed_bytes": 1761
+      },
+      {
+        "name": "我要退出苦来兮苦",
+        "src": "我要退出苦来兮苦.mp3",
+        "path": "dir22/clip17.opus",
+        "samples": 126720,
+        "duration": 7.92,
+        "compressed_bytes": 12329
+      },
+      {
+        "name": "无趣的女人",
+        "src": "无趣的女人.mp3",
+        "path": "dir22/clip18.opus",
+        "samples": 35200,
+        "duration": 2.2,
+        "compressed_bytes": 4440
+      },
+      {
+        "name": "有趣的女人",
+        "src": "有趣的女人.mp3",
+        "path": "dir22/clip19.opus",
+        "samples": 35680,
+        "duration": 2.23,
+        "compressed_bytes": 4414
+      },
+      {
+        "name": "欸，那我呢？",
+        "src": "欸，那我呢？.mp3",
+        "path": "dir22/clip20.opus",
+        "samples": 47200,
+        "duration": 2.95,
+        "compressed_bytes": 6084
+      },
+      {
+        "name": "满脑子都是自己呢",
+        "src": "满脑子都是自己呢.mp3",
+        "path": "dir22/clip21.opus",
+        "samples": 59840,
+        "duration": 3.74,
+        "compressed_bytes": 5794
+      },
+      {
+        "name": "灵感菇",
+        "src": "灵感菇.mp3",
+        "path": "dir22/clip22.opus",
+        "samples": 134240,
+        "duration": 8.39,
+        "compressed_bytes": 13269
+      },
+      {
+        "name": "犯错",
+        "src": "犯错.mp3",
+        "path": "dir22/clip23.opus",
+        "samples": 225280,
+        "duration": 14.08,
+        "compressed_bytes": 22472
+      },
+      {
+        "name": "祥 移動",
+        "src": "祥 移動.mp3",
+        "path": "dir22/clip24.opus",
+        "samples": 41440,
+        "duration": 2.59,
+        "compressed_bytes": 5254
+      },
+      {
+        "name": "糖哭",
+        "src": "糖哭.mp3",
+        "path": "dir22/clip25.opus",
+        "samples": 97920,
+        "duration": 6.12,
+        "compressed_bytes": 9487
+      },
+      {
+        "name": "组一辈子乐队",
+        "src": "组一辈子乐队.mp3",
+        "path": "dir22/clip26.opus",
+        "samples": 80640,
+        "duration": 5.04,
+        "compressed_bytes": 7241
+      },
+      {
+        "name": "要我怎么做",
+        "src": "要我怎么做.mp3",
+        "path": "dir22/clip27.opus",
+        "samples": 63360,
+        "duration": 3.96,
+        "compressed_bytes": 6354
+      },
+      {
+        "name": "要是没有小祥的话",
+        "src": "要是没有小祥的话.mp3",
+        "path": "dir22/clip28.opus",
+        "samples": 41440,
+        "duration": 2.59,
+        "compressed_bytes": 5476
+      },
+      {
+        "name": "赛亚库",
+        "src": "赛亚库.mp3",
+        "path": "dir22/clip29.opus",
+        "samples": 23040,
+        "duration": 1.44,
+        "compressed_bytes": 2890
+      },
+      {
+        "name": "黄瓜尖叫",
+        "src": "黄瓜尖叫.mp3",
+        "path": "dir22/clip30.opus",
+        "samples": 51200,
+        "duration": 3.2,
+        "compressed_bytes": 6530
+      },
+      {
+        "name": "（怒吼）额啊 咕咕嘎嘎",
+        "src": "（怒吼）额啊 咕咕嘎嘎.mp3",
+        "path": "dir22/clip31.opus",
+        "samples": 49600,
+        "duration": 3.1,
+        "compressed_bytes": 6517
+      }
+    ]
+  },
+  {
+    "dir": "鸡乐",
+    "dir_id": 23,
+    "dir_ascii": "dir23",
+    "files": [
+      {
+        "name": "DJ鸡",
+        "src": "DJ鸡.mp3",
+        "path": "dir23/clip00.opus",
+        "samples": 275840,
+        "duration": 17.24,
+        "compressed_bytes": 26800
+      },
+      {
+        "name": "ngmhhy",
+        "src": "ngmhhy.mp3",
+        "path": "dir23/clip01.opus",
+        "samples": 63360,
+        "duration": 3.96,
+        "compressed_bytes": 5880
+      },
+      {
+        "name": "rap鸡",
+        "src": "rap鸡.mp3",
+        "path": "dir23/clip02.opus",
+        "samples": 152640,
+        "duration": 9.54,
+        "compressed_bytes": 14925
+      },
+      {
+        "name": "yhhmgn",
+        "src": "yhhmgn.mp3",
+        "path": "dir23/clip03.opus",
+        "samples": 63360,
+        "duration": 3.96,
+        "compressed_bytes": 6072
+      },
+      {
+        "name": "专属BGM",
+        "src": "专属BGM.mp3",
+        "path": "dir23/clip04.opus",
+        "samples": 181440,
+        "duration": 11.34,
+        "compressed_bytes": 17986
+      },
+      {
+        "name": "个人练习坤",
+        "src": "个人练习坤.mp3",
+        "path": "dir23/clip05.opus",
+        "samples": 12640,
+        "duration": 0.79,
+        "compressed_bytes": 1514
+      },
+      {
+        "name": "二手鸡",
+        "src": "二手鸡.mp3",
+        "path": "dir23/clip06.opus",
+        "samples": 373280,
+        "duration": 23.33,
+        "compressed_bytes": 36685
+      },
+      {
+        "name": "只因你太美",
+        "src": "只因你太美.mp3",
+        "path": "dir23/clip07.opus",
+        "samples": 276480,
+        "duration": 17.28,
+        "compressed_bytes": 26866
+      },
+      {
+        "name": "哇 什么情况",
+        "src": "哇 什么情况.mp3",
+        "path": "dir23/clip08.opus",
+        "samples": 26560,
+        "duration": 1.66,
+        "compressed_bytes": 3377
+      },
+      {
+        "name": "哇 什么情况1",
+        "src": "哇 什么情况1.mp3",
+        "path": "dir23/clip09.opus",
+        "samples": 36320,
+        "duration": 2.27,
+        "compressed_bytes": 4605
+      },
+      {
+        "name": "哇呵呵",
+        "src": "哇呵呵.mp3",
+        "path": "dir23/clip10.opus",
+        "samples": 29920,
+        "duration": 1.87,
+        "compressed_bytes": 3647
+      },
+      {
+        "name": "哇真的是你",
+        "src": "哇真的是你.mp3",
+        "path": "dir23/clip11.opus",
+        "samples": 21280,
+        "duration": 1.33,
+        "compressed_bytes": 2671
+      },
+      {
+        "name": "哈哈",
+        "src": "哈哈.mp3",
+        "path": "dir23/clip12.opus",
+        "samples": 19040,
+        "duration": 1.19,
+        "compressed_bytes": 2017
+      },
+      {
+        "name": "哈哈_1",
+        "src": "哈哈_1.mp3",
+        "path": "dir23/clip13.opus",
+        "samples": 21280,
+        "duration": 1.33,
+        "compressed_bytes": 2599
+      },
+      {
+        "name": "哎呀",
+        "src": "哎呀.mp3",
+        "path": "dir23/clip14.opus",
+        "samples": 28160,
+        "duration": 1.76,
+        "compressed_bytes": 3477
+      },
+      {
+        "name": "哎呦",
+        "src": "哎呦.mp3",
+        "path": "dir23/clip15.opus",
+        "samples": 25280,
+        "duration": 1.58,
+        "compressed_bytes": 3230
+      },
+      {
+        "name": "哎呦哈哈",
+        "src": "哎呦哈哈.mp3",
+        "path": "dir23/clip16.opus",
+        "samples": 44960,
+        "duration": 2.81,
+        "compressed_bytes": 5682
+      },
+      {
+        "name": "哎哎嗨呦",
+        "src": "哎哎嗨呦.mp3",
+        "path": "dir23/clip17.opus",
+        "samples": 35680,
+        "duration": 2.23,
+        "compressed_bytes": 4741
+      },
+      {
+        "name": "啊～",
+        "src": "啊～.mp3",
+        "path": "dir23/clip18.opus",
+        "samples": 32800,
+        "duration": 2.05,
+        "compressed_bytes": 4107
+      },
+      {
+        "name": "嗷 回手掏",
+        "src": "嗷 回手掏.mp3",
+        "path": "dir23/clip19.opus",
+        "samples": 27040,
+        "duration": 1.69,
+        "compressed_bytes": 3583
+      },
+      {
+        "name": "嗷 回手掏1",
+        "src": "嗷 回手掏1.mp3",
+        "path": "dir23/clip20.opus",
+        "samples": 35680,
+        "duration": 2.23,
+        "compressed_bytes": 4560
+      },
+      {
+        "name": "坤话",
+        "src": "坤话.mp3",
+        "path": "dir23/clip21.opus",
+        "samples": 183200,
+        "duration": 11.45,
+        "compressed_bytes": 18194
+      },
+      {
+        "name": "尖叫鸡",
+        "src": "尖叫鸡.mp3",
+        "path": "dir23/clip22.opus",
+        "samples": 124480,
+        "duration": 7.78,
+        "compressed_bytes": 12120
+      },
+      {
+        "name": "干嘛啊～_1",
+        "src": "干嘛啊～_1.mp3",
+        "path": "dir23/clip23.opus",
+        "samples": 24160,
+        "duration": 1.51,
+        "compressed_bytes": 3048
+      },
+      {
+        "name": "惊魂鸡",
+        "src": "惊魂鸡.mp3",
+        "path": "dir23/clip24.opus",
+        "samples": 266080,
+        "duration": 16.63,
+        "compressed_bytes": 25434
+      },
+      {
+        "name": "新年鸡",
+        "src": "新年鸡.mp3",
+        "path": "dir23/clip25.opus",
+        "samples": 399680,
+        "duration": 24.98,
+        "compressed_bytes": 38792
+      },
+      {
+        "name": "桃花鸡",
+        "src": "桃花鸡.mp3",
+        "path": "dir23/clip26.opus",
+        "samples": 321440,
+        "duration": 20.09,
+        "compressed_bytes": 30878
+      },
+      {
+        "name": "灰勒塔德医生",
+        "src": "灰勒塔德医生.mp3",
+        "path": "dir23/clip27.opus",
+        "samples": 23680,
+        "duration": 1.48,
+        "compressed_bytes": 3173
+      },
+      {
+        "name": "灰勒塔德钱兔",
+        "src": "灰勒塔德钱兔.mp3",
+        "path": "dir23/clip28.opus",
+        "samples": 21280,
+        "duration": 1.33,
+        "compressed_bytes": 2788
+      },
+      {
+        "name": "盗窃会不会",
+        "src": "盗窃会不会.mp3",
+        "path": "dir23/clip29.opus",
+        "samples": 25280,
+        "duration": 1.58,
+        "compressed_bytes": 3303
+      },
+      {
+        "name": "真正的鳗",
+        "src": "真正的鳗.mp3",
+        "path": "dir23/clip30.opus",
+        "samples": 21920,
+        "duration": 1.37,
+        "compressed_bytes": 2713
+      },
+      {
+        "name": "英文名",
+        "src": "英文名.mp3",
+        "path": "dir23/clip31.opus",
+        "samples": 17920,
+        "duration": 1.12,
+        "compressed_bytes": 2189
+      },
+      {
+        "name": "蔡徐坤",
+        "src": "蔡徐坤.mp3",
+        "path": "dir23/clip32.opus",
+        "samples": 12640,
+        "duration": 0.79,
+        "compressed_bytes": 1424
+      },
+      {
+        "name": "谢谢鸡",
+        "src": "谢谢鸡.mp3",
+        "path": "dir23/clip33.opus",
+        "samples": 228640,
+        "duration": 14.29,
+        "compressed_bytes": 22622
+      },
+      {
+        "name": "连招",
+        "src": "连招.mp3",
+        "path": "dir23/clip34.opus",
+        "samples": 247680,
+        "duration": 15.48,
+        "compressed_bytes": 24272
+      },
+      {
+        "name": "连招4",
+        "src": "连招4.mp3",
+        "path": "dir23/clip35.opus",
+        "samples": 257440,
+        "duration": 16.09,
+        "compressed_bytes": 25240
+      },
+      {
+        "name": "食不食仁",
+        "src": "食不食仁.mp3",
+        "path": "dir23/clip36.opus",
+        "samples": 25280,
+        "duration": 1.58,
+        "compressed_bytes": 3375
+      },
+      {
+        "name": "鸡你实在太美",
+        "src": "鸡你实在太美.mp3",
+        "path": "dir23/clip37.opus",
+        "samples": 33440,
+        "duration": 2.09,
+        "compressed_bytes": 4152
+      }
+    ]
   }
 ]

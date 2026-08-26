@@ -42,6 +42,7 @@ lv_obj_t *ui_pixel_screen_create(const char *title)
     lv_obj_set_style_pad_all(scr, 0, 0);
 
     add_cloud(scr, 188, 8);
+    // 屏幕真实高 320(BSP_LCD_H); 草地画到 320 底, 避免底部露出原色/空白。
     block(scr, 0, 286, 240, 34, UI_GRASS);
     block(scr, 0, 286, 240, 4, 0xA7D93E);
     for (int x = 0; x < 240; x += 30) {

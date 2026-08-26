@@ -6,7 +6,7 @@ idf_component_register(
          "fonts/voice_cjk.c"
          "fonts/voice_hint.c"
     INCLUDE_DIRS "."
-    REQUIRES bsp lvgl spiffs esp_timer
+    REQUIRES bsp lvgl spiffs esp_timer opus
 )
 
 # 让 lv_font_conv 生成的字体用简单 include(<lvgl.h>), 而非带 lvgl/ 前缀的路径

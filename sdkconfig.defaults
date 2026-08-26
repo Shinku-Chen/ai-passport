@@ -24,6 +24,9 @@ CONFIG_LV_FONT_MONTSERRAT_20=y
 # LVGL 内置 malloc 池大小(KB)。它是独立静态区、不与系统堆共享,配大了会白白占用 RAM。
 # 本 demo UI 简单,24KB 足够;若自建复杂界面出现绘制卡死/看门狗,调大此值。
 CONFIG_LV_MEM_SIZE_KILOBYTES=24
+# 启用对象截图 API(lv_snapshot_take), 用于把任意 LVGL 对象渲染到指定缓冲作像素导出。
+# 无额外依赖; 若只需整屏截图, 也可联用 LV_USE_SNAPSHOT。
+CONFIG_LV_USE_SNAPSHOT=y
 
 # --- 系统 ---
 CONFIG_FREERTOS_HZ=1000

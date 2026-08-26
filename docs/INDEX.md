@@ -27,5 +27,6 @@ Use this page to discover repository documentation. `authoritative` documents de
 | [hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md](hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md) | Board facts, constraints, validation, and troubleshooting | authoritative |
 | [hardware-design/specifications.md](hardware-design/specifications.md) | User-facing product specifications | authoritative |
 | [software-design/README.md](software-design/README.md) | Software-design document index | reference |
+| [software-design/voice-compression-comparison.md](software-design/voice-compression-comparison.md) | Compression methods (IMA-ADPCM / Opus / MP3) capacity on ESP32-C3 | reference |
 
 GitHub community documents: [CONTRIBUTING.md](../.github/CONTRIBUTING.md), [CODE_OF_CONDUCT.md](../.github/CODE_OF_CONDUCT.md), [SECURITY.md](../.github/SECURITY.md), and [SUPPORT.md](../.github/SUPPORT.md).

@@ -25,6 +25,7 @@
 | [development/CI-sync-main.zh_CN.md](./development/CI-sync-main.zh_CN.md) | CI 文档 | authoritative | 上游同步说明（定期同步上游 main 到 fork） |
 | [fork-guide.zh_CN.md](./fork-guide.zh_CN.md) | fork 工作流 | authoritative | 目录结构、main 保持干净、fork 约定、docs/assets 使用 |
 | [software-design/README.zh_CN.md](./software-design/README.zh_CN.md) | 软件设计索引 | 参考 | 软件设计文档子目录骨架 |
+| [software-design/voice-compression-comparison.zh_CN.md](./software-design/voice-compression-comparison.zh_CN.md) | ESP32-C3 语音压缩方法对比 | 参考 | IMA-ADPCM / Opus / MP3 在 ESP32-C3 上的容量 |
 | [hardware-design/README.zh_CN.md](./hardware-design/README.zh_CN.md) | 硬件设计索引 | 参考 | 硬件设计文档子目录骨架 |
 | [hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.zh_CN.md](./hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.zh_CN.md) | 硬件指南 | authoritative | 完整硬件开发指南与排障参考（上游） |
 | [hardware-design/specifications.zh_CN.md](./hardware-design/specifications.zh_CN.md) | 产品规格 | authoritative | 产品规格（尺寸、重量、电池、充电、NFC、按键等对外口径） |

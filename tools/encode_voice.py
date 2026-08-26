@@ -360,7 +360,7 @@ def gen_c_index(dirs: list, path: Path) -> None:
     lines.append("")
     # 类型只定义一次, 供下面各目录与最终 VOICE_DIRS 引用
     lines.append("typedef struct { const char *path; const char *name; "
-                 "uint32_t adpcm_bytes; uint32_t samples; } voice_file_t;")
+                 "uint32_t opus_bytes; uint32_t samples; } voice_file_t;")
     lines.append("")
     lines.append("// 每个目录: 文件表(路径/中文名/字节/采样)。类型只定义一次(见上)。")
     for d in dirs:

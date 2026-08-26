@@ -6,8 +6,9 @@
 //
 // UI 采用"现代列表式"：顶栏标题 + 列表行(中文) + 底部操作提示。
 // 中文用 LVGL label + 中文字库(voice_ttf)渲染; 底栏提示用小号字库(voice_hint)。
-// 音频从 SPIFFS 数据分区读取 IMA-ADPCM 4bit 压缩 PCM, 在独立任务解码后
+// 音频从 SPIFFS 数据分区读取 Opus 8kbps 裸包流, 在独立任务用 libopus 解码后
 // 送 bsp_audio_write() 播放。遵循硬件指南: 阻塞的 codec I/O 不放按键回调/LVGL 任务。
+// 裸包流格式见 tools/encode_opus.py: 每个包 = 2字节小端长度 + Opus 帧。
 #include "voice_app.h"
 
 #include "bsp_audio.h"
@@ -22,6 +23,8 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "esp_err.h"
+#include "esp_system.h"    // esp_get_free_heap_size
+#include "opus.h"          // libopus 解码器(components/opus)
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,17 +38,19 @@ static const char *TAG = "voice_app";
 
 // ---- 播放 ----
 #define AUDIO_SAMPLE_RATE 16000
-#define AUDIO_CHUNK_SAMPLES 512
-#define AUDIO_CHUNK_BYTES  (AUDIO_CHUNK_SAMPLES / 2)
+// Opus 单包最大可含 60ms 音频; @16kHz = 960 采样。用上界避免任意帧长溢出。
+#define OPUS_FRAME_SAMPLES 960     // 最大采样数(60ms 帧 @16kHz)
+#define OPUS_MAX_PACKET 1500       // 单包最大字节(8kbps 帧很小, 1.5KB 安全余量)
 
-// ---- UI 布局(240x286) ----
+// ---- UI 布局(240x320, 屏幕真实高度 BSP_LCD_H=320) ----
 #define UI_W 240
-#define UI_H 286
-#define UI_TOP_H 16          // 顶栏(正好 16px 标题高; 为列表区让出最大高度)
-#define UI_BOTTOM_H 12       // 底部提示文字区(小字贴底; 无独立条)
-#define UI_LIST_TOP (UI_TOP_H + 2)
-#define UI_LIST_H   (UI_H - UI_TOP_H - UI_BOTTOM_H)
-#define UI_ROW_H    16       // 列表行高(正好 16px 字高, 最多行)
+#define UI_H 320
+#define UI_TOP_H 24          // 顶栏(标题+右侧电量, 加高)
+#define UI_BOTTOM_H 0        // 底部提示区已删除, 保留0占位
+#define UI_LIST_TOP UI_TOP_H // 列表起点=顶栏底(不加偏移, 撑满到屏底)
+#define UI_LIST_H   (UI_H - UI_TOP_H)   // 列表区延伸到屏幕最底 (320-24=296)
+#define UI_ROW_H    21       // 296 / 21 = 14行余2px, 几乎不留空白; 行高>=字高避免垂直滚
+                             // 24 + 14*21 = 318, 距屏底 320 仅 2px(整区撑满, 无空白行)
 #define UI_ROW_W    232      // 列表行宽
 #define UI_ROW_X    4
 #define UI_ROW_INDENT 10     // 行内文字左边距
@@ -61,9 +66,11 @@ typedef enum { VIEW_DIR = 0, VIEW_LIST, VIEW_SETTINGS, VIEW_COUNT } view_t;
 // ---- 全局状态(单例应用) ----
 static view_t        s_view;
 static bool          s_fs_mounted;
+static lv_obj_t     *s_hint_obj;   // 底栏提示条(抓屏用)
 
 // 目录页
 static lv_obj_t     *s_dir_scr;
+static lv_obj_t     *s_dir_batt;                  // 顶栏右侧电量百分比
 static int           s_dir_sel;
 static int           s_dir_top;                   // 可见窗口起点(滚动)
 static lv_obj_t     *s_dir_rows[MAX_ROWS];       // 背景条(选中高亮)
@@ -95,18 +102,6 @@ static volatile bool s_player_stop;
 static bool          s_playing;
 static int           s_playing_index;   // 当前播放的列表项索引(用于"设置中/播放中"态高亮)
 
-// ---- IMA-ADPCM 解码表(与 tools/encode_voice.py 编码端对称) ----
-static const int16_t ADPCM_STEPS[89] = {
-      7,   8,   9,  10,  11,  12,  13,  14,  16,  17,  19,  21,  23,  25,  28,  31,
-     34,  37,  41,  45,  50,  55,  60,  66,  73,  80,  88,  97, 107, 118, 130, 143,
-    157, 173, 190, 209, 230, 253, 279, 307, 337, 371, 408, 449, 494, 544, 598, 658,
-    724, 796, 876, 963,1060,1166,1282,1411,1552,1707,1878,2066,2272,2499,2749,3024,
-   3327,3660,4026,4428,4871,5358,5894,6484,7132,7845,8630,9493,10442,11487,12635,13899,
-  15289,16818,18500,20350,22385,24623,27086,29794,32767
-};
-static const int8_t ADPCM_INDEX_TABLE[16] = { -1,-1,-1,-1,2,4,6,8,-1,-1,-1,-1,2,4,6,8 };
-#define ADPCM_STEP_MAX 88
-
 // ---------------------------------------------------------------------------
 // SPIFFS 挂载
 // ---------------------------------------------------------------------------
@@ -130,33 +125,8 @@ static bool fs_mount(void) {
 }
 
 // ---------------------------------------------------------------------------
-// IMA-ADPCM 4bit 解码(跨块保持状态)
-// ---------------------------------------------------------------------------
-typedef struct { int predictor; int step_index; } adpcm_state_t;
-
-static void adpcm_decode_block(const uint8_t *src, int nbytes,
-                               int16_t *dst, adpcm_state_t *st) {
-    int oi = 0;
-    for (int bi = 0; bi < nbytes; bi++) {
-        uint8_t b = src[bi];
-        for (int nib = 0; nib < 2; nib++) {
-            int code = (nib == 0) ? (b & 0x0F) : ((b >> 4) & 0x0F);
-            int step = ADPCM_STEPS[st->step_index];
-            int diffq = ((code & 0x07) * 2 + 1) * step >> 3;
-            if (code & 0x08) diffq = -diffq;
-            st->predictor += diffq;
-            if (st->predictor < -32768) st->predictor = -32768;
-            if (st->predictor >  32767) st->predictor =  32767;
-            st->step_index += ADPCM_INDEX_TABLE[code];
-            if (st->step_index < 0) st->step_index = 0;
-            if (st->step_index > ADPCM_STEP_MAX) st->step_index = ADPCM_STEP_MAX;
-            dst[oi++] = (int16_t)st->predictor;
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// 播放任务: 读文件 -> 分块解码 -> bsp_audio_write
+// 播放任务: 读裸 Opus 包流 -> 逐包 opus_decode -> bsp_audio_write
+// 裸流格式(见 tools/encode_opus.py): 每个 Opus 包 = 2字节小端长度 + 帧数据。
 // ---------------------------------------------------------------------------
 static void stop_playback(void);
 
@@ -174,20 +144,41 @@ static void player_task(void *arg) {
         return;
     }
 
-    uint8_t cbuf[AUDIO_CHUNK_BYTES];
-    int16_t sbuf[AUDIO_CHUNK_SAMPLES];
-    adpcm_state_t st = { .predictor = 0, .step_index = 0 };
+    // 创建 Opus 解码器(16kHz 单声道, 无状态跨包复用)
+    int dec_err = 0;
+    OpusDecoder *dec = opus_decoder_create(AUDIO_SAMPLE_RATE, 1, &dec_err);
+    if (!dec) {
+        ESP_LOGE(TAG, "opus_decoder_create 失败: %d", dec_err);
+        fclose(fp);
+        return;
+    }
+
+    uint8_t hdr[2];
+    uint8_t pkt[OPUS_MAX_PACKET];
+    int16_t pcm[OPUS_FRAME_SAMPLES];
     s_player_stop = false;
 
     while (!s_player_stop) {
-        size_t rb = fread(cbuf, 1, sizeof(cbuf), fp);
-        if (rb == 0) break;
-        adpcm_decode_block(cbuf, (int)rb, sbuf, &st);
+        // 读 2 字节包长度
+        if (fread(hdr, 1, 2, fp) != 2) break;
+        uint16_t plen = (uint16_t)(hdr[0] | (hdr[1] << 8));
+        if (plen == 0 || plen > OPUS_MAX_PACKET) {
+            ESP_LOGW(TAG, "非法包长 %u", plen);
+            break;
+        }
+        if (fread(pkt, 1, plen, fp) != plen) break;
         if (s_player_stop) break;
-        // rb 字节 ADPCM -> rb*2 个 int16 采样 -> rb*4 字节
-        bsp_audio_write(sbuf, (size_t)rb * 4u);
+
+        // 解码一帧。pcm 输出为 int16, 每帧 <= OPUS_FRAME_SAMPLES 采样
+        int nsamp = opus_decode(dec, pkt, plen, pcm, OPUS_FRAME_SAMPLES, 0);
+        if (nsamp < 0) {
+            ESP_LOGW(TAG, "opus_decode 错误 %d", nsamp);
+            break;
+        }
+        bsp_audio_write(pcm, (size_t)nsamp * 2u);   // int16 采样 -> 字节 = nsamp*2
     }
 
+    opus_decoder_destroy(dec);
     fclose(fp);
     s_playing = false;
     s_playing_index = -1;
@@ -195,11 +186,65 @@ static void player_task(void *arg) {
     vTaskDelete(NULL);
 }
 
+// ---------------------------------------------------------------------------
+// 调试抓屏: 把当前屏幕 RGB565 底部区域存进 SPIFFS, 供 host 读取判读布局。
+// 仅用于验证"列表最后一行/底部提示条"落位; 抓完一次即自删, 不影响功能。
+// 文件格式: 自定义头 "VSNP" + w(u16 LE) + h(u16 LE) + 原始 RGB565(h 整行)。
+// ---------------------------------------------------------------------------
+#define SNAP_MAGIC  0x504E5356       // "VSNP"
+#define SNAP_TOP_Y  0                // 从第 0 行开始(整屏高度内取数据)
+static void snap_dump(lv_obj_t *scr) {
+    if (!scr || !s_fs_mounted) { ESP_LOGW(TAG, "snap: 无目标屏或 FS 未挂载"); return; }
+    lv_draw_buf_t *db = lv_snapshot_take(scr, LV_COLOR_FORMAT_RGB565);
+    if (!db) { ESP_LOGW(TAG, "snap: lv_snapshot_take 失败(内存不足?)"); return; }
+    uint32_t w = db->header.w;
+    uint32_t h = db->header.h;
+    const uint8_t *px = db->data;
+    uint32_t stride = db->header.stride;
+    if (stride == 0) stride = w * 2;              // RGB565 每行字节兜底
+    // 只导出底部 96 行(最后几行 + 提示条), 减小写文件量
+    uint32_t dy = h > 96 ? (h - 96) : 0;
+    uint32_t rows = h > 96 ? 96 : h;
+    char path[128];
+    snprintf(path, sizeof(path), "%s/snap.rgb", VOICE_FS_MOUNT);
+    FILE *fp = fopen(path, "wb");
+    if (!fp) { ESP_LOGW(TAG, "snap: 无法写 %s", path); lv_draw_buf_destroy(db); return; }
+    struct { uint32_t magic; uint16_t w, h, stride; uint16_t dy, rows; } __attribute__((packed)) hd;
+    hd.magic = SNAP_MAGIC; hd.w = (uint16_t)w; hd.h = (uint16_t)h;
+    hd.stride = (uint16_t)stride; hd.dy = (uint16_t)dy; hd.rows = (uint16_t)rows;
+    fwrite(&hd, 1, sizeof(hd), fp);
+    fwrite(px + (size_t)dy * stride, 1, (size_t)rows * stride, fp);
+    fclose(fp);
+    ESP_LOGI(TAG, "snap: 已存 %s (w=%u h=%u stride=%u dy=%u rows=%u)",
+             path, (unsigned)w, (unsigned)h, (unsigned)stride, (unsigned)dy, (unsigned)rows);
+    lv_draw_buf_destroy(db);
+}
+
+// ---------------------------------------------------------------------------
+// 启动后延时抓一次屏(等待 dir 页绘制完成)。整屏 137KB 在无 PSRAM 上常超堆,
+// 故优先抓底栏提示条(小, 必成功)以确认其"贴屏底 y + 高度"; 同时打印空闲堆与
+// 提示条/最后一行位置, 供 host 判读列表底与提示条之间有无空隙。
+static void snap_timer_cb(lv_timer_t *t) {
+    if (!bsp_lvgl_lock(500)) { lv_timer_delete(t); return; }
+    ESP_LOGI(TAG, "snap: free_heap=%lu", (unsigned long)esp_get_free_heap_size());
+    lv_obj_t *scr = lv_screen_active();
+    // 记录提示条绝对位置(abs y 由相对父(screen)偏移决定)
+    int hy = s_hint_obj ? lv_obj_get_y(s_hint_obj) : -1;
+    int hh_ = s_hint_obj ? lv_obj_get_height(s_hint_obj) : -1;
+    ESP_LOGI(TAG, "snap: hint y=%d h=%d -> bottom=%d (屏高 UI_H=%d)",
+             hy, hh_, s_hint_obj ? (hy + hh_) : -1, UI_H);
+    // 抓整个屏幕(底部96行) —— 需 CONFIG_LV_MEM_SIZE_KILOBYTES 足够容纳全屏
+    if (scr) snap_dump(scr);
+    bsp_lvgl_unlock();
+    lv_timer_delete(t);
+}
+
 static void play_file(const voice_file_t *f) {
     stop_playback();
     if (!f) return;
     if (!s_fs_mounted) { ESP_LOGE(TAG, "SPIFFS 未挂载"); return; }
-    if (xTaskCreate(player_task, "voice_player", 4096, (void *)f, 5, &s_player_task) != pdPASS) {
+    // VAR_ARRAYS 用任务栈做 scratch, SILK 单帧解码栈需求大, 需 16KB。
+    if (xTaskCreate(player_task, "voice_player", 16384, (void *)f, 5, &s_player_task) != pdPASS) {
         ESP_LOGE(TAG, "播放任务创建失败");
         return;
     }
@@ -219,12 +264,14 @@ static void stop_playback(void) {
 #define COL_BG      (lv_color_hex(0x17203A))
 #define COL_PANEL   (lv_color_hex(0x1E2A47))
 #define COL_TEXT    (lv_color_hex(0xEDF1FF))
-#define COL_HILITE  (lv_color_hex(0x2E4C9B))
+#define COL_HILITE  (lv_color_hex(0x2E4C9B))   // 选中行高亮(蓝)
+#define COL_TOP     (lv_color_hex(0x1B2444))   // 顶栏专属色(比选中蓝更深/独立, 不与选中行同色)
 #define COL_MUTED   (lv_color_hex(0x9AA7C9))
 #define COL_PLAY    (lv_color_hex(0x1F7A4D))   // 播放中(设置中)状态色
 
 // 建整个屏: 背景 + 顶栏标题 + 底栏提示
 static lv_obj_t *make_screen(const char *title, const char *hint) {
+    (void)hint;   // 底栏提示条已删除, 参数保留仅为兼容调用处, 不再渲染
     lv_obj_t *scr = lv_obj_create(NULL);
     lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_bg_color(scr, COL_BG, 0);
@@ -236,29 +283,23 @@ static lv_obj_t *make_screen(const char *title, const char *hint) {
     lv_obj_set_pos(top, 0, 0);
     lv_obj_set_size(top, UI_W, UI_TOP_H);
     lv_obj_remove_flag(top, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_style_bg_color(top, COL_HILITE, 0);
+    lv_obj_set_style_bg_color(top, COL_TOP, 0);   // 顶栏用专属色, 不与选中行同色
     lv_obj_set_style_border_width(top, 0, 0);
     lv_obj_set_style_pad_all(top, 0, 0);
     lv_obj_t *tt = lv_label_create(top);
     lv_label_set_text(tt, title);
     lv_obj_set_style_text_font(tt, &voice_ttf, 0);
     lv_obj_set_style_text_color(tt, COL_TEXT, 0);
-    lv_obj_set_width(tt, UI_W - 16);
     lv_obj_set_style_pad_all(tt, 0, 0);
-    // 顶栏标题过长则滚到最右显示完整(放慢速度)
+    // 顶栏标题确定性定位: 左上, 宽 = 顶栏宽, 高度 = 顶栏高(垂直居中由内容)
+    lv_obj_set_pos(tt, 8, 0);
+    // 宽 = 屏宽 - 左右边距(8+8) - 右侧电量区46px, 避免标题与电量重叠
+    lv_obj_set_size(tt, UI_W - 16 - 46, UI_TOP_H);
+    // 顶栏标题过长则水平循环滚到最右显示完整(放慢速度); CIRCULAR=纯水平, 不垂直滚
     lv_obj_set_style_anim_duration(tt, 2000, 0);
-    lv_label_set_long_mode(tt, LV_LABEL_LONG_SCROLL);
-    lv_obj_align(tt, LV_ALIGN_LEFT_MID, 8, 0);
+    lv_label_set_long_mode(tt, LV_LABEL_LONG_SCROLL_CIRCULAR);
 
-    // 底栏: 无独立条, 提示文字直接用屏幕背景贴底部一行小字(不占可见条)
-    if (hint) {
-        lv_obj_t *hh = lv_label_create(scr);
-        lv_label_set_text(hh, hint);
-        lv_obj_set_style_text_font(hh, &voice_hint, 0);   // 12px 小号, 保持完整显示
-        lv_obj_set_style_text_color(hh, COL_MUTED, 0);
-        lv_obj_set_style_pad_all(hh, 0, 0);
-        lv_obj_align(hh, LV_ALIGN_BOTTOM_LEFT, 8, -1);    // 贴屏幕底部
-    }
+    // 删除了底部提示条: 列表区延伸到屏幕最底, 不再渲染 hint 小字。
 
     return scr;
 }
@@ -283,15 +324,15 @@ static lv_obj_t *make_row(lv_obj_t *scr, int idx, const char *text, row_state_t 
     lv_obj_set_size(ind, 3, UI_ROW_H);
     lv_obj_set_style_bg_color(ind, st == ROW_UNSEL ? COL_MUTED : lv_color_hex(0xFFFFFF), 0);
     lv_obj_set_style_border_width(ind, 0, 0);
-    // 行内文字(lv_label + 中文字库)
+    // 行内文字(lv_label + 中文字库): 确定性 set_pos(左上), 垂直居中用行内 y
     lv_obj_t *lbl = lv_label_create(row);
     lv_label_set_text(lbl, text);
     lv_obj_set_style_text_font(lbl, &voice_ttf, 0);
     lv_obj_set_style_text_color(lbl, COL_TEXT, 0);
-    lv_obj_set_style_text_align(lbl, LV_TEXT_ALIGN_LEFT, 0);
-    lv_obj_align(lbl, LV_ALIGN_LEFT_MID, UI_ROW_INDENT, 0);
-    lv_obj_set_width(lbl, UI_ROW_W - UI_ROW_INDENT);
     lv_obj_set_style_pad_all(lbl, 0, 0);
+    lv_obj_set_pos(lbl, UI_ROW_INDENT, 1);            // 行内左上, 顶部留1px
+    lv_obj_set_size(lbl, UI_ROW_W - UI_ROW_INDENT, UI_ROW_H);
+    lv_obj_set_style_text_align(lbl, LV_TEXT_ALIGN_LEFT, 0);
     // 默认静止(只显示左段); 光标选中行在刷新时用 SCROLL 滚到最右显示完整
     lv_label_set_long_mode(lbl, LV_LABEL_LONG_CLIP);
     // 放慢横向滚动速度(值越低越慢)
@@ -306,6 +347,17 @@ static void set_row_state(lv_obj_t *row, row_state_t st) {
 }
 
 // ---------------------------------------------------------------------------
+// 顶栏右侧电量百分比刷新(仅目录页/首页显示)
+// ---------------------------------------------------------------------------
+static void refresh_dir_batt(void) {
+    if (!s_dir_batt) return;
+    int soc = bsp_battery_soc();
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%d%%", soc < 0 ? 0 : soc);
+    lv_label_set_text(s_dir_batt, buf);
+}
+
+// ---------------------------------------------------------------------------
 // 目录页
 // ---------------------------------------------------------------------------
 // 目录页: 建 `window` 个可见行(滚动窗口), 每次刷新用 lv_label_set_text 更新文本与选中
@@ -314,6 +366,14 @@ static void dir_build(void) {
     if (s_list_scr) { lv_obj_delete(s_list_scr); s_list_scr = NULL; }
     if (s_set_scr) { lv_obj_delete(s_set_scr); s_set_scr = NULL; }
     s_dir_scr = make_screen("音效钥匙扣", "上下选择 OK进入 长按设置");
+    // 顶栏右侧电量百分比(仅首页显示): 右对齐垂直居中, 右缘留8px
+    s_dir_batt = lv_label_create(s_dir_scr);
+    lv_label_set_text(s_dir_batt, "--%");
+    lv_obj_set_style_text_font(s_dir_batt, &voice_ttf, 0);
+    lv_obj_set_style_text_color(s_dir_batt, COL_TEXT, 0);
+    lv_obj_set_style_pad_all(s_dir_batt, 0, 0);
+    lv_obj_align(s_dir_batt, LV_ALIGN_TOP_RIGHT, -8, (UI_TOP_H - 18) / 2);
+    refresh_dir_batt();
     s_dir_count = VOICE_DIR_TOTAL;
     if (s_dir_sel >= (int)s_dir_count) s_dir_sel = 0;
     s_dir_top = 0;
@@ -322,6 +382,11 @@ static void dir_build(void) {
         s_dir_rows[i] = make_row(s_dir_scr, (int)i, VOICE_DIRS[i].name,
                                  ((int)i == s_dir_sel) ? ROW_SEL : ROW_UNSEL, &s_dir_txts[i]);
     }
+    // 诊断: 打印实际列表几何(起点/行高/行数/最后行底 vs 屏高), 定位底部空白
+    ESP_LOGI(TAG, "GEOM dir: UI_TOP=%d ROW_H=%d win=%u last_bot=%d UI_H=%d gap=%d",
+             (int)UI_TOP_H, (int)UI_ROW_H, s_dir_window,
+             (int)(UI_LIST_TOP + s_dir_window * UI_ROW_H), (int)UI_H,
+             (int)(UI_H - (UI_LIST_TOP + s_dir_window * UI_ROW_H)));
     lv_screen_load(s_dir_scr);
 }
 
@@ -335,7 +400,11 @@ static void refresh_dir_selection(void) {
         if (idx >= 0 && idx < (int)s_dir_count) {
             lv_label_set_text(s_dir_txts[i], VOICE_DIRS[idx].name);
             bool sel = (idx == s_dir_sel);
-            lv_label_set_long_mode(s_dir_txts[i], sel ? LV_LABEL_LONG_SCROLL : LV_LABEL_LONG_CLIP);
+            // SCROLL_CIRCULAR: 纯水平循环滚动(绝不垂直滚), 消除"单行文字上下滚动"。
+            // 防抖: 仅当 long_mode 变化才 set_long_mode, 避免长按翻页重复重置滚动偏移。
+            lv_label_long_mode_t want = sel ? LV_LABEL_LONG_SCROLL_CIRCULAR : LV_LABEL_LONG_CLIP;
+            if (lv_label_get_long_mode(s_dir_txts[i]) != want)
+                lv_label_set_long_mode(s_dir_txts[i], want);
             set_row_state(s_dir_rows[i], sel ? ROW_SEL : ROW_UNSEL);
         }
     }
@@ -361,6 +430,11 @@ static void list_build(int diridx) {
         s_list_rows[i] = make_row(s_list_scr, (int)i, d->files[i].name,
                                   ((int)i == s_list_sel) ? ROW_SEL : ROW_UNSEL, &s_list_txts[i]);
     }
+    // 诊断: 列表页实际几何(定位底部空白)
+    ESP_LOGI(TAG, "GEOM list: UI_TOP=%d ROW_H=%d win=%u n=%d last_bot=%d UI_H=%d gap=%d",
+             (int)UI_TOP_H, (int)UI_ROW_H, s_list_window, n,
+             (int)(UI_LIST_TOP + s_list_window * UI_ROW_H), (int)UI_H,
+             (int)(UI_H - (UI_LIST_TOP + s_list_window * UI_ROW_H)));
     lv_screen_load(s_list_scr);
 }
 
@@ -373,9 +447,13 @@ static void refresh_list_selection(void) {
         int idx = s_list_top + (int)i;
         if (idx >= 0 && idx < (int)s_list_count && idx < (int)d->count) {
             lv_label_set_text(s_list_txts[i], d->files[idx].name);
-            // 只有光标选中行滚动(到最右停), 其余静止; 选中高亮
+            // 只有光标选中行滚动(到最右停), 其余静止; 选中高亮。
+            // SCROLL_CIRCULAR: 纯水平循环滚动(绝不垂直滚), 消除单行文字上下滚动。
+            // 防抖: 仅当 long_mode 变化才 set_long_mode(内部会把滚动偏移重置为0)。
             bool sel = (idx == s_list_sel);
-            lv_label_set_long_mode(s_list_txts[i], sel ? LV_LABEL_LONG_SCROLL : LV_LABEL_LONG_CLIP);
+            lv_label_long_mode_t want = sel ? LV_LABEL_LONG_SCROLL_CIRCULAR : LV_LABEL_LONG_CLIP;
+            if (lv_label_get_long_mode(s_list_txts[i]) != want)
+                lv_label_set_long_mode(s_list_txts[i], want);
             set_row_state(s_list_rows[i], sel ? ROW_SEL : ROW_UNSEL);
         }
     }
@@ -549,6 +627,10 @@ void voice_app_start(void) {
 
     if (bsp_lvgl_lock(1000)) { dir_build(); bsp_lvgl_unlock(); }
     ESP_LOGI(TAG, "音效钥匙扣启动, 目录数=%d", VOICE_DIR_TOTAL);
+
+    // 调试: 启动后 1.2s 抓屏存 SPIFFS, 供 host 读回判读底部布局(一次即删)
+    lv_timer_create(snap_timer_cb, 1200, NULL);
+
 }
 
 void voice_app_stop(void) {
