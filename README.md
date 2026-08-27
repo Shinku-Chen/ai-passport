@@ -14,6 +14,26 @@ The repository is organized around the following principles:
 
 The intended workflow is simple: give an agent this repository and an application requirement. The agent identifies the available capabilities and constraints, selects relevant examples, implements and builds the application, and returns an acceptance checklist that can be executed on the physical device.
 
+## Application on this branch: Shengzi Cards
+
+This branch's reference application is a Chinese-character flashcard memorization
+app (`main/demo_shengzi.c`). The firmware boots into this application using the
+`ui_pixel` theme (sky background, grass, title plate, mascot, ink-outlined
+panels) on the 240 × 320 display.
+
+Three modes, switched by holding **UP / DOWN**:
+
+- **Browse** — scroll through the character cards (a big character card with its
+  pinyin above and a hint line below).
+- **Self-test** — mark each character as learned / not learned.
+- **Spell** — see the pinyin and guess the character.
+
+A short **OK** press reveals the answer in the self-test / spell modes. The
+"learned" marks persist to NVS (`sz_data`), so your progress survives a reboot.
+
+The screen layout is a title bar (≈ y0–46), a pinyin row (y ≈ 58), the large
+character-card region (y ≈ 78–218), and a bottom info line (y ≈ 255–290).
+
 ## Entry point for AI agents
 
 Before starting development, establish context in this order:
