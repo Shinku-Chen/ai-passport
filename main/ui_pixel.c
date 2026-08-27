@@ -41,7 +41,8 @@ lv_obj_t *ui_pixel_screen_create(const char *title)
     lv_obj_set_style_border_width(scr, 0, 0);
     lv_obj_set_style_pad_all(scr, 0, 0);
 
-    add_cloud(scr, 188, 8);
+    // 顶部右侧原有一朵云装饰;因屏幕右上角要让给电量显示,且云挪到别处会与
+    // 标题横幅(5,8,151,33)或图片(20,48,200,200)重叠,故此处不再画云。
     block(scr, 0, 286, 240, 34, UI_GRASS);
     block(scr, 0, 286, 240, 4, 0xA7D93E);
     for (int x = 0; x < 240; x += 30) {

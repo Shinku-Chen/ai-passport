@@ -20,6 +20,7 @@
 #include "bsp_button.h"
 #include "bsp_display.h"         // 统一屏显接口
 #include "bsp_pins.h"            // BSP_LCD_W / 分辨率宏来源
+#include "bsp_battery.h"         // CW2017 电量计:右上角电量显示
 #include "ui_pixel.h"
 #include "ui_eatwhat_math.h"
 #include "ui_eatwhat_render.h"   // 候选快速刷新(局部+隔行),供上板 A/B
@@ -58,6 +59,8 @@ static lv_obj_t            *s_img;
 static lv_obj_t            *s_badge;      // 底部提示条(panel 容器)
 static lv_obj_t            *s_badge_label;  // 提示条里的 label(真正设文本的对象)
 static lv_timer_t          *s_timer;
+static lv_obj_t            *s_batt_label;   // 右上角电量文本
+static lv_timer_t          *s_batt_timer;   // 电量刷新定时器
 static lv_image_dsc_t       s_dsc;        // 当前帧描述符(懒复用,不每帧分配字段)
 static int                  s_cur_anim;   // 当前播放的素材索引;-1 = 未播放
 static int                  s_cur_frame;  // 当前显示的帧号
@@ -143,6 +146,23 @@ static void start_play(int anim_idx)
     s_timer = lv_timer_create(on_tick, anim->delay_ms, NULL);
 }
 
+// 刷新右上角电量显示。lv_timer 跑在 LVGL 任务,已持锁。
+static void battery_refresh(lv_timer_t *t)
+{
+    (void)t;
+    if (!s_batt_label) return;
+    int soc = bsp_battery_soc();
+    if (soc < 0) {
+        lv_label_set_text(s_batt_label, "-- %");
+        lv_obj_set_style_text_color(s_batt_label, lv_color_hex(0x94A3B8), 0);
+    } else {
+        lv_label_set_text_fmt(s_batt_label, "%d %%", soc);
+        // 低电量(<20%)变红,否则常态偏深
+        lv_obj_set_style_text_color(s_batt_label,
+            soc < 20 ? lv_color_hex(0xE43B2F) : lv_color_hex(UI_INK), 0);
+    }
+}
+
 // 显示页面首帧(静止预览):进入页面时默认显示「食物」首帧,提示可按住按键。
 static void show_idle(void)
 {
@@ -182,6 +202,17 @@ void demo_eat_what_enter(void)
     lv_obj_set_style_text_align(s_badge_label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_center(s_badge_label);
 
+    // 右上角电量显示:初始化电量计(幂等),读不到则显示 -- %。失败不阻塞主功能。
+    if (bsp_battery_init() != ESP_OK) {
+        ESP_LOGW(TAG, "电量计不可用,右上角显示 -- %%");
+    }
+    s_batt_label = lv_label_create(s_scr);
+    lv_obj_set_style_text_font(s_batt_label, &lv_font_montserrat_14, 0);
+    // 右对齐到屏幕右上角,不遮挡左侧标题横幅(5..156)与顶部云(已移除)。
+    lv_obj_align(s_batt_label, LV_ALIGN_TOP_RIGHT, -6, 10);
+    battery_refresh(NULL);                         // 先立即显示一次
+    s_batt_timer = lv_timer_create(battery_refresh, 2000, NULL);
+
     show_idle();
     lv_screen_load(s_scr);
 }
@@ -189,11 +220,12 @@ void demo_eat_what_enter(void)
 void demo_eat_what_exit(void)
 {
     if (s_timer) { lv_timer_delete(s_timer); s_timer = NULL; }
+    if (s_batt_timer) { lv_timer_delete(s_batt_timer); s_batt_timer = NULL; }
     s_playing = false;
     eatwhat_render_deinit();          // 释放候选渲染器的行缓冲
     if (s_scr) {
         lv_obj_delete(s_scr);
-        s_scr = NULL; s_img = NULL; s_badge = NULL; s_badge_label = NULL;
+        s_scr = NULL; s_img = NULL; s_badge = NULL; s_badge_label = NULL; s_batt_label = NULL;
     }
 }
 
