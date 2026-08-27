@@ -13,6 +13,7 @@
 #include "ui_pixel.h"
 #include "lvgl.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <stdio.h>
@@ -22,6 +23,9 @@ static lv_obj_t *s_scr, *s_status, *s_net, *s_password, *s_title, *s_vol, *s_bat
 static volatile bool s_exiting;
 static TaskHandle_t s_boot_task;
 static lv_timer_t *s_timer;
+// 开机时间戳(esp_timer 微秒)。OK 长按重置网络只在开机后 RESET_WINDOW_MS 内有效。
+static int64_t s_boot_us;
+#define RESET_WINDOW_MS 10000
 
 // 供 boot 任务给 UI 打一行状态(锁 LVGL,跨任务调用)。
 // boot 阶段把"正在连 WiFi / 启动服务"的提示写到联网行(第二行),不占用播放状态行。
@@ -120,6 +124,8 @@ static void boot_task(void *arg)
 void demo_dlna_enter(void)
 {
     s_exiting = false;
+    // 记录开机时刻,作为"OK 长按重置网络"的 10 秒窗口起点(开机即直启本页)。
+    s_boot_us = esp_timer_get_time();
     // 无云变体:右上角留给电量,不放装饰云。
     s_scr = ui_pixel_screen_create_nocloud("DLNA PLAYER");
     lv_obj_t *panel = ui_pixel_panel_create(s_scr, 12, 54, 216, 190, UI_PAPER);
@@ -193,7 +199,21 @@ void demo_dlna_exit(void)
 
 void demo_dlna_key(bsp_btn_t btn, bsp_btn_ev_t ev)
 {
-    // UP/DOWN 长按 = 切换播放(本地兜底)。OK 长按被 main.c 拦截,到不了这里。
+    // OK 长按 = 重置网络,但只在开机后 RESET_WINDOW_MS(10s)内有效。
+    // 启动窗口过了之后,OK 长按不再重置网络,避免正常播放时误触把网络清掉。
+    if (ev == BSP_BTN_LONG && btn == BSP_BTN_OK) {
+        if (esp_timer_get_time() - s_boot_us < RESET_WINDOW_MS * 1000) {
+            set_status("Reset WiFi (10s window)...");
+            dlna_wifi_clear_credentials();
+            vTaskDelay(pdMS_TO_TICKS(300));
+            dlna_wifi_restart();   // 重启后无凭证 → 自动进 AP 配网
+        } else {
+            set_status("Reset window over");   // 已过 10 秒,提示不生效。
+            ui_tick(NULL);
+        }
+        return;
+    }
+    // UP/DOWN 长按 = 切换播放(本地兜底)。
     if (ev == BSP_BTN_LONG && (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN)) {
         if (dlna_player_get_state() == DLNA_PLAYER_PAUSED) {
             dlna_player_resume();

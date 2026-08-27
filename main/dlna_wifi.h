@@ -30,6 +30,9 @@ esp_err_t dlna_wifi_start_ap(void);
 // 保存凭证到 NVS。配网页提交成功后调用,之后可调用 dlna_wifi_restart()。
 esp_err_t dlna_wifi_save_credentials(const char *ssid, const char *pass);
 
+// 清除已保存的网络凭证(NVS)。用于"长按 OK 重置网络"——清掉后重启会回到 AP 配网。
+esp_err_t dlna_wifi_clear_credentials(void);
+
 // 保存凭证后重启设备(使新凭证生效)。带 1s 延迟让用户看到提示。
 void dlna_wifi_restart(void);
 
@@ -47,6 +50,13 @@ const char *dlna_wifi_ap_pass_get(void);
 // 注意:AP 模式下扫描会短暂切到 STA 再切回 AP(断连几秒)。结果写入调用方,
 // 每个 SSID 最多 name_max 字节。返回扫描到的数量(负数=错误)。
 int dlna_wifi_scan_networks(char names[][33], int max_networks);
+
+// 开机时预扫一次附近 WiFi 并缓存,供配网页直接展示(不必等切 AP 后再在线扫)。
+// 在尝试连接 / 开热点之前调用效果最好(此时射频还没被 AP 占用)。
+void dlna_wifi_prefetch_networks(void);
+
+// 读取缓存的预扫 WiFi 列表(配网页用)。返回数量,若未预扫或列表空返回 0。
+int dlna_wifi_get_cached_networks(char names[][33], int max_networks);
 
 // 查询是否已连上 STA。
 bool dlna_wifi_is_connected(void);

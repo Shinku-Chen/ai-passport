@@ -11,7 +11,6 @@
 #include "esp_netif.h"
 #include "esp_log.h"
 #include "esp_system.h"
-#include "esp_random.h"
 #include "nvs_flash.h"
 #include "nvs.h"
 #include "freertos/FreeRTOS.h"
@@ -40,12 +39,19 @@ static volatile bool s_got_ip;
 static esp_event_handler_instance_t s_got_ip_inst;
 static SemaphoreHandle_t s_got_ip_sem;
 
-// AP 配网热点的 SSID(密码为开机随机生成,见 s_ap_pass)。
+// AP 配网热点的 SSID(密码固定,见下)。
 #define AP_SSID   "FoloToy-DLNA-AP"
-// 开机随机生成的 8 位数字热点密码(esp_random 生成),存此缓冲。
+// 热点密码固定为 66495386(用户要求,避免每次开机随机变、手机连不上)。
+#define AP_PASS   "66495386"
+// 热点密码缓冲(固定密码拷贝到这,供 ap_credentials/pass_get 返回)。
 static char s_ap_pass[16];
 // AP 配网模式标志。
 static bool s_ap_mode;
+
+// 开机预扫的 WiFi 列表缓存(配网页直接用它,不用在线扫)。
+#define CACHED_NET_MAX 20
+static char s_cached_nets[CACHED_NET_MAX][33];
+static int  s_cached_count;
 
 // IP_EVENT_STA_GOT_IP 回调:置位标志并唤醒等待的信号量。
 static void got_ip_cb(void *arg, esp_event_base_t base, int32_t id, void *data)
@@ -86,7 +92,7 @@ esp_err_t dlna_wifi_init(void)
     return ESP_OK;
 }
 
-// 读 NVS 里保存的凭证;没有则返回 false(需要开 AP 配网)。
+// 读 NVS 里保存的凭证;没有或无效(空 SSID)则返回 false(需要开 AP 配网)。
 static bool load_credentials(char *ssid, size_t ssid_max,
                              char *pass, size_t pass_max)
 {
@@ -96,12 +102,19 @@ static bool load_credentials(char *ssid, size_t ssid_max,
     esp_err_t e1 = nvs_get_str(h, NVS_KEY_SSID, ssid, &slen);
     esp_err_t e2 = nvs_get_str(h, NVS_KEY_PASS, pass, &plen);
     nvs_close(h);
-    return (e1 == ESP_OK && e2 == ESP_OK && slen > 0);
+    // slen == 1 表示只存了 '\0' 空串;ssid[0]=='\0' 也是空。这类凭证无效,必须当没凭证,
+    // 否则会拿空 SSID 去连 WiFi → 失败 → 反复转 AP 配网。
+    bool ok_ssid = (e1 == ESP_OK && slen > 1 && ssid[0] != '\0');
+    bool ok_pass = (e2 == ESP_OK && plen > 1 && pass[0] != '\0');
+    return ok_ssid && ok_pass;
 }
 
 // 保存凭证(配网成功后由 UI 层调用)。放在这里避免多余头。
 esp_err_t dlna_wifi_save_credentials(const char *ssid, const char *pass)
 {
+    // 拒存空 SSID——否则会存进一个空凭证,下次开机拿去连空 WiFi → 反复失败转 AP。
+    if (!ssid || ssid[0] == '\0') { ESP_LOGW(TAG, "拒存空的 SSID"); return ESP_FAIL; }
+
     nvs_handle_t h;
     if (nvs_open(NVS_NAMESPACE, NVS_READWRITE, &h) != ESP_OK) return ESP_ERR_NVS_NOT_FOUND;
     esp_err_t e1 = nvs_set_str(h, NVS_KEY_SSID, ssid);
@@ -111,6 +124,23 @@ esp_err_t dlna_wifi_save_credentials(const char *ssid, const char *pass)
     if (e1 != ESP_OK || e2 != ESP_OK || e3 != ESP_OK) return ESP_FAIL;
     ESP_LOGI(TAG, "已保存网络凭证");
     return ESP_OK;
+}
+
+// 清除已保存的网络凭证(用于"长按 OK 重置网络")。清掉后重启会回到 AP 配网。
+esp_err_t dlna_wifi_clear_credentials(void)
+{
+    nvs_handle_t h;
+    if (nvs_open(NVS_NAMESPACE, NVS_READWRITE, &h) != ESP_OK) return ESP_ERR_NVS_NOT_FOUND;
+    // 两个 key 都可能不存在(NOT_FOUND 是正常的前一次未保存),只把真正的错误当失败。
+    esp_err_t e1 = nvs_erase_key(h, NVS_KEY_SSID);
+    esp_err_t e2 = nvs_erase_key(h, NVS_KEY_PASS);
+    esp_err_t e3 = nvs_commit(h);
+    nvs_close(h);
+    if ((e1 != ESP_OK && e1 != ESP_ERR_NVS_NOT_FOUND) ||
+        (e2 != ESP_OK && e2 != ESP_ERR_NVS_NOT_FOUND)) return ESP_FAIL;
+    if (e3 != ESP_OK) return e3;
+    ESP_LOGI(TAG, "已清除网络凭证(重置网络)");
+    return e3;
 }
 
 // 等待 STA 拿到 IP:注册 GOT_IP 事件,用信号量阻塞,超时返回失败。
@@ -166,17 +196,23 @@ static esp_err_t connect_to_sta(const char *ssid, const char *pass)
     if (err != ESP_OK) return err;
     s_wifi_started = true;
 
+    // DLNA/SSDP 依赖流畅地接收组播(239.255.255.250:1900 的 M-SEARCH)。
+    // STA 默认是 WIFI_PS_MIN_MODEM,会在 DTIM 间隙休眠,导致组播帧经常收不到。
+    // 关掉 Modem-sleep(改为持续唤醒),保证组播能及时到达(牺牲一点功耗)。
+    // 必须在 esp_wifi_start() 之后调用,且需在收到 IP 前生效。
+    err = esp_wifi_set_ps(WIFI_PS_NONE);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "esp_wifi_set_ps(WIFI_PS_NONE) 失败: %s", esp_err_to_name(err));
+    }
+
     return wait_got_ip(ssid);
 }
 
-// 生成 8 位数字热点密码(用 esp_random;每个数字 0-9)。
+// 固定热点密码:把 AP_PASS 拷入 s_ap_pass(密码每次开机不变,方便用户连热点)。
 static void gen_ap_pass(void)
 {
-    const char *digits = "0123456789";
-    for (int i = 0; i < 8; i++) {
-        s_ap_pass[i] = digits[esp_random() % 10];
-    }
-    s_ap_pass[8] = '\0';
+    strncpy(s_ap_pass, AP_PASS, sizeof(s_ap_pass) - 1);
+    s_ap_pass[sizeof(s_ap_pass) - 1] = '\0';
 }
 
 // 启动 softAP 配网热点。用户连上后在手机/电脑访问 http://192.168.4.1 提交 WiFi。
@@ -232,7 +268,34 @@ int dlna_wifi_scan_networks(char names[][33], int max_networks)
 {
     if (max_networks <= 0) return -1;
 
-    // AP 模式下扫描:先切到 STA(会短暂断连),扫描完再恢复 AP。
+    // AP 模式下要扫描,必须先有一个 STA netif;没有它,esp_wifi_set_mode(STA)
+    // 之后扫描会找不到可用的 STA 接口而崩溃。确保 STA netif 存在。
+    if (!s_sta_netif) {
+        s_sta_netif = esp_netif_create_default_wifi_sta();
+        if (!s_sta_netif) {
+            ESP_LOGE(TAG, "scan: 创建 STA netif 失败");
+            return -1;
+        }
+    }
+
+    // wifi 必须已 init + start 才能扫描。开机早期(prefetch)可能还没 init,补上。
+    if (!s_wifi_started) {
+        wifi_init_config_t icfg = WIFI_INIT_CONFIG_DEFAULT();
+        esp_err_t ie = esp_wifi_init(&icfg);
+        if (ie != ESP_OK && ie != ESP_ERR_WIFI_INIT_STATE) {
+            ESP_LOGE(TAG, "scan: esp_wifi_init 失败 %s", esp_err_to_name(ie));
+            return -1;
+        }
+        esp_err_t st = esp_wifi_start();
+        if (st != ESP_OK && st != ESP_ERR_WIFI_STATE) {
+            ESP_LOGE(TAG, "scan: esp_wifi_start 失败 %s", esp_err_to_name(st));
+            return -1;
+        }
+        s_wifi_started = true;
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+
+    // 切到 STA 模式(会短暂断连,手机连的 AP 暂不可用),扫描完恢复 AP。
     esp_err_t e = esp_wifi_set_mode(WIFI_MODE_STA);
     if (e != ESP_OK) { ESP_LOGE(TAG, "scan: 切 STA 失败 %s", esp_err_to_name(e)); return -1; }
     vTaskDelay(pdMS_TO_TICKS(200));
@@ -270,11 +333,48 @@ int dlna_wifi_scan_networks(char names[][33], int max_networks)
     esp_wifi_scan_stop();
 
     // 恢复到 AP 模式,让热点继续。
-    esp_wifi_set_mode(WIFI_MODE_AP);
+    e = esp_wifi_set_mode(WIFI_MODE_AP);
     vTaskDelay(pdMS_TO_TICKS(300));
 
     ESP_LOGI(TAG, "扫描到 %d 个 WiFi", count);
     return count;
+}
+
+// 开机时预扫一次附近 WiFi 并缓存。放在 connect/开热点之前调用——此时射频尚未被
+// AP 占用,能扫到周围网络;之后配网页直接读这份缓存,不必等切 AP 后再在线扫。
+// 注意:这里会短暂切 STA 扫描(若当前在 AP 模式),扫描完恢复到当前模式。
+void dlna_wifi_prefetch_networks(void)
+{
+    char tmp[CACHED_NET_MAX][33];
+    int n = dlna_wifi_scan_networks(tmp, CACHED_NET_MAX);
+    s_cached_count = 0;
+    if (n <= 0) { ESP_LOGW(TAG, "预扫未取到 WiFi 列表 (%d)", n); return; }
+
+    // 拷贝到缓存,去重。
+    for (int i = 0; i < n && s_cached_count < CACHED_NET_MAX; i++) {
+        if (tmp[i][0] == '\0') continue;
+        bool dup = false;
+        for (int j = 0; j < s_cached_count; j++) {
+            if (strcmp(s_cached_nets[j], tmp[i]) == 0) { dup = true; break; }
+        }
+        if (!dup) {
+            strncpy(s_cached_nets[s_cached_count], tmp[i], 32);
+            s_cached_nets[s_cached_count][32] = '\0';
+            s_cached_count++;
+        }
+    }
+    ESP_LOGI(TAG, "预扫缓存 %d 个 WiFi", s_cached_count);
+}
+
+int dlna_wifi_get_cached_networks(char names[][33], int max_networks)
+{
+    if (!names || max_networks <= 0) return 0;
+    int n = s_cached_count < max_networks ? s_cached_count : max_networks;
+    for (int i = 0; i < n; i++) {
+        strncpy(names[i], s_cached_nets[i], 32);
+        names[i][32] = '\0';
+    }
+    return n;
 }
 
 void dlna_wifi_ap_credentials(char *ssid, size_t ssid_max,
@@ -304,6 +404,10 @@ dlna_wifi_result_t dlna_wifi_connect(void)
         ESP_LOGE(TAG, "网络栈初始化失败: %s", esp_err_to_name(e));
         return DLNA_WIFI_FAIL;
     }
+
+    // 开机先预扫一次附近 WiFi 并缓存:此时射频尚未被 AP 占用,能扫到周围网络。
+    // 之后无论连 STA 成功还是转 AP 配网,配网页都能直接展示这份列表,不必等在线扫。
+    dlna_wifi_prefetch_networks();
 
     char ssid[64], pass[64];
     bool have = load_credentials(ssid, sizeof(ssid), pass, sizeof(pass));

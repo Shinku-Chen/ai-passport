@@ -56,6 +56,13 @@ static void ssdp_notify(void)
         bind(sock, (struct sockaddr *)&local, sizeof(local));
     }
 
+    // 发送端:显式指定组播外发接口 + TTL=2(SSDP 标准值,确保同网段设备可达)。
+    struct in_addr mcast_if;
+    inet_aton(ip_str, &mcast_if);
+    setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF, (const char *)&mcast_if, sizeof(mcast_if));
+    unsigned char ttl = 2;
+    setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, (const char *)&ttl, sizeof(ttl));
+
     struct sockaddr_in dest = {0};
     dest.sin_family = AF_INET;
     dest.sin_port = htons(SSDP_MCAST_PORT);
@@ -137,25 +144,50 @@ static void ssdp_task(void *arg)
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) { ESP_LOGE(TAG, "ssdp task socket 失败"); vTaskDelete(NULL); return; }
 
+    // 关掉 Modem-sleep 后组播/广播会稳定到达,但接收 socket 的绑定与组播加入方式
+    // 也必须正确,否则 lwIP 不知道从哪个 netif 收组播。注意在 STA 模式下,
+    // 用具体接口 IP(而非 INADDR_ANY)让 IP_ADD_MEMBERSHIP 精确命中 STA netif。
+    const char *ip_str = dlna_wifi_ip_str();
+    if (!ip_str || !*ip_str) ip_str = "0.0.0.0";
+
     int ok = 1;
     setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char *)&ok, sizeof(ok));
+
     struct sockaddr_in local = {0};
     local.sin_family = AF_INET;
     local.sin_port = htons(SSDP_MCAST_PORT);
-    local.sin_addr.s_addr = INADDR_ANY;
+    // 绑定到本机 STA 接口 IP(非 INADDR_ANY)。这让 socket 只在该网卡上收,且
+    // 配合下面的具体接口 IP 加入组播,确保组播帧投递到本机而非被其他 netif 抢走。
+    inet_aton(ip_str, &local.sin_addr);
     if (bind(sock, (struct sockaddr *)&local, sizeof(local)) != 0) {
-        ESP_LOGE(TAG, "ssdp bind 失败(端口被占?)");
-        close(sock); vTaskDelete(NULL); return;
+        // 某些网络栈在端口被其他 socket 占用时更宽松;若绑具体 IP 失败,退化为
+        // 绑定所有接口(仍保留组播加入,只是可能多收一份)。真正需要绑具体 IP 时
+        // 失败属异常,直接返回以便排查。
+        ESP_LOGE(TAG, "ssdp bind(%s) 失败,改用 INADDR_ANY", ip_str);
+        local.sin_addr.s_addr = INADDR_ANY;
+        if (bind(sock, (struct sockaddr *)&local, sizeof(local)) != 0) {
+            ESP_LOGE(TAG, "ssdp bind 失败(端口被占?)");
+            close(sock); vTaskDelete(NULL); return;
+        }
     }
 
-    // 加入组播。lwIP 接收组播时 imr_interface 用 INADDR_ANY 让系统走默认接口,
-    // 用具体 IP 反而可能选错网卡导致收不到 M-SEARCH。
+    // 发送端:设置组播外发接口为 STA IP、TTL=2(SSDP 标准要求,保证同网段可达)。
+    struct in_addr mcast_if;
+    inet_aton(ip_str, &mcast_if);
+    setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF, (const char *)&mcast_if, sizeof(mcast_if));
+    unsigned char ttl = 2;
+    setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, (const char *)&ttl, sizeof(ttl));
+
+    // 加入组播。关键:imr_interface 必须用本机 STA 接口 IP(不能 INADDR_ANY)。
+    // lwIP 的 igmp_joingroup 在 ifaddr=ANY 时会遍历所有带 IGMP flag 的 netif
+    // 逐网卡加入;而 ESP32 的 STA netif(WLAN_STA)与 AP netif(WLAN_AP)都带 IGMP flag,
+    // 用具体 IP 才能精确选中 STA,避免组播帧在 IP 层被错误路由/丢弃。
     struct ip_mreq mreq = {0};
     inet_aton(SSDP_MCAST_IP, &mreq.imr_multiaddr);
-    mreq.imr_interface.s_addr = INADDR_ANY;
+    inet_aton(ip_str, &mreq.imr_interface);
     int join = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,
                           (const char *)&mreq, sizeof(mreq));
-    ESP_LOGI(TAG, "SSDP 发现任务启动 join=%d", join);
+    ESP_LOGI(TAG, "SSDP 发现任务启动 join=%d (if=%s)", join, ip_str);
 
     // 周期广播 NOTIFY(alive),并响应 M-SEARCH。手机"点投屏才搜索"时,
     // 只发一次的启动 NOTIFY 早就过了,必须持续广播才能被搜到。
@@ -389,7 +421,48 @@ static esp_err_t dlna_player_status_handler(httpd_req_t *req)
 // 适配移动端(viewport + 大按钮),并支持"扫描 WiFi"。
 static esp_err_t wifi_config_page(httpd_req_t *req)
 {
+    // 区分模式:站端(STA)联网时返回"已连接/投屏引导"页;AP 配网模式才返回配网表单。
+    if (!dlna_wifi_is_ap_mode()) {
+        // 设备已连上 WiFi:手机访问设备 IP 看到投屏指引,而非配网表单。
+        const char *ip = dlna_wifi_ip_str();
+        char body[2048];
+        int len = snprintf(body, sizeof(body),
+            "<!DOCTYPE html><html><head><meta charset='UTF-8'>"
+            "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+            "<title>FoloToy 投屏</title>"
+            "<style>body{font-family:sans-serif;margin:0;padding:16px;background:#f4f4ea;color:#17202a}"
+            "h3{margin:6px 0}.tip{font-size:15px;line-height:1.6;color:#0872c9}"
+            ".ip{font-size:22px;font-weight:bold;margin:10px 0;color:#17202a}"
+            "</style></head><body>"
+            "<h3>FoloToy 投屏播放器</h3>"
+            "<p class='tip'>设备已连接 WiFi。</p>"
+            "<p class='tip'>请在手机上的网易云 / QQ 音乐等 App 里点「投屏」,选择设备 <b>FoloToy Music Player</b> 即可播放。</p>"
+            "<p>设备 IP: <b class='ip'>%s</b></p>"
+            "<p class='tip'>长按设备 OK 键可重置网络。</p>"
+            "</body></html>",
+            ip && *ip ? ip : "unknown");
+        httpd_resp_set_type(req, "text/html");
+        if (len < 0) len = 0;
+        return httpd_resp_send(req, body, (size_t)len);
+    }
+
+    // AP 配网模式:返回配网表单(选 WiFi + 输密码)。
     const char *ap_pass = dlna_wifi_ap_pass_get();
+    // 预扫缓存列表,直接内嵌为 <option>。刷新配网页即见已扫到的 WiFi,
+    // 不必再点"扫描"(在线 /scan 会断连 AP)。
+    enum { CACHED_MAX = 20 };
+    char nets_html[1024] = {0};
+    char cached[CACHED_MAX][33];
+    int nc = dlna_wifi_get_cached_networks(cached, CACHED_MAX);
+    if (nc > 0) {
+        int off = 0;
+        for (int i = 0; i < nc && off < (int)sizeof(nets_html) - 40; i++) {
+            int a = snprintf(nets_html + off, sizeof(nets_html) - (size_t)off,
+                             "<option value='%s'>%s</option>", cached[i], cached[i]);
+            if (a < 0) break;
+            off += a;
+        }
+    }
     // 用 HTML 转义防止注入(数字密码,实际无风险,但保持规范)。
     char body[4096];
     int len = snprintf(body, sizeof(body),
@@ -410,28 +483,13 @@ static esp_err_t wifi_config_page(httpd_req_t *req)
         "</style></head><body>"
         "<h3>WiFi 配网</h3>"
         "<p class='hint'>热点密码: <b>%s</b></p>"
-        "<button class='ghost' onclick='doScan()'>扫描 WiFi</button>"
-        "<div id='list' class='list' style='display:none'></div>"
         "<form method='POST' action='/save' id='f'>"
-        "<select id='ssid' name='ssid'><option value=''>请选择或输入 WiFi</option></select>"
-        "<input id='ssid_in' name='ssid' placeholder='或直接输入 WiFi 名' style='display:none'><br>"
+        "<select id='ssid' name='ssid'><option value=''>选择 WiFi</option>%s</select>"
         "密码: <input type='password' name='pass'><br>"
         "<button type='submit'>保存并重启</button>"
         "</form>"
-        "<script>"
-        "var sel='';"
-        "function doScan(){var l=document.getElementById('list');l.style.display='block';"
-        "l.innerHTML='扫描中... (热点会短暂断开,请等待几秒)';"
-        "fetch('/scan').then(function(r){return r.json()}).then(function(d){"
-        "var w=l.innerHTML=''; var s=document.getElementById('ssid'); s.innerHTML='';"
-        "var opt=document.createElement('option');opt.value='';opt.text='请选择 WiFi';s.appendChild(opt);"
-        "d.nets.forEach(function(n,i){"
-        "var o=document.createElement('option');o.value=n;o.text=n;s.appendChild(o);"
-        "var dd=document.createElement('div');dd.textContent=n;dd.onclick=function(){sel=n;"
-        "s.value=n;var ds=l.querySelectorAll('.sel');for(var j=0;j<ds.length;j++)ds[j].className='';"
-        "dd.className='sel';};l.appendChild(dd);});})}"
-        "</script></body></html>",
-        ap_pass);
+        "</body></html>",
+        ap_pass, nets_html);
     httpd_resp_set_type(req, "text/html");
     if (len < 0) len = 0;
     return httpd_resp_send(req, body, (size_t)len);
@@ -513,6 +571,11 @@ esp_err_t dlna_service_start(void)
     // 需要注册 10 个 URI(description + 3 SCPD + 3 SOAP + status + 配网页 + save),
     // 默认 max_uri_handlers(=8)不够,加大避免 "no slots left"。
     cfg.max_uri_handlers = 16;
+    // ⚠ httpd 默认 stack_size=4096,而配网页 handler(wifi_config_page)在栈上分配
+    //   char body[4096]。4KB 缓冲 + handler 栈帧 > 4KB 任务栈 → 栈溢出崩溃(刷新配网页
+    //   必触发,即用户看到的"刷新闪退")。必须把栈提到 8192。
+    cfg.stack_size = 8192;
+    cfg.max_req_hdr_len = 2048;   // SOAP body 可能较大,放宽请求头
     esp_err_t err = httpd_start(&s_server, &cfg);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "httpd_start 失败(端口占用?): %s", esp_err_to_name(err));
