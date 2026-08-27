@@ -6,6 +6,10 @@
 
 ## Unreleased
 
+- 新增演示应用「今天吃啥」：按键驱动的轮盘，按住按键循环播放两份 GIF 来源的食物动画，松开即停在当前帧。实现为 `main/demo_eat_what.c`，基于 LVGL I8 索引色二进制素材（`main/eat_what_g1.bin` / `eat_what_g2.bin`，经 `EMBED_FILES` 嵌入），配套纯状态机模块 `main/ui_eatwhat_math.c` 与素材生成脚本 `tools/generate_eat_what_assets.py`。按住上键循环「午餐引导」动画（10 fps），按住下键循环「食物选择器」动画（20 fps），松开停在当前帧。
+- 新增全局自动关机：任意外设/页面 2 分钟无按键活动即关闭背光并进入深睡，由 GPIO0 低电平唤醒（板级外部 10k 上拉维持常态高，按下任意键即拉低）。实现于 `main/autopower.c`，闲置判定为纯逻辑 `main/ui_autopower_math.c`。因 ESP32-C3 无 EXT0/EXT1，改用 RTC GPIO0 结合外部上拉实现低电平唤醒。
+- 固件精简为单应用：开机直接进入「今天吃啥」，不再有主菜单。从 `main/CMakeLists.txt` 移除其他演示页（Display/Button/Audio/Battery/Radio/Wi-Fi/BLE/Low Power）及其构建依赖（`bt`、`esp_netif`、`esp_wifi`），`main/main.c` 与 `main/demo.h` 收窄为单个应用。Wi-Fi/蓝牙协议栈与音频/电量外设不再于开机时初始化。
+- 新增候选快速刷新渲染器（`main/ui_eatwhat_render.c`），用于对比 LVGL 的局部重绘：它直接驱动 `esp_lcd_panel_draw_bitmap` 只刷新图片矩形，并支持可选的隔行两趟（先偶行后奇行，每趟像素减半）。应用内单击 OK 即可切换。供上板 A/B 测刷新速度与撕裂；在真机测量前不作为定稿。
 - 新增发布后收尾流程：`issue-suggestions` skill 用于把用户反馈作为 issue 提交到上游项目；`experience-pr` skill 用于把可复用的开发经验作为文档 PR 提交；新增 `docs/experiences/` 目录保存单条经验文件；并配套 `after-release`、`file-issues` 与经验索引文档。
 - 精简仓库根目录：将 GitHub 可识别的社区治理文档迁入 `.github/`，将变更记录迁入 `docs/`，同步全部引用，并在仓库检查中加入根目录文档白名单。
 - 全仓库文档语言规范：所有维护中的 Markdown 默认 `.md` 文件使用英文，简体中文使用配对的 `.zh_CN.md`，双方提供语言切换；静态检查会阻止缺失配对、缺失切换链接或英文默认页混入中文正文。
