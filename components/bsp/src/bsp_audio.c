@@ -135,10 +135,20 @@ esp_err_t bsp_audio_set_format(uint32_t hz, uint8_t bits, uint8_t ch) {
         if (s_rx) i2s_channel_enable(s_rx);
     }
 
+    // channel_mask 原来写死为只使能 channel 0。那能满足"单声道麦克风录音"demo,
+    // 但立体声播放(如 DLNA 投递的 44.1k/48k 双声道)会只出一路或驱动层数据错位。
+    // 现按 ch 构造:1 声道 = 左声道;2 声道 = 左 + 右(两个通道全使能)。
+    uint32_t channel_mask;
+    if (ch >= 2) {
+        channel_mask = ESP_CODEC_DEV_MAKE_CHANNEL_MASK(0) | ESP_CODEC_DEV_MAKE_CHANNEL_MASK(1);
+    } else {
+        channel_mask = ESP_CODEC_DEV_MAKE_CHANNEL_MASK(0);
+    }
+
     esp_codec_dev_sample_info_t fs = {
         .bits_per_sample = bits,
         .channel = ch,
-        .channel_mask = ESP_CODEC_DEV_MAKE_CHANNEL_MASK(0),
+        .channel_mask = channel_mask,
         .sample_rate = hz,
         .mclk_multiple = 0,          // 0 → 驱动按默认 256xfs 取 MCLK
     };

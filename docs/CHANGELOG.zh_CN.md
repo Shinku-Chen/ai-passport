@@ -6,6 +6,7 @@
 
 ## Unreleased
 
+- 新增 DLNA/UPnP 媒体渲染器应用（feature `netease-dlna-player`）：设备端 `main/` demo，把手机上的音频（网易云 / QQ 音乐投屏，须为局域网 HTTP 的本地 MP3）投到设备播放。它复用 ES8311 BSP 走 I2S 输出，用内置的 `minimp3` `music_decoder` 组件解码，并新增 `dlna_player` 播放管道、`dlna_service`（SSDP + HTTP/SOAP）与 `dlna_wifi`（STA 连接 + AP 配网）。`bsp_audio_set_format` 现支持按双声道构建 mask 输出立体声。
 - 规定多应用发布的 Release 标题约定：tag 按 `v<版本>-<应用名>`（如 `v0.1.0-voice-keychain`）命名，让 Release 标题同时带版本与应用名；发布成功后核对标题，保证一眼扫 Release 列表就能区分是哪个应用。
 - 新增发布后收尾流程：`issue-suggestions` skill 用于把用户反馈作为 issue 提交到上游项目；`experience-pr` skill 用于把可复用的开发经验作为文档 PR 提交；新增 `docs/experiences/` 目录保存单条经验文件；并配套 `after-release`、`file-issues` 与经验索引文档。
 - 精简仓库根目录：将 GitHub 可识别的社区治理文档迁入 `.github/`，将变更记录迁入 `docs/`，同步全部引用，并在仓库检查中加入根目录文档白名单。

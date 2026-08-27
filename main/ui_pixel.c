@@ -35,13 +35,19 @@ static void add_cloud(lv_obj_t *parent, int x, int y)
 
 lv_obj_t *ui_pixel_screen_create(const char *title)
 {
+    lv_obj_t *scr = ui_pixel_screen_create_nocloud(title);
+    add_cloud(scr, 188, 8);   // 默认带右上角装饰云朵
+    return scr;
+}
+
+lv_obj_t *ui_pixel_screen_create_nocloud(const char *title)
+{
     lv_obj_t *scr = lv_obj_create(NULL);
     lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_bg_color(scr, lv_color_hex(UI_SKY), 0);
     lv_obj_set_style_border_width(scr, 0, 0);
     lv_obj_set_style_pad_all(scr, 0, 0);
 
-    add_cloud(scr, 188, 8);
     block(scr, 0, 286, 240, 34, UI_GRASS);
     block(scr, 0, 286, 240, 4, 0xA7D93E);
     for (int x = 0; x < 240; x += 30) {

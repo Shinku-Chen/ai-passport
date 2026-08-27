@@ -14,6 +14,9 @@
 #define UI_MUTED      0xD9E7EC
 
 lv_obj_t *ui_pixel_screen_create(const char *title);
+// 同 screen_create,但不在右上角画装饰云朵。
+// 供需要把右上角留给其它内容(如电量)的页面使用。
+lv_obj_t *ui_pixel_screen_create_nocloud(const char *title);
 lv_obj_t *ui_pixel_panel_create(lv_obj_t *parent, int x, int y, int w, int h,
                                 uint32_t color);
 lv_obj_t *ui_pixel_label(lv_obj_t *parent, const char *text,

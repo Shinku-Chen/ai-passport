@@ -6,6 +6,7 @@
 
 ## Unreleased
 
+- Added a DLNA/UPnP media renderer application (feature `netease-dlna-player`): an on-device `main/` demo that casts audio from a phone (NetEase Cloud Music / QQ Music "screen mirroring" must be a local MP3 over HTTP). It reuses the ES8311 BSP for I2S output, decodes with a bundled `minimp3`-based `music_decoder` component, and adds a new `dlna_player` pipeline, `dlna_service` (SSDP + HTTP/SOAP), and `dlna_wifi` (STA connect + AP provisioning). `bsp_audio_set_format` now supports stereo by building a two-channel mask.
 - Documented a release-title convention for multi-app releases: name tags as `v<version>-<app-name>` (e.g. `v0.1.0-voice-keychain`) so the release title carries the version and the app, and confirm the title after the release is published so a release list is scannable by app.
 - Added a post-release follow-up workflow: an `issue-suggestions` skill for filing user feedback as issues against the upstream project, an `experience-pr` skill for submitting reusable development experience as a documentation PR, a `docs/experiences/` directory for per-entry experience files, and supporting `after-release`, `file-issues`, and experience-index documents.
 - Simplified the tracked repository root: moved GitHub-recognized community documents into `.github/`, moved the changelog into `docs/`, updated every reference, and added a root-document allowlist to repository checks.
