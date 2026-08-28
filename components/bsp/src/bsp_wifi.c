@@ -26,7 +26,9 @@ static const char *TAG = "bsp_wifi";
 static bool s_wifi_initialized;
 static bool s_wifi_started;
 static esp_netif_t *s_sta_netif;
+static esp_netif_t *s_ap_netif;
 static char s_ip_str[16];
+static char s_ap_ip_str[16];
 static char s_ssid[33];
 static char s_pass[65];
 static volatile bsp_wifi_state_t s_state = BSP_WIFI_IDLE;
@@ -210,5 +212,111 @@ void bsp_wifi_deinit(void)
         esp_netif_destroy_default_wifi(s_sta_netif);
         s_sta_netif = NULL;
     }
+    if (s_ap_netif) {
+        esp_netif_destroy_default_wifi(s_ap_netif);
+        s_ap_netif = NULL;
+    }
     set_state(BSP_WIFI_IDLE);
+}
+
+/* ─────────────── SoftAP 配网 ─────────────── */
+
+bool bsp_wifi_has_credentials(void)
+{
+    nvs_handle_t handle;
+    if (nvs_open(BSP_WIFI_NVS_NAMESPACE, NVS_READONLY, &handle) != ESP_OK) {
+        return false;
+    }
+    nvs_close(handle);
+    // 二次确认:ssid 非空。
+    char tmp[33] = {0};
+    size_t len = sizeof(tmp);
+    if (nvs_open(BSP_WIFI_NVS_NAMESPACE, NVS_READONLY, &handle) != ESP_OK) return false;
+    bool ok = (nvs_get_str(handle, BSP_WIFI_NVS_KEY_SSID, tmp, &len) == ESP_OK && tmp[0]);
+    nvs_close(handle);
+    return ok;
+}
+
+esp_err_t bsp_wifi_save_credentials(const char *ssid, const char *password)
+{
+    if (!ssid || !ssid[0]) return ESP_ERR_INVALID_ARG;
+    nvs_handle_t handle;
+    esp_err_t err = nvs_open(BSP_WIFI_NVS_NAMESPACE, NVS_READWRITE, &handle);
+    if (err != ESP_OK) return err;
+    err = nvs_set_str(handle, BSP_WIFI_NVS_KEY_SSID, ssid);
+    if (err == ESP_OK) err = nvs_set_str(handle, BSP_WIFI_NVS_KEY_PASS,
+                                         password ? password : "");
+    if (err == ESP_OK) err = nvs_commit(handle);
+    nvs_close(handle);
+    return err;
+}
+
+const char *bsp_wifi_get_ap_ip(void)
+{
+    return s_ap_ip_str;
+}
+
+esp_err_t bsp_wifi_start_ap(const char *ssid, const char *password)
+{
+    if (s_wifi_initialized && s_wifi_started) {
+        // 已启动过:切到 APSTA。
+    }
+    esp_wifi_set_mode(WIFI_MODE_APSTA);
+
+    // 创建 AP netif(避免重复)。
+    if (!s_ap_netif) {
+        s_ap_netif = esp_netif_create_default_wifi_ap();
+    }
+    if (!s_ap_netif) return ESP_ERR_NO_MEM;
+
+    wifi_config_t ap_cfg = {0};
+    strlcpy((char *)ap_cfg.ap.ssid, ssid ? ssid : "AI-Passport-Prov",
+            sizeof(ap_cfg.ap.ssid));
+    if (password && password[0]) {
+        const char *p = password;
+        size_t len;
+        if ((len = strlen(password)) >= 8) {
+            strlcpy((char *)ap_cfg.ap.password, p, sizeof(ap_cfg.ap.password));
+            ap_cfg.ap.authmode = WIFI_AUTH_WPA2_PSK;
+        } else {
+            ap_cfg.ap.authmode = WIFI_AUTH_OPEN;
+        }
+    } else {
+        ap_cfg.ap.authmode = WIFI_AUTH_OPEN;
+    }
+    ap_cfg.ap.max_connection = 4;
+    ap_cfg.ap.channel = 6;
+
+    esp_err_t err = esp_wifi_set_config(WIFI_IF_AP, &ap_cfg);
+    if (err != ESP_OK) return err;
+    err = esp_wifi_start();
+    if (err != ESP_OK) return err;
+    s_wifi_started = true;
+
+    // 软AP IP 默认 192.168.4.1(由 esp_netif 分配)。
+    esp_netif_ip_info_t ip;
+    if (esp_netif_get_ip_info(s_ap_netif, &ip) == ESP_OK) {
+        snprintf(s_ap_ip_str, sizeof(s_ap_ip_str), IPSTR, IP2STR(&ip.ip));
+    } else {
+        strlcpy(s_ap_ip_str, "192.168.4.1", sizeof(s_ap_ip_str));
+    }
+    ESP_LOGI(TAG, "SoftAP 启动: ssid=%s 密码=%s IP=%s(手机浏览器访问配网)",
+             ap_cfg.ap.ssid,
+             ap_cfg.ap.authmode == WIFI_AUTH_OPEN ? "(开放)" : "***",
+             s_ap_ip_str);
+    return ESP_OK;
+}
+
+esp_err_t bsp_wifi_stop_ap(void)
+{
+    // 转回纯 STA 模式,重启后走 bsp_wifi_init 联网。
+    esp_err_t err = esp_wifi_set_mode(WIFI_MODE_STA);
+    if (err != ESP_OK) return err;
+    if (s_ap_netif) {
+        esp_netif_destroy_default_wifi(s_ap_netif);
+        s_ap_netif = NULL;
+    }
+    s_ap_ip_str[0] = '\0';
+    ESP_LOGI(TAG, "SoftAP 已关闭,转纯 STA");
+    return ESP_OK;
 }

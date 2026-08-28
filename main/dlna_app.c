@@ -16,6 +16,7 @@
 #include "bsp_pins.h"
 #include "ui_pixel.h"
 #include "miplay.h"
+#include "net_prov.h"
 
 #include "lvgl.h"
 #include "esp_log.h"
@@ -287,25 +288,11 @@ static void dlna_on_miplay_connected(bool connected)
     }
 }
 
-/* ─────────────── 对外启动接口 ─────────────── */
-void dlna_app_start(void)
+/* ─────────────── DLNA/MiPlay 服务(仅已配网时启动,避免内存峰值) ─────────────── */
+static void dlna_services_start(void)
 {
-    ESP_LOGI(TAG, "DLNA 接收器启动");
-
-    // 音频(先于播放)
-    bsp_audio_init();
+    // 音频(先于播放;仅 DLNA 播放需要,配网阶段不起)
     dlna_audio_init(on_audio_evt, NULL);
-
-    // 构建 UI
-    ui_build();
-
-    // WiFi(固定 SSID + 预留配网;此处用空配置读 NVS,未配则提示)
-    bsp_wifi_set_evt_cb(on_wifi_evt, NULL);
-    esp_err_t werr = bsp_wifi_init(NULL);
-    if (werr != ESP_OK) {
-        ESP_LOGW(TAG, "WiFi 初始化返回: %s", esp_err_to_name(werr));
-        if (s_ui_ready) lv_label_set_text(s_status_label, "WiFi 未配置\n请先配网");
-    }
 
     // DLNA 协议栈
     static const custom_dlna_config_t dlna_cfg = {
@@ -341,6 +328,38 @@ void dlna_app_start(void)
         ESP_LOGW(TAG, "MiPlay 初始化返回: %s", esp_err_to_name(merr));
     } else {
         ESP_LOGI(TAG, "MiPlay 服务已启动");
+    }
+}
+
+/* ─────────────── 对外启动接口 ─────────────── */
+void dlna_app_start(void)
+{
+    ESP_LOGI(TAG, "DLNA 接收器启动");
+
+    // 构建 UI
+    ui_build();
+
+    // WiFi(固定 SSID 直连 + 配网分流)
+    bsp_wifi_set_evt_cb(on_wifi_evt, NULL);
+    esp_err_t werr = bsp_wifi_init(NULL);
+    if (werr != ESP_OK) {
+        ESP_LOGW(TAG, "WiFi 初始化返回: %s", esp_err_to_name(werr));
+    }
+
+    if (bsp_wifi_has_credentials()) {
+        // 已配网 → DLNA/MiPlay 服务(内存富余时起)
+        dlna_services_start();
+        if (s_ui_ready) lv_label_set_text(s_status_label, "已配网,等待手机投屏(DLNA)");
+    } else {
+        // 未配网 → 只起软AP配网(不起 DLNA,避免内存峰值)
+        ESP_LOGI(TAG, "未配网,开启 SoftAP 配网热点");
+        bsp_wifi_start_ap("AI-Passport-Prov", "ai-passport");
+        net_prov_start();
+        if (s_ui_ready) {
+            lv_label_set_text_fmt(s_status_label,
+                                  "配网: 连热点 AI-Passport-Prov\n浏览器开 http://%s/",
+                                  bsp_wifi_get_ap_ip());
+        }
     }
 
     // UI 刷新定时器

@@ -39,3 +39,7 @@ CONFIG_BT_NIMBLE_ROLE_OBSERVER=n
 CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
 CONFIG_BT_NIMBLE_HOST_BASED_PRIVACY=n
 CONFIG_BT_NIMBLE_NVS_PERSIST=n
+
+# --- 网络:LWIP socket 数(供 DLNA httpd 与配网 httpd 同时运行) ---
+# custom_dlna httpd(max_open_sockets=7, 需 10 socket) + 配网 httpd, 再加 SSDP/GENA 等。
+CONFIG_LWIP_MAX_SOCKETS=16

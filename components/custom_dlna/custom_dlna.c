@@ -1381,6 +1381,8 @@ esp_err_t custom_dlna_init(const custom_dlna_config_t *config)
     cfg.send_wait_timeout = 10;
     cfg.recv_wait_timeout = 10;
     cfg.uri_match_fn = httpd_uri_match_wildcard;
+    // C3 单核:显式绑 core0,避免 tskNO_AFFINITY 触发 xTaskCreatePinnedToCore 断言。
+    cfg.core_id = 0;
 
     if (httpd_start(&s_server, &cfg) != ESP_OK) {
         ESP_LOGE(TAG, "HTTP server start failed");

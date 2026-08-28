@@ -52,6 +52,25 @@ esp_err_t bsp_wifi_reconnect(void);
 // 停止并释放 WiFi。
 void bsp_wifi_deinit(void);
 
+// ---- SoftAP 配网接口 ----
+
+// 是否已保存过配网凭证(NVS 里有 SSID)。
+bool bsp_wifi_has_credentials(void);
+
+// 保存配网凭证到 NVS(配网成功后由应用调用)。失败返回 esp_err。
+esp_err_t bsp_wifi_save_credentials(const char *ssid, const char *password);
+
+// 开启 SoftAP 配网热点(APSTA 模式)。设备开热点后手机浏览器访问
+// 热点 IP(默认 192.168.4.1)填 SSID/密码。ssid 缺省用 "AI-Passport-Prov"。
+// 返回热点 IP 字符串(经 bsp_wifi_get_ap_ip 获取)。
+esp_err_t bsp_wifi_start_ap(const char *ssid, const char *password);
+
+// 获取 SoftAP 热点 IP 字符串(未开启时为空)。
+const char *bsp_wifi_get_ap_ip(void);
+
+// 关闭 SoftAP,转为纯 STA(配网完成后调用,随后 bsp_wifi_init 会连 STA)。
+esp_err_t bsp_wifi_stop_ap(void);
+
 #ifdef __cplusplus
 }
 #endif
