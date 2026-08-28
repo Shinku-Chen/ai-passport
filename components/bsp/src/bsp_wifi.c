@@ -284,16 +284,17 @@ void bsp_wifi_clear_credentials(void)
 
 esp_err_t bsp_wifi_start_ap(const char *ssid, const char *password)
 {
-    if (s_wifi_initialized && s_wifi_started) {
-        // 已启动过:切到 APSTA。
-    }
-    esp_wifi_set_mode(WIFI_MODE_APSTA);
-
-    // 创建 AP netif(避免重复)。
+    // 严格对齐官方 captive portal 示例的时序:
+    //   1) 先创建 AP netif(DHCP server 由它自动启动、IP 默认 192.168.4.1)
+    //   2) 再 set_mode(APSTA) + set_config + start
+    // 顺序错会导致 AP 的 DHCP server 未正确绑定,手机拿不到 IP。
     if (!s_ap_netif) {
         s_ap_netif = esp_netif_create_default_wifi_ap();
     }
     if (!s_ap_netif) return ESP_ERR_NO_MEM;
+
+    esp_err_t err = esp_wifi_set_mode(WIFI_MODE_APSTA);
+    if (err != ESP_OK) return err;
 
     wifi_config_t ap_cfg = {0};
     strlcpy((char *)ap_cfg.ap.ssid, ssid ? ssid : "AI-Passport-Prov",
@@ -313,7 +314,7 @@ esp_err_t bsp_wifi_start_ap(const char *ssid, const char *password)
     ap_cfg.ap.max_connection = 4;
     ap_cfg.ap.channel = 6;
 
-    esp_err_t err = esp_wifi_set_config(WIFI_IF_AP, &ap_cfg);
+    err = esp_wifi_set_config(WIFI_IF_AP, &ap_cfg);
     if (err != ESP_OK) return err;
     err = esp_wifi_start();
     if (err != ESP_OK) return err;
@@ -331,28 +332,11 @@ esp_err_t bsp_wifi_start_ap(const char *ssid, const char *password)
              ap_cfg.ap.authmode == WIFI_AUTH_OPEN ? "(开放)" : "***",
              s_ap_ip_str);
 
-    // 确保 AP 的静态 IP 为 192.168.4.1(网关/DNS 指向本机),这样 DHCP 服务器
-    // 下发给手机的 gateway/DNS 都是本机 → captive portal 才能触发。
-    if (s_ap_netif) {
-        esp_netif_ip_info_t ap_ip = {0};
-        ap_ip.ip.addr = esp_ip4addr_aton("192.168.4.1");
-        ap_ip.gw.addr = esp_ip4addr_aton("192.168.4.1");
-        ap_ip.netmask.addr = esp_ip4addr_aton("255.255.255.0");
-        esp_netif_set_ip_info(s_ap_netif, &ap_ip);
-    }
-
-    // DHCP 服务器 Option 114(Captive Portal URI):手机连上热点后,
-    // 系统识别到认证页面地址,自动弹出配网页(官方 captive portal 增强方式,
-    // 比纯 DNS 拦截更标准,能绕开 HTTPS/HSTS)。
-    static char cp_uri[] = "http://192.168.4.1/";
-    if (s_ap_netif) {
-        esp_netif_dhcps_stop(s_ap_netif);
-        esp_netif_dhcps_option(s_ap_netif, ESP_NETIF_OP_SET,
-                               ESP_NETIF_CAPTIVEPORTAL_URI, cp_uri, strlen(cp_uri));
-        esp_netif_dhcps_start(s_ap_netif);
-        ESP_LOGI(TAG, "DHCP/DNS: IP/DNS=192.168.4.1, Captive Portal Option 114=%s",
-                 cp_uri);
-    }
+    // 重要:AP 的 DHCP server 由 esp_netif_create_default_wifi_ap 自动启动,
+    // 默认把 IP/网关 配置为 192.168.4.1。这里【不要】再 dhcps_stop/start 或
+    // set_ip_info——在 APSTA 双模式下重复操作 DHCP 可能导致手机拿不到 IP。
+    // DNS 拦截(端口53)+ 404 重定向 已足以触发 captive portal,option114 暂不启用。
+    ESP_LOGI(TAG, "AP DHCP 由系统自动管理,IP/DNS=192.168.4.1(未干预)");
     return ESP_OK;
 }
 
