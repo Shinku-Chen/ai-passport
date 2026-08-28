@@ -284,10 +284,14 @@ void bsp_wifi_clear_credentials(void)
 
 esp_err_t bsp_wifi_start_ap(const char *ssid, const char *password)
 {
-    // 严格对齐官方 captive portal 示例的时序:
-    //   1) 先创建 AP netif(DHCP server 由它自动启动、IP 默认 192.168.4.1)
-    //   2) 再 set_mode(APSTA) + set_config + start
-    // 顺序错会导致 AP 的 DHCP server 未正确绑定,手机拿不到 IP。
+    // 干净地从 AP 启动:先停掉当前 WiFi(含之前 init 启动的 STA),
+    // 再以纯 AP 模式重新初始化,避免 STA 残留导致 AP 的 DHCP server 不稳定。
+    if (s_wifi_started) {
+        esp_wifi_stop();
+        s_wifi_started = false;
+    }
+
+    // 创建 AP netif(DHCP server 由它自动启动、IP 默认 192.168.4.1)。
     if (!s_ap_netif) {
         s_ap_netif = esp_netif_create_default_wifi_ap();
     }
