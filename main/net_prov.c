@@ -67,8 +67,8 @@ static esp_err_t handler_index(httpd_req_t *req)
     bsp_wifi_ap_t aps[16];
     int n = bsp_wifi_get_scan_results(aps, 16);
 
-    static char html[4096];
-    char opts[2560] = {0};
+    static char html[8192];
+    char opts[5120] = {0};
     int used = 0;
     for (int i = 0; i < n && used < (int)sizeof(opts) - 1; i++) {
         int w = snprintf(opts + used, sizeof(opts) - used,
@@ -93,8 +93,14 @@ static esp_err_t handler_index(httpd_req_t *req)
         "密码: <input name='pass' type='password'><br>"
         "<input type='submit' value='连接'>"
         "</form></body></html>", opts);
+
+    ESP_LOGI(TAG, "Serve / (n=%d, html_len=%d)", n, w);
     httpd_resp_set_type(req, "text/html; charset=utf-8");
-    httpd_resp_send(req, html, w < 0 ? 0 : (size_t)w);
+    if (w < 0) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "gen failed");
+        return ESP_OK;
+    }
+    httpd_resp_send(req, html, (size_t)w);
     return ESP_OK;
 }
 
@@ -159,7 +165,10 @@ esp_err_t net_prov_start(void)
     // 配网服务须用不同 server_port 与 ctrl_port,且少占 socket,避免冲突。
     cfg.server_port = 80;
     cfg.ctrl_port = 32769;
-    cfg.max_open_sockets = 4;
+    // 手机 captive portal 会并发多个 HTTP 连接(认证探测+加载页面),
+    // 需足够 socket + LRU 清除,否则连接耗尽导致页面一直载入。
+    cfg.max_open_sockets = 13;
+    cfg.lru_purge_enable = true;
     // C3 单核:显式绑 core0,避免 tskNO_AFFINITY 触发 xTaskCreatePinnedToCore 断言。
     cfg.core_id = 0;
 
