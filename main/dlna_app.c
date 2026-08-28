@@ -22,6 +22,9 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 
+// 自生成的中文字体(GB2312 常用字 + ASCII,宋体 16px)。
+LV_FONT_DECLARE(lv_font_cjk_16);
+
 static const char *TAG = "dlna_app";
 
 #define DLNA_DEVICE_UUID "8db0797a-f01a-4949-8f59-51188b18180b"
@@ -183,29 +186,30 @@ static void ui_build(void)
 
     // 右上角电量百分比(仅数字,无图标)
     s_batt_label = lv_label_create(s_scr);
-    lv_obj_set_style_text_font(s_batt_label, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_font(s_batt_label, &lv_font_cjk_16, 0);
     lv_obj_set_style_text_color(s_batt_label, lv_color_hex(UI_INK), 0);
-    lv_obj_align(s_batt_label, LV_ALIGN_TOP_RIGHT, -10, 12);
+    lv_obj_align(s_batt_label, LV_ALIGN_TOP_RIGHT, -10, 10);
     lv_label_set_text(s_batt_label, "---");
 
     // 标题(CJK 标题会遮盖标题栏,这里只放屏名,避免跟电量重叠)
     s_title_label = lv_label_create(s_scr);
-    lv_obj_set_style_text_font(s_title_label, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_font(s_title_label, &lv_font_cjk_16, 0);
     lv_obj_set_style_text_color(s_title_label, lv_color_hex(UI_PAPER), 0);
     lv_obj_align(s_title_label, LV_ALIGN_TOP_LEFT, 12, 8);
 
     // 网络信息区(已连接:SSID/IP/网关/信号;配网:SSID+密码)
+    // 用白色(default 天空蓝天景上)而非蓝色,避免与背景冲突。
     s_info_label = lv_label_create(s_scr);
     lv_obj_set_width(s_info_label, 216);
-    lv_obj_set_style_text_font(s_info_label, &lv_font_montserrat_14, 0);
-    lv_obj_set_style_text_color(s_info_label, lv_color_hex(UI_SKY_DARK), 0);
-    lv_obj_align(s_info_label, LV_ALIGN_TOP_LEFT, 12, 38);
+    lv_obj_set_style_text_font(s_info_label, &lv_font_cjk_16, 0);
+    lv_obj_set_style_text_color(s_info_label, lv_color_hex(UI_PAPER), 0);
+    lv_obj_align(s_info_label, LV_ALIGN_TOP_LEFT, 12, 40);
     lv_label_set_text(s_info_label, "Connecting...");
 
     // 曲目/艺人
     s_meta_label = lv_label_create(s_scr);
     lv_obj_set_width(s_meta_label, 216);
-    lv_obj_set_style_text_font(s_meta_label, &lv_font_montserrat_20, 0);
+    lv_obj_set_style_text_font(s_meta_label, &lv_font_cjk_16, 0);
     lv_obj_set_style_text_color(s_meta_label, lv_color_hex(UI_INK), 0);
     lv_obj_align(s_meta_label, LV_ALIGN_TOP_LEFT, 12, 90);
     lv_label_set_text(s_meta_label, "No track");
