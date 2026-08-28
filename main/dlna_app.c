@@ -372,8 +372,10 @@ void dlna_app_start(void)
         ESP_LOGW(TAG, "WiFi 初始化失败,直接开配网");
     }
 
-    // 开机即扫描附近 SSID(供配网页预填,无论是否已配网)
-    bsp_wifi_scan();
+    // 开机即扫描附近 SSID(供配网页预填)。【临时禁用定位 DHCP 间歇性】:
+    // 扫描用 STA 模式,扫完再停 STA 开纯 AP,这个状态转换可能是 DHCP 不稳定的根源。
+    // 若禁用扫描后 DHCP 稳定,则把扫描改为 AP 启动后再做。
+    // bsp_wifi_scan();
 
     bool connected = false;
     if (bsp_wifi_has_credentials()) {
