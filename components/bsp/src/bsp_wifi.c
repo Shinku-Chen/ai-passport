@@ -118,14 +118,13 @@ static void on_ip_event(void *arg, esp_event_base_t base, int32_t id, void *data
     }
 }
 
-esp_err_t bsp_wifi_init(const bsp_wifi_config_t *config)
+// WiFi 基础初始化(nvs/netif/event loop/wifi 驱动),不创建任何 netif 接口。
+// 供 STA 模式(bsp_wifi_init 后续建 STA netif)与纯 AP 模式(bsp_wifi_start_ap)
+// 共用。调用后 s_wifi_initialized=true,但未 set_mode/start。
+static esp_err_t wifi_init_base(void)
 {
-    resolve_credentials(config);
-
-    // NVS / netif / event loop —— 复用广播层现有逻辑。
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        // 不自动擦除(避免破坏用户数据),返回失败让应用决定。
         ESP_LOGE(TAG, "NVS 需要擦除,未自动处理: %s", esp_err_to_name(err));
         return err;
     }
@@ -136,14 +135,7 @@ esp_err_t bsp_wifi_init(const bsp_wifi_config_t *config)
     err = esp_event_loop_create_default();
     if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) return err;
 
-    if (s_wifi_initialized) {
-        // 已初始化过:仅切状态 + 重连。
-        if (s_wifi_started) esp_wifi_start();
-        return ESP_OK;
-    }
-
-    s_sta_netif = esp_netif_create_default_wifi_sta();
-    if (!s_sta_netif) return ESP_ERR_NO_MEM;
+    if (s_wifi_initialized) return ESP_OK;   // 幂等
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     err = esp_wifi_init(&cfg);
@@ -159,10 +151,29 @@ esp_err_t bsp_wifi_init(const bsp_wifi_config_t *config)
 
     err = esp_wifi_set_storage(WIFI_STORAGE_RAM);
     if (err != ESP_OK) return err;
+    return ESP_OK;
+}
+
+esp_err_t bsp_wifi_init(const bsp_wifi_config_t *config)
+{
+    resolve_credentials(config);
+
+    esp_err_t err = wifi_init_base();
+    if (err != ESP_OK) return err;
+
+    if (s_wifi_initialized) {
+        // 已初始化过:仅切状态 + 重连。
+        if (s_wifi_started) esp_wifi_start();
+        return ESP_OK;
+    }
+
+    s_sta_netif = esp_netif_create_default_wifi_sta();
+    if (!s_sta_netif) return ESP_ERR_NO_MEM;
+
     err = esp_wifi_set_mode(WIFI_MODE_STA);
     if (err != ESP_OK) return err;
 
-    // 触发配网:让 STA 连上 s_ssid。
+    // 触发连接:让 STA 连上 s_ssid。
     wifi_config_t wifi_cfg = {0};
     strlcpy((char *)wifi_cfg.sta.ssid, s_ssid, sizeof(wifi_cfg.sta.ssid));
     if (s_pass[0]) strlcpy((char *)wifi_cfg.sta.password, s_pass, sizeof(wifi_cfg.sta.password));
@@ -284,8 +295,10 @@ void bsp_wifi_clear_credentials(void)
 
 esp_err_t bsp_wifi_start_ap(const char *ssid, const char *password)
 {
-    // 干净地从 AP 启动:先停掉当前 WiFi(含之前 init 启动的 STA),
-    // 再以纯 AP 模式重新初始化,避免 STA 残留导致 AP 的 DHCP server 不稳定。
+    // 纯 AP 从零初始化(未配网路径,无 STA netif 干扰)。
+    esp_err_t err = wifi_init_base();
+    if (err != ESP_OK) return err;
+    // 若之前启动过 STA(已配网连过),先停掉,确保干净纯 AP。
     if (s_wifi_started) {
         esp_wifi_stop();
         s_wifi_started = false;
@@ -297,9 +310,8 @@ esp_err_t bsp_wifi_start_ap(const char *ssid, const char *password)
     }
     if (!s_ap_netif) return ESP_ERR_NO_MEM;
 
-    // 配网阶段用纯 AP 模式(不需要 STA 连网)。APSTA 双模式下 STA 会尝试连网,
-    // 干扰 AP 的 DHCP server,导致手机连上后拿不到 IP。
-    esp_err_t err = esp_wifi_set_mode(WIFI_MODE_AP);
+    // 纯 AP 模式(不建 STA netif)。
+    err = esp_wifi_set_mode(WIFI_MODE_AP);
     if (err != ESP_OK) return err;
 
     wifi_config_t ap_cfg = {0};
@@ -340,8 +352,7 @@ esp_err_t bsp_wifi_start_ap(const char *ssid, const char *password)
 
     // 重要:AP 的 DHCP server 由 esp_netif_create_default_wifi_ap 自动启动,
     // 默认把 IP/网关 配置为 192.168.4.1。这里【不要】再 dhcps_stop/start 或
-    // set_ip_info——在 APSTA 双模式下重复操作 DHCP 可能导致手机拿不到 IP。
-    // DNS 拦截(端口53)+ 404 重定向 已足以触发 captive portal,option114 暂不启用。
+    // set_ip_info,否则会破坏 DHCP 导致手机拿不到 IP。
     ESP_LOGI(TAG, "AP DHCP 由系统自动管理,IP/DNS=192.168.4.1(未干预)");
     return ESP_OK;
 }

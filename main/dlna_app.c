@@ -366,31 +366,28 @@ void dlna_app_start(void)
     // 构建 UI
     ui_build();
 
-    // WiFi 初始化(固定 SSID 直连;自动重连已禁用,改上层判定)
     bsp_wifi_set_evt_cb(on_wifi_evt, NULL);
-    if (bsp_wifi_init(NULL) != ESP_OK) {
-        ESP_LOGW(TAG, "WiFi 初始化失败,直接开配网");
-    }
 
-    // 开机即扫描附近 SSID(供配网页预填)。【临时禁用定位 DHCP 间歇性】:
-    // 扫描用 STA 模式,扫完再停 STA 开纯 AP,这个状态转换可能是 DHCP 不稳定的根源。
-    // 若禁用扫描后 DHCP 稳定,则把扫描改为 AP 启动后再做。
-    // bsp_wifi_scan();
-
-    bool connected = false;
     if (bsp_wifi_has_credentials()) {
-        // 已配网 → 尝试连接,10 秒超时
-        ESP_LOGI(TAG, "尝试连接已保存 WiFi...");
-        connected = (bsp_wifi_connect_sta(NULL, NULL, 10000) == ESP_OK);
-        if (connected) {
-            dlna_services_start();
+        // 已配网 → STA 初始化 + 尝试连接(10 秒超时)
+        if (bsp_wifi_init(NULL) == ESP_OK) {
+            ESP_LOGI(TAG, "尝试连接已保存 WiFi...");
+            if (bsp_wifi_connect_sta(NULL, NULL, 10000) == ESP_OK) {
+                dlna_services_start();
+            } else {
+                ESP_LOGW(TAG, "连接已保存 WiFi 失败,转配网");
+                bsp_wifi_start_ap("AI-Passport-Prov", "00114514");
+                net_prov_start();
+            }
+        } else {
+            // WiFi 基座初始化失败,仍尝试配网
+            bsp_wifi_start_ap("AI-Passport-Prov", "00114514");
+            net_prov_start();
         }
-    }
-
-    if (!connected) {
-        // 未配网 或 连接失败 → 开软AP配网页(预填扫描列表)
-        ESP_LOGI(TAG, "未配网/连接失败,开启 SoftAP 配网热点");
-        // 热点密码固定 00114514,与屏幕提示一致(手机照屏幕显示的密码连)。
+    } else {
+        // 未配网 → 纯 AP 配网(不建 STA netif,避免干扰 AP 的 DHCP)。
+        // 热点密码固定 00114514(与屏幕提示一致)。
+        ESP_LOGI(TAG, "未配网,开启纯 AP 配网热点");
         bsp_wifi_start_ap("AI-Passport-Prov", "00114514");
         net_prov_start();
     }
