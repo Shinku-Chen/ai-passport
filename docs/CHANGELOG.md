@@ -6,6 +6,8 @@
 
 ## Unreleased
 
+- Changed the sound-keychain button workflow: list-page UP/DOWN now moves the selection without interrupting playback (press OK to stop and replay the current item), and the settings page lets UP/DOWN adjust volume directly while a short or long OK press exits back to the directory list.
+- Fixed the CJK UI font so the space character (U+0020) renders correctly: regenerated `main/fonts/voice_cjk.c` with a space glyph, eliminating the tofu/box glyphs around the settings battery and volume values.
 - Introduced the **Voice Keychain** product application as the boot target: the firmware now launches directly into a three-view sound-keychain UI (directory browser → sound list → settings) instead of the peripheral demo menu, so Wi-Fi, BLE, and the demo pages were removed. Added `main/voice_app.c` and `main/voice_app.h`, rewrote `main.c`, and exposed a repeat `HOLD` button event in `bsp_button.h`/`bsp_button.c` to support long-press scrolling.
 - Added a dedicated SPIFFS data partition (`voicefs`, 3 MB at `0x310000`) in `partitions.csv` for compressed voice data, and mounted it through `esp_vfs_spiffs_register` (SPIFFS is an ESP-IDF built-in component, avoiding the unavailable `espressif/esp_littlefs` registry entry).
 - Added `tools/encode_voice.py`: decodes `assets/project/**` audio (mp3/ogg/wav) with miniaudio, resamples to 8 kHz mono, applies a low-pass filter, trims silence, encodes IMA-ADPCM 4-bit, writes per-clip `.adpcm` files, generates `main/voice_index.h` (compile-time path/name/length table) plus `assets/audio/voice_index.json`, and packs a `voicefs.img` via ESP-IDF `spiffsgen.py`. Non-BMP characters (e.g. the `🐦`) are replaced with readable Chinese so the CJK UI does not show missing glyphs.

@@ -6,6 +6,8 @@
 
 ## Unreleased
 
+- 调整音效钥匙扣按键交互：列表页上下移动选中不再打断播放（按 OK 停止并重播当前项）；设置页上下直接调节音量，短按/长按 OK 退出返回目录。
+- 修复中文 UI 字库空格渲染：重新生成 `main/fonts/voice_cjk.c` 加入空格（U+0020）字型，设置页电量/音量等文本不再显示方块。
 - 引入**音效钥匙扣**产品应用作为开机入口：固件启动后直接进入三层音效钥匙扣界面（目录浏览 → 声音列表 → 设置），替代原外设 demo 菜单，因此移除 Wi-Fi、BLE 与示例页。新增 `main/voice_app.c`、`main/voice_app.h`，改写 `main/main.c`，并在 `bsp_button.h`/`bsp_button.c` 暴露可重复触发的 `HOLD` 按键事件以支持长按翻页滚动。
 - 在 `partitions.csv` 新增独立的 SPIFFS 数据分区（`voicefs`，3 MB，`0x310000`）存放压缩语音，并通过 `esp_vfs_spiffs_register` 挂载（SPIFFS 是 ESP-IDF 内置组件，规避了组件注册表不可用的 `espressif/esp_littlefs`）。
 - 新增 `tools/encode_voice.py`：用 miniaudio 解码 `assets/project/**` 音频（mp3/ogg/wav），重采样到 8 kHz 单声道，低通滤波，去静音，编码 IMA-ADPCM 4bit，落盘逐段 `.adpcm`，生成 `main/voice_index.h`（编译期路径/中文名/长度表）与 `assets/audio/voice_index.json`，并用 ESP-IDF `spiffsgen.py` 打包 `voicefs.img`。文件名里的非 BMP 字符（如 `🐦`）会替换成可读中文，避免 CJK 界面出现缺字块。

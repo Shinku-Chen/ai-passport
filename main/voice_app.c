@@ -1,8 +1,8 @@
 // main/voice_app.c —— 音效钥匙扣应用。
 // 产品形态: 开机即进本应用, 无主菜单。三层视图状态机:
 //   目录页(顶层)   -> UP/DOWN 选择目录, OK 进入列表, OK 长按弹设置
-//   列表页         -> UP/DOWN 选择音效, OK 播放, OK 长按返回目录
-//   设置菜单       -> 显示电量, 调节音量, OK 长按退出
+//   列表页         -> UP/DOWN 选择音效(不打断播放), OK 播放, OK 长按返回目录
+//   设置菜单       -> 显示电量, UP/DOWN 调节音量, OK 短按/长按退出
 //
 // UI 采用"现代列表式"：顶栏标题 + 列表行(中文) + 底部操作提示。
 // 中文用 LVGL label + 中文字库(voice_ttf)渲染; 底栏提示用小号字库(voice_hint)。
@@ -91,16 +91,18 @@ static unsigned      s_list_window;               // 可见窗口行数
 // 设置页
 static lv_obj_t     *s_set_scr;
 static lv_obj_t     *s_set_batt_img, *s_set_vol_img;
-static lv_obj_t     *s_set_batt_row, *s_set_vol_row;   // 设置行背景(选中高亮)
-static int           s_set_sel;          // 0=电量(只读) 1=音量(可调)
-static bool          s_set_vol_active;   // 音量调节态(OK选中音量后 UP/DOWN 调音量)
+static lv_obj_t     *s_set_batt_row, *s_set_vol_row;   // 设置行背景(音量行高亮, 电量行只读)
 static uint8_t       s_vol;
 
-// 播放任务
-static TaskHandle_t  s_player_task;
-static volatile bool s_player_stop;
-static bool          s_playing;
-static int           s_playing_index;   // 当前播放的列表项索引(用于"设置中/播放中"态高亮)
+// 播放任务: 每次播放创建一个独立 job(自带停止标志)。
+// 之前用共享全局 s_player_stop, 新任务启动时把它重置回 false, 旧任务看到 false
+// 就不停, 导致"停止当前播放"失效(旧播放持续 + 新播放叠加)。改成每任务独立标志。
+typedef struct {
+    const voice_file_t *f;
+    volatile bool stop;      // 本 job 的停止标志, 由 stop_playback() 置 true
+} play_job_t;
+
+static play_job_t    *s_job;      // 当前活跃播放 job(单播放, 指向最新一个)
 
 // ---------------------------------------------------------------------------
 // SPIFFS 挂载
@@ -131,34 +133,37 @@ static bool fs_mount(void) {
 static void stop_playback(void);
 
 static void player_task(void *arg) {
-    const voice_file_t *f = (const voice_file_t *)arg;
+    play_job_t *job = (play_job_t *)arg;
+    const voice_file_t *f = job->f;
     char fullpath[128];
     snprintf(fullpath, sizeof(fullpath), "%s/%s", VOICE_FS_MOUNT, f->path);
 
-    FILE *fp = fopen(fullpath, "rb");
-    if (!fp) { ESP_LOGE(TAG, "无法打开 %s", fullpath); return; }
+    FILE *fp = NULL;
+    OpusDecoder *dec = NULL;
+    int dec_err = 0;
+
+    fp = fopen(fullpath, "rb");
+    if (!fp) { ESP_LOGE(TAG, "无法打开 %s", fullpath); goto done; }
 
     if (bsp_audio_set_format(AUDIO_SAMPLE_RATE, 16, 1) != ESP_OK) {
         ESP_LOGE(TAG, "audio format 失败");
-        fclose(fp);
-        return;
+        goto done;
     }
 
     // 创建 Opus 解码器(16kHz 单声道, 无状态跨包复用)
-    int dec_err = 0;
-    OpusDecoder *dec = opus_decoder_create(AUDIO_SAMPLE_RATE, 1, &dec_err);
+    dec = opus_decoder_create(AUDIO_SAMPLE_RATE, 1, &dec_err);
     if (!dec) {
         ESP_LOGE(TAG, "opus_decoder_create 失败: %d", dec_err);
-        fclose(fp);
-        return;
+        goto done;
     }
 
     uint8_t hdr[2];
     uint8_t pkt[OPUS_MAX_PACKET];
     int16_t pcm[OPUS_FRAME_SAMPLES];
-    s_player_stop = false;
 
-    while (!s_player_stop) {
+    // 用本 job 自己的 stop 标志: 旧任务只被 stop_playback() 置位, 不受新任务影响。
+    // 新任务启动时不会重置旧任务的标志, 因此"OK 停止当前播放"能真正生效。
+    while (!job->stop) {
         // 读 2 字节包长度
         if (fread(hdr, 1, 2, fp) != 2) break;
         uint16_t plen = (uint16_t)(hdr[0] | (hdr[1] << 8));
@@ -167,7 +172,7 @@ static void player_task(void *arg) {
             break;
         }
         if (fread(pkt, 1, plen, fp) != plen) break;
-        if (s_player_stop) break;
+        if (job->stop) break;
 
         // 解码一帧。pcm 输出为 int16, 每帧 <= OPUS_FRAME_SAMPLES 采样
         int nsamp = opus_decode(dec, pkt, plen, pcm, OPUS_FRAME_SAMPLES, 0);
@@ -178,11 +183,14 @@ static void player_task(void *arg) {
         bsp_audio_write(pcm, (size_t)nsamp * 2u);   // int16 采样 -> 字节 = nsamp*2
     }
 
-    opus_decoder_destroy(dec);
-    fclose(fp);
-    s_playing = false;
-    s_playing_index = -1;
     ESP_LOGI(TAG, "播放结束: %s", f->name);
+
+done:
+    if (dec) opus_decoder_destroy(dec);
+    if (fp) fclose(fp);
+    // 仅当自己仍是最新 job 才清 s_job(已被新 job 顶替则不动), 并释放本 job。
+    if (s_job == job) s_job = NULL;
+    free(job);
     vTaskDelete(NULL);
 }
 
@@ -240,21 +248,27 @@ static void snap_timer_cb(lv_timer_t *t) {
 }
 
 static void play_file(const voice_file_t *f) {
-    stop_playback();
+    stop_playback();                 // 先让旧播放(若有)停止
     if (!f) return;
     if (!s_fs_mounted) { ESP_LOGE(TAG, "SPIFFS 未挂载"); return; }
+    // 每次播放一个独立 job: 自带 stop 标志, 互不干扰。旧任务被置 stop 后自然退出并
+    // 自清 s_job; 新任务用新 job 的标志, 不会重置旧任务, 从而"OK 停止当前+播当前"可靠。
+    play_job_t *job = malloc(sizeof(*job));
+    if (!job) { ESP_LOGE(TAG, "播放 job 分配失败"); return; }
+    job->f = f;
+    job->stop = false;
+    s_job = job;
     // VAR_ARRAYS 用任务栈做 scratch, SILK 单帧解码栈需求大, 需 16KB。
-    if (xTaskCreate(player_task, "voice_player", 16384, (void *)f, 5, &s_player_task) != pdPASS) {
+    if (xTaskCreate(player_task, "voice_player", 16384, job, 5, NULL) != pdPASS) {
         ESP_LOGE(TAG, "播放任务创建失败");
+        if (s_job == job) s_job = NULL;
+        free(job);
         return;
     }
-    s_playing = true;
-    s_playing_index = s_list_sel;   // 记录当前播放项, 供"设置中/播放中"态高亮
 }
 
 static void stop_playback(void) {
-    s_player_stop = true;
-    if (s_player_task) s_player_task = NULL;
+    if (s_job) s_job->stop = true;   // 请求当前播放停止(任务退出后自清 s_job)
 }
 
 // ---------------------------------------------------------------------------
@@ -468,9 +482,7 @@ static void settings_build(void) {
     // 进入新页前删除旧屏, 避免 LVGL 对象/RAM 跨屏累积
     if (s_dir_scr) { lv_obj_delete(s_dir_scr); s_dir_scr = NULL; }
     if (s_list_scr) { lv_obj_delete(s_list_scr); s_list_scr = NULL; }
-    s_set_scr = make_screen("设置", "上下选中 OK调音量 长按返回");
-    s_set_sel = 1;              // 默认选中音量
-    s_set_vol_active = false;
+    s_set_scr = make_screen("设置", "上下调音量 短按/长按返回");
 
     // 电量行(只读)
     s_set_batt_row = lv_obj_create(s_set_scr);
@@ -480,14 +492,14 @@ static void settings_build(void) {
     lv_obj_set_style_radius(s_set_batt_row, 0, 0);
     lv_obj_set_style_border_width(s_set_batt_row, 0, 0);
     lv_obj_set_style_pad_all(s_set_batt_row, 0, 0);
-    lv_obj_set_style_bg_color(s_set_batt_row, (s_set_sel == 0) ? COL_HILITE : COL_PANEL, 0);
+    lv_obj_set_style_bg_color(s_set_batt_row, COL_PANEL, 0);   // 电量只读, 不高亮
     s_set_batt_img = lv_label_create(s_set_batt_row);
     lv_label_set_text(s_set_batt_img, "电量 --");
     lv_obj_set_style_text_font(s_set_batt_img, &voice_ttf, 0);
     lv_obj_set_style_text_color(s_set_batt_img, COL_TEXT, 0);
     lv_obj_align(s_set_batt_img, LV_ALIGN_LEFT_MID, UI_ROW_INDENT, 0);
 
-    // 音量行(可调)
+    // 音量行(可调, UP/DOWN 直接调节)
     s_set_vol_row = lv_obj_create(s_set_scr);
     lv_obj_set_pos(s_set_vol_row, 4, 84);
     lv_obj_set_size(s_set_vol_row, 232, 24);
@@ -495,7 +507,7 @@ static void settings_build(void) {
     lv_obj_set_style_radius(s_set_vol_row, 0, 0);
     lv_obj_set_style_border_width(s_set_vol_row, 0, 0);
     lv_obj_set_style_pad_all(s_set_vol_row, 0, 0);
-    lv_obj_set_style_bg_color(s_set_vol_row, (s_set_sel == 1) ? COL_HILITE : COL_PANEL, 0);
+    lv_obj_set_style_bg_color(s_set_vol_row, COL_HILITE, 0);   // 活动项(可调)高亮
     s_set_vol_img = lv_label_create(s_set_vol_row);
     lv_label_set_text(s_set_vol_img, "音量 --");
     lv_obj_set_style_text_font(s_set_vol_img, &voice_ttf, 0);
@@ -507,12 +519,7 @@ static void settings_build(void) {
     lv_screen_load(s_set_scr);
 }
 
-// 设置项选中态高亮
-static void refresh_settings_selection(void) {
-    lv_obj_set_style_bg_color(s_set_batt_row, (s_set_sel == 0) ? COL_HILITE : COL_PANEL, 0);
-    lv_obj_set_style_bg_color(s_set_vol_row, (s_set_sel == 1) ? COL_HILITE : COL_PANEL, 0);
-}
-
+// 刷新电量/音量显示(音量行始终高亮为可调项)
 static void refresh_settings(void) {
     int soc = bsp_battery_soc();
     int mv  = bsp_battery_mv();
@@ -521,7 +528,6 @@ static void refresh_settings(void) {
     lv_label_set_text(s_set_batt_img, buf);
     snprintf(buf, sizeof(buf), "音量 %d%%", (int)s_vol);
     lv_label_set_text(s_set_vol_img, buf);
-    refresh_settings_selection();
 }
 
 // ---------------------------------------------------------------------------
@@ -553,12 +559,10 @@ void voice_app_on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user) {
         int n = (int)d->count; if (n > MAX_FILES) n = MAX_FILES;
         if (n > 0) {
             // 短按逐行 + 长按(HOLD)连续滚动。到顶/底钳位, 不回绕。
-            // 播放中按上/下/返回会打断播放; OK 短按重新开始当前选中项。
+            // 上下选择不打断播放; OK 短按停止当前播放并播当前选中项。
             if (btn == BSP_BTN_UP && (ev == BSP_BTN_CLICK || ev == BSP_BTN_LONG_HOLD)) {
-                if (s_playing) { stop_playback(); }   // 打断正在播的
                 if (s_list_sel > 0) { s_list_sel--; refresh_list_selection(); }
             } else if (btn == BSP_BTN_DOWN && (ev == BSP_BTN_CLICK || ev == BSP_BTN_LONG_HOLD)) {
-                if (s_playing) { stop_playback(); }   // 打断正在播的
                 if (s_list_sel < n - 1) { s_list_sel++; refresh_list_selection(); }
             } else if (btn == BSP_BTN_OK && ev == BSP_BTN_CLICK) {
                 play_file(&d->files[s_list_sel]);     // 内部先停旧播, 重新开始
@@ -572,34 +576,16 @@ void voice_app_on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user) {
     }
 
     case VIEW_SETTINGS:
-        // 上下选中(电量/音量); OK 选中音量后上下调节; OK 长按退出。
-        if (s_set_vol_active) {
-            // 音量调节态: UP/DOWN 调音量
-            if (btn == BSP_BTN_UP && ev == BSP_BTN_CLICK) {
-                if (s_vol < 100) s_vol = (uint8_t)(s_vol + 5);
-                bsp_audio_set_volume(s_vol);
-                refresh_settings();
-            } else if (btn == BSP_BTN_DOWN && ev == BSP_BTN_CLICK) {
-                if (s_vol >= 5) s_vol = (uint8_t)(s_vol - 5);
-                bsp_audio_set_volume(s_vol);
-                refresh_settings();
-            } else if (btn == BSP_BTN_OK && ev == BSP_BTN_CLICK) {
-                s_set_vol_active = false;      // 退出调节态, 回选中态
-                refresh_settings_selection();
-            } else if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG) {
-                dir_build();
-                s_view = VIEW_DIR;
-            }
-            break;
-        }
-        // 选中态: 上下切换 电量/音量
-        if (btn == BSP_BTN_UP && ev == BSP_BTN_CLICK) {
-            if (s_set_sel > 0) { s_set_sel--; refresh_settings_selection(); }
-        } else if (btn == BSP_BTN_DOWN && ev == BSP_BTN_CLICK) {
-            if (s_set_sel < 1) { s_set_sel++; refresh_settings_selection(); }
-        } else if (btn == BSP_BTN_OK && ev == BSP_BTN_CLICK) {
-            if (s_set_sel == 1) s_set_vol_active = true;   // 选中的是音量 -> 进入调节
-        } else if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG) {
+        // 设置页: UP/DOWN 直接调音量(HOLD 连续调); OK 短按/长按 退出返回目录。
+        if (btn == BSP_BTN_UP && (ev == BSP_BTN_CLICK || ev == BSP_BTN_LONG_HOLD)) {
+            if (s_vol < 100) s_vol = (uint8_t)(s_vol + 5);
+            bsp_audio_set_volume(s_vol);
+            refresh_settings();
+        } else if (btn == BSP_BTN_DOWN && (ev == BSP_BTN_CLICK || ev == BSP_BTN_LONG_HOLD)) {
+            if (s_vol >= 5) s_vol = (uint8_t)(s_vol - 5);
+            bsp_audio_set_volume(s_vol);
+            refresh_settings();
+        } else if (btn == BSP_BTN_OK && (ev == BSP_BTN_CLICK || ev == BSP_BTN_LONG)) {
             dir_build();
             s_view = VIEW_DIR;
         }
