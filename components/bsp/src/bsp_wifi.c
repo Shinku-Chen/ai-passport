@@ -330,6 +330,29 @@ esp_err_t bsp_wifi_start_ap(const char *ssid, const char *password)
              ap_cfg.ap.ssid,
              ap_cfg.ap.authmode == WIFI_AUTH_OPEN ? "(开放)" : "***",
              s_ap_ip_str);
+
+    // 确保 AP 的静态 IP 为 192.168.4.1(网关/DNS 指向本机),这样 DHCP 服务器
+    // 下发给手机的 gateway/DNS 都是本机 → captive portal 才能触发。
+    if (s_ap_netif) {
+        esp_netif_ip_info_t ap_ip = {0};
+        ap_ip.ip.addr = esp_ip4addr_aton("192.168.4.1");
+        ap_ip.gw.addr = esp_ip4addr_aton("192.168.4.1");
+        ap_ip.netmask.addr = esp_ip4addr_aton("255.255.255.0");
+        esp_netif_set_ip_info(s_ap_netif, &ap_ip);
+    }
+
+    // DHCP 服务器 Option 114(Captive Portal URI):手机连上热点后,
+    // 系统识别到认证页面地址,自动弹出配网页(官方 captive portal 增强方式,
+    // 比纯 DNS 拦截更标准,能绕开 HTTPS/HSTS)。
+    static char cp_uri[] = "http://192.168.4.1/";
+    if (s_ap_netif) {
+        esp_netif_dhcps_stop(s_ap_netif);
+        esp_netif_dhcps_option(s_ap_netif, ESP_NETIF_OP_SET,
+                               ESP_NETIF_CAPTIVEPORTAL_URI, cp_uri, strlen(cp_uri));
+        esp_netif_dhcps_start(s_ap_netif);
+        ESP_LOGI(TAG, "DHCP/DNS: IP/DNS=192.168.4.1, Captive Portal Option 114=%s",
+                 cp_uri);
+    }
     return ESP_OK;
 }
 
