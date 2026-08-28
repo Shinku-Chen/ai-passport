@@ -38,6 +38,7 @@ typedef enum {
 
 static play_state_t s_state = PS_NO_MEDIA;
 static char *s_track_uri;
+static int64_t s_boot_ms;   // 开机(本应用启动)时间戳,用于「10秒内长按OK清配置」
 
 /* ─────────────── LVGL UI ─────────────── */
 static lv_obj_t *s_scr;
@@ -335,24 +336,37 @@ static void dlna_services_start(void)
 void dlna_app_start(void)
 {
     ESP_LOGI(TAG, "DLNA 接收器启动");
+    s_boot_ms = esp_timer_get_time() / 1000;   // 记录启动时刻(ms),供长按 OK 判断窗口
 
     // 构建 UI
     ui_build();
 
-    // WiFi(固定 SSID 直连 + 配网分流)
+    // WiFi 初始化(固定 SSID 直连;自动重连已禁用,改上层判定)
     bsp_wifi_set_evt_cb(on_wifi_evt, NULL);
-    esp_err_t werr = bsp_wifi_init(NULL);
-    if (werr != ESP_OK) {
-        ESP_LOGW(TAG, "WiFi 初始化返回: %s", esp_err_to_name(werr));
+    if (bsp_wifi_init(NULL) != ESP_OK) {
+        ESP_LOGW(TAG, "WiFi 初始化失败,直接开配网");
     }
 
+    // 开机即扫描附近 SSID(供配网页预填,无论是否已配网)
+    bsp_wifi_scan();
+
+    bool connected = false;
     if (bsp_wifi_has_credentials()) {
-        // 已配网 → DLNA/MiPlay 服务(内存富余时起)
-        dlna_services_start();
-        if (s_ui_ready) lv_label_set_text(s_status_label, "已配网,等待手机投屏(DLNA)");
-    } else {
-        // 未配网 → 只起软AP配网(不起 DLNA,避免内存峰值)
-        ESP_LOGI(TAG, "未配网,开启 SoftAP 配网热点");
+        // 已配网 → 尝试连接,10 秒超时
+        ESP_LOGI(TAG, "尝试连接已保存 WiFi...");
+        connected = (bsp_wifi_connect_sta(NULL, NULL, 10000) == ESP_OK);
+        if (connected) {
+            dlna_services_start();
+            if (s_ui_ready) {
+                lv_label_set_text_fmt(s_status_label, "已连接 %s\n等待手机投屏(DLNA)",
+                                      bsp_wifi_get_ip_str());
+            }
+        }
+    }
+
+    if (!connected) {
+        // 未配网 或 连接失败 → 开软AP配网页(预填扫描列表)
+        ESP_LOGI(TAG, "未配网/连接失败,开启 SoftAP 配网热点");
         bsp_wifi_start_ap("AI-Passport-Prov", "ai-passport");
         net_prov_start();
         if (s_ui_ready) {
@@ -374,12 +388,22 @@ void dlna_app_on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user)
     // 三键语义映射(替代旋钮):
     //   上/下 = 无强焦点切换语义,留作预留(可调音量)。
     //   确定单击 = 播放/暂停切换;确定长按 = 回待投屏(停止)。
+    //   【开机 10 秒内长按 OK = 清除 WiFi 配置并重启】(重新配网)
     if (btn == BSP_BTN_OK) {
-        if (ev == BSP_BTN_CLICK) {
+        if (ev == BSP_BTN_LONG) {
+            int64_t now_ms = esp_timer_get_time() / 1000;
+            if (now_ms - s_boot_ms <= 10000) {
+                ESP_LOGI(TAG, "开机10秒内长按OK:清除 WiFi 配置并重启");
+                bsp_wifi_clear_credentials();
+                bsp_lvgl_unlock();
+                vTaskDelay(pdMS_TO_TICKS(500));
+                esp_restart();
+                return;
+            }
+            cb_stop();
+        } else if (ev == BSP_BTN_CLICK) {
             if (s_state == PS_PLAYING) cb_pause();
             else if (s_state == PS_PAUSED || s_state == PS_STOPPED) cb_play();
-        } else if (ev == BSP_BTN_LONG) {
-            cb_stop();
         }
     } else if (btn == BSP_BTN_UP) {
         // 音量+

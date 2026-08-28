@@ -61,18 +61,38 @@ static const char *form_value(const char *body, const char *key, char *out, size
 // GET / —— 配网表单。
 static esp_err_t handler_index(httpd_req_t *req)
 {
-    const char *html =
+    // 开机已扫描的 WiFi 列表,预填进 <select>(不提供页面内扫描按钮)。
+    bsp_wifi_ap_t aps[16];
+    int n = bsp_wifi_get_scan_results(aps, 16);
+
+    static char html[4096];
+    char opts[2560] = {0};
+    int used = 0;
+    for (int i = 0; i < n && used < (int)sizeof(opts) - 1; i++) {
+        int w = snprintf(opts + used, sizeof(opts) - used,
+                         "<option value='%s'>%s (%d)</option>",
+                         aps[i].ssid, aps[i].ssid, aps[i].rssi);
+        if (w < 0 || w >= (int)sizeof(opts) - used) break;
+        used += w;
+    }
+    if (n <= 0) {
+        // 若扫描无结果,提供手动输入框兜底。
+        snprintf(opts, sizeof(opts),
+                 "<input type='text' name='ssid' placeholder='手动输入 SSID'><br>");
+    }
+
+    int w = snprintf(html, sizeof(html),
         "<html><head><meta charset='utf-8'><meta name='viewport' "
         "content='width=device-width,initial-scale=1'>"
         "<title>AI Passport 配网</title></head><body>"
         "<h2>AI Passport WiFi 配网</h2>"
         "<form method='post' action='/wifi'>"
-        "SSID: <input name='ssid'><br>"
+        "WiFi: <select name='ssid'>%s</select><br>"
         "密码: <input name='pass' type='password'><br>"
         "<input type='submit' value='连接'>"
-        "</form></body></html>";
+        "</form></body></html>", opts);
     httpd_resp_set_type(req, "text/html; charset=utf-8");
-    httpd_resp_send(req, html, strlen(html));
+    httpd_resp_send(req, html, w < 0 ? 0 : (size_t)w);
     return ESP_OK;
 }
 

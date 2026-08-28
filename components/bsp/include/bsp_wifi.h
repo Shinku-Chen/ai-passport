@@ -52,6 +52,22 @@ esp_err_t bsp_wifi_reconnect(void);
 // 停止并释放 WiFi。
 void bsp_wifi_deinit(void);
 
+// ---- 扫描接口 ----
+
+// 扫描单个 SSID 信息。
+typedef struct {
+    char ssid[32];    // SSID 名
+    int  rssi;        // 信号强度 (dBm)
+} bsp_wifi_ap_t;
+
+// 扫描附近 2.4GHz AP。结果存到内部缓冲,供配网页预填列表。
+// 返回扫描到的 AP 数量;失败返回负值。
+int bsp_wifi_scan(void);
+
+// 获取最近一次扫描的结果。返回结果数量,结果写入 ap 数组(按 rssi 降序)。
+// 返回 -1 表示尚未扫描。
+int bsp_wifi_get_scan_results(bsp_wifi_ap_t *ap, int max_count);
+
 // ---- SoftAP 配网接口 ----
 
 // 是否已保存过配网凭证(NVS 里有 SSID)。
@@ -70,6 +86,18 @@ const char *bsp_wifi_get_ap_ip(void);
 
 // 关闭 SoftAP,转为纯 STA(配网完成后调用,随后 bsp_wifi_init 会连 STA)。
 esp_err_t bsp_wifi_stop_ap(void);
+
+// 清除已保存的配网凭证(长按 OK 清除配置后重启用)。
+void bsp_wifi_clear_credentials(void);
+
+// 手动设置 STA 凭证(覆盖 NVS 读取值,用于配网后立即连接)。
+void bsp_wifi_set_credentials(const char *ssid, const char *password);
+
+// 阻塞等待 STA 连接结果。ssid/pass 提供则用它们连接,否则用 bsp_wifi_init
+// 已解析的凭证(NVS)。timeout_ms 内拿到 IP 返回 ESP_OK;超时/失败返回 ESP_ERR_TIMEOUT
+// 或其他错误。用于开机「尝试连已存 WiFi」,让上层决定连不上就开配网。
+esp_err_t bsp_wifi_connect_sta(const char *ssid, const char *password,
+                               uint32_t timeout_ms);
 
 #ifdef __cplusplus
 }

@@ -94,9 +94,9 @@ static void on_wifi_event(void *arg, esp_event_base_t base, int32_t id, void *da
         break;
     case WIFI_EVENT_STA_DISCONNECTED:
         ESP_LOGW(TAG, "Wi-Fi 断开: %s", esp_err_to_name((esp_err_t)data));
-        set_state(BSP_WIFI_DISCONNECTED);
-        // 短暂延迟后重连(200ms,避免协议风暴)。已成功过则尽量重连。
-        esp_wifi_connect();
+        // 不再自动重连,由上层应用决定(重连 或 开配网)。避免无限重连导致
+        // 密码错误时反复连不上,却无法进入配网流程。
+        set_state(BSP_WIFI_FAILED);
         break;
     default:
         break;
@@ -256,6 +256,29 @@ const char *bsp_wifi_get_ap_ip(void)
     return s_ap_ip_str;
 }
 
+// 手动设置 STA 凭证(覆盖 NVS 读取值,用于配网后立即连接)。
+void bsp_wifi_set_credentials(const char *ssid, const char *password)
+{
+    strlcpy(s_ssid, ssid, sizeof(s_ssid));
+    if (password) strlcpy(s_pass, password, sizeof(s_pass));
+    else s_pass[0] = '\0';
+}
+
+// 清除已保存的配网凭证(长按 OK 清除配置用)。
+void bsp_wifi_clear_credentials(void)
+{
+    nvs_handle_t handle;
+    if (nvs_open(BSP_WIFI_NVS_NAMESPACE, NVS_READWRITE, &handle) == ESP_OK) {
+        nvs_erase_key(handle, BSP_WIFI_NVS_KEY_SSID);
+        nvs_erase_key(handle, BSP_WIFI_NVS_KEY_PASS);
+        nvs_commit(handle);
+        nvs_close(handle);
+    }
+    s_ssid[0] = '\0';
+    s_pass[0] = '\0';
+    ESP_LOGI(TAG, "已清除 WiFi 配置");
+}
+
 esp_err_t bsp_wifi_start_ap(const char *ssid, const char *password)
 {
     if (s_wifi_initialized && s_wifi_started) {
@@ -319,4 +342,85 @@ esp_err_t bsp_wifi_stop_ap(void)
     s_ap_ip_str[0] = '\0';
     ESP_LOGI(TAG, "SoftAP 已关闭,转纯 STA");
     return ESP_OK;
+}
+
+/* ─────────────── 扫描 ─────────────── */
+
+#define BSP_WIFI_SCAN_MAX 16
+static bsp_wifi_ap_t s_ap_list[BSP_WIFI_SCAN_MAX];
+static int s_ap_count = -1;   // -1 = 未扫描
+
+int bsp_wifi_scan(void)
+{
+    if (!s_wifi_started) return -1;
+
+    s_ap_count = -1;
+    esp_err_t err = esp_wifi_scan_start(NULL, true);   // true = 阻塞到完成
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "scan start failed: %s", esp_err_to_name(err));
+        return -1;
+    }
+
+    uint16_t total = 0;
+    esp_wifi_scan_get_ap_num(&total);
+
+    uint16_t count = total < BSP_WIFI_SCAN_MAX ? total : BSP_WIFI_SCAN_MAX;
+    wifi_ap_record_t recs[BSP_WIFI_SCAN_MAX] = {0};
+    if (count > 0 && esp_wifi_scan_get_ap_records(&count, recs) != ESP_OK) {
+        ESP_LOGW(TAG, "scan get records failed");
+        return -1;
+    }
+
+    // 按 rssi 降序填入内部缓冲。
+    int n = 0;
+    for (uint16_t i = 0; i < count && n < BSP_WIFI_SCAN_MAX; i++) {
+        if (recs[i].ssid[0] == 0) continue;   // 跳过隐藏/无 SSID
+        strlcpy(s_ap_list[n].ssid, (const char *)recs[i].ssid,
+                sizeof(s_ap_list[n].ssid));
+        s_ap_list[n].rssi = recs[i].rssi;
+        n++;
+    }
+    s_ap_count = n;
+    ESP_LOGI(TAG, "扫描到 %d 个 AP", n);
+    return n;
+}
+
+int bsp_wifi_get_scan_results(bsp_wifi_ap_t *ap, int max_count)
+{
+    if (s_ap_count <= 0) return s_ap_count;
+    int n = s_ap_count < max_count ? s_ap_count : max_count;
+    for (int i = 0; i < n; i++) ap[i] = s_ap_list[i];
+    return n;
+}
+
+// 阻塞等待 STA 连接结果。依赖 on_wifi_event / on_ip_event 更新 s_state。
+esp_err_t bsp_wifi_connect_sta(const char *ssid, const char *password,
+                               uint32_t timeout_ms)
+{
+    if (ssid && ssid[0]) {
+        // 用提供的凭证连接(覆盖 NVS 值)。
+        bsp_wifi_set_credentials(ssid, password);
+        // 把凭证设置进 wifi 配置。
+        wifi_config_t wc = {0};
+        strlcpy((char *)wc.sta.ssid, s_ssid, sizeof(wc.sta.ssid));
+        if (s_pass[0]) strlcpy((char *)wc.sta.password, s_pass, sizeof(wc.sta.password));
+        wc.sta.threshold.authmode = WIFI_AUTH_OPEN;
+        esp_err_t err = esp_wifi_set_config(WIFI_IF_STA, &wc);
+        if (err != ESP_OK) return err;
+    }
+    // 等待净空,再触发连接。
+    vTaskDelay(pdMS_TO_TICKS(200));
+    if (s_ssid[0]) {
+        esp_wifi_connect();
+    }
+
+    set_state(BSP_WIFI_CONNECTING);
+    uint32_t waited = 0;
+    while (waited < timeout_ms) {
+        if (s_state == BSP_WIFI_CONNECTED) return ESP_OK;
+        if (s_state == BSP_WIFI_FAILED) return ESP_ERR_WIFI_NOT_CONNECT;
+        vTaskDelay(pdMS_TO_TICKS(100));
+        waited += 100;
+    }
+    return ESP_ERR_TIMEOUT;
 }
