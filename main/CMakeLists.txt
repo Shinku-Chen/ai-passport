@@ -6,5 +6,5 @@ idf_component_register(
          "net_prov.c"
     INCLUDE_DIRS "."
     REQUIRES bsp bt esp_event esp_hw_support esp_netif esp_timer esp_wifi nvs_flash
-             custom_dlna dlna_audio miplay esp_http_server esp_system
+             custom_dlna dlna_audio miplay esp_http_server esp_system dns_server
 )

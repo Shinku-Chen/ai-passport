@@ -2,6 +2,7 @@
 // 提供配网表单,POST 后把 SSID/密码写入 NVS(经 bsp_wifi_save_credentials)。
 #include "net_prov.h"
 #include "bsp_wifi.h"
+#include "dns_server.h"
 
 #include "esp_log.h"
 #include "esp_http_server.h"
@@ -15,6 +16,7 @@
 static const char *TAG = "net_prov";
 
 static httpd_handle_t s_server;
+static dns_server_handle_t s_dns;
 
 // 简单的 url_decode(把 %XX 转字符,+ 转空格)。
 static void url_decode(char *dst, size_t dst_sz, const char *src)
@@ -136,6 +138,18 @@ static esp_err_t handler_connect(httpd_req_t *req)
     return ESP_OK;
 }
 
+// HTTP 404 错误 handler —— 把所有未匹配请求 303 重定向到 "/" 配网页,
+// 触发手机(Android/iOS/Windows)的 captive portal 自动弹出认证页面。
+static esp_err_t http_404_handler(httpd_req_t *req, httpd_err_code_t err)
+{
+    (void)err;
+    httpd_resp_set_status(req, "303 See Other");
+    httpd_resp_set_hdr(req, "Location", "/");
+    // iOS 需要响应体才能识别 captive portal,仅重定向不够。
+    httpd_resp_send(req, "Redirect to captive portal", HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
 esp_err_t net_prov_start(void)
 {
     httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
@@ -166,13 +180,29 @@ esp_err_t net_prov_start(void)
     };
     httpd_register_uri_handler(s_server, &uri_index);
     httpd_register_uri_handler(s_server, &uri_connect);
+    // 所有未匹配请求重定向到配网页 → 触发手机 captive portal 自动弹出
+    httpd_register_err_handler(s_server, HTTPD_404_NOT_FOUND, http_404_handler);
 
     ESP_LOGI(TAG, "配网 Web 服务运行于 http://%s/", bsp_wifi_get_ap_ip());
+
+    // 启动 DNS 拦截服务器:把所有 A 类查询应答为软AP IP(192.168.4.1),
+    // 配合上方的 404 重定向,让手机连上热点后自动弹出配网页(captive portal)。
+    dns_server_config_t dns_cfg = DNS_SERVER_CONFIG_SINGLE("*", "WIFI_AP_DEF");
+    s_dns = start_dns_server(&dns_cfg);
+    if (s_dns) {
+        ESP_LOGI(TAG, "DNS captive portal 已启动(拦截所有查询→192.168.4.1)");
+    } else {
+        ESP_LOGW(TAG, "dns_server 启动失败");
+    }
     return ESP_OK;
 }
 
 void net_prov_stop(void)
 {
+    if (s_dns) {
+        stop_dns_server(s_dns);
+        s_dns = NULL;
+    }
     if (s_server) {
         httpd_stop(s_server);
         s_server = NULL;
