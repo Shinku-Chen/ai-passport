@@ -43,8 +43,9 @@ static int64_t s_boot_ms;   // 开机(本应用启动)时间戳,用于「10秒�
 /* ─────────────── LVGL UI ─────────────── */
 static lv_obj_t *s_scr;
 static lv_obj_t *s_title_label;
-static lv_obj_t *s_status_label;   // 状态(含 IP/曲目名)
 static lv_obj_t *s_meta_label;     // 曲目名/艺人
+static lv_obj_t *s_info_label;     // 网络信息(SSID/IP/网关/信号),或配网提示(SSID+密码)
+static lv_obj_t *s_batt_label;     // 右上角电量百分比
 static lv_obj_t *s_bar_bg;         // 进度条底
 static lv_obj_t *s_bar_fill;       // 进度条填充
 static lv_timer_t *s_ui_timer;
@@ -179,18 +180,27 @@ static void cb_previous(void)
 static void ui_build(void)
 {
     s_scr = ui_pixel_screen_create("DLNA");
+
+    // 右上角电量百分比(仅数字,无图标)
+    s_batt_label = lv_label_create(s_scr);
+    lv_obj_set_style_text_font(s_batt_label, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_color(s_batt_label, lv_color_hex(UI_INK), 0);
+    lv_obj_align(s_batt_label, LV_ALIGN_TOP_RIGHT, -10, 12);
+    lv_label_set_text(s_batt_label, "---");
+
+    // 标题(CJK 标题会遮盖标题栏,这里只放屏名,避免跟电量重叠)
     s_title_label = lv_label_create(s_scr);
     lv_obj_set_style_text_font(s_title_label, &lv_font_montserrat_14, 0);
     lv_obj_set_style_text_color(s_title_label, lv_color_hex(UI_PAPER), 0);
     lv_obj_align(s_title_label, LV_ALIGN_TOP_LEFT, 12, 8);
 
-    // 状态区(IP / 等待投屏)
-    s_status_label = lv_label_create(s_scr);
-    lv_obj_set_width(s_status_label, 216);
-    lv_obj_set_style_text_font(s_status_label, &lv_font_montserrat_14, 0);
-    lv_obj_set_style_text_color(s_status_label, lv_color_hex(UI_SKY_DARK), 0);
-    lv_obj_align(s_status_label, LV_ALIGN_TOP_LEFT, 12, 36);
-    lv_label_set_text(s_status_label, "Connecting Wi-Fi...");
+    // 网络信息区(已连接:SSID/IP/网关/信号;配网:SSID+密码)
+    s_info_label = lv_label_create(s_scr);
+    lv_obj_set_width(s_info_label, 216);
+    lv_obj_set_style_text_font(s_info_label, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_color(s_info_label, lv_color_hex(UI_SKY_DARK), 0);
+    lv_obj_align(s_info_label, LV_ALIGN_TOP_LEFT, 12, 38);
+    lv_label_set_text(s_info_label, "Connecting...");
 
     // 曲目/艺人
     s_meta_label = lv_label_create(s_scr);
@@ -215,19 +225,37 @@ static void ui_refresh(void)
 {
     if (!s_ui_ready) return;
 
-    // 标题 + 状态
-    if (s_state == PS_PLAYING) {
-        lv_label_set_text(s_status_label, "播放中");
-    } else if (s_state == PS_PAUSED) {
-        lv_label_set_text(s_status_label, "已暂停");
-    } else if (s_state == PS_STOPPED) {
-        lv_label_set_text(s_status_label, "已停止: 用手机 DLNA 投屏");
-    } else {
-        lv_label_set_text(s_status_label, "待投屏: 手机 DLNA 播放器选择本机");
+    // 右上角电量(百分比)
+    int soc = bsp_battery_soc();
+    if (soc >= 0) {
+        lv_label_set_text_fmt(s_batt_label, "%d%%", soc);
     }
 
-    if (s_track_uri) {
-        lv_label_set_text(s_meta_label, s_track_uri);
+    // 网络信息区:已连接 或 配网,两种状态。
+    if (bsp_wifi_is_connected()) {
+        lv_label_set_text_fmt(s_info_label,
+                              "WiFi %s\nIP  %s\nGW  %s\n信号 %ddBm",
+                              bsp_wifi_get_ssid(),
+                              bsp_wifi_get_ip_str(),
+                              bsp_wifi_get_gateway(),
+                              bsp_wifi_get_current_rssi());
+        lv_label_set_text(s_meta_label, "等待手机 DLNA 投屏");
+    } else {
+        // 配网/未连接:提示 SSID 与热点连接密码。
+        lv_label_set_text_fmt(s_info_label,
+                              "配网 SSID: AI-Passport-Prov\n连接密码: 00114514");
+        if (s_track_uri) lv_label_set_text(s_meta_label, s_track_uri);
+    }
+
+    // 播放状态
+    if (s_state == PS_PLAYING) {
+        lv_label_set_text(s_title_label, "播放中");
+    } else if (s_state == PS_PAUSED) {
+        lv_label_set_text(s_title_label, "已暂停");
+    } else if (s_state == PS_STOPPED) {
+        lv_label_set_text(s_title_label, "已停止");
+    } else {
+        lv_label_set_text(s_title_label, "DLA");
     }
 
     // 进度条
@@ -250,15 +278,8 @@ static void ui_tick(lv_timer_t *timer)
 static void on_wifi_evt(bsp_wifi_state_t state, void *user)
 {
     (void)user;
-    if (state == BSP_WIFI_CONNECTED) {
-        if (s_ui_ready) {
-            lv_label_set_text_fmt(s_status_label, "连上: %s\n等待手机投屏(DLNA)",
-                                  bsp_wifi_get_ip_str());
-        }
-        ESP_LOGI(TAG, "WiFi 就绪 IP=%s", bsp_wifi_get_ip_str());
-    } else if (state == BSP_WIFI_CONNECTING) {
-        if (s_ui_ready) lv_label_set_text(s_status_label, "连接中...");
-    }
+    // 网络信息由 ui_refresh 统一刷新(基于 bsp_wifi_is_connected()),这里只打日志。
+    ESP_LOGI(TAG, "WiFi 状态: %d IP=%s", (int)state, bsp_wifi_get_ip_str());
 }
 
 /* ─────────────── 音频管线事件回调 ─────────────── */
@@ -357,10 +378,6 @@ void dlna_app_start(void)
         connected = (bsp_wifi_connect_sta(NULL, NULL, 10000) == ESP_OK);
         if (connected) {
             dlna_services_start();
-            if (s_ui_ready) {
-                lv_label_set_text_fmt(s_status_label, "已连接 %s\n等待手机投屏(DLNA)",
-                                      bsp_wifi_get_ip_str());
-            }
         }
     }
 
@@ -369,11 +386,6 @@ void dlna_app_start(void)
         ESP_LOGI(TAG, "未配网/连接失败,开启 SoftAP 配网热点");
         bsp_wifi_start_ap("AI-Passport-Prov", "ai-passport");
         net_prov_start();
-        if (s_ui_ready) {
-            lv_label_set_text_fmt(s_status_label,
-                                  "配网: 连热点 AI-Passport-Prov\n浏览器开 http://%s/",
-                                  bsp_wifi_get_ap_ip());
-        }
     }
 
     // UI 刷新定时器

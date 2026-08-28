@@ -25,14 +25,6 @@ lv_obj_t *ui_pixel_label(lv_obj_t *parent, const char *text,
     return label;
 }
 
-static void add_cloud(lv_obj_t *parent, int x, int y)
-{
-    block(parent, x + 1, y + 7, 43, 10, UI_INK);
-    block(parent, x + 5, y + 4, 35, 10, 0xFFFFFF);
-    block(parent, x + 12, y, 10, 9, 0xFFFFFF);
-    block(parent, x + 27, y + 1, 9, 8, 0xFFFFFF);
-}
-
 lv_obj_t *ui_pixel_screen_create(const char *title)
 {
     lv_obj_t *scr = lv_obj_create(NULL);
@@ -41,7 +33,7 @@ lv_obj_t *ui_pixel_screen_create(const char *title)
     lv_obj_set_style_border_width(scr, 0, 0);
     lv_obj_set_style_pad_all(scr, 0, 0);
 
-    add_cloud(scr, 188, 8);
+    // 右上角不放云朵,留给应用显示电量等角标。
     block(scr, 0, 286, 240, 34, UI_GRASS);
     block(scr, 0, 286, 240, 4, 0xA7D93E);
     for (int x = 0; x < 240; x += 30) {

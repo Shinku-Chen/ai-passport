@@ -46,6 +46,18 @@ bsp_wifi_state_t bsp_wifi_get_state(void);
 // 获取当前 IP 地址字符串(未连上时为空串)。
 const char *bsp_wifi_get_ip_str(void);
 
+// 是否已连接上 AP(拿到 IP)。
+bool bsp_wifi_is_connected(void);
+
+// 获取当前连接的 SSID 名(未连/空则返回空串)。
+const char *bsp_wifi_get_ssid(void);
+
+// 获取网关 IP 字符串(未连上时为空串)。
+const char *bsp_wifi_get_gateway(void);
+
+// 获取当前连接 AP 的信号强度(dBm);未连上返回 0。
+int bsp_wifi_get_current_rssi(void);
+
 // 手动触发重连(断开后由应用调用)。
 esp_err_t bsp_wifi_reconnect(void);
 

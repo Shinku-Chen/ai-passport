@@ -29,8 +29,10 @@ static esp_netif_t *s_sta_netif;
 static esp_netif_t *s_ap_netif;
 static char s_ip_str[16];
 static char s_ap_ip_str[16];
+static char s_gateway_str[16];
 static char s_ssid[33];
 static char s_pass[65];
+static int s_current_rssi;
 static volatile bsp_wifi_state_t s_state = BSP_WIFI_IDLE;
 static bsp_wifi_evt_cb_t s_evt_cb;
 static void *s_evt_user;
@@ -110,7 +112,8 @@ static void on_ip_event(void *arg, esp_event_base_t base, int32_t id, void *data
     if (id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t *evt = (ip_event_got_ip_t *)data;
         snprintf(s_ip_str, sizeof(s_ip_str), IPSTR, IP2STR(&evt->ip_info.ip));
-        ESP_LOGI(TAG, "已获 IP: %s", s_ip_str);
+        snprintf(s_gateway_str, sizeof(s_gateway_str), IPSTR, IP2STR(&evt->ip_info.gw));
+        ESP_LOGI(TAG, "已获 IP: %s 网关: %s", s_ip_str, s_gateway_str);
         set_state(BSP_WIFI_CONNECTED);
     }
 }
@@ -391,6 +394,33 @@ int bsp_wifi_get_scan_results(bsp_wifi_ap_t *ap, int max_count)
     int n = s_ap_count < max_count ? s_ap_count : max_count;
     for (int i = 0; i < n; i++) ap[i] = s_ap_list[i];
     return n;
+}
+
+// 当前是否已连上(拿到 IP)。
+bool bsp_wifi_is_connected(void)
+{
+    return s_state == BSP_WIFI_CONNECTED;
+}
+
+const char *bsp_wifi_get_ssid(void)
+{
+    return s_ssid[0] ? s_ssid : "";
+}
+
+const char *bsp_wifi_get_gateway(void)
+{
+    return s_gateway_str;
+}
+
+int bsp_wifi_get_current_rssi(void)
+{
+    // 主动查当前连接 AP 的信号强度(不断连)。
+    wifi_ap_record_t ap = {0};
+    if (esp_wifi_sta_get_ap_info(&ap) == ESP_OK && ap.ssid[0]) {
+        int r = ap.rssi;
+        if (r != 0) s_current_rssi = r;   // 0 视为无效,保留旧值
+    }
+    return s_current_rssi;
 }
 
 // 阻塞等待 STA 连接结果。依赖 on_wifi_event / on_ip_event 更新 s_state。
