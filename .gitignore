@@ -1,6 +1,8 @@
 build/
 sdkconfig
 sdkconfig.old
+# 一次性产物(封面/截屏/查询结果), 不入库。
+tmp/
 managed_components/
 .vscode/
 .idea/

@@ -24,6 +24,10 @@
 #include "esp_log.h"
 #include "esp_err.h"
 #include "esp_system.h"    // esp_get_free_heap_size
+#include "esp_sleep.h"     // deep sleep + GPIO 唤醒
+#include "esp_timer.h"     // 空闲计时器
+#include "driver/gpio.h"   // GPIO0 唤醒配置
+#include "driver/usb_serial_jtag.h"   // 控制台(UART0 因 GPIO21 冲突禁用, 走 USB-Serial/JTAG)
 #include "opus.h"          // libopus 解码器(components/opus)
 #include <stdio.h>
 #include <stdlib.h>
@@ -66,7 +70,6 @@ typedef enum { VIEW_DIR = 0, VIEW_LIST, VIEW_SETTINGS, VIEW_COUNT } view_t;
 // ---- 全局状态(单例应用) ----
 static view_t        s_view;
 static bool          s_fs_mounted;
-static lv_obj_t     *s_hint_obj;   // 底栏提示条(抓屏用)
 
 // 目录页
 static lv_obj_t     *s_dir_scr;
@@ -194,59 +197,6 @@ done:
     vTaskDelete(NULL);
 }
 
-// ---------------------------------------------------------------------------
-// 调试抓屏: 把当前屏幕 RGB565 底部区域存进 SPIFFS, 供 host 读取判读布局。
-// 仅用于验证"列表最后一行/底部提示条"落位; 抓完一次即自删, 不影响功能。
-// 文件格式: 自定义头 "VSNP" + w(u16 LE) + h(u16 LE) + 原始 RGB565(h 整行)。
-// ---------------------------------------------------------------------------
-#define SNAP_MAGIC  0x504E5356       // "VSNP"
-#define SNAP_TOP_Y  0                // 从第 0 行开始(整屏高度内取数据)
-static void snap_dump(lv_obj_t *scr) {
-    if (!scr || !s_fs_mounted) { ESP_LOGW(TAG, "snap: 无目标屏或 FS 未挂载"); return; }
-    lv_draw_buf_t *db = lv_snapshot_take(scr, LV_COLOR_FORMAT_RGB565);
-    if (!db) { ESP_LOGW(TAG, "snap: lv_snapshot_take 失败(内存不足?)"); return; }
-    uint32_t w = db->header.w;
-    uint32_t h = db->header.h;
-    const uint8_t *px = db->data;
-    uint32_t stride = db->header.stride;
-    if (stride == 0) stride = w * 2;              // RGB565 每行字节兜底
-    // 只导出底部 96 行(最后几行 + 提示条), 减小写文件量
-    uint32_t dy = h > 96 ? (h - 96) : 0;
-    uint32_t rows = h > 96 ? 96 : h;
-    char path[128];
-    snprintf(path, sizeof(path), "%s/snap.rgb", VOICE_FS_MOUNT);
-    FILE *fp = fopen(path, "wb");
-    if (!fp) { ESP_LOGW(TAG, "snap: 无法写 %s", path); lv_draw_buf_destroy(db); return; }
-    struct { uint32_t magic; uint16_t w, h, stride; uint16_t dy, rows; } __attribute__((packed)) hd;
-    hd.magic = SNAP_MAGIC; hd.w = (uint16_t)w; hd.h = (uint16_t)h;
-    hd.stride = (uint16_t)stride; hd.dy = (uint16_t)dy; hd.rows = (uint16_t)rows;
-    fwrite(&hd, 1, sizeof(hd), fp);
-    fwrite(px + (size_t)dy * stride, 1, (size_t)rows * stride, fp);
-    fclose(fp);
-    ESP_LOGI(TAG, "snap: 已存 %s (w=%u h=%u stride=%u dy=%u rows=%u)",
-             path, (unsigned)w, (unsigned)h, (unsigned)stride, (unsigned)dy, (unsigned)rows);
-    lv_draw_buf_destroy(db);
-}
-
-// ---------------------------------------------------------------------------
-// 启动后延时抓一次屏(等待 dir 页绘制完成)。整屏 137KB 在无 PSRAM 上常超堆,
-// 故优先抓底栏提示条(小, 必成功)以确认其"贴屏底 y + 高度"; 同时打印空闲堆与
-// 提示条/最后一行位置, 供 host 判读列表底与提示条之间有无空隙。
-static void snap_timer_cb(lv_timer_t *t) {
-    if (!bsp_lvgl_lock(500)) { lv_timer_delete(t); return; }
-    ESP_LOGI(TAG, "snap: free_heap=%lu", (unsigned long)esp_get_free_heap_size());
-    lv_obj_t *scr = lv_screen_active();
-    // 记录提示条绝对位置(abs y 由相对父(screen)偏移决定)
-    int hy = s_hint_obj ? lv_obj_get_y(s_hint_obj) : -1;
-    int hh_ = s_hint_obj ? lv_obj_get_height(s_hint_obj) : -1;
-    ESP_LOGI(TAG, "snap: hint y=%d h=%d -> bottom=%d (屏高 UI_H=%d)",
-             hy, hh_, s_hint_obj ? (hy + hh_) : -1, UI_H);
-    // 抓整个屏幕(底部96行) —— 需 CONFIG_LV_MEM_SIZE_KILOBYTES 足够容纳全屏
-    if (scr) snap_dump(scr);
-    bsp_lvgl_unlock();
-    lv_timer_delete(t);
-}
-
 static void play_file(const voice_file_t *f) {
     stop_playback();                 // 先让旧播放(若有)停止
     if (!f) return;
@@ -269,6 +219,117 @@ static void play_file(const voice_file_t *f) {
 
 static void stop_playback(void) {
     if (s_job) s_job->stop = true;   // 请求当前播放停止(任务退出后自清 s_job)
+}
+
+// ---------------------------------------------------------------------------
+// 空闲休眠: 5 分钟无按键操作 → 深度休眠; 按键(GPIO0)经分压拉到 0.3~0.6V,
+// 远低于 I/O 低电平阈值(约 0.825V) → 低电平唤醒。深睡唤醒=重启, App 回到目录页。
+// ---------------------------------------------------------------------------
+#define IDLE_SLEEP_US  (5u * 60u * 1000000u)
+
+static esp_timer_handle_t s_sleep_timer;
+
+static void do_deep_sleep(void) {
+    ESP_LOGI(TAG, "5 分钟无操作, 进入深度休眠(按键唤醒)");
+    // GPIO0 已有外部 10k 上拉(空闲 3.3V), 无需软件上拉; 配置为纯输入, 低电平唤醒。
+    gpio_config_t io = {
+        .pin_bit_mask = 1ULL << GPIO_NUM_0,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    gpio_config(&io);
+    esp_deep_sleep_enable_gpio_wakeup(GPIO_NUM_0, ESP_GPIO_WAKEUP_GPIO_LOW);
+    esp_deep_sleep_start();   // 不返回; 唤醒=重启
+}
+
+static void sleep_timer_cb(void *arg) {
+    do_deep_sleep();
+}
+
+// 任意按键事件重排 5 分钟空闲计时; 计时到即休眠。
+static void reset_idle_sleep(void) {
+    esp_timer_stop(s_sleep_timer);
+    esp_timer_start_once(s_sleep_timer, IDLE_SLEEP_US);
+}
+
+// ---------------------------------------------------------------------------
+// FAP_SCREENSHOT_V1 串口截图协议(社区发布用)
+// publisher 助手经 USB-Serial/JTAG(控制台, 115200, USB 虚拟串口)发一行
+// "FAP_SCREENSHOT_V1\n";本固件把当前 LVGL 屏幕按 RGB565LE 行序回传。社区发布
+// 工具用这份真实画面做封面, 并校验 .fap-capture.json 收据;不实现该协议则无法
+// 用官方 publisher 发布/更新(见其 references/serial-screenshot.md)。
+// 只读: 不改设置、不换屏、不暴露任何凭证。
+// ---------------------------------------------------------------------------
+#define FAP_CMD_STR "FAP_SCREENSHOT_V1"
+
+// 确保底层 USB-Serial/JTAG 驱动已安装。控制台 VFS 走 LL 函数, 不自装此驱动;
+// 不装则 read_bytes/write_bytes 会解引用 NULL 而崩溃。若已装(REPL 场景)返回错, 忽略即可。
+static void fap_driver_init(void) {
+    static bool inited = false;
+    if (inited) return;
+    usb_serial_jtag_driver_config_t cfg = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
+    cfg.tx_buffer_size = 4096;
+    cfg.rx_buffer_size = 1024;
+    usb_serial_jtag_driver_install(&cfg);
+    inited = true;
+}
+
+// 抓当前屏并回传协议头 + RGB565LE 载荷。截图缓冲由 LVGL 内存池分配。
+// 大载荷分块写(每块 2KB, 各自带超时), 规避单次 write_bytes 被 TX 环形缓冲 +
+// 超时限制导致只发了一部分的问题。
+static void fap_send_screenshot(void) {
+    if (!bsp_lvgl_lock(1500)) return;
+    lv_draw_buf_t *db = lv_snapshot_take(lv_screen_active(), LV_COLOR_FORMAT_RGB565);
+    bsp_lvgl_unlock();
+    if (!db) { ESP_LOGW(TAG, "FAP: lv_snapshot_take 失败"); return; }
+
+    uint32_t w = db->header.w;
+    uint32_t h = db->header.h;
+    uint32_t stride = db->header.stride ? db->header.stride : (w * 2);
+    uint32_t byte_len = stride * h;   // RGB565LE 行序, 规格要求 width*height*2
+    char hdr[96];
+    int hlen = snprintf(hdr, sizeof(hdr), FAP_CMD_STR " %u %u RGB565LE %u\n",
+                        (unsigned)w, (unsigned)h, (unsigned)byte_len);
+    if (usb_serial_jtag_write_bytes(hdr, (size_t)hlen, pdMS_TO_TICKS(2000)) != (size_t)hlen) {
+        lv_draw_buf_destroy(db);
+        ESP_LOGW(TAG, "FAP: 写协议头失败");
+        return;
+    }
+    const uint8_t *p = (const uint8_t *)db->data;
+    uint32_t rem = byte_len;
+    while (rem > 0) {
+        uint32_t chunk = rem > 2048 ? 2048 : rem;
+        int n = (int)usb_serial_jtag_write_bytes(p, chunk, pdMS_TO_TICKS(5000));
+        if (n <= 0) break;
+        p += n;
+        rem -= (uint32_t)n;
+    }
+    bool ok = (rem == 0);
+    lv_draw_buf_destroy(db);
+    ESP_LOGI(TAG, "FAP: 已回传 %ux%u %u 字节%s", (unsigned)w, (unsigned)h, (unsigned)byte_len,
+             ok ? "" : "(未发完)");
+}
+
+// 控制台串口逐字节累积一行, 匹配到 "FAP_SCREENSHOT_V1" 即抓屏回传。
+static void fap_screenshot_task(void *arg) {
+    (void)arg;
+    fap_driver_init();
+    uint8_t line[64];
+    size_t n = 0;
+    for (;;) {
+        uint8_t c;
+        int got = usb_serial_jtag_read_bytes(&c, 1, pdMS_TO_TICKS(50));
+        if (got != 1) { n = 0; continue; }   // 超时/无数据: 清残句, 避免误触发
+        if (c == '\n' || c == '\r') {
+            line[n] = '\0';
+            if (strcmp((const char *)line, FAP_CMD_STR) == 0) fap_send_screenshot();
+            n = 0;
+            continue;
+        }
+        if (n < sizeof(line) - 1) line[n++] = c;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -536,6 +597,7 @@ static void refresh_settings(void) {
 void voice_app_on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user) {
     (void)user;
     if (!bsp_lvgl_lock(500)) return;
+    reset_idle_sleep();   // 任意按键事件都重置 5 分钟空闲休眠计时
 
     switch (s_view) {
     case VIEW_DIR:
@@ -614,9 +676,13 @@ void voice_app_start(void) {
     if (bsp_lvgl_lock(1000)) { dir_build(); bsp_lvgl_unlock(); }
     ESP_LOGI(TAG, "音效钥匙扣启动, 目录数=%d", VOICE_DIR_TOTAL);
 
-    // 调试: 启动后 1.2s 抓屏存 SPIFFS, 供 host 读回判读底部布局(一次即删)
-    lv_timer_create(snap_timer_cb, 1200, NULL);
+    // 社区发布/截图协议: 在控制台(USB-Serial/JTAG)监听 FAP_SCREENSHOT_V1 并回传屏幕。
+    // ⚠ 栈要够大: 抓屏用 lv_snapshot_take 做全屏渲染(类似 LVGL 任务), 2KB 会溢栈崩。
+    xTaskCreate(fap_screenshot_task, "fap_shot", 16384, NULL, 3, NULL);
 
+    // 空闲休眠: 5 分钟无按键操作 → 深度休眠; 按键(GPIO0)低电平唤醒。
+    const esp_timer_create_args_t sleep_args = { .callback = sleep_timer_cb, .name = "idle_sleep" };
+    if (esp_timer_create(&sleep_args, &s_sleep_timer) == ESP_OK) reset_idle_sleep();
 }
 
 void voice_app_stop(void) {

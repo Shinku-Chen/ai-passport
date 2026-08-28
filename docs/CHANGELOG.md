@@ -6,6 +6,8 @@
 
 ## Unreleased
 
+- Added the `FAP_SCREENSHOT_V1` serial screenshot protocol so the community publisher can capture the live screen: the firmware listens on the USB-Serial console and returns the current LVGL framebuffer as RGB565LE. The LVGL memory pool was enlarged to hold the full-frame snapshot.
+- The sound keychain now deep-sleeps after five minutes without a key press and wakes on any key (GPIO0 low level).
 - Changed the sound-keychain button workflow: list-page UP/DOWN now moves the selection without interrupting playback (press OK to stop and replay the current item), and the settings page lets UP/DOWN adjust volume directly while a short or long OK press exits back to the directory list.
 - Fixed the CJK UI font so the space character (U+0020) renders correctly: regenerated `main/fonts/voice_cjk.c` with a space glyph, eliminating the tofu/box glyphs around the settings battery and volume values.
 - Introduced the **Voice Keychain** product application as the boot target: the firmware now launches directly into a three-view sound-keychain UI (directory browser → sound list → settings) instead of the peripheral demo menu, so Wi-Fi, BLE, and the demo pages were removed. Added `main/voice_app.c` and `main/voice_app.h`, rewrote `main.c`, and exposed a repeat `HOLD` button event in `bsp_button.h`/`bsp_button.c` to support long-press scrolling.
