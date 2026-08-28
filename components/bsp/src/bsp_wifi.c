@@ -293,7 +293,9 @@ esp_err_t bsp_wifi_start_ap(const char *ssid, const char *password)
     }
     if (!s_ap_netif) return ESP_ERR_NO_MEM;
 
-    esp_err_t err = esp_wifi_set_mode(WIFI_MODE_APSTA);
+    // 配网阶段用纯 AP 模式(不需要 STA 连网)。APSTA 双模式下 STA 会尝试连网,
+    // 干扰 AP 的 DHCP server,导致手机连上后拿不到 IP。
+    esp_err_t err = esp_wifi_set_mode(WIFI_MODE_AP);
     if (err != ESP_OK) return err;
 
     wifi_config_t ap_cfg = {0};
