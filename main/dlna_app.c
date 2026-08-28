@@ -388,7 +388,8 @@ void dlna_app_start(void)
     if (!connected) {
         // 未配网 或 连接失败 → 开软AP配网页(预填扫描列表)
         ESP_LOGI(TAG, "未配网/连接失败,开启 SoftAP 配网热点");
-        bsp_wifi_start_ap("AI-Passport-Prov", "ai-passport");
+        // 热点密码固定 00114514,与屏幕提示一致(手机照屏幕显示的密码连)。
+        bsp_wifi_start_ap("AI-Passport-Prov", "00114514");
         net_prov_start();
     }
 
