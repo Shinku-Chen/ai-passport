@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root xmlns="urn:schemas-upnp-org:device-1-0"
+      xmlns:dlna="urn:schemas-dlna-org:device-1-0"
+      xmlns:qq="urn:schemas-tencent-com:qplay">
+<specVersion>
+<major>1</major>
+<minor>0</minor>
+</specVersion>
+<device>
+<deviceType>urn:schemas-upnp-org:device:MediaRenderer:1</deviceType>
+<friendlyName>MS01B</friendlyName>
+<manufacturer>NetEase</manufacturer>
+<modelName>MS01B</modelName>
+<modelDescription>CMIIT ID: 2017DP4301</modelDescription>
+<UDN>uuid:8db0797a-f01a-4949-8f59-51188b18180b</UDN>
+<dlna:X_DLNADOC>DMR-1.50</dlna:X_DLNADOC>
+<dlna:X_DLNACAP>audio-only</dlna:X_DLNACAP>
+<qq:X_QPlay_SoftwareCapability>QPlay:2</qq:X_QPlay_SoftwareCapability>
+<serviceList>
+<service>
+<serviceType>urn:schemas-upnp-org:service:AVTransport:1</serviceType>
+<serviceId>urn:upnp-org:serviceId:AVTransport</serviceId>
+<SCPDURL>/avtransport.xml</SCPDURL>
+<controlURL>/upnp/control/avtransport</controlURL>
+<eventSubURL>/upnp/event/avtransport</eventSubURL>
+</service>
+<service>
+<serviceType>urn:schemas-upnp-org:service:RenderingControl:1</serviceType>
+<serviceId>urn:upnp-org:serviceId:RenderingControl</serviceId>
+<SCPDURL>/renderingcontrol.xml</SCPDURL>
+<controlURL>/upnp/control/renderingcontrol</controlURL>
+<eventSubURL>/upnp/event/renderingcontrol</eventSubURL>
+</service>
+<service>
+<serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType>
+<serviceId>urn:upnp-org:serviceId:ConnectionManager</serviceId>
+<SCPDURL>/connectionmanager.xml</SCPDURL>
+<controlURL>/upnp/control/connectionmanager</controlURL>
+<eventSubURL>/upnp/event/connectionmanager</eventSubURL>
+</service>
+</serviceList>
+</device>
+</root>

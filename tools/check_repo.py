@@ -27,6 +27,12 @@ ROOT_MARKDOWN_ALLOWLIST = {
     "README.md",
     "README.zh_CN.md",
 }
+# Vendored third-party components are shipped with their own documentation and are
+# not governed by the repository doc convention (English default .md + linked
+# .zh_CN.md peer). Repo-local components (bs*) and the app itself still are.
+VENDORED_COMPONENT_PREFIXES = (
+    "components/esp_audio_codec",  # e.g. ESP-Audio-Codec with prebuilt .a libs
+)
 
 
 def git_files() -> list[Path]:
@@ -37,7 +43,17 @@ def git_files() -> list[Path]:
         capture_output=True,
         text=True,
     )
-    return [ROOT / line for line in result.stdout.splitlines() if line]
+    # Exclude vendored third-party component dirs from repo checks (their own
+    # docs are not governed by the repo doc convention). A path is excluded when
+    # it lives under any VENDORED_COMPONENT_PREFIXES entry.
+    prefixes = [ROOT / p for p in VENDORED_COMPONENT_PREFIXES]
+    files = []
+    for line in result.stdout.splitlines():
+        p = ROOT / line
+        if any(p.is_relative_to(prefix) for prefix in prefixes):
+            continue
+        files.append(p)
+    return files
 
 
 def text_files() -> list[Path]:
