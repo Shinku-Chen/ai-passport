@@ -6,6 +6,7 @@
 
 ## Unreleased
 
+- The firmware build and CI now pack the `voicefs` data partition from the committed clips and merge it into the complete 8 MB image (validated at `0x210000`), so `FoloToy-AI-Passport-full.bin` is self-contained. Added a numpy-free `tools/pack_voicefs.py` to repack the data partition for reproducible builds, and corrected the voice-pipeline docs to the active Opus chain (`tools/encode_opus.py`, `voicefs` at `0x210000`/`0x5F0000`); `tools/encode_voice.py` is now documented as the legacy IMA-ADPCM partner.
 - Added the `FAP_SCREENSHOT_V1` serial screenshot protocol so the community publisher can capture the live screen: the firmware listens on the USB-Serial console and returns the current LVGL framebuffer as RGB565LE. The LVGL memory pool was enlarged to hold the full-frame snapshot.
 - The sound keychain now deep-sleeps after five minutes without a key press and wakes on any key (GPIO0 low level).
 - Changed the sound-keychain button workflow: list-page UP/DOWN now moves the selection without interrupting playback (press OK to stop and replay the current item), and the settings page lets UP/DOWN adjust volume directly while a short or long OK press exits back to the directory list.

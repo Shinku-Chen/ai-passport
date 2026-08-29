@@ -6,6 +6,7 @@
 
 ## Unreleased
 
+- 固件构建与 CI 现在会从已提交片段打包 `voicefs` 数据分区，并入完整的 8 MB 镜像（在 `0x210000` 校验），使 `FoloToy-AI-Passport-full.bin` 自包含。新增零 numpy 依赖的 `tools/pack_voicefs.py` 以便可复现地重打包数据分区，并把语音管线文档修正为当前活跃的 Opus 链路（`tools/encode_opus.py`，`voicefs` 位于 `0x210000`/`0x5F0000`）；`tools/encode_voice.py` 现标注为遗留 IMA-ADPCM 版本。
 - 新增 `FAP_SCREENSHOT_V1` 串口截图协议：固件在 USB-Serial 控制台监听，收到请求即把当前 LVGL 屏幕按 RGB565LE 回传，供社区发布工具获取真实画面做封面；LVGL 内存池相应调大以容纳全屏快照。
 - 音效钥匙扣在 5 分钟无按键操作后自动进入深度休眠，按任意键（GPIO0 低电平）唤醒。
 - 调整音效钥匙扣按键交互：列表页上下移动选中不再打断播放（按 OK 停止并重播当前项）；设置页上下直接调节音量，短按/长按 OK 退出返回目录。

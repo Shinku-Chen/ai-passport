@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 """encode_opus.py —— 把 assets/project 里的语音素材编码成 Opus 8kbps，供固件 Opus 解码器播放。
 
-与 encode_voice.py(IMA-ADPCM) 平行的一条链路:
-  1. ffmpeg(libopus) 把 mp3/ogg/wav -> Opus 8kbps @16kHz 单声道(.opus, Ogg 容器)
-  2. 输出 assets/audio/dirNN/clipMM.opus
-  3. 生成 voice_index.json + voice_index.h(固件编译期索引, 复用 encode_voice 的 C 索引生成)
-  4. 用 spiffsgen.py 打包成 voicefs.img (默认按扩充后的 0x4F0000 = 4.94MB)
+当前活跃的语音链路(encode_voice.py 是遗留 IMA-ADPCM 版本, 仅被本脚本复用
+其显示名清洗与 C 索引生成):
+  1. ffmpeg(libopus) 把 mp3/ogg/wav -> Opus 8kbps @16kHz 单声道
+  2. 响度归一化后剥离 Ogg 容器为裸包流 -> assets/audio/dirNN/clipMM.opus
+     (每个包 = 2字节小端长度 + Opus 帧, 与固件解码格式一致)
+  3. 生成 voice_index.json + voice_index.h(固件编译期索引)
+  4. 用 spiffsgen.py 打包成 assets/audio/voicefs.img (分区大小 0x5F0000)
+
+仅从已提交片段重新打包数据分区(不重编码、无 ffmpeg)请用 tools/pack_voicefs.py,
+构建/CI 也用后者。
 
 用法:
   python tools/encode_opus.py [--dirs 目录名,目录名] [--bitrate 8]

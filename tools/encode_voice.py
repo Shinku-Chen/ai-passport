@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""encode_voice.py —— 把 assets/project 里的语音素材预处理成固件可播放的 IMA-ADPCM 4bit 压缩 PCM。
+"""encode_voice.py —— 把 assets/project 里的语音素材预处理成 IMA-ADPCM 4bit 压缩 PCM。
+
+⚠ 本脚本是**遗留 IMA-ADPCM 链路**, 当前固件实际使用 encode_opus.py(Opus 8kbps)。
+这里仍保留, 仅供 encode_opus.py 复用其"显示名清洗 / C 索引生成"逻辑; ADPCM 编码
+与打包部分已不再被固件消费, 仅作参考。新的 Opus 数据用 tools/encode_opus.py;
+仅从已提交片段重新打包数据分区用 tools/pack_voicefs.py。
+
 
 流程（每段音频）:
   1. miniaudio 解码 mp3/ogg/wav -> 8 kHz 单声道 int16（解码时即完成重采样与声道合并）

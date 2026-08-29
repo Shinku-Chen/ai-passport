@@ -6,7 +6,7 @@
 
 `.github/workflows/build-firmware.yml` builds and publishes firmware for tags and supports manual dispatch. Ordinary branch pushes do not trigger it. Keep this page synchronized with the workflow.
 
-The build job restores ccache, runs `./tools/validate.sh --firmware` with ESP-IDF 5.5.3 for ESP32-C3, verifies the bootloader at `0x0`, partition table at `0x8000`, application at `0x10000`, and 8 MB Flash arguments, then uploads `FoloToy-AI-Passport-full.bin`. A separate least-privilege release job publishes that artifact only for a tag.
+The build job restores ccache, runs `./tools/validate.sh --firmware` with ESP-IDF 5.5.3 for ESP32-C3, which packs the `voicefs` data partition from the committed clips and verifies the merged firmware at `0x0` (bootloader), `0x8000` (partition table), `0x10000` (application), `0x210000` (voicefs data), and 8 MB Flash arguments, then uploads the complete `FoloToy-AI-Passport-full.bin`. A separate least-privilege release job publishes that artifact only for a tag.
 
 All Actions are pinned to full commit SHAs. The build job has `contents: read`; only the tag release job receives `contents: write`.
 

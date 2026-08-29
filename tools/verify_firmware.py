@@ -7,10 +7,15 @@ import sys
 from pathlib import Path
 
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+# 完整固件布局: bootloader / 分区表 / app / voicefs 数据分区。
+# 前三者相对 build 目录, voicefs 数据镜像在仓库 assets/audio 下。
 EXPECTED_IMAGES = (
-    (0x0000, "bootloader/bootloader.bin"),
-    (0x8000, "partition_table/partition-table.bin"),
-    (0x10000, "FoloToy-AI-Passport.bin"),
+    (0x0000, "bootloader/bootloader.bin", None),
+    (0x8000, "partition_table/partition-table.bin", None),
+    (0x10000, "FoloToy-AI-Passport.bin", None),
+    (0x210000, "assets/audio/voicefs.img", "voicefs"),
 )
 
 
@@ -29,8 +34,8 @@ def main() -> int:
         return 1
 
     merged = merged_path.read_bytes()
-    for offset, relative_name in EXPECTED_IMAGES:
-        image_path = build_dir / relative_name
+    for offset, relative_name, tag in EXPECTED_IMAGES:
+        image_path = REPO_ROOT / relative_name if tag else build_dir / relative_name
         if not image_path.is_file():
             print(f"ERROR: missing image {image_path}", file=sys.stderr)
             return 1

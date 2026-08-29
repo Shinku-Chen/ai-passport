@@ -46,8 +46,19 @@ run_firmware_checks() (
     SDKCONFIG_DEFAULTS="${repo_root}/sdkconfig.defaults" \
         idf.py -B "${validation_build_dir}" \
         -D "SDKCONFIG=${validation_build_dir}/sdkconfig" build
-    idf.py -B "${validation_build_dir}" merge-bin \
-        -o "${validation_build_dir}/FoloToy-AI-Passport-full.bin"
+
+    # 打包数据分区镜像(从已提交的 assets/audio/dir*) —— 完整固件必须含 voicefs。
+    python3 tools/pack_voicefs.py
+
+    # 合并完整固件: bootloader(0x0) + 分区表(0x8000) + app(0x10000) + voicefs 数据(0x210000)。
+    python3 -m esptool --chip esp32c3 merge_bin \
+        -o "${validation_build_dir}/FoloToy-AI-Passport-full.bin" -f raw \
+        --flash_mode dio --flash_freq 80m --flash_size 8MB \
+        0x0 "${validation_build_dir}/bootloader/bootloader.bin" \
+        0x8000 "${validation_build_dir}/partition_table/partition-table.bin" \
+        0x10000 "${validation_build_dir}/FoloToy-AI-Passport.bin" \
+        0x210000 "${repo_root}/assets/audio/voicefs.img"
+
     python3 tools/verify_firmware.py "${validation_build_dir}"
     install -D -m 0644 \
         "${validation_build_dir}/FoloToy-AI-Passport-full.bin" \
