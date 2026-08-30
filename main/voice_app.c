@@ -240,7 +240,13 @@ static void do_deep_sleep(void) {
         .intr_type = GPIO_INTR_DISABLE,
     };
     gpio_config(&io);
-    esp_deep_sleep_enable_gpio_wakeup(GPIO_NUM_0, ESP_GPIO_WAKEUP_GPIO_LOW);
+    // ⚠ 接口第一参是【引脚位掩码】不是引脚号: 传 GPIO_NUM_0(=0) 会被当成空掩码
+    // (esp_deep_sleep_enable_gpio_wakeup 对 mask==0 直接返回 INVALID_ARG), 结果深睡
+    // 后没有任何唤醒源, 永远无法用按键唤醒。必须用 1ULL<<GPIO_NUM_0。
+    esp_err_t wak = esp_deep_sleep_enable_gpio_wakeup(1ULL << GPIO_NUM_0, ESP_GPIO_WAKEUP_GPIO_LOW);
+    if (wak != ESP_OK) {
+        ESP_LOGE(TAG, "GPIO0 低电平唤醒配置失败: %s", esp_err_to_name(wak));
+    }
     esp_deep_sleep_start();   // 不返回; 唤醒=重启
 }
 

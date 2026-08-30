@@ -6,6 +6,7 @@
 
 ## Unreleased
 
+- 修复深度休眠无法唤醒: `esp_deep_sleep_enable_gpio_wakeup()` 的第一个参数是【引脚位掩码】, 而代码误传了引脚号 `GPIO_NUM_0`(值 0); 函数对零掩码视为非法, 直接返回并不配置任何唤醒源, 于是芯片深睡后按键(GPIO0)永远无法唤醒。现改为 `1ULL << GPIO_NUM_0` 并检查返回值(失败时打日志, 不再静默睡死)。已在设备上验证: 空闲 5 分钟入睡, 任意按键可唤醒重进应用。
 - 固件构建与 CI 现在会从已提交片段打包 `voicefs` 数据分区，并入完整的 8 MB 镜像（在 `0x210000` 校验），使 `FoloToy-AI-Passport-full.bin` 自包含。新增零 numpy 依赖的 `tools/pack_voicefs.py` 以便可复现地重打包数据分区，并把语音管线文档修正为当前活跃的 Opus 链路（`tools/encode_opus.py`，`voicefs` 位于 `0x210000`/`0x5F0000`）；`tools/encode_voice.py` 现标注为遗留 IMA-ADPCM 版本。
 - 新增 `FAP_SCREENSHOT_V1` 串口截图协议：固件在 USB-Serial 控制台监听，收到请求即把当前 LVGL 屏幕按 RGB565LE 回传，供社区发布工具获取真实画面做封面；LVGL 内存池相应调大以容纳全屏快照。
 - 音效钥匙扣在 5 分钟无按键操作后自动进入深度休眠，按任意键（GPIO0 低电平）唤醒。
