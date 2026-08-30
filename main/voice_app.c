@@ -21,6 +21,7 @@
 #include "lvgl.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/semphr.h"
 #include "esp_log.h"
 #include "esp_err.h"
 #include "esp_system.h"    // esp_get_free_heap_size
@@ -106,7 +107,12 @@ typedef struct {
     volatile bool stop;      // 本 job 的停止标志, 由 stop_playback() 置 true
 } play_job_t;
 
-static play_job_t    *s_job;      // 当前活跃播放 job(单播放, 指向最新一个)
+static play_job_t    *s_job;           // 当前活跃播放 job(单播放, 指向最新一个)
+static SemaphoreHandle_t s_job_sem;    // 常驻播放 worker 的唤醒信号(有新 job 时 give)
+static TaskHandle_t      s_player;     // 常驻播放任务句柄(xTaskCreateStatic 创建, 静态栈)
+#define PLAYER_STACK_BYTES 16384       // Opus SILK 单帧解码栈需求大, 用静态栈避免每次播放重复 16KB 堆分配
+static StackType_t       s_player_stack[PLAYER_STACK_BYTES / sizeof(StackType_t)];
+static StaticTask_t      s_player_tcb;
 
 // ---------------------------------------------------------------------------
 // SPIFFS 挂载
@@ -136,90 +142,93 @@ static bool fs_mount(void) {
 // ---------------------------------------------------------------------------
 static void stop_playback(void);
 
-static void player_task(void *arg) {
-    play_job_t *job = (play_job_t *)arg;
-    const voice_file_t *f = job->f;
-    char fullpath[128];
-    snprintf(fullpath, sizeof(fullpath), "%s/%s", VOICE_FS_MOUNT, f->path);
+// 常驻播放任务: 启动后一直等待播放请求。每个 job 自带 stop 标志, 播放循环逐帧检查;
+// 有新 job(OK 播放)时 play_file 先把当前 job 置 stop, worker 循环退出后再播新 job,
+// 从而"OK 停止当前+播当前"可靠。用静态栈, 避免每次播放都从堆上申请 16KB。
+static void player_worker(void *arg) {
+    (void)arg;
+    while (1) {
+        xSemaphoreTake(s_job_sem, portMAX_DELAY);   // 等一个播放请求
+        play_job_t *job = s_job;
+        if (!job) continue;
 
-    FILE *fp = NULL;
-    OpusDecoder *dec = NULL;
-    int dec_err = 0;
+        const voice_file_t *f = job->f;
+        char fullpath[128];
+        snprintf(fullpath, sizeof(fullpath), "%s/%s", VOICE_FS_MOUNT, f->path);
 
-    fp = fopen(fullpath, "rb");
-    if (!fp) { ESP_LOGE(TAG, "无法打开 %s", fullpath); goto done; }
+        FILE *fp = NULL;
+        OpusDecoder *dec = NULL;
+        int dec_err = 0;
 
-    if (bsp_audio_set_format(AUDIO_SAMPLE_RATE, 16, 1) != ESP_OK) {
-        ESP_LOGE(TAG, "audio format 失败");
-        goto done;
-    }
+        fp = fopen(fullpath, "rb");
+        if (!fp) { ESP_LOGE(TAG, "无法打开 %s", fullpath); goto done; }
 
-    // 创建 Opus 解码器(16kHz 单声道, 无状态跨包复用)
-    dec = opus_decoder_create(AUDIO_SAMPLE_RATE, 1, &dec_err);
-    if (!dec) {
-        ESP_LOGE(TAG, "opus_decoder_create 失败: %d", dec_err);
-        goto done;
-    }
-
-    uint8_t hdr[2];
-    uint8_t pkt[OPUS_MAX_PACKET];
-    int16_t pcm[OPUS_FRAME_SAMPLES];
-
-    // 用本 job 自己的 stop 标志: 旧任务只被 stop_playback() 置位, 不受新任务影响。
-    // 新任务启动时不会重置旧任务的标志, 因此"OK 停止当前播放"能真正生效。
-    while (!job->stop) {
-        // 读 2 字节包长度
-        if (fread(hdr, 1, 2, fp) != 2) break;
-        uint16_t plen = (uint16_t)(hdr[0] | (hdr[1] << 8));
-        if (plen == 0 || plen > OPUS_MAX_PACKET) {
-            ESP_LOGW(TAG, "非法包长 %u", plen);
-            break;
+        if (bsp_audio_set_format(AUDIO_SAMPLE_RATE, 16, 1) != ESP_OK) {
+            ESP_LOGE(TAG, "audio format 失败");
+            goto done;
         }
-        if (fread(pkt, 1, plen, fp) != plen) break;
-        if (job->stop) break;
 
-        // 解码一帧。pcm 输出为 int16, 每帧 <= OPUS_FRAME_SAMPLES 采样
-        int nsamp = opus_decode(dec, pkt, plen, pcm, OPUS_FRAME_SAMPLES, 0);
-        if (nsamp < 0) {
-            ESP_LOGW(TAG, "opus_decode 错误 %d", nsamp);
-            break;
+        // 创建 Opus 解码器(16kHz 单声道, 无状态跨包复用)
+        dec = opus_decoder_create(AUDIO_SAMPLE_RATE, 1, &dec_err);
+        if (!dec) {
+            ESP_LOGE(TAG, "opus_decoder_create 失败: %d", dec_err);
+            goto done;
         }
-        bsp_audio_write(pcm, (size_t)nsamp * 2u);   // int16 采样 -> 字节 = nsamp*2
-    }
 
-    ESP_LOGI(TAG, "播放结束: %s", f->name);
+        uint8_t hdr[2];
+        uint8_t pkt[OPUS_MAX_PACKET];
+        int16_t pcm[OPUS_FRAME_SAMPLES];
+
+        ESP_LOGI(TAG, "播放: %s", f->name);
+        while (!job->stop) {
+            // 读 2 字节包长度
+            if (fread(hdr, 1, 2, fp) != 2) break;
+            uint16_t plen = (uint16_t)(hdr[0] | (hdr[1] << 8));
+            if (plen == 0 || plen > OPUS_MAX_PACKET) {
+                ESP_LOGW(TAG, "非法包长 %u", plen);
+                break;
+            }
+            if (fread(pkt, 1, plen, fp) != plen) break;
+            if (job->stop) break;
+
+            // 解码一帧。pcm 输出为 int16, 每帧 <= OPUS_FRAME_SAMPLES 采样
+            int nsamp = opus_decode(dec, pkt, plen, pcm, OPUS_FRAME_SAMPLES, 0);
+            if (nsamp < 0) {
+                ESP_LOGW(TAG, "opus_decode 错误 %d", nsamp);
+                break;
+            }
+            bsp_audio_write(pcm, (size_t)nsamp * 2u);   // int16 采样 -> 字节 = nsamp*2
+        }
+        ESP_LOGI(TAG, "播放结束: %s", f->name);
 
 done:
-    if (dec) opus_decoder_destroy(dec);
-    if (fp) fclose(fp);
-    // 仅当自己仍是最新 job 才清 s_job(已被新 job 顶替则不动), 并释放本 job。
-    if (s_job == job) s_job = NULL;
-    free(job);
-    vTaskDelete(NULL);
+        if (dec) opus_decoder_destroy(dec);
+        if (fp) fclose(fp);
+        // 仅当自己仍是最新 job 才清 s_job(已被新 job 顶替则不动), 并释放本 job。
+        if (s_job == job) s_job = NULL;
+        free(job);
+    }
 }
 
+// 请求播放一个文件: 先停当前(若有), 再让常驻 worker 播新的。worker 用静态栈, 不每次
+// 从堆上申请 16KB —— 堆不足/碎片化曾导致"只停不播"(xTaskCreate 16KB 栈失败)。
 static void play_file(const voice_file_t *f) {
-    stop_playback();                 // 先让旧播放(若有)停止
+    if (s_job) s_job->stop = true;              // 停掉正在播的
     if (!f) return;
     if (!s_fs_mounted) { ESP_LOGE(TAG, "SPIFFS 未挂载"); return; }
-    // 每次播放一个独立 job: 自带 stop 标志, 互不干扰。旧任务被置 stop 后自然退出并
-    // 自清 s_job; 新任务用新 job 的标志, 不会重置旧任务, 从而"OK 停止当前+播当前"可靠。
+    if (!s_job_sem || !s_player) { ESP_LOGE(TAG, "播放器未就绪"); return; }
     play_job_t *job = malloc(sizeof(*job));
     if (!job) { ESP_LOGE(TAG, "播放 job 分配失败"); return; }
     job->f = f;
     job->stop = false;
     s_job = job;
-    // VAR_ARRAYS 用任务栈做 scratch, SILK 单帧解码栈需求大, 需 16KB。
-    if (xTaskCreate(player_task, "voice_player", 16384, job, 5, NULL) != pdPASS) {
-        ESP_LOGE(TAG, "播放任务创建失败");
-        if (s_job == job) s_job = NULL;
-        free(job);
-        return;
+    if (xSemaphoreGive(s_job_sem) != pdTRUE) {  // 唤醒常驻 worker 播新 job
+        ESP_LOGW(TAG, "唤醒播放 worker 失败");
     }
 }
 
 static void stop_playback(void) {
-    if (s_job) s_job->stop = true;   // 请求当前播放停止(任务退出后自清 s_job)
+    if (s_job) s_job->stop = true;   // 请求当前播放停止(worker 循环退出后自清 s_job)
 }
 
 // ---------------------------------------------------------------------------
@@ -699,6 +708,16 @@ void voice_app_start(void) {
     // 社区发布/截图协议: 在控制台(USB-Serial/JTAG)监听 FAP_SCREENSHOT_V1 并回传屏幕。
     // ⚠ 栈要够大: 抓屏用 lv_snapshot_take 做全屏渲染(类似 LVGL 任务), 2KB 会溢栈崩。
     xTaskCreate(fap_screenshot_task, "fap_shot", 16384, NULL, 3, NULL);
+
+    // 常驻播放任务(静态栈) + 唤醒信号量: 只在启动时创建一次。之前每次 OK 播放都
+    // xTaskCreate 一个 16KB 栈任务, 会因堆不足/碎片而失败, 导致"OK 只停不播"。
+    if (!s_job_sem) s_job_sem = xSemaphoreCreateBinary();
+    if (s_job_sem && !s_player) {
+        s_player = xTaskCreateStatic(player_worker, "voice_player",
+                                     PLAYER_STACK_BYTES / sizeof(StackType_t),
+                                     NULL, 5, s_player_stack, &s_player_tcb);
+        if (!s_player) ESP_LOGE(TAG, "常驻播放任务创建失败");
+    }
 
     // 空闲休眠: 5 分钟无按键操作 → 深度休眠; 按键(GPIO0)低电平唤醒。
     const esp_timer_create_args_t sleep_args = { .callback = sleep_timer_cb, .name = "idle_sleep" };
