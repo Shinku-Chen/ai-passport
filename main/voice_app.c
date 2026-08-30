@@ -74,6 +74,7 @@ static bool          s_fs_mounted;
 // 目录页
 static lv_obj_t     *s_dir_scr;
 static lv_obj_t     *s_dir_batt;                  // 顶栏右侧电量百分比
+static lv_timer_t   *s_batt_timer;                // 周期性刷新电量(CW2017 SOC 会随充电/耗电变化)
 static int           s_dir_sel;
 static int           s_dir_top;                   // 可见窗口起点(滚动)
 static lv_obj_t     *s_dir_rows[MAX_ROWS];       // 背景条(选中高亮)
@@ -438,6 +439,16 @@ static void refresh_dir_batt(void) {
     lv_label_set_text(s_dir_batt, buf);
 }
 
+// 周期性刷新电量: 顶栏%只在开机读一次, 会随电池消耗/充电而失真; 这里每 30s
+// 重读一次 CW2017 的 SOC, 让顶栏与设置行的电量跟随真实电量。整机 5 分钟无操作即
+// 深睡, 会话很短, 30s 足以及时更新且不额外占用。
+static void refresh_settings(void);   // 前向声明(refresh_batt_periodic 会用到)
+static void refresh_batt_periodic(lv_timer_t *t) {
+    (void)t;
+    if (s_view == VIEW_DIR) refresh_dir_batt();
+    if (s_view == VIEW_SETTINGS && s_set_batt_img) refresh_settings();
+}
+
 // ---------------------------------------------------------------------------
 // 目录页
 // ---------------------------------------------------------------------------
@@ -682,6 +693,9 @@ void voice_app_start(void) {
     if (bsp_lvgl_lock(1000)) { dir_build(); bsp_lvgl_unlock(); }
     ESP_LOGI(TAG, "音效钥匙扣启动, 目录数=%d", VOICE_DIR_TOTAL);
 
+    // 周期性刷新电量(顶栏 + 设置行): 开机只读一次的 SOC 会随电池状态失真。
+    s_batt_timer = lv_timer_create(refresh_batt_periodic, 30000, NULL);
+
     // 社区发布/截图协议: 在控制台(USB-Serial/JTAG)监听 FAP_SCREENSHOT_V1 并回传屏幕。
     // ⚠ 栈要够大: 抓屏用 lv_snapshot_take 做全屏渲染(类似 LVGL 任务), 2KB 会溢栈崩。
     xTaskCreate(fap_screenshot_task, "fap_shot", 16384, NULL, 3, NULL);
@@ -693,6 +707,7 @@ void voice_app_start(void) {
 
 void voice_app_stop(void) {
     stop_playback();
+    if (s_batt_timer) { lv_timer_delete(s_batt_timer); s_batt_timer = NULL; }
     if (bsp_lvgl_lock(1000)) {
         if (s_dir_scr) { lv_obj_delete(s_dir_scr); s_dir_scr = NULL; }
         if (s_list_scr) { lv_obj_delete(s_list_scr); s_list_scr = NULL; }

@@ -59,11 +59,38 @@ esp_err_t bsp_battery_init(void) {
     return ESP_OK;
 }
 
+// 单节 Li-Poly 开路电压 → SOC% 近似查表(分段线性)。仅当电量计的 SOC 寄存器返回
+// 0xFF(未算出)时兜底。电池在 4.2V≈100% / 3.0V≈0% 之间基本单调。
+static int voltage_to_soc(int mv) {
+    static const int pts[][2] = {
+        {3000,  0}, {3400,  5}, {3550, 15}, {3650, 30},
+        {3750, 50}, {3850, 70}, {3950, 85}, {4050, 94}, {4200, 100},
+    };
+    const int n = (int)(sizeof(pts) / sizeof(pts[0]));
+    if (mv <= pts[0][0]) return 0;
+    if (mv >= pts[n - 1][0]) return 100;
+    for (int i = 0; i < n - 1; i++) {
+        if (mv >= pts[i][0] && mv < pts[i + 1][0]) {
+            int span = pts[i + 1][0] - pts[i][0];
+            int f = (mv - pts[i][0]) * 100 / span;
+            return pts[i][1] + (pts[i + 1][1] - pts[i][1]) * f / 100;
+        }
+    }
+    return 100;   // 不会到这, 防编译警告
+}
+
 int bsp_battery_soc(void) {
     uint8_t b[2] = { 0 };
-    if (cw_read(CW_REG_SOC_H, b, 2) != 0) return -1;
+    if (cw_read(CW_REG_SOC_H, b, 2) != 0) {
+        // I2C 读失败: 通常电压也读不到, 回退电压估算(读不到则返回 -1 显示 0)。
+        int mv = bsp_battery_mv();
+        return mv < 0 ? -1 : voltage_to_soc(mv);
+    }
     int soc = b[0];                       // 高字节即整数百分比
-    if (soc > 100) return -1;             // 芯片未就绪时可能读到 0xFF
+    if (soc > 100) {                      // 0xFF: 电量计未算出 SOC, 用电压兜底
+        int mv = bsp_battery_mv();
+        return mv < 0 ? -1 : voltage_to_soc(mv);
+    }
     return soc;
 }
 
