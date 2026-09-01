@@ -6,6 +6,12 @@
 
 ## Unreleased
 
+- Added a Tuner demo page (`main/demo_tuner.c`) using the on-board microphone to
+  detect pitch and show the nearest note, octave, frequency, and cents deviation
+  on the display, with an auto-detect mode and a manual target-note mode. The
+  pitch-detection engine (`main/tuner_engine.c`) is pure C and covered by host
+  tests; `CONFIG_LV_FONT_MONTSERRAT_28` was enabled for the large note readout.
+  On-device accuracy requires verification on real hardware.
 - Made mini-program BLE install compatibility a template-level invariant: fixed
   protected `cardid`/Recovery partitions, retained the five-second UP-key
   Recovery boot hook, and added CI validation for merged-image structure,
