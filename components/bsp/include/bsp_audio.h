@@ -22,3 +22,9 @@ esp_err_t bsp_audio_read(void *pcm, size_t bytes);
 
 // 输出音量 0..100(%)。
 void bsp_audio_set_volume(uint8_t percent);
+
+// 设置麦克风输入 PGA 增益(dB)。范围 0..30(ES8311 模拟 PGA)。默认 30dB,
+// 由 bsp_audio_set_format 内部在打开 codec 时应用;这里可单独调整,
+// 供真机调音验证时补偿麦克风电平(过弱/过载)。
+// 越界值会被钳制到合法范围。codec 未打开时记录值,待下次 set_format 生效。
+void bsp_audio_set_in_gain(float db);

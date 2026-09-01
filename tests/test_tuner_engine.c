@@ -8,6 +8,11 @@
 
 #include "tuner_engine.h"
 
+// M_PI 在严格 C11 + Windows clang 下未定义,这里做一次可移植兜底。
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 #define SR 16000
 #define N  TUNER_WINDOW
 
@@ -30,6 +35,31 @@ static void expect_pitch(double freq, double rel)
     if (err > rel) {
         fprintf(stderr, "pitch fail: want %.2f Hz got %.2f Hz (err %.2f%%)\n",
                 freq, got, err * 100.0);
+        exit(1);
+    }
+}
+
+// 断言 diag 中间量:有信号时 rms>0、nsdf 峰值可信、raw_freq 接近返回频率。
+static void expect_diag(double freq)
+{
+    int16_t buf[N];
+    gen_tone(buf, N, SR, freq, 8000);
+    tuner_diag_t d;
+    float got = tuner_detect_pitch_diag(buf, N, SR, &d);
+    if (got <= 0.0f || d.rms <= 0.0f || d.nsdf_peak < TUNER_NSDF_THRESHOLD ||
+        d.lag <= 0 || d.raw_freq <= 0.0f) {
+        fprintf(stderr, "diag fail: %.2f Hz got %.2f rms %.3f nsdf %.2f lag %d raw %.2f\n",
+                freq, got, d.rms, d.nsdf_peak, d.lag, d.raw_freq);
+        exit(1);
+    }
+    double err = fabs(d.raw_freq - freq) / freq;
+    if (err > 0.01) {
+        fprintf(stderr, "diag raw freq mismatch: want %.2f got %.2f\n", freq, d.raw_freq);
+        exit(1);
+    }
+    // diag 可传 NULL,行为与旧接口一致。
+    if (tuner_detect_pitch_diag(buf, N, SR, NULL) != got) {
+        fprintf(stderr, "diag NULL fail\n");
         exit(1);
     }
 }
@@ -65,7 +95,16 @@ int main(void)
     {
         int16_t buf[N] = {0};
         assert(tuner_detect_pitch(buf, N, SR) == 0.0f);
+        tuner_diag_t d;
+        assert(tuner_detect_pitch_diag(buf, N, SR, &d) == 0.0f);
+        assert(d.rms == 0.0f);   // 静音时归一 RMS 应为 0
+        assert(d.nsdf_peak == 0.0f && d.lag == -1 && d.raw_freq == 0.0f);
     }
+
+    // 2b. diag 中间量:有信号时各字段合理,且与主接口结果一致。
+    expect_diag(440.00);
+    expect_diag(196.00);
+    expect_diag(82.41);
 
     // 3. 量化:标准音零偏差。
     expect_note(440.00, 9, 4, 0.5);    // A4

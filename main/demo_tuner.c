@@ -65,6 +65,15 @@ static volatile int   s_note_idx = -1;
 static volatile int   s_octave = -1;
 static volatile float s_freq = 0.0f;
 static volatile float s_cents = 0.0f;
+// 诊断中间量(真机验证观测用):归一 RMS / NSDF 可信度 / 原始频率。
+static volatile float s_rms = 0.0f;
+static volatile float s_nsdf = 0.0f;
+static volatile float s_raw_freq = 0.0f;
+
+// 调试模式:长按 OK 切换。显示检测中间量,UP/DOWN 调麦克风增益。
+static volatile bool  s_debug = false;
+static volatile float s_gain_db = 30.0f;               // 当前麦克风 PGA 增益(dB)
+#define TUNER_GAIN_STEP_DB 3.0f
 
 // LVGL 对象只在持锁时操作;从音频任务调用,故内部加锁。
 static void ui_set_text(lv_obj_t *obj, const char *text)
@@ -90,8 +99,28 @@ static void ui_refresh_reading(void)
     if (!s_scr) return;
     if (!bsp_lvgl_lock(200)) return;
 
-    char buf[32];
+    char buf[64];
     float shown_cents = 0.0f;   // 实际展示给用户的偏差(相对目标或最近音)
+
+    if (s_debug) {
+        // 调试模式:大字显示原始频率,下方显示 RMS/NSDF/增益。
+        if (s_raw_freq > 0.0f) {
+            lv_label_set_text_fmt(s_note_label, "%.0f", (double)s_raw_freq);
+            lv_label_set_text_fmt(s_freq_label, "RMS %.3f", (double)s_rms);
+            lv_label_set_text_fmt(s_cents_label, "NSDF %.2f  G%.0fdB",
+                                  (double)s_nsdf, (double)s_gain_db);
+        } else {
+            lv_label_set_text(s_note_label, "--");
+            lv_label_set_text_fmt(s_freq_label, "RMS %.3f", (double)s_rms);
+            lv_label_set_text_fmt(s_cents_label, "NSDF --  G%.0fdB",
+                                  (double)s_gain_db);
+        }
+        // 指针在 debug 下无意义,回中灰。
+        lv_obj_set_x(s_needle, METER_CX);
+        lv_obj_set_style_bg_color(s_needle, lv_color_hex(0x9AA7B0), 0);
+        bsp_lvgl_unlock();
+        return;
+    }
 
     if (s_note_idx < 0) {
         lv_label_set_text(s_note_label, "--");
@@ -162,13 +191,17 @@ static void tuner_task(void *arg)
     }
 
     uint32_t last_ui_ms = 0;
+    uint32_t last_log_ms = 0;
     while (s_running) {
         if (bsp_audio_read(pcm, TUNER_PCM_BYTES) != ESP_OK) {
             vTaskDelay(pdMS_TO_TICKS(10));
             continue;
         }
 
-        float freq = tuner_detect_pitch(pcm, TUNER_WINDOW, TUNER_SAMPLE_RATE);
+        tuner_diag_t diag;
+        float freq = tuner_detect_pitch_diag(pcm, TUNER_WINDOW, TUNER_SAMPLE_RATE, &diag);
+        s_rms = diag.rms;
+        s_nsdf = diag.nsdf_peak;
         if (freq > 0.0f) {
             tuner_note_t note = tuner_quantize(freq);
             if (note.note_idx >= 0) {
@@ -176,9 +209,11 @@ static void tuner_task(void *arg)
                 s_octave = note.octave;
                 s_freq = freq;
                 s_cents = note.cents;
+                s_raw_freq = diag.raw_freq;
             }
         } else {
             s_note_idx = -1;   // 无输入
+            s_raw_freq = 0.0f;
         }
 
         // 节流刷新 UI。
@@ -186,6 +221,23 @@ static void tuner_task(void *arg)
         if (now - last_ui_ms >= TUNER_UI_MIN_MS) {
             ui_refresh_reading();
             last_ui_ms = now;
+        }
+
+        // 节流打印检测中间量(真机验证观测用,不进屏只进日志)。
+        if (s_debug && now - last_log_ms >= 500) {
+            if (freq > 0.0f) {
+                tuner_note_t note = tuner_quantize(freq);
+                ESP_LOGI(TAG,
+                         "diag: raw=%.1fHz rms=%.3f nsdf=%.2f lag=%d -> %s%d %.1fHz %+.1fcents gain=%.0fdB",
+                         (double)diag.raw_freq, (double)diag.rms,
+                         (double)diag.nsdf_peak, diag.lag,
+                         NOTE_NAMES[note.note_idx], note.octave,
+                         (double)freq, (double)note.cents, (double)s_gain_db);
+            } else {
+                ESP_LOGI(TAG, "diag: NO signal rms=%.3f gain=%.0fdB",
+                         (double)diag.rms, (double)s_gain_db);
+            }
+            last_log_ms = now;
         }
     }
 
@@ -248,7 +300,7 @@ void demo_tuner_enter(void)
     lv_obj_set_style_text_font(s_mode_label, &lv_font_montserrat_14, 0);
     lv_obj_set_style_text_color(s_mode_label, lv_color_hex(UI_INK), 0);
     lv_obj_align(s_mode_label, LV_ALIGN_TOP_MID, 0, 206);
-    lv_label_set_text(s_mode_label, "AUTO");
+    lv_label_set_text(s_mode_label, "AUTO");   // 进入页面默认非调试
 
     s_target_label = lv_label_create(s_scr);
     lv_obj_set_style_text_font(s_target_label, &lv_font_montserrat_14, 0);
@@ -262,7 +314,7 @@ void demo_tuner_enter(void)
     lv_obj_set_style_text_color(s_hint_label, lv_color_hex(UI_INK), 0);
     lv_obj_set_style_text_align(s_hint_label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(s_hint_label, LV_ALIGN_BOTTOM_MID, 0, -42);
-    lv_label_set_text(s_hint_label, "pluck a string...");
+    lv_label_set_text(s_hint_label, "pluck. LONG OK: debug");
 
     // 右上角电池(避让右上云朵 x≈188,y≈8,放最右上缘)。
     s_batt_label = lv_label_create(s_scr);
@@ -274,6 +326,9 @@ void demo_tuner_enter(void)
 
     // 初始显示。
     s_note_idx = -1; s_octave = -1; s_freq = 0.0f; s_cents = 0.0f;
+    s_rms = 0.0f; s_nsdf = 0.0f; s_raw_freq = 0.0f;
+    s_debug = false;
+    s_gain_db = 30.0f;
     ui_update_battery();
     ui_refresh_reading();
 
@@ -301,7 +356,33 @@ void demo_tuner_exit(void)
 
 void demo_tuner_key(bsp_btn_t btn, bsp_btn_ev_t ev)
 {
+    // 长按 OK:切换调试模式。长按不会被当作单击,和短按切换模式不冲突。
+    if (ev == BSP_BTN_LONG && btn == BSP_BTN_OK) {
+        s_debug = !s_debug;
+        if (s_debug) {
+            ui_set_text(s_mode_label, "DEBUG");
+        } else {
+            // 退出调试:恢复当前模式(AUTO/MANUAL)标签。
+            ui_set_text(s_mode_label, s_mode == TUNER_MODE_AUTO ? "AUTO" : "MANUAL");
+        }
+        ui_refresh_reading();
+        ui_pixel_mascot_jump(s_mascot);
+        return;
+    }
+
     if (ev != BSP_BTN_CLICK) return;
+
+    // 调试模式下 UP/DOWN 调麦克风增益。
+    if (s_debug) {
+        if (btn == BSP_BTN_UP)   s_gain_db += TUNER_GAIN_STEP_DB;
+        else if (btn == BSP_BTN_DOWN) s_gain_db -= TUNER_GAIN_STEP_DB;
+        if (s_gain_db > 30.0f) s_gain_db = 30.0f;
+        if (s_gain_db < 0.0f)  s_gain_db = 0.0f;
+        bsp_audio_set_in_gain(s_gain_db);
+        ui_refresh_reading();
+        ui_pixel_mascot_jump(s_mascot);
+        return;
+    }
 
     if (btn == BSP_BTN_OK) {
         s_mode = (s_mode == TUNER_MODE_AUTO) ? TUNER_MODE_MANUAL : TUNER_MODE_AUTO;

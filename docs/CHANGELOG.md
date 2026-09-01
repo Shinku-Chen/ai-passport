@@ -12,6 +12,12 @@
   pitch-detection engine (`main/tuner_engine.c`) is pure C and covered by host
   tests; `CONFIG_LV_FONT_MONTSERRAT_28` was enabled for the large note readout.
   On-device accuracy requires verification on real hardware.
+- Tuner hardware-verification aids: a debug mode (long-press OK) that shows the
+  raw frequency, RMS level, and NSDF confidence on the display and logs the
+  detection intermediates via `ESP_LOGI`, plus an adjustable microphone PGA gain
+  (`bsp_audio_set_in_gain`, UP/DOWN in debug mode) to compensate the ES8311 input
+  level during on-device tuning. `tuner_detect_pitch_diag` exposes the detection
+  intermediates for host tests.
 - Made mini-program BLE install compatibility a template-level invariant: fixed
   protected `cardid`/Recovery partitions, retained the five-second UP-key
   Recovery boot hook, and added CI validation for merged-image structure,

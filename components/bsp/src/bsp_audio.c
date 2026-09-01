@@ -17,6 +17,12 @@ static i2s_chan_handle_t      s_tx, s_rx;
 static uint32_t s_hz;
 static uint8_t  s_bits, s_ch;
 static bool     s_opened;
+// 麦克风输入 PGA 增益(dB),默认 30(ES8311 模拟 PGA 上限)。
+static float    s_in_gain_db = 30.0f;
+
+// ES8311 麦克风 PGA 增益范围(dB)。
+#define BSP_AUDIO_IN_GAIN_MIN 0.0f
+#define BSP_AUDIO_IN_GAIN_MAX 30.0f
 
 static esp_err_t i2s_full_duplex_init(void) {
     i2s_chan_config_t chan = {
@@ -147,8 +153,8 @@ esp_err_t bsp_audio_set_format(uint32_t hz, uint8_t bits, uint8_t ch) {
 
     // ⚠ open 之后【不要】手动覆写 ES8311 的时钟分频寄存器(REG01~06):
     //   驱动已按采样率与 MCLK 精确算好,覆写会导致 ADC/DAC 时序错乱、录音回放全是杂音。
-    //   这里只设麦克风模拟 PGA 增益。
-    esp_codec_dev_set_in_gain(s_dev, 30.0f);
+    //   这里只设麦克风模拟 PGA 增益(用 s_in_gain_db,可由 bsp_audio_set_in_gain 覆盖)。
+    esp_codec_dev_set_in_gain(s_dev, s_in_gain_db);
 
     s_opened = true; s_hz = hz; s_bits = bits; s_ch = ch;
     ESP_LOGI(TAG, "codec 打开 %luHz/%ubit/%uch", (unsigned long)hz, bits, ch);
@@ -167,4 +173,14 @@ esp_err_t bsp_audio_read(void *pcm, size_t bytes) {
 
 void bsp_audio_set_volume(uint8_t percent) {
     if (s_dev) esp_codec_dev_set_out_vol(s_dev, percent);
+}
+
+void bsp_audio_set_in_gain(float db) {
+    if (db < BSP_AUDIO_IN_GAIN_MIN) db = BSP_AUDIO_IN_GAIN_MIN;
+    if (db > BSP_AUDIO_IN_GAIN_MAX) db = BSP_AUDIO_IN_GAIN_MAX;
+    s_in_gain_db = db;
+    // codec 已打开时即时生效,否则等下次 set_format 打开时应用。
+    if (s_dev && s_opened) {
+        esp_codec_dev_set_in_gain(s_dev, s_in_gain_db);
+    }
 }

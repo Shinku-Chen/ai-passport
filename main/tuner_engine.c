@@ -15,6 +15,18 @@
 
 float tuner_detect_pitch(const int16_t *pcm, int n, int sample_rate)
 {
+    return tuner_detect_pitch_diag(pcm, n, sample_rate, NULL);
+}
+
+float tuner_detect_pitch_diag(const int16_t *pcm, int n, int sample_rate,
+                              tuner_diag_t *diag)
+{
+    if (diag) {
+        diag->rms = 0.0f;
+        diag->nsdf_peak = 0.0f;
+        diag->lag = -1;
+        diag->raw_freq = 0.0f;
+    }
     if (!pcm || n < 64 || sample_rate <= 0) {
         return 0.0f;
     }
@@ -32,6 +44,7 @@ float tuner_detect_pitch(const int16_t *pcm, int n, int sample_rate)
         energy += x * x;
     }
     float rms = sqrtf(energy / (float)n);
+    if (diag) diag->rms = rms / 32767.0f;
     if (rms < TUNER_RMS_THRESHOLD) {
         return 0.0f;   // 太弱,当作无输入
     }
@@ -108,7 +121,14 @@ float tuner_detect_pitch(const int16_t *pcm, int n, int sample_rate)
     if (peak_lag < 1.0f) {
         return 0.0f;
     }
-    return (float)sample_rate / peak_lag;
+
+    float freq = (float)sample_rate / peak_lag;
+    if (diag) {
+        diag->nsdf_peak = nsdf[final_lag];
+        diag->lag = final_lag;
+        diag->raw_freq = freq;
+    }
+    return freq;
 }
 
 tuner_note_t tuner_quantize(float freq_hz)

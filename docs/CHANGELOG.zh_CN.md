@@ -7,6 +7,7 @@
 ## Unreleased
 
 - 新增调音器 demo 页（`main/demo_tuner.c`）：用板载麦克风实时检测音高，在屏幕上显示最近音名、八度、频率与 cents 偏差；支持自动识别模式与手动选目标音模式。音高检测引擎（`main/tuner_engine.c`）为纯 C 实现并由 host 测试覆盖；为显示大号音名启用了 `CONFIG_LV_FONT_MONTSERRAT_28`。真机检测精度需在硬件上验证。
+- 调音器真机验证辅助：新增调试模式（长按 OK）在屏幕显示原始频率、RMS 电平与 NSDF 可信度，并通过 `ESP_LOGI` 打印检测中间量；新增可调麦克风 PGA 增益接口（`bsp_audio_set_in_gain`，调试模式下 UP/DOWN 调整），用于真机校准时补偿 ES8311 输入电平。`tuner_detect_pitch_diag` 暴露检测中间量供 host 测试覆盖。
 - 将小程序 BLE 安装兼容提升为二创模板强制契约：固定保护 `cardid`/Recovery 分区，
   保留上键持续 5 秒进入 Recovery 的 bootloader hook，并在 CI 强制校验合并镜像结构、
   分区表 MD5/范围、3 MB 应用上限和保护分区数据不入包。

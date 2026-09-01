@@ -25,7 +25,7 @@ FoloToy AI Passport 是一个开放式可穿戴 AI 硬件，本仓库是这款 A
 | Wi-Fi | 按需 2.4 GHz STA 扫描 demo | `main/demo_wifi.c` | 仅扫描；不连接、不存凭证、不验证天线/射频表现 |
 | Bluetooth LE | 按需以 `FoloPassport` 名义做不可连接的 NimBLE 广播 | `main/demo_ble.c` | ESP32-C3 不支持蓝牙经典；射频范围、共存与功耗需实测 |
 | 低功耗 | 两秒浅睡眠与五秒深睡眠，均以 RTC 定时器唤醒 | `main/demo_low_power.c` | 深睡眠会重启应用；当前 demo 只提供 RTC 定时器唤醒 |
-| 调音器 | 麦克风实时音高检测，显示最近音名、频率与 cents 偏差 | `main/demo_tuner.c`、`main/tuner_engine.c` | 复用 `bsp_audio_*` 麦克风；精度与响应需实机验证；音高检测为可 host 测试的纯 C 实现 |
+| 调音器 | 麦克风实时音高检测，显示最近音名、频率与 cents 偏差；调试模式（长按 OK）显示原始频率 / RMS / NSDF 并可调麦克风增益 | `main/demo_tuner.c`、`main/tuner_engine.c`、`components/bsp/src/bsp_audio.c` | 复用 `bsp_audio_*` 麦克风；精度与响应需实机验证；音高检测为可 host 测试的纯 C 实现 |
 | 共享总线 | ES8311 与 CW2017 共用 I2C0 | `bsp_i2c_*` | 所有设备复用 BSP 持有的总线；不能为扫描或新设备再创建同端口总线 |
 | 日志与烧录 | ESP32-C3 原生 USB Serial/JTAG | ESP-IDF console | GPIO18/19 保留给 USB；UART0 默认 TX GPIO21 与背光冲突 |
 
