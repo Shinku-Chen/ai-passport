@@ -18,6 +18,17 @@
   (`bsp_audio_set_in_gain`, UP/DOWN in debug mode) to compensate the ES8311 input
   level during on-device tuning. `tuner_detect_pitch_diag` exposes the detection
   intermediates for host tests.
+- Tuner performance fix found during on-device verification: the NSDF
+  autocorrelation hot loop used `float` math, which is software-emulated on the
+  FPU-less ESP32-C3 and took seconds per window, triggering task-WDT timeouts and
+  stalling the UI. Reworked the hot loop and RMS gate to `int64` integer math
+  (algorithm and thresholds unchanged); single-window detection is now
+  milliseconds.
+- Tuner high-note fix found during on-device verification: `TUNER_MAX_FREQ` was
+  1200 Hz, so notes above it (e.g. E6 = 1318 Hz from phone/piano sources) fell
+  outside the range and the NSDF scan started at `lag_min` below the true
+  period, picking the 2× period and reporting one octave too low. Raised the
+  upper detection bound to 2000 Hz and added C6/E6/G6/A6 host-test cases.
 - Made mini-program BLE install compatibility a template-level invariant: fixed
   protected `cardid`/Recovery partitions, retained the five-second UP-key
   Recovery boot hook, and added CI validation for merged-image structure,

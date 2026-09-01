@@ -90,6 +90,12 @@ int main(void)
     expect_pitch(440.00, 0.01);  // A4
     expect_pitch(220.00, 0.01);  // A3
     expect_pitch(880.00, 0.01);  // A5
+    // 高音区回归:过去 TUNER_MAX_FREQ=1200 会把 1318Hz(E6) 以上的高音
+    // 低八度误判(真实滞后在 lag_min 之下,首个可见峰是 2× 周期)。
+    expect_pitch(1046.50, 0.01); // C6
+    expect_pitch(1318.51, 0.01); // E6
+    expect_pitch(1567.98, 0.01); // G6
+    expect_pitch(1760.00, 0.01); // A6
 
     // 2. 微弱信号 -> 0。
     {

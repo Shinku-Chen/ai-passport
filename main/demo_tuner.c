@@ -247,6 +247,7 @@ static void tuner_task(void *arg)
 
 void demo_tuner_enter(void)
 {
+    ESP_LOGI(TAG, "enter: tuner page");
     s_scr = ui_pixel_screen_create("TUNER");
     s_running = true;
 
@@ -357,8 +358,10 @@ void demo_tuner_exit(void)
 void demo_tuner_key(bsp_btn_t btn, bsp_btn_ev_t ev)
 {
     // 长按 OK:切换调试模式。长按不会被当作单击,和短按切换模式不冲突。
+    ESP_LOGI(TAG, "key: btn=%d ev=%d (debug=%d)", (int)btn, (int)ev, (int)s_debug);
     if (ev == BSP_BTN_LONG && btn == BSP_BTN_OK) {
         s_debug = !s_debug;
+        ESP_LOGI(TAG, "debug mode %s", s_debug ? "ON" : "OFF");
         if (s_debug) {
             ui_set_text(s_mode_label, "DEBUG");
         } else {

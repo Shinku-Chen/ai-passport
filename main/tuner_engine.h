@@ -9,8 +9,11 @@
 #define TUNER_A4_HZ 440.0f
 
 // 检测的频率范围(Hz)。范围外返回 0。
+// 上限 2000Hz:之前 1200Hz 会让 E6(1318Hz) 及以上高音落在范围外,NSDF 扫描从
+// lag_min=13 起步,真实基频滞后(如 E6=12.1)在起点之下,首个可见峰是 2× 周期
+// → 高音被低八度误判。16kHz 采样下 lag_min=8,NSDF 仍能正常工作。
 #define TUNER_MIN_FREQ 60.0f
-#define TUNER_MAX_FREQ 1200.0f
+#define TUNER_MAX_FREQ 2000.0f
 
 // 归一化自相关可信度阈值。NSDF 峰值低于此值视为不可靠(太弱/非周期)。
 #define TUNER_NSDF_THRESHOLD 0.50f

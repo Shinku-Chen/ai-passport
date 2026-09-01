@@ -19,14 +19,14 @@
 static const char *TAG = "main";
 
 static const demo_entry_t DEMOS[] = {
-    { "Display", demo_display_enter, demo_display_exit, demo_display_key },
-    { "Button",  demo_button_enter,  demo_button_exit,  demo_button_key  },
-    { "Audio",   demo_audio_enter,   demo_audio_exit,   demo_audio_key   },
-    { "Battery", demo_battery_enter, demo_battery_exit, demo_battery_key },
-    { "Wi-Fi",   demo_wifi_enter,    demo_wifi_exit,    demo_wifi_key    },
-    { "BLE",     demo_ble_enter,     demo_ble_exit,     demo_ble_key     },
-    { "Low Power", demo_low_power_enter, demo_low_power_exit, demo_low_power_key },
-    { "Tuner",     demo_tuner_enter,     demo_tuner_exit,     demo_tuner_key     },
+    { "Display", demo_display_enter, demo_display_exit, demo_display_key, false },
+    { "Button",  demo_button_enter,  demo_button_exit,  demo_button_key,  false },
+    { "Audio",   demo_audio_enter,   demo_audio_exit,   demo_audio_key,   false },
+    { "Battery", demo_battery_enter, demo_battery_exit, demo_battery_key, false },
+    { "Wi-Fi",   demo_wifi_enter,    demo_wifi_exit,    demo_wifi_key,    false },
+    { "BLE",     demo_ble_enter,     demo_ble_exit,     demo_ble_key,     false },
+    { "Low Power", demo_low_power_enter, demo_low_power_exit, demo_low_power_key, false },
+    { "Tuner",     demo_tuner_enter,     demo_tuner_exit,     demo_tuner_key,     true },
 };
 #define DEMO_COUNT (sizeof(DEMOS) / sizeof(DEMOS[0]))
 
@@ -81,7 +81,8 @@ static void on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user) {
     if (!bsp_lvgl_lock(500)) return;
 
     if (s_active >= 0) {
-        if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG) {     // 统一返回
+        if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG && !DEMOS[s_active].consumes_long_ok) {
+            // 统一返回(除非该 demo 声明消费长按 OK)。
             DEMOS[s_active].exit();
             enter_menu();
         } else {
