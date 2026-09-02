@@ -3226,6 +3226,14 @@
         "samples": 303040,
         "duration": 18.94,
         "compressed_bytes": 30072
+      },
+      {
+        "name": "蓝莲哈",
+        "src": "蓝莲哈.mp3",
+        "path": "dir09/clip40.opus",
+        "samples": 176320,
+        "duration": 11.02,
+        "compressed_bytes": 11551
       }
     ]
   },
@@ -4534,6 +4542,30 @@
         "samples": 44320,
         "duration": 2.77,
         "compressed_bytes": 5672
+      },
+      {
+        "name": "lookmyeye",
+        "src": "lookmyeye.mp3",
+        "path": "dir13/clip44.opus",
+        "samples": 25920,
+        "duration": 1.62,
+        "compressed_bytes": 1417
+      },
+      {
+        "name": "tell me why",
+        "src": "tell me why.mp3",
+        "path": "dir13/clip45.opus",
+        "samples": 41440,
+        "duration": 2.59,
+        "compressed_bytes": 2371
+      },
+      {
+        "name": "啊能能",
+        "src": "啊能能.mp3",
+        "path": "dir13/clip46.opus",
+        "samples": 20480,
+        "duration": 1.28,
+        "compressed_bytes": 1326
       }
     ]
   },
