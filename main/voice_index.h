@@ -486,7 +486,7 @@ static const voice_file_t VOICE_DIR_09_FILES[] = {
     { "\x64ir\x30\x39/\x63lip\x33\x37.opus", "\xe9\xa6\x99\xe8\x95\x89\xe6\xad\x8c", 24256u, 247040u },
     { "\x64ir\x30\x39/\x63lip\x33\x38.opus", "\xe9\xa9\xac\xe4\xba\x91\xe6\xad\x8c", 46510u, 473440u },
     { "\x64ir\x30\x39/\x63lip\x33\x39.opus", "\xe9\xbb\x8e\xe6\x98\x8e\xe6\xad\x8c", 30072u, 303040u },
-    { "\x64ir\x30\x39/\x63lip\x34\x30.opus", "\xe8\x93\x9d\xe8\x8e\xb2\xe5\x93\x88", 11551u, 176320u },
+    { "\x64ir\x30\x39/\x63lip\x34\x30.opus", "\xe8\x93\x9d\xe8\x8e\xb2\xe5\x93\x88", 50052u, 176320u },
 };
 static const voice_file_t *const VOICE_DIR_09 = VOICE_DIR_09_FILES;
 #define VOICE_DIR_09_COUNT (sizeof(VOICE_DIR_09_FILES)/sizeof(VOICE_DIR_09_FILES[0]))
