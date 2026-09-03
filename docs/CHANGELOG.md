@@ -6,6 +6,7 @@
 
 ## Unreleased
 
+- Reduced deep-sleep idle draw: the firmware now turns the LCD backlight off before entering deep sleep (the backlight pin would otherwise stay driven at 100% during sleep, since the deep-sleep GPIO state is held). GPIO0 keeps its external 10 kΩ pull-up for wake detection, with the internal pull-up disabled to avoid an extra leakage path. Wakes on any button via GPIO0 low-level.
 - Fixed the CJK/ASCII UI font so the new clip names render fully. Regenerated the subset font to add the missing glyphs: the lowercase `l`, `f`, the ASCII range `a`-`z`/`A`-`Z`, the space `U+0020`, and the previously-missing Han character `lian` (`U+83B2`, used in the Haji Mi clip "Lan Lian Ha" and matching the original simhei source style). The font is regenerated from `simhei.ttf` (the original, preferred style) with the full symbol set, so list rows for clips such as `lookmyeye`, `tell me why`, and `A Neng Neng` render without boxes.
 - Raised the "Lan Lian Ha" clip to 32 kbps for better audio quality (all other clips stay at the 8 kbps Opus profile). Its `dir09/clip40.opus` is now 50052 bytes and the `voicefs` partition is repacked accordingly.
 - Added four new voice clips: "Lan Lian Ha" (Haji Mi) and lookmyeye / tell me why / A Neng Neng (Xiao Ming Jian Mo). Repacked the `voicefs` data partition and rebuilt the complete firmware.
