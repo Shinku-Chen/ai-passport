@@ -242,10 +242,9 @@ static esp_timer_handle_t s_sleep_timer;
 static void do_deep_sleep(void) {
     ESP_LOGI(TAG, "5 分钟无操作, 进入深度休眠(按键唤醒)");
 
-    // —— 省电前序: 深睡时 GPIO 保持原输出状态, 若背光脚(GPIO21)仍为 HIGH 会一直耗电。
-    // 先把背光归零/停掉, 别让 LCD 背光与屏在深睡期间继续吃电。
-    bsp_display_backlight(0);
-
+    // 背光无需软件关闭: ESP-IDF 深睡会隔离所有未 hold 的数字 GPIO(见
+    // esp_sleep_isolate_digital_gpio), 背光脚 GPIO21 未被 hold, 会被隔离成高阻浮空,
+    // 背光在深睡期间自然熄灭(已真机确认)。
     // GPIO0 已有外部 10k 上拉(空闲 3.3V), 无需软件上拉; 配置为纯输入, 低电平唤醒。
     // 显式关掉内部上拉(避免内部上拉叠加在外部 10kΩ 上造成额外泄漏)。
     gpio_config_t io = {

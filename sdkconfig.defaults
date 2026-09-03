@@ -27,6 +27,11 @@ CONFIG_BOOTLOADER_HOLD_TIME_GPIO=5
 CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
 CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
 
+# --- 深睡省电: 关掉唤醒 IO 的内部上拉/下拉 ---
+# 本板 GPIO0 按键唤醒靠【外部 10kΩ 上拉】, 内部上拉纯属冗余且会在外部上拉之上
+# 叠加一条泄漏路径(硬件指南/经验文档均指出)。该配置默认 y, 这里显式关闭。
+CONFIG_ESP_SLEEP_GPIO_ENABLE_INTERNAL_RESISTORS=n
+
 # --- LVGL ---
 CONFIG_LV_COLOR_DEPTH_16=y
 CONFIG_LV_FONT_MONTSERRAT_14=y
@@ -43,16 +48,11 @@ CONFIG_LV_USE_SNAPSHOT=y
 CONFIG_FREERTOS_HZ=1000
 
 # --- Bluetooth LE / NimBLE ---
-# ESP32-C3 仅支持 BLE；示例只启用单连接 peripheral 所需的最小 host 配置。
-CONFIG_BT_ENABLED=y
-CONFIG_BT_NIMBLE_ENABLED=y
-CONFIG_BT_NIMBLE_ROLE_CENTRAL=n
-CONFIG_BT_NIMBLE_ROLE_PERIPHERAL=y
-CONFIG_BT_NIMBLE_ROLE_BROADCASTER=y
-CONFIG_BT_NIMBLE_ROLE_OBSERVER=n
-CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
-CONFIG_BT_NIMBLE_HOST_BASED_PRIVACY=n
-CONFIG_BT_NIMBLE_NVS_PERSIST=n
+# 音效钥匙扣产品 App 不使用 BLE(开机直接进三层 UI), 故关掉蓝牙栈:
+# 省内存、减少镜像体积、消除潜在功耗。若日后要 BLE 再单独启用。
+# 深睡会断电 HP 域(含蓝牙控制器), 所以深睡时蓝牙本就关闭; 这里关闭是省运行期资源。
+CONFIG_BT_ENABLED=n
+# CONFIG_BT_NIMBLE_ENABLED is not set
 
 # --- 按键(espressif/button)消抖/采样调优: 去抖动、减少误触 ---
 # 扫描周期 5ms + 消抖 4 tick = 20ms 确认; ADC 3 次采样平均滤噪声。
