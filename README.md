@@ -13,7 +13,7 @@ project lives on its own `feature/*` branch and is introduced below. Board facts
 the BSP, and the development workflow come from upstream — see
 [`docs/README.md`](docs/README.md), [`AGENTS.md`](AGENTS.md), and
 [`docs/contribution/`](docs/contribution/). Released firmware for each project is
-attached to this repository's [Releases](/releases).
+attached to this repository's [Releases](https://github.com/Shinku-Chen/ai-passport/releases).
 
 ## Projects
 
@@ -25,7 +25,7 @@ dozens of character packs** — jojo, meme cat, Liu Huaqiang, Haji Mi, Nailong,
 and more. Latest: **v1.3.0**.
 
 - Branch: [`feature/voice-keychain`](https://github.com/Shinku-Chen/ai-passport/tree/feature/voice-keychain)
-- Releases: [v1.1.0](/releases/tag/v1.1.0), [v1.3.0](/releases/tag/v1.3.0)
+- Releases: [v1.1.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.1.0), [v1.3.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.3.0)
 - Experience notes: [`docs/reference/shinku-chen/voice-keychain/`](docs/reference/shinku-chen/voice-keychain/)
 
 **Controls (three keys):** UP / DOWN to move in a list, **OK** to enter a
@@ -53,7 +53,7 @@ run the "what should we eat for lunch?" guide animation, hold **DOWN** to spin
 through the food selector, and release to stop on a random pick. Latest: **v1.2.0**.
 
 - Branch: [`feature/cheerful-goodall`](https://github.com/Shinku-Chen/ai-passport/tree/feature/cheerful-goodall)
-- Release: [v1.2.0](/releases/tag/v1.2.0)
+- Release: [v1.2.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.2.0)
 - Experience notes: [`docs/reference/shinku-chen/eat-what/`](docs/reference/shinku-chen/eat-what/)
 
 **Controls:** hold UP / DOWN to run the two animations, release to stop on the
@@ -68,7 +68,7 @@ learned), and **Spell** (see the pinyin and guess the character). A short **OK**
 reveals the answer; learned marks persist to NVS. Latest: **v1.0.0**.
 
 - Branch: [`feature/shengzi-cards`](https://github.com/Shinku-Chen/ai-passport/tree/feature/shengzi-cards)
-- Release: [v1.0.0](/releases/tag/v1.0.0)
+- Release: [v1.0.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0)
 
 ## Notes
 

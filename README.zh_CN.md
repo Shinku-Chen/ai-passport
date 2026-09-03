@@ -12,7 +12,7 @@ ESP32-C3、240×320 彩屏、三键操作、8 MB Flash、无 PSRAM）的开发�
 下面逐个介绍。板卡事实、BSP 与开发流程来自上游仓库 —— 见
 [`docs/README.md`](docs/README.md)、[`AGENTS.md`](AGENTS.md) 与
 [`docs/contribution/`](docs/contribution/)。每个项目的固件发布挂在本仓库的
-[Releases](/releases) 上。
+[Releases](https://github.com/Shinku-Chen/ai-passport/releases) 上。
 
 ## 项目
 
@@ -22,7 +22,7 @@ ESP32-C3、240×320 彩屏、三键操作、8 MB Flash、无 PSRAM）的开发�
 **数百条中文语音片段** —— jojo、meme cat、刘华强、哈吉米、奶龙等等。最新版：**v1.3.0**。
 
 - 分支：[`feature/voice-keychain`](https://github.com/Shinku-Chen/ai-passport/tree/feature/voice-keychain)
-- 发布：[v1.1.0](/releases/tag/v1.1.0)、[v1.3.0](/releases/tag/v1.3.0)
+- 发布：[v1.1.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.1.0)、[v1.3.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.3.0)
 - 经验沉淀：[`docs/reference/shinku-chen/voice-keychain/`](docs/reference/shinku-chen/voice-keychain/)
 
 **操作方式（三键）：** UP / DOWN 在列表中移动，**OK** 进入目录、选择片段或播放，
@@ -44,7 +44,7 @@ ESP32-C3、240×320 彩屏、三键操作、8 MB Flash、无 PSRAM）的开发�
 引导动画，按住 **DOWN** 滚动食物选择器，松开停在随机结果上。最新版：**v1.2.0**。
 
 - 分支：[`feature/cheerful-goodall`](https://github.com/Shinku-Chen/ai-passport/tree/feature/cheerful-goodall)
-- 发布：[v1.2.0](/releases/tag/v1.2.0)
+- 发布：[v1.2.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.2.0)
 - 经验沉淀：[`docs/reference/shinku-chen/eat-what/`](docs/reference/shinku-chen/eat-what/)
 
 **操作方式：** 按住 UP / DOWN 运行两套动画，松开停在当前帧；**OK** 切换 LVGL 局部刷新
@@ -57,7 +57,7 @@ ESP32-C3、240×320 彩屏、三键操作、8 MB Flash、无 PSRAM）的开发�
 标记持久化到 NVS。最新版：**v1.0.0**。
 
 - 分支：[`feature/shengzi-cards`](https://github.com/Shinku-Chen/ai-passport/tree/feature/shengzi-cards)
-- 发布：[v1.0.0](/releases/tag/v1.0.0)
+- 发布：[v1.0.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0)
 
 ## 说明
 
