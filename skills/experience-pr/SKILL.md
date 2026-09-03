@@ -108,12 +108,21 @@ customization to the upstream PR.
 
 ## Write the experience entry
 
-Each experience capture produces exactly one `.md` file and its paired
-`.zh_CN.md` file under `docs/experiences/`, named
-`<unixtime>_<commit-sha>.md`. This repository requires English at the default
-`.md` path and a paired `.zh_CN.md`, with reciprocal language links and no
-Chinese prose in the English file. Link the new entry from the index at
-`docs/development/experience-notes.md`.
+Each experience capture may produce **one or more** entries, each as its own
+`.md` file with its paired `.zh_CN.md` under `docs/reference/<username>/`,
+named after the entry's content summary in lowercase-kebab-case (for example
+`audio-compression-trade-offs.md`), where `<username>` is the contributing
+developer's GitHub username (lowercase-kebab-case) grouping that developer's
+entries together. This repository requires English at the default `.md` path and a
+paired `.zh_CN.md`, with reciprocal language links and no Chinese prose in the
+English file. Link each new entry from the index at
+`docs/reference/README.md`.
+
+A developer is not limited to one entry. The archive holds **one or more entries
+per developer**, each as its own `.md` file (with its paired `.zh_CN.md`) under
+that developer's folder. Capture each reusable, post-release learning as a new
+entry rather than merging it into an existing one, so each entry stays a single,
+self-contained topic.
 
 Keep this change on a **dedicated branch or worktree**. Do not commit it on the
 developer's current branch.
@@ -150,10 +159,10 @@ change affects user-visible behavior, compatibility, or the release workflow.
 
 ## Related documents
 
-- Post-release follow-up overview: `docs/development/after-release.md`
-- Experience index: `docs/development/experience-notes.md`
-- Experience entries: `docs/experiences/`
-- Firmware publishing: `docs/development/publish-to-community.md`
+- Project completion overview: `docs/development/release/project-completion.md`
+- Experience index: `docs/reference/README.md`
+- Experience entries: `docs/reference/`
+- Firmware publishing: `docs/development/release/publish-to-community.md`
 - PR template: `.github/PULL_REQUEST_TEMPLATE.md`
 - Contribution and commit rules: `docs/contribution/commit-and-pr.md`
 - Fork branch and PR workflow: `docs/fork-guide.md`

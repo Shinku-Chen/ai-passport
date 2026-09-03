@@ -156,7 +156,7 @@ The audio demo's three-second recording buffer is about 96 KB and is the largest
 
 ## 9. CW2017 fuel gauge
 
-Initialization reads VERSION, writes CONFIG `0x00`, waits 100 ms, and uses the chip's built-in Li-Poly profile. The repository intentionally does not write a custom cell profile.
+Initialization reads VERSION and checks the profile update flag plus all 80 profile bytes. When needed, it puts the gauge to sleep, writes and verifies the supplied profile for the specified 520 mAh cell, sets the update flag, restarts the gauge with the required `0x30` to `0x00` sequence, and waits up to five seconds for a valid SOC. Replacing the cell requires a matching vendor-generated profile and renewed charge/discharge validation.
 
 - SOC uses registers `0x04–0x05`; values above 100 are treated as not ready and return `-1`.
 - Voltage uses the 14-bit value at `0x02–0x03`, converted as `raw × 312.5 µV`, and returned in mV.
@@ -167,7 +167,11 @@ Accurate production SOC requires the cell parameters, CW2017 datasheet/vendor pr
 
 ## 10. Flash, console, and memory
 
-The current product and firmware baseline uses 8 MB Flash. `sdkconfig.defaults` fixes the image to 8 MB and disables automatic flash-size header rewriting. `partitions.csv` defines 24 KB NVS, 4 KB PHY data, and one 3 MB factory application without OTA slots. A detected non-8-MB device does not match this baseline; identify the board and flash part before changing the project default.
+The current product and firmware baseline uses 8 MB Flash. `sdkconfig.defaults` fixes the image to 8 MB and disables automatic flash-size header rewriting. `partitions.csv` defines 24 KB NVS, 4 KB PHY data, one 3 MB factory application, protected `cardid` at `0x356000`, and permanent Recovery at `0x700000`. This is not an ESP-IDF dual-slot OTA layout: the factory-installed Recovery performs BLE installation and must remain at its fixed address. The bootloader enters it when UP/GPIO0 is held for five seconds. A detected non-8-MB device does not match this baseline; identify the board and flash part before changing the project default.
+
+Do not erase a provisioned device or move/overlap the protected partitions.
+Community firmware contains neither device identity nor a replacement Recovery
+payload. See the [BLE compatibility contract](../development/engineering/ble-recovery-compatibility.md).
 
 The console is USB Serial/JTAG. Do not switch to the UART0 default output without resolving its GPIO21 conflict with the backlight.
 
@@ -183,18 +187,26 @@ Menu initialization status arrays implicitly follow `DEMOS[]` order; update and 
 
 ## 12. Development environment
 
-Use ESP-IDF 5.5.3 outside the repository. On Ubuntu/Debian, install the standard ESP-IDF prerequisites, clone Espressif's `v5.5.3` tag recursively, and run `./install.sh esp32c3`. Activate its `export.sh` in every terminal and confirm `idf.py --version`.
+Follow the canonical [environment bootstrap](../development/engineering/environment-setup.md)
+for clean-machine installation, OS-specific prerequisites, and international or
+mainland China download routes. Use ESP-IDF 5.5.3 outside the repository,
+activate its `export.sh` in every terminal, and confirm the exact version.
+Prefer `./tools/validate.sh --firmware` to build the verified merged image and
+flash that image at `0x0`; use direct `idf.py build/flash` only for incremental
+development.
 
 ```bash
-get_idf553
+source <path-to-esp-idf-v5.5.3>/export.sh
+idf.py --version
 idf.py set-target esp32c3
 idf.py reconfigure
 idf.py build
 ```
 
-The Component Manager resolves dependencies from `components/bsp/idf_component.yml`. Do not edit `managed_components/`. `dependencies.lock` is tracked and must remain reproducible under ESP-IDF 5.5.3. Generated `sdkconfig` does not automatically absorb every changed default; inspect it and use `idf.py fullclean` only for stale generated state.
+The Component Manager resolves dependencies from `components/bsp/idf_component.yml`. Do not edit `managed_components/`. `dependencies.lock` is tracked and must remain reproducible under ESP-IDF 5.5.3. Generated `sdkconfig` does not automatically absorb every changed default; preserve intentional settings and use `idf.py set-target esp32c3` when configuration must be regenerated. Use `idf.py fullclean` only to remove stale build output.
 
-Flash through the native USB Serial/JTAG port, commonly `/dev/ttyACM0` on Linux:
+For an intentional incremental flash, use the native USB Serial/JTAG port,
+commonly `/dev/ttyACM0` on Linux:
 
 ```bash
 idf.py -p /dev/ttyACM0 flash monitor
@@ -246,6 +258,7 @@ General board acceptance:
 | Black after light sleep | timer wake source, sleep error, backlight restore |
 | Deep sleep does not restart | timer source, boot wake cause, RTC counter |
 | I2S allocation fails after UI growth | competition among LCD/LVGL buffers and I2S DMA |
+| Chinese text appears as boxes | Montserrat 14/20 has no CJK glyphs; compile and select a CJK subset, configure fallback for mixed text, and verify glyph coverage on the device |
 
 ## 15. Pre-delivery checklist
 

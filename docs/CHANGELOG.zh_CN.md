@@ -22,6 +22,11 @@
 - 在 `partitions.csv` 新增独立的 SPIFFS 数据分区（`voicefs`，3 MB，`0x310000`）存放压缩语音，并通过 `esp_vfs_spiffs_register` 挂载（SPIFFS 是 ESP-IDF 内置组件，规避了组件注册表不可用的 `espressif/esp_littlefs`）。
 - 新增 `tools/encode_voice.py`：用 miniaudio 解码 `assets/project/**` 音频（mp3/ogg/wav），重采样到 8 kHz 单声道，低通滤波，去静音，编码 IMA-ADPCM 4bit，落盘逐段 `.adpcm`，生成 `main/voice_index.h`（编译期路径/中文名/长度表）与 `assets/audio/voice_index.json`，并用 ESP-IDF `spiffsgen.py` 打包 `voicefs.img`。文件名里的非 BMP 字符（如 `🐦`）会替换成可读中文，避免 CJK 界面出现缺字块。
 - 新增 CJK/中文 UI 子集字体（`main/fonts/voice_cjk.c`，思源黑体 noto CJK SC 子集）用于渲染中文目录与语音名，接入 `main/CMakeLists.txt` 并通过 `LV_LVGL_H_INCLUDE_SIMPLE` 启用。
+- 加入厂家为优特利 520mAh 电芯生成的 80 字节 CW2017 profile，并实现内容与更新标志检查、写入后校验、规定的重启时序以及有上限的 SOC 就绪等待。
+- 按功能域整理文档并采用双入口：根目录 `AGENTS.md` 变为薄路由（只保留硬约束与任务路由），详细的 AI 开发工作流下沉到 `docs/development/ai-guide.md`，`agent-guide.md` 并入其中。为 `docs/development/` 增加二级分区（`engineering/`、`ci/`、`release/`），把 `plays/` 应用档案与 `experiences/` 移入带专属 README 的 `docs/reference/` 参考区；删除 `docs/software-design/`（空脚手架）；把 `assets/{fonts,images,music}/README` 三个叶子 README 并入 `assets/` README；把 `project-completion` 的六个子文档压平为单文件；并把每个目录统一为单一 README，消除所有 `INDEX` 文件与一处重复经验索引。所有交叉引用与文献链接已更新；未丢弃任何内容。
+- 将小程序 BLE 安装兼容提升为二创模板强制契约：固定保护 `cardid`/Recovery 分区，保留上键持续 5 秒进入 Recovery 的 bootloader hook，并在 CI 强制校验合并镜像结构、分区表 MD5/范围、3 MB 应用上限和保护分区数据不入包。
+- 规定多应用发布的 Release 标题约定：tag 按 `v<版本>-<应用名>`（如 `v0.1.0-voice-keychain`）命名，让 Release 标题同时带版本与应用名；发布成功后核对标题，保证一眼扫 Release 列表就能区分是哪个应用。
+- 新增发布后收尾流程：`issue-suggestions` skill 用于把用户反馈作为 issue 提交到上游项目；`experience-pr` skill 用于把可复用的开发经验作为文档 PR 提交；新增 `docs/experiences/` 目录保存单条经验文件；并配套 `project-completion`、`file-issues` 与经验索引文档。
 - 精简仓库根目录：将 GitHub 可识别的社区治理文档迁入 `.github/`，将变更记录迁入 `docs/`，同步全部引用，并在仓库检查中加入根目录文档白名单。
 - 全仓库文档语言规范：所有维护中的 Markdown 默认 `.md` 文件使用英文，简体中文使用配对的 `.zh_CN.md`，双方提供语言切换；静态检查会阻止缺失配对、缺失切换链接或英文默认页混入中文正文。
 - AI 开发流程一期：精简按任务加载的上下文入口，统一本地/CI 验证脚本，新增 PR 自动构建与模板，并提交依赖锁文件以提高构建可复现性。

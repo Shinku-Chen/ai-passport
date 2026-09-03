@@ -26,7 +26,7 @@ AI 应先完成以下检查：
 
 ## 2. 硬件总览
 
-当前代码针对 ESP32-C3 FoloToy AI Passport，使用 ESP-IDF 5.5.x（已知开发环境为 5.5.3）。MCU **没有 PSRAM**，外设 DMA 和 UI 都使用内部 RAM。
+当前代码针对 ESP32-C3 FoloToy AI Passport，使用 ESP-IDF 5.5.3。MCU **没有 PSRAM**，外设 DMA 和 UI 都使用内部 RAM。
 
 | 子系统 | 器件/方式 | 总线或资源 | 固件支持 |
 | --- | --- | --- | --- |
@@ -215,7 +215,7 @@ Audio demo 使用独立 4 KB 栈任务：OK 播放 1 秒 1 kHz 方波，UP 录 3
 
 ## 9. CW2017 电池计
 
-CW2017 在共享 I2C 地址 0x63。初始化读取 VERSION 确认在线，将 CONFIG 写为 0x00 进入正常模式，等待 100 ms 后使用芯片自带 Li-Poly profile。仓库刻意不写自定义电池 profile，因为开源用户的电池可能不同。
+CW2017 在共享 I2C 地址 0x63。初始化读取 VERSION 确认在线，并检查 profile 更新标志以及全部 80 字节内容。需要更新时，驱动让电量计进入睡眠态，写入并读回校验优特利 520mAh 电芯的厂家 profile，置更新标志，再按 `0x30` 到 `0x00` 的规定时序重启，最长等待 5 秒取得有效 SOC。更换电芯时必须取得匹配的厂家 profile，并重新完成充放电验证。
 
 - SOC：读 0x04–0x05，仅返回高字节整数百分比；大于 100 视为未就绪并返回 `-1`。
 - 电压：读 0x02–0x03 的 14 bit 值，换算为 `raw × 312.5 µV`，API 返回 mV。
@@ -226,7 +226,10 @@ SOC 准确度取决于电芯与 profile 的匹配程度。本驱动给出的是�
 
 ## 10. Flash、控制台和资源预算
 
-当前产品与固件基线使用 8 MB Flash。`sdkconfig.defaults` 固定使用 8 MB Flash 镜像配置，并关闭 `CONFIG_ESPTOOLPY_HEADER_FLASHSIZE_UPDATE`（不按探测容量回写镜像头，便于 `idf.py merge-bin`）；`partitions.csv` 提供 24 KB NVS、4 KB PHY data 和 3 MB factory app 分区，无 OTA 槽。若实机探测结果不是 8 MB，则该设备不符合当前基线；修改项目默认值前应先确认板卡和 Flash 料号。
+当前产品与固件基线使用 8 MB Flash。`sdkconfig.defaults` 固定使用 8 MB Flash 镜像配置，并关闭 `CONFIG_ESPTOOLPY_HEADER_FLASHSIZE_UPDATE`（不按探测容量回写镜像头，便于 `idf.py merge-bin`）；`partitions.csv` 提供 24 KB NVS、4 KB PHY data、3 MB factory app、位于 `0x356000` 的保护 `cardid`，以及位于 `0x700000` 的永久 Recovery。这不是 ESP-IDF 双槽 OTA 布局；工厂预装 Recovery 负责 BLE 安装，且必须保持固定地址。开机持续按住上键/GPIO0 5 秒时，bootloader 会进入 Recovery。若实机探测结果不是 8 MB，则该设备不符合当前基线；修改项目默认值前应先确认板卡和 Flash 料号。
+
+不得擦除已写身份的设备，也不得移动或覆盖保护分区。社区固件既不包含单机身份，
+也不携带替换 Recovery 的数据。详见 [BLE 兼容契约](../development/engineering/ble-recovery-compatibility.zh_CN.md)。
 
 控制台固定为 USB Serial/JTAG，不使用 UART0 默认输出，因为其 TX GPIO21 与背光冲突。任何日志接口修改都必须同时检查引脚占用。
 
@@ -264,7 +267,12 @@ SOC 准确度取决于电芯与 profile 的匹配程度。本驱动给出的是�
 
 ## 12. 开发环境搭建
 
-项目要求 ESP-IDF 5.5.x，推荐与已知开发环境一致使用 **ESP-IDF 5.5.3**。不要直接使用系统中的任意 `idf.py`，也不要将 Arduino、PlatformIO 或其他 ESP-IDF 版本生成的配置混入当前工程。
+全新机器安装、各操作系统依赖以及国际/中国大陆下载线路统一以
+[环境引导](../development/engineering/environment-setup.zh_CN.md)为准。项目严格使用
+**ESP-IDF 5.5.3**。不要直接使用系统中的任意 `idf.py`，也不要将 Arduino、
+PlatformIO 或其他 ESP-IDF 版本生成的配置混入当前工程。
+编译优先使用 `./tools/validate.sh --firmware` 生成并验证合并固件，烧录优先把该
+镜像写入 `0x0`；直接 `idf.py build/flash` 只用于增量开发。
 
 ### 12.1 Linux / WSL 准备
 
@@ -305,24 +313,16 @@ source "$HOME/esp/esp-idf-v5.5.3/export.sh"
 idf.py --version
 ```
 
-版本输出应为 ESP-IDF v5.5.3。本机若已配置 `get_idf553` shell 快捷命令，也可以用它代替 `source .../export.sh`，但该命令不是仓库文件的一部分，不能假设所有机器都存在。
-
-可选地在自己的 shell 配置中定义快捷函数：
-
-```bash
-get_idf553() {
-    source "$HOME/esp/esp-idf-v5.5.3/export.sh"
-}
-```
-
-修改 `~/.bashrc` 或 `~/.zshrc` 属于用户级环境变更，AI 执行前应获得用户授权；仅在文档中给出示例不代表可以自动修改。
+版本输出必须为 ESP-IDF v5.5.3。文档和自动化不得依赖机器专用 alias，AI
+也不得擅自修改 shell 启动文件。
 
 ### 12.3 获取工程依赖并首次构建
 
 进入项目根目录后执行：
 
 ```bash
-get_idf553                    # 或 source 对应 export.sh
+source <ESP-IDF-v5.5.3-路径>/export.sh
+idf.py --version
 idf.py set-target esp32c3
 idf.py reconfigure
 idf.py build
@@ -338,7 +338,7 @@ idf.py build
 grep -E 'IDF_TARGET|ESP_CONSOLE_USB_SERIAL_JTAG|SPIRAM|FLASHSIZE' sdkconfig
 ```
 
-预期目标为 ESP32-C3、控制台为 USB Serial/JTAG、Flash 为 8 MB，并且不启用 PSRAM。`sdkconfig.defaults` 只影响新生成配置；已有 `sdkconfig` 不会自动完全跟随 defaults。defaults 变化后应检查配置差异，必要时备份有用选项后执行 `idf.py fullclean` 并重新配置。
+预期目标为 ESP32-C3、控制台为 USB Serial/JTAG、Flash 为 8 MB，并且不启用 PSRAM。`sdkconfig.defaults` 只影响新生成配置；已有 `sdkconfig` 不会自动完全跟随 defaults。defaults 变化后应检查配置差异，保留有意设置后运行 `idf.py set-target esp32c3` 重新生成配置。`idf.py fullclean` 只用于清理构建输出。
 
 ### 12.4 连接、烧录与监视
 
@@ -393,10 +393,11 @@ idf.py build
 
 ## 13. 构建与验证
 
-推荐环境：
+默认优先运行 `./tools/validate.sh --firmware`。以下命令仅用于增量开发：
 
 ```bash
-get_idf553
+source <ESP-IDF-v5.5.3-路径>/export.sh
+idf.py --version
 idf.py set-target esp32c3   # 新 checkout 或目标变化时
 idf.py build
 idf.py flash monitor
@@ -448,6 +449,7 @@ idf.py flash monitor
 | light sleep 后黑屏 | timer wake source、`esp_light_sleep_start()` 错误日志、唤醒后是否恢复背光 |
 | deep sleep 后未重启 | timer wake source、启动日志的 wake cause、页面 RTC 计数；当前 demo 使用 RTC timer 唤醒 |
 | 加大 UI 后 I2S NO_MEM | LCD 双缓冲/LVGL pool 与 I2S DMA 争夺内部 RAM |
+| 中文显示为方框 | Montserrat 14/20 不含 CJK glyph；编译并选用中文字体子集，为混排配置 fallback，并在真机核对全部字符 |
 
 ## 15. AI 提交前自检
 

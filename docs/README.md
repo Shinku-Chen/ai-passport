@@ -9,7 +9,7 @@ The repository is organized around the following principles:
 - `main` is the smallest complete runnable baseline and an executable description of the current hardware capabilities.
 - `components/bsp` isolates board-level details and exposes stable APIs to applications.
 - `demo/*` branches show different paths from a product requirement to a working implementation.
-- Development conventions for AI assistants live in [`AGENTS.md`](../AGENTS.md) and [`docs/development/agent-guide.md`](development/agent-guide.md); the complete hardware context and troubleshooting knowledge is in [`docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md`](hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md).
+- Development conventions for AI assistants live in [`AGENTS.md`](../AGENTS.md) and [`docs/development/ai-guide.md`](development/ai-guide.md); the complete hardware context and troubleshooting knowledge is in [`docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md`](hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md).
 - Build results and physical-device results are reported separately. A successful build must never be presented as successful hardware validation.
 
 ## Hardware capability contract
@@ -30,7 +30,7 @@ The table below describes the application capabilities implemented by the curren
 
 All pins, addresses, panel parameters, and button voltage windows are defined only in [`components/bsp/include/bsp_pins.h`](../components/bsp/include/bsp_pins.h). Application code must not duplicate these constants. See the [AI Hardware Development Guide](hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md) for the complete pin map, panel initialization, ADC thresholds, I2C addressing rules, audio clocks, and memory details.
 
-Applications may also use ESP-IDF timers, FreeRTOS tasks, and internal Flash/NVS; the Pomodoro branch contains an NVS example. Wi-Fi and Bluetooth LE remain ESP-IDF application services rather than BSP APIs: their menu pages initialize each stack only while open and release it on exit. `demo/claude-buddy-port` remains a fuller BLE application architecture reference, not a substitute for measuring the current board's antenna, RF performance, power consumption, and coexistence behavior. The current product and firmware baseline uses 8 MB Flash with a 3 MB factory-app partition.
+Applications may also use ESP-IDF timers, FreeRTOS tasks, and internal Flash/NVS; the Pomodoro branch contains an NVS example. Wi-Fi and Bluetooth LE remain ESP-IDF application services rather than BSP APIs: their menu pages initialize each stack only while open and release it on exit. `demo/claude-buddy-port` remains a fuller BLE application architecture reference, not a substitute for measuring the current board's antenna, RF performance, power consumption, and coexistence behavior. The current product and firmware baseline uses 8 MB Flash with a 3 MB factory-app partition plus fixed protected identity and permanent-Recovery regions so derivative firmware stays installable through the mini-program.
 
 ### Capabilities outside the current contract
 
@@ -41,17 +41,18 @@ The public firmware contract is limited to the interfaces listed above. Do not i
 A simple request can be given directly to an AI assistant:
 
 ```text
-On the main branch, build an offline habit-tracking application for FoloToy AI Passport.
+Build an offline habit-tracking application for FoloToy AI Passport.
 Use the three physical buttons and the 240×320 display, and preserve records across power loss.
+Start from `main`, create a `feature/*` branch, and develop the application there.
 Follow AGENTS.md and docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md. Inspect relevant demo branches and plays/ applications first,
 keep hardware logic in components/bsp and application logic in main, deliver a runnable
 implementation with tests, and report the build result, unexecuted device checks, and exact
 on-device acceptance steps separately.
 ```
 
-Before starting, check [`plays/`](../plays/README.md) for an existing or reference
-application and the demo branches, and [`docs/development/experience-notes.md`](development/experience-notes.md)
-for previously recorded, reusable experience. See what is already built and reusable.
+Before starting, check [`reference/`](reference/README.md) for an existing or
+reference application and previously recorded, reusable experience, and the demo
+branches. See what is already built and reusable.
 
 The more specific the requirement, the more likely the assistant is to implement it correctly in one pass. Useful details include:
 
@@ -83,7 +84,7 @@ git diff main...origin/demo/tetris-game -- main components tests
 git show origin/demo/tetris-game:main/demo_tetris.c
 ```
 
-Start a new application:
+Start a new application. This repository hosts several independent projects on one baseline: after starting from `main`, create a `feature/*` branch and develop the application there — do not develop directly on `main`. Each project's final branch is `feature/*` (e.g. `feature/my-passport-app`), kept separate so `main` stays a clean upstream baseline and the projects do not entangle.
 
 ```bash
 git switch main
@@ -103,19 +104,26 @@ tools/                   Shared local/CI validation and firmware verification sc
 docs/                    Project docs, changelog, engineering/contribution rules, and design references
 .github/                 GitHub community files, PR template, issue forms, and CI workflows
 sdkconfig.defaults       ESP32-C3, USB console, Flash, and LVGL defaults
-partitions.csv           NVS, PHY data, and 3 MB factory application layout
+partitions.csv           App plus protected identity/Recovery layout
 dependencies.lock        Reproducible ESP-IDF Managed Component resolution
 AGENTS.md                Mandatory AI-agent entry point (paired with AGENTS.zh_CN.md)
 CLAUDE.md                Claude Code pointer to AGENTS.md (paired Chinese version)
 LICENSE                  Repository license
 ```
 
-## Documentation
+## Documentation index
 
-- [`docs/INDEX.md`](INDEX.md) — complete documentation index for contribution, engineering, fork, software, and hardware topics.
-- [`docs/development/agent-guide.md`](development/agent-guide.md) — AI-assisted development workflow, source priorities, BSP boundaries, runtime rules, and delivery format.
-- [`docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md`](hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md) — pin map, acceptance matrix, and troubleshooting guide.
-- [`AGENTS.md`](../AGENTS.md) — mandatory entry point for AI-assisted work.
-- [`docs/fork-guide.md`](fork-guide.md) — fork branch and documentation workflow.
+Repository documentation is organized by function area. `authoritative` documents define development or collaboration requirements; `reference` documents provide background or an index.
+
+- [`docs/development/`](development/README.md) — engineering rules and reusable workflows: the `ai-guide.md`, `engineering/`, `ci/`, and `release/` areas. Its README lists them.
+- [`docs/contribution/`](contribution/README.md) — collaboration, documentation, and commit/PR conventions.
+- [`docs/hardware-design/`](hardware-design/README.md) — board facts, constraints, acceptance matrix, and troubleshooting.
+- [`docs/reference/`](reference/README.md) — reference material: reusable development experience and archived application playbooks, grouped by contributor (`reference/<username>/`).
+- [`docs/brand/`](brand/README.md) — public brand and product language (`brand-and-product.md`) and the official product visual references.
+- [`docs/`](README.md) top-level — [`CHANGELOG.md`](CHANGELOG.md), [`brand-and-product.md`](brand/brand-and-product.md), and [`fork-guide.md`](fork-guide.md).
+
+GitHub community documents: [CONTRIBUTING.md](../.github/CONTRIBUTING.md), [CODE_OF_CONDUCT.md](../.github/CODE_OF_CONDUCT.md), [SECURITY.md](../.github/SECURITY.md), and [SUPPORT.md](../.github/SUPPORT.md).
+
+GitHub community documents: [CONTRIBUTING.md](../.github/CONTRIBUTING.md), [CODE_OF_CONDUCT.md](../.github/CODE_OF_CONDUCT.md), [SECURITY.md](../.github/SECURITY.md), and [SUPPORT.md](../.github/SUPPORT.md).
 
 > This README describes the product and repository. AI agents must begin with `AGENTS.md` and follow its task-specific routing.

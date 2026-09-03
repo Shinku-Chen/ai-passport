@@ -1,6 +1,6 @@
 ---
 name: plays-archive
-description: After a firmware release, archive the published application into the upstream FoloToy ai-passport repository's plays/ directory with an AI-generated bilingual functional summary and a cover image.
+description: After a firmware release, archive the published application into the upstream FoloToy ai-passport repository's plays/ directory with an AI-generated bilingual functional summary (text-only; the cover image is recorded by file name and format, not committed).
 ---
 
 <p align="right">
@@ -12,7 +12,7 @@ description: After a firmware release, archive the published application into th
 This skill archives a published application into the upstream
 `FoloToy/ai-passport` repository's `plays/` application archive so it is
 discoverable in-repository for later querying. It runs after a firmware release
-(see `docs/development/publish-to-community.md` for publishing itself) and only
+(see `docs/development/release/publish-to-community.md` for publishing itself) and only
 when the developer asks to archive the application.
 
 ## Safety and consent gate (run first)
@@ -33,10 +33,11 @@ Do not create, write, or commit anything until every gate below is satisfied.
 
 ## Determine what to archive
 
-Confirm the application name and the source it belongs to (for example a
-`demo/*` branch or `main/`). Use the lowercase-kebab-case application name as the
-subdirectory name. See [`../../plays/README.md`](../../plays/README.md) for the full
-convention.
+Confirm the application name, the source it belongs to (for example a `demo/*`
+branch or `main/`), and the contributor's GitHub username. Use the
+lowercase-kebab-case username and application name as the two-level path:
+`plays/<username>/<app-name>/`. See
+[`../../docs/reference/README.md`](../../docs/reference/README.md) for the full convention.
 
 ## Check the project README
 
@@ -68,9 +69,9 @@ actually owns one.
 
 First collect the metadata the developer filled in when publishing to the
 community (bilingual title, bilingual description, and the source address they
-submitted), then write `plays/<app-name>/README.md` and its paired `.zh_CN.md` as
-an AI-generated functional summary for later querying (not a publishing
-artifact). Record:
+submitted), then write `plays/<username>/<app-name>/README.md` and its paired
+`.zh_CN.md` as an AI-generated functional summary for later querying (not a
+publishing artifact). Record:
 
 - **Publish title and description**: the bilingual title and description the
   developer submitted when publishing to the community.
@@ -80,7 +81,8 @@ artifact). Record:
 - Source, given as the **source address the developer submitted when
   publishing** (the HTTPS Git source page), so the application can be located
   precisely.
-- The cover image file name and format.
+- The cover image file name and format, recorded as publish metadata only — the
+  cover image itself is **not** committed (the archive is text-only).
 
 If the root README exists, merge its content into the summary rather than
 ignoring the human-facing description.
@@ -88,14 +90,23 @@ ignoring the human-facing description.
 Write the default `.md` in English and the `.zh_CN.md` in Simplified Chinese,
 aligned in the same change.
 
-## Add the cover image
+## Cover image
 
-Place the cover at `plays/<app-name>/<app-name>-cover.<webp|png|jpg>`, committed
-to the repository. Keep it representative and under 10 MiB.
+The archive is **text-only**: do **not** commit the cover image. Record only its
+file name and format in the summary as publish metadata. The image itself lives
+with the community publication; if a cover must be generated for the publication
+(not the archive), use the official product references under
+[`docs/brand/`](../../docs/brand/README.md): pass a reference (e.g.
+`ai-passport-front.png` or a colorway shell render) as input to the generation
+call, keep its shell, buttons, ports, and key-ring hole as they are, and redraw
+only the reference's screen region into the play's actual on-screen content,
+keeping the screen's size, aspect ratio, corners, and position identical to the
+reference. See the full
+convention in [`docs/brand/README.md`](../../docs/brand/README.md).
 
 ## Commit
 
-Commit the summary and cover on the dedicated branch (English imperative
+Commit the summary on the dedicated branch (English imperative
 Conventional Commit title, for example
 `docs(plays): add <app-name> application archive`). If a root README was created
 or updated, include it in the same change. Do **not** store the merged
@@ -113,11 +124,12 @@ and read it back to confirm. Opening a PR requires separate confirmation.
 - It does not publish firmware or run the publisher workflow.
 - It does not modify production source or the firmware.
 - It does not store the firmware `.bin` binary.
+- It does not store the cover image (the archive is text-only).
 - It does not auto-submit anything without developer review and consent.
 
 ## Related documents
 
-- Application archive convention: `../plays/README.md`
-- Post-release follow-up overview: `docs/development/after-release.md`
-- Firmware publishing: `docs/development/publish-to-community.md`
+- Application archive convention: `../../docs/reference/README.md`
+- Post-release follow-up overview: `docs/development/release/project-completion.md`
+- Firmware publishing: `docs/development/release/publish-to-community.md`
 - Contribution and commit rules: `docs/contribution/commit-and-pr.md`
