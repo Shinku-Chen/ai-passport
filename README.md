@@ -17,12 +17,12 @@ attached to this repository's [Releases](/releases).
 
 ## Projects
 
-### Voice Keychain — 音效钥匙扣
+### Voice Keychain
 
 A sound-effects keychain that turns the AI Passport into a pocket audio player:
 boot straight into the app and play one of **hundreds of Chinese voice clips from
-dozens of character packs** — jojo, meme cat, Liu Huaqiang, Haji Mi (哈吉米),
-Nailong (奶龙), and more. Latest: **v1.3.0**.
+dozens of character packs** — jojo, meme cat, Liu Huaqiang, Haji Mi, Nailong,
+and more. Latest: **v1.3.0**.
 
 - Branch: [`feature/voice-keychain`](https://github.com/Shinku-Chen/ai-passport/tree/feature/voice-keychain)
 - Releases: [v1.1.0](/releases/tag/v1.1.0), [v1.3.0](/releases/tag/v1.3.0)
@@ -46,7 +46,7 @@ battery) or to go back.
 - Battery percentage refresh every 30 s, plus a voltage-fallback SOC estimate
   when the CW2017 gauge returns `0xFF` after power-up.
 
-### What to Eat Today — 今天吃啥
+### What to Eat Today
 
 A button-driven food roulette that answers the eternal question. Hold **UP** to
 run the "what should we eat for lunch?" guide animation, hold **DOWN** to spin
@@ -60,7 +60,7 @@ through the food selector, and release to stop on a random pick. Latest: **v1.2.
 current frame; **OK** toggles LVGL partial vs fast interlaced refresh.
 Auto-poweroff after 2 min idle (deep sleep, GPIO0 wake).
 
-### Shengzi Cards — 生字卡片识记
+### Shengzi Cards
 
 A Chinese-character flashcard memorization app. Three modes — **Browse**
 (scroll the character cards), **Self-test** (mark each character learned / not
