@@ -6,6 +6,7 @@
 
 ## Unreleased
 
+- Reordered the Liu Huaqiang pack to match the actual Zhengfu 'Huaqiang buys a melon' script: the opening banter and price haggling first, the melon-safety exchange, then the confrontation bits, and the final post-cut beats (hao-ge / sa-ri-lang / hua-qiang line) at the very end. Only the clip order/numbering changed, not the audio content.
 - Raised the seven newly-added Liu Huaqiang clips from the 8 kbps Opus profile to **24 kbps** for noticeably better audio quality; the other clips stay at 8 kbps. The `voicefs` partition is repacked accordingly.
 - Expanded the UI font subset with the five Han characters used by the new Liu Huaqiang clips (sa / lang / spider / sense impl / hao). The font is regenerated from `simhei.ttf` with the updated symbol set, so the new clip names render without boxes.
 - Added seven new Liu Huaqiang (LH) clips and reordered the whole pack by the "Zhengfu: Huaqiang buys a melon" scene sequence (opening banter, the price haggling, the "guqu zhaocha / do you want it" exchange, the post-cut beats, and the final "you split my melon" line). dir03 goes from 24 to 31 clips; other packs are untouched.
