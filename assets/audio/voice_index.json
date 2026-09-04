@@ -1250,153 +1250,73 @@
     "dir_ascii": "dir03",
     "files": [
       {
-        "name": "两块钱一斤",
-        "src": "两块钱一斤.mp3",
-        "path": "dir03/clip00.opus",
-        "samples": 17920,
-        "duration": 1.12,
-        "compressed_bytes": 2056
-      },
-      {
-        "name": "你TM劈我瓜是吧",
-        "src": "你TM劈我瓜是吧.mp3",
-        "path": "dir03/clip01.opus",
-        "samples": 22400,
-        "duration": 1.4,
-        "compressed_bytes": 2888
-      },
-      {
-        "name": "你TM故意找茬是不是？",
-        "src": "你TM故意找茬是不是？.mp3",
-        "path": "dir03/clip02.opus",
-        "samples": 28160,
-        "duration": 1.76,
-        "compressed_bytes": 3505
-      },
-      {
-        "name": "你嫌贵我还嫌贵呢",
-        "src": "你嫌贵我还嫌贵呢.mp3",
-        "path": "dir03/clip03.opus",
-        "samples": 28160,
-        "duration": 1.76,
-        "compressed_bytes": 3450
-      },
-      {
-        "name": "你故意找茬是不是？",
-        "src": "你故意找茬是不是？.mp3",
-        "path": "dir03/clip04.opus",
-        "samples": 28160,
-        "duration": 1.76,
-        "compressed_bytes": 3577
-      },
-      {
-        "name": "你瞧瞧现在那有瓜呀",
-        "src": "你瞧瞧现在那有瓜呀.mp3",
-        "path": "dir03/clip05.opus",
-        "samples": 27040,
-        "duration": 1.69,
-        "compressed_bytes": 3404
-      },
-      {
-        "name": "你要不要吧！",
-        "src": "你要不要吧！.mp3",
-        "path": "dir03/clip06.opus",
-        "samples": 16160,
-        "duration": 1.01,
-        "compressed_bytes": 2084
-      },
-      {
-        "name": "你要不要吧？",
-        "src": "你要不要吧？.mp3",
-        "path": "dir03/clip07.opus",
-        "samples": 20160,
-        "duration": 1.26,
-        "compressed_bytes": 2445
-      },
-      {
-        "name": "你要不要？！",
-        "src": "你要不要？！.mp3",
-        "path": "dir03/clip08.opus",
-        "samples": 13760,
-        "duration": 0.86,
-        "compressed_bytes": 1515
-      },
-      {
-        "name": "你说的这瓜要是生的你自己吞进去",
-        "src": "你说的这瓜要是生的你自己吞进去.mp3",
-        "path": "dir03/clip09.opus",
-        "samples": 57600,
-        "duration": 3.6,
-        "compressed_bytes": 5319
-      },
-      {
-        "name": "你这哪够15斤你的秤有问题啊",
-        "src": "你这哪够15斤你的秤有问题啊.mp3",
-        "path": "dir03/clip10.opus",
-        "samples": 38560,
-        "duration": 2.41,
-        "compressed_bytes": 4898
-      },
-      {
-        "name": "你这瓜要是熟我肯定要啊",
-        "src": "你这瓜要是熟我肯定要啊.mp3",
-        "path": "dir03/clip11.opus",
-        "samples": 30560,
-        "duration": 1.91,
-        "compressed_bytes": 3722
-      },
-      {
-        "name": "吸铁石",
-        "src": "吸铁石.mp3",
-        "path": "dir03/clip12.opus",
-        "samples": 16160,
-        "duration": 1.01,
-        "compressed_bytes": 1570
-      },
-      {
         "name": "哥们",
         "src": "哥们.mp3",
-        "path": "dir03/clip13.opus",
+        "path": "dir03/clip00.opus",
         "samples": 9280,
         "duration": 0.58,
         "compressed_bytes": 1044
       },
       {
-        "name": "我开水果摊的能卖你生瓜蛋子？",
-        "src": "我开水果摊的能卖你生瓜蛋子？.mp3",
-        "path": "dir03/clip14.opus",
-        "samples": 45440,
-        "duration": 2.84,
-        "compressed_bytes": 5832
+        "name": "这瓜多少钱一斤？",
+        "src": "这瓜多少钱一斤？.mp3",
+        "path": "dir03/clip01.opus",
+        "samples": 20160,
+        "duration": 1.26,
+        "compressed_bytes": 2447
       },
       {
-        "name": "我问你这瓜保熟吗？",
-        "src": "我问你这瓜保熟吗？.mp3",
-        "path": "dir03/clip15.opus",
-        "samples": 32800,
-        "duration": 2.05,
-        "compressed_bytes": 4106
+        "name": "两块钱一斤",
+        "src": "两块钱一斤.mp3",
+        "path": "dir03/clip02.opus",
+        "samples": 17920,
+        "duration": 1.12,
+        "compressed_bytes": 2056
+      },
+      {
+        "name": "这瓜皮是金子做的？",
+        "src": "这瓜皮是金子做的？.mp3",
+        "path": "dir03/clip03.opus",
+        "samples": 39680,
+        "duration": 2.48,
+        "compressed_bytes": 5091
+      },
+      {
+        "name": "你瞧瞧现在那有瓜呀",
+        "src": "你瞧瞧现在那有瓜呀.mp3",
+        "path": "dir03/clip04.opus",
+        "samples": 27040,
+        "duration": 1.69,
+        "compressed_bytes": 3404
+      },
+      {
+        "name": "这都是大棚的瓜",
+        "src": "这都是大棚的瓜.mp3",
+        "path": "dir03/clip05.opus",
+        "samples": 21920,
+        "duration": 1.37,
+        "compressed_bytes": 2646
+      },
+      {
+        "name": "你嫌贵我还嫌贵呢",
+        "src": "你嫌贵我还嫌贵呢.mp3",
+        "path": "dir03/clip06.opus",
+        "samples": 28160,
+        "duration": 1.76,
+        "compressed_bytes": 3450
       },
       {
         "name": "给我挑一个",
         "src": "给我挑一个.mp3",
-        "path": "dir03/clip16.opus",
+        "path": "dir03/clip07.opus",
         "samples": 14400,
         "duration": 0.9,
         "compressed_bytes": 1505
       },
       {
-        "name": "要是不熟我自己吃了它",
-        "src": "要是不熟我自己吃了它.mp3",
-        "path": "dir03/clip17.opus",
-        "samples": 44320,
-        "duration": 2.77,
-        "compressed_bytes": 5653
-      },
-      {
         "name": "这个怎么样",
         "src": "这个怎么样.mp3",
-        "path": "dir03/clip18.opus",
+        "path": "dir03/clip08.opus",
         "samples": 12640,
         "duration": 0.79,
         "compressed_bytes": 1472
@@ -1404,42 +1324,122 @@
       {
         "name": "这瓜保熟吗",
         "src": "这瓜保熟吗.mp3",
-        "path": "dir03/clip19.opus",
+        "path": "dir03/clip09.opus",
         "samples": 16640,
         "duration": 1.04,
         "compressed_bytes": 1998
       },
       {
-        "name": "这瓜多少钱一斤？",
-        "src": "这瓜多少钱一斤？.mp3",
-        "path": "dir03/clip20.opus",
+        "name": "我开水果摊的能卖你生瓜蛋子？",
+        "src": "我开水果摊的能卖你生瓜蛋子？.mp3",
+        "path": "dir03/clip10.opus",
+        "samples": 45440,
+        "duration": 2.84,
+        "compressed_bytes": 5832
+      },
+      {
+        "name": "我问你这瓜保熟吗？",
+        "src": "我问你这瓜保熟吗？.mp3",
+        "path": "dir03/clip11.opus",
+        "samples": 32800,
+        "duration": 2.05,
+        "compressed_bytes": 4106
+      },
+      {
+        "name": "你故意找茬是不是？",
+        "src": "你故意找茬是不是？.mp3",
+        "path": "dir03/clip12.opus",
+        "samples": 28160,
+        "duration": 1.76,
+        "compressed_bytes": 3577
+      },
+      {
+        "name": "你要不要吧？",
+        "src": "你要不要吧？.mp3",
+        "path": "dir03/clip13.opus",
         "samples": 20160,
         "duration": 1.26,
-        "compressed_bytes": 2447
+        "compressed_bytes": 2445
       },
       {
-        "name": "这瓜皮是金子做的？",
-        "src": "这瓜皮是金子做的？.mp3",
-        "path": "dir03/clip21.opus",
-        "samples": 39680,
-        "duration": 2.48,
-        "compressed_bytes": 5091
-      },
-      {
-        "name": "这都是大棚的瓜",
-        "src": "这都是大棚的瓜.mp3",
-        "path": "dir03/clip22.opus",
-        "samples": 21920,
-        "duration": 1.37,
-        "compressed_bytes": 2646
+        "name": "你这瓜要是熟我肯定要啊",
+        "src": "你这瓜要是熟我肯定要啊.mp3",
+        "path": "dir03/clip14.opus",
+        "samples": 30560,
+        "duration": 1.91,
+        "compressed_bytes": 3722
       },
       {
         "name": "那它要是不熟怎么办啊",
         "src": "那它要是不熟怎么办啊.mp3",
-        "path": "dir03/clip23.opus",
+        "path": "dir03/clip15.opus",
         "samples": 26560,
         "duration": 1.66,
         "compressed_bytes": 3125
+      },
+      {
+        "name": "要是不熟我自己吃了它",
+        "src": "要是不熟我自己吃了它.mp3",
+        "path": "dir03/clip16.opus",
+        "samples": 44320,
+        "duration": 2.77,
+        "compressed_bytes": 5653
+      },
+      {
+        "name": "你这哪够15斤你的秤有问题啊",
+        "src": "你这哪够15斤你的秤有问题啊.mp3",
+        "path": "dir03/clip17.opus",
+        "samples": 38560,
+        "duration": 2.41,
+        "compressed_bytes": 4898
+      },
+      {
+        "name": "你TM故意找茬是不是？",
+        "src": "你TM故意找茬是不是？.mp3",
+        "path": "dir03/clip18.opus",
+        "samples": 28160,
+        "duration": 1.76,
+        "compressed_bytes": 3505
+      },
+      {
+        "name": "你要不要吧！",
+        "src": "你要不要吧！.mp3",
+        "path": "dir03/clip19.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 2084
+      },
+      {
+        "name": "你要不要？！",
+        "src": "你要不要？！.mp3",
+        "path": "dir03/clip20.opus",
+        "samples": 13760,
+        "duration": 0.86,
+        "compressed_bytes": 1515
+      },
+      {
+        "name": "吸铁石",
+        "src": "吸铁石.mp3",
+        "path": "dir03/clip21.opus",
+        "samples": 16160,
+        "duration": 1.01,
+        "compressed_bytes": 1570
+      },
+      {
+        "name": "你说的这瓜要是生的你自己吞进去",
+        "src": "你说的这瓜要是生的你自己吞进去.mp3",
+        "path": "dir03/clip22.opus",
+        "samples": 57600,
+        "duration": 3.6,
+        "compressed_bytes": 5319
+      },
+      {
+        "name": "你TM劈我瓜是吧",
+        "src": "你TM劈我瓜是吧.mp3",
+        "path": "dir03/clip23.opus",
+        "samples": 22400,
+        "duration": 1.4,
+        "compressed_bytes": 2888
       }
     ]
   },
