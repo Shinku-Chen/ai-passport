@@ -6,6 +6,7 @@
 
 ## Unreleased
 
+- 新增刘华强 7 段语音, 并把整个包按《征服》华强买瓜剧情顺序重排(开场寒暄 → 砍价 → 故意找茬/你要不要吧 交锋 → 蜘蛛感应/豪哥中刀/吸铁石等后续 → 你TM劈我瓜是吧)。dir03 由 24 段增至 31 段; 其余包不变。
 - 降低深睡待机功耗: GPIO0 保留外部 10kΩ 上拉用于按键检测, 并关闭内部上拉以避免叠加额外泄漏。任意按键(GPIO0 低电平)唤醒; 背光无需软件关闭 —— ESP-IDF 深睡会隔离未 hold 的数字 GPIO(esp_sleep_isolate_digital_gpio), 背光脚未被 hold 会被隔离成高阻浮空, 背光自然熄灭(已真机确认)。
 - 关闭蓝牙/NimBLE 栈(`CONFIG_BT_ENABLED=n`): 音效钥匙扣产品 App 不用 BLE, 关掉可节省 Flash/RAM、消除潜在运行期功耗(深睡本就断电蓝牙控制器, 这里是省运行态资源)。同时关闭 `CONFIG_ESP_SLEEP_GPIO_ENABLE_INTERNAL_RESISTORS` —— GPIO0 靠外部 10kΩ 上拉, 叠加的内部上拉纯属泄漏。App 镜像缩小约 4KB。
 - 移除 upstream 的定制 bootloader recovery hook(`bootloader_components/recovery_boot_hook`)及其 `CONFIG_BOOTLOADER_FACTORY_RESET` 配置。upstream 的 hook 在 GPIO0 长按 5 秒时跳转到 `0x700000` Recovery 分区, 但音效钥匙扣产品分区表没有 Recovery 分区 —— 那个偏移落在 voicefs 音频数据中间, 长按会把音频数据当程序执行而崩溃。产品 App 不使用 Recovery/OTA, 故移除该 hook 及工厂复位配置; bootloader 恢复为干净的 ESP-IDF 默认(0x5220 字节)。
