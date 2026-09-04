@@ -1255,7 +1255,7 @@
         "path": "dir03/clip00.opus",
         "samples": 24320,
         "duration": 1.52,
-        "compressed_bytes": 1529
+        "compressed_bytes": 4810
       },
       {
         "name": "大象叫",
@@ -1263,7 +1263,7 @@
         "path": "dir03/clip01.opus",
         "samples": 15520,
         "duration": 0.97,
-        "compressed_bytes": 988
+        "compressed_bytes": 3296
       },
       {
         "name": "萨日朗",
@@ -1271,7 +1271,7 @@
         "path": "dir03/clip02.opus",
         "samples": 12960,
         "duration": 0.81,
-        "compressed_bytes": 911
+        "compressed_bytes": 2953
       },
       {
         "name": "华强！诶！华强",
@@ -1279,7 +1279,7 @@
         "path": "dir03/clip03.opus",
         "samples": 28800,
         "duration": 1.8,
-        "compressed_bytes": 1940
+        "compressed_bytes": 5814
       },
       {
         "name": "生意行啊你们哥俩",
@@ -1287,7 +1287,7 @@
         "path": "dir03/clip04.opus",
         "samples": 29280,
         "duration": 1.83,
-        "compressed_bytes": 1860
+        "compressed_bytes": 5503
       },
       {
         "name": "哥们",
@@ -1463,7 +1463,7 @@
         "path": "dir03/clip26.opus",
         "samples": 81920,
         "duration": 5.12,
-        "compressed_bytes": 5231
+        "compressed_bytes": 17208
       },
       {
         "name": "豪哥中刀",
@@ -1471,7 +1471,7 @@
         "path": "dir03/clip27.opus",
         "samples": 12160,
         "duration": 0.76,
-        "compressed_bytes": 765
+        "compressed_bytes": 2273
       },
       {
         "name": "吸铁石",
