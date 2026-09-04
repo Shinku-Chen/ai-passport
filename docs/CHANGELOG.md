@@ -6,6 +6,7 @@
 
 ## Unreleased
 
+- Expanded the UI font subset with the five Han characters used by the new Liu Huaqiang clips (sa / lang / spider / sense impl / hao). The font is regenerated from `simhei.ttf` with the updated symbol set, so the new clip names render without boxes.
 - Added seven new Liu Huaqiang (LH) clips and reordered the whole pack by the "Zhengfu: Huaqiang buys a melon" scene sequence (opening banter, the price haggling, the "guqu zhaocha / do you want it" exchange, the post-cut beats, and the final "you split my melon" line). dir03 goes from 24 to 31 clips; other packs are untouched.
 - Reduced deep-sleep idle draw: GPIO0 keeps its external 10 kΩ pull-up for button wake, and the internal pull-up is disabled to avoid stacking an extra leakage path on top of the external pull-up. The device wakes on any button via GPIO0 low-level; the deep-sleep GPIO isolation (esp_sleep_isolate_digital_gpio) in ESP-IDF already floats the un-held backlight pin so the backlight goes dark on its own. Verified on device.
 - Disabled the Bluetooth/NimBLE stack (`CONFIG_BT_ENABLED=n`) since the sound-keychain product app does not use BLE, saving flash/RAM and removing a potential runtime power source (deep sleep powers the controller down anyway; this trims the running build). Also disabled `CONFIG_ESP_SLEEP_GPIO_ENABLE_INTERNAL_RESISTORS` because GPIO0 relies on the external 10 kΩ pull-up, so the stacked internal pull-up was pure leakage. App image shrank ~4 KB.
