@@ -14,3 +14,6 @@ int bsp_battery_soc(void);
 
 // 电池电压 mV;读失败返回 -1。
 int bsp_battery_mv(void);
+
+// 把 CW2017 置为睡眠以降低深睡待机自耗。深睡唤醒后需重新初始化(或重新激活)。
+esp_err_t bsp_battery_sleep(void);

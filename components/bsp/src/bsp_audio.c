@@ -168,3 +168,24 @@ esp_err_t bsp_audio_read(void *pcm, size_t bytes) {
 void bsp_audio_set_volume(uint8_t percent) {
     if (s_dev) esp_codec_dev_set_out_vol(s_dev, percent);
 }
+
+// 关闭 codec, 降低深睡待机自耗。深睡时 MCU 断电, 但 codec 若仍处于工作模式会持续
+// 耗电; 深睡前调用可降低待机电流。唤醒后需重新 bsp_audio_init()(或 set_format)恢复。
+esp_err_t bsp_audio_sleep(void) {
+    if (!s_dev) return ESP_ERR_INVALID_STATE;
+
+    // ⚠ esp_codec_dev_close() 只有在 codec_dev 层的 output/input_opened 为 true 时,
+    //   才会调 es8311_enable(false)->es8311_suspend()(真正下电); 否则直接 cleanup,
+    //   芯片停留在 es8311_open 的配置态, 不是最低功耗。
+    //   而这里的 s_opened 仅在 set_format 成功后才为 true —— 唯独"从未播放就深睡"
+    //   会漏掉: s_dev 已创建(es8311_codec_new 已把芯片 open), 却因 s_opened==false
+    //   跳过关闭。故未打开过就补一次无声的 set_format(走 open 链), 再 close 确保 suspend。
+    if (!s_opened) {
+        // 补一次打开只是为了走完 codec_dev 层的 open, 让后续 close 真正触发
+        // es8311_suspend(); 立刻关掉, 不会出声。格式与主流播放格式一致, 无副作用。
+        bsp_audio_set_format(16000, 16, 1);
+    }
+    esp_codec_dev_close(s_dev);
+    s_opened = false;
+    return ESP_OK;
+}

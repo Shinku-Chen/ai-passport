@@ -147,3 +147,13 @@ void bsp_display_backlight(uint8_t percent) {
     ledc_set_duty(BSP_BL_LEDC_MODE, BSP_BL_LEDC_CHANNEL, duty);
     ledc_update_duty(BSP_BL_LEDC_MODE, BSP_BL_LEDC_CHANNEL);
 }
+
+// 关闭显示并用 SLEEP IN 让 ST7789 面板进入睡眠, 降低深睡待机自耗。
+// 深睡时 MCU 断电, 但面板若仍处于工作模式会持续耗电; 深睡前调用可降低待机电流。
+// 唤醒后需重新 bsp_display_init()(或重新点亮)恢复。
+esp_err_t bsp_display_sleep(void) {
+    if (!s_panel) return ESP_ERR_INVALID_STATE;
+    esp_lcd_panel_disp_on_off(s_panel, false);          // 0x28 DISPOFF
+    esp_lcd_panel_disp_sleep(s_panel, true);             // 0x10 SLPOFF / SLPOUT
+    return ESP_OK;
+}

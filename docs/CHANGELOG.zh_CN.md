@@ -6,6 +6,7 @@
 
 ## Unreleased
 
+- 深睡前显式关闭所有可关的板载外设, 把待机功耗压到最低: ① LCD 面板 `bsp_display_sleep()`(DISPOFF 0x28 + 面板睡眠 0x10); ② 背光 `bsp_display_backlight(0)`(LEDC 归零, 深睡隔离后引脚浮空); ③ 音频 codec `bsp_audio_sleep()`(走 `es8311_suspend()` 16 个寄存器停掉 ADC/DAC/时钟并关 PA); ④ 电量计 CW2017 `bsp_battery_sleep()`(CONFIG 0x30→0xF0 进睡眠态)。其中 codec 额外修复一个边界: 原来只在"播放过"(`s_opened`)时才 close, 若开机后未播任何音频就超时深睡, 芯片停在 `es8311_open` 配置态未被真正下电 —— 现改为未打开过就先补一次无声 `set_format` 再 close, 任何时序都保证走完 suspend 下电序列。深睡时 MCU 会 `esp_sleep_isolate_digital_gpio()` 把所有未 hold 的数字 GPIO 隔离成高阻浮空(含 I2S/I2C/SPI 引脚), 不从 MCU 侧漏电。以上改动均已真机烧录验证。
 - 按《征服》华强买瓜真实剧本重排整个刘华强包: 开场寒暄与砍价在前, 保熟/生瓜蛋子对峙, 冲突段, 最后是劈瓜后的豪哥中刀/萨日朗/华强线。只改片段顺序与编号, 音频内容不变。
 - 把新加的 7 段刘华强语音从 8kbps Opus 提升到 **24kbps**, 音质明显改善; 其余片段保持 8kbps。`voicefs` 分区已相应重打包。
 - 扩充中文字库, 补上新刘华强片段用到的 5 个汉字(萨/朗/蜘/蛛/豪)。字体源仍为 `simhei.ttf`, 符号集补齐后重新生成, 新片段名不再显示方块。

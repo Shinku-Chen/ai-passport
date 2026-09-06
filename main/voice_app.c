@@ -262,6 +262,17 @@ static void do_deep_sleep(void) {
     if (wak != ESP_OK) {
         ESP_LOGE(TAG, "GPIO0 低电平唤醒配置失败: %s", esp_err_to_name(wak));
     }
+
+    // —— 深睡省电: 让板载外设也进睡眠, 降低待机自耗(它们与 MCU 电源常供, 深睡时
+    //    MCU 断电但外设仍带电自耗)。唤醒=冷重启, 会重新初始化这些外设。
+    // 1) 背光归零 + LCD 面板睡眠(DISPOFF + SLPOFF)
+    bsp_display_backlight(0);
+    bsp_display_sleep();
+    // 2) 音频 codec ES8311 关闭(降低 codec 自耗)
+    bsp_audio_sleep();
+    // 3) 电量计 CW2017 睡眠(降低电量计持续测量自耗)
+    bsp_battery_sleep();
+
     esp_deep_sleep_start();   // 不返回; 唤醒=重启
 }
 

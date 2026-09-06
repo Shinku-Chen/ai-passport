@@ -22,3 +22,6 @@ esp_err_t bsp_audio_read(void *pcm, size_t bytes);
 
 // 输出音量 0..100(%)。
 void bsp_audio_set_volume(uint8_t percent);
+
+// 关闭 codec, 降低深睡待机自耗。深睡唤醒后需重新初始化(或 set_format)恢复。
+esp_err_t bsp_audio_sleep(void);

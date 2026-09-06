@@ -69,6 +69,14 @@ static int cw_enter_active(void) {
     return 0;
 }
 
+// 把 CW2017 置为睡眠以降低深睡待机自耗。深睡时 MCU 不通电, 但电量计若仍处于
+// 激活态会持续测量耗电; 进深睡前调用可显著降低待机电流。唤醒后需重新走
+// bsp_battery_init()(或 cw_enter_active)恢复。
+esp_err_t bsp_battery_sleep(void) {
+    if (!s_dev) return ESP_ERR_INVALID_STATE;
+    return cw_enter_sleep() == 0 ? ESP_OK : ESP_FAIL;
+}
+
 // 同时检查 UPDATE_FLAG 和 80 字节内容，避免只凭标志误用旧电芯参数。
 static int cw_profile_matches(bool *matches) {
     uint8_t val = 0;
