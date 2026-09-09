@@ -50,13 +50,37 @@ slow. Keep mirror variables scoped to the current terminal or command.
 
 | Download | International default | Mainland China official route |
 | --- | --- | --- |
-| ESP-IDF source | GitHub `espressif/esp-idf` | Espressif Gitee mirror plus `esp-gitee-tools` |
+| ESP-IDF source | GitHub `espressif/esp-idf` | Espressif Git service mirror (`git.espressif.com.cn`), or Gitee mirror plus `esp-gitee-tools` |
 | Compiler and tool archives | GitHub release assets | `dl.espressif.cn/github_assets` |
 | Managed Components | ESP Component Registry default storage | `components-file.espressif.cn` |
 | Project repository | URL supplied by the user | A user-supplied mirror of the same repository |
 
 Do not invent a mirror URL for this project. If the supplied repository URL is
 unreachable, ask the user for an authorized mirror or archive.
+
+The Espressif Git service mirror hosts the full `esp-idf` history and every
+v5.5.3 submodule repository (`espressif/esp32-wifi-lib`, `espressif/esp-lwip`,
+`ThrowTheSwitch/CMock`, and so on). Because the v5.5.3 `.gitmodules` entries are
+relative URLs, cloning the parent repository from the mirror resolves every
+submodule to the same mirror automatically; no separate submodule rewrite is
+needed. Cloning from the mirror leaves a working checkout identical to the
+GitHub clone: verify the tag commit matches
+`https://github.com/espressif/esp-idf/releases/tag/v5.5.3` (currently
+`b31fcc7a314a44ad992b58f589f7d1d8a4fadff6`).
+
+Legacy mirror installers sometimes write a global per-repository `insteadOf`
+rewrite for Jihulab (`jihulab.com/esp-mirror/...`, or a
+`git config --global url."https://jihulab.com/esp-mirror/".insteadOf` switch).
+A per-repository entry is more specific than any bulk switch and silently
+redirects submodules to a source that returns 404 or timeouts. When a submodule
+fetch fails this way, inspect and clean the residue after user approval instead
+of retrying blindly:
+
+```bash
+git config --global --get-regexp 'url\..*jihulab'
+# Cleaning requires user approval: unset each entry individually; removing only
+# the bulk switch leaves per-repository entries that still redirect submodules.
+```
 
 ## Install host prerequisites
 
@@ -137,8 +161,28 @@ git -C "${AI_PASSPORT_IDF_ROOT}" submodule update --init --recursive
 
 ### Mainland China route
 
-The following route uses repositories and download endpoints operated by
-Espressif. It does not change global Git or pip configuration:
+The following routes use repositories and download endpoints operated by
+Espressif. They do not change global Git or pip configuration.
+
+**Espressif Git service mirror (preferred).** Clone from the mirror URL
+directly — `origin` becomes the mirror URL, so every relative submodule URL
+inside `esp-idf` (`../../espressif/...`) resolves to the same mirror without a
+rewrite and without global Git configuration:
+
+```bash
+mkdir -p "$(dirname "${AI_PASSPORT_IDF_ROOT}")"
+git clone --branch v5.5.3 --recursive \
+    https://git.espressif.com.cn/espressif/esp-idf.git \
+    "${AI_PASSPORT_IDF_ROOT}"
+IDF_GITHUB_ASSETS=dl.espressif.cn/github_assets \
+    "${AI_PASSPORT_IDF_ROOT}/install.sh" esp32c3
+```
+
+The mirror has published the same v5.5.3 tag commit as GitHub
+(`b31fcc7a314a44ad992b58f589f7d1d8a4fadff6`), and it hosts the submodule
+repositories themselves, so the checkout is identical to the GitHub clone.
+
+**Gitee mirror plus esp-gitee-tools (fallback).**
 
 ```bash
 export AI_PASSPORT_GITEE_TOOLS_ROOT="${AI_PASSPORT_GITEE_TOOLS_ROOT:-${HOME}/esp/esp-gitee-tools}"
@@ -157,6 +201,96 @@ IDF_GITHUB_ASSETS=dl.espressif.cn/github_assets \
 If the Gitee helper reports an interrupted download, rerun its submodule command
 for the same checkout. Do not mix partial submodules from unrelated ESP-IDF
 versions.
+
+### Submodule pulls and long waits
+
+`esp-idf` v5.5.3 bundles more than twenty submodules, and several of them
+(`components/esp_wifi/lib`, `components/esp_phy/lib`,
+`components/bt/controller/lib_esp32c3_family`) are large prebuilt libraries.
+A `git submodule update --init --recursive` can therefore run for minutes with
+little output, and agent shells commonly kill it after a fixed wait (for
+example a 300000 ms or "exceeding timeout" message) while the process is still
+fetching. Check the real state first instead of assuming the mirror failed:
+
+- Submodule fetching in progress is not a failure until the shell reports an
+  exit code AND `git status` stays non-clean. Re-run with a longer shell wait
+  limit, or run the command in the background until it truly exits.
+- An interrupted `git submodule update` leaves `modified:` entries under
+  `components/` (for example `components/esp_wifi/lib`). This is a partial
+  checkout, not corrupted state.
+
+Repair in place rather than cloning from scratch:
+
+```bash
+git -C "${AI_PASSPORT_IDF_ROOT}" submodule update --init --recursive
+# if status still lists submodule paths, update each one by path:
+git -C "${AI_PASSPORT_IDF_ROOT}" submodule update --init components/<path-from-status>
+git -C "${AI_PASSPORT_IDF_ROOT}" status --short
+```
+
+Keep the checkout clean before running `install.sh`; `idf.py` ignores
+uninitialized submodules differently across versions and a partially updated
+tree produces confusing compile errors.
+
+### Large submodule fixes
+
+`components/esp_wifi/lib` resolves to `espressif/esp32-wifi-lib`, a large
+prebuilt repository, and a full fetch of it commonly exceeds any reasonable
+wait limit. Do not retry the full fetch repeatedly on a short wait; fetch only
+the pinned commit instead:
+
+1. Read the exact commit `esp-idf` pins for that path:
+
+```bash
+git -C "${AI_PASSPORT_IDF_ROOT}" ls-tree HEAD components/esp_wifi/lib
+# 160000 commit <sha>  components/esp_wifi/lib
+```
+
+2. Remove the partial directory and fetch that single commit shallowly:
+
+```bash
+git -C "${AI_PASSPORT_IDF_ROOT}" rm -rf components/esp_wifi/lib
+mkdir -p "${AI_PASSPORT_IDF_ROOT}/components/esp_wifi/lib"
+cd "${AI_PASSPORT_IDF_ROOT}/components/esp_wifi/lib"
+git init
+git remote add origin https://github.com/espressif/esp32-wifi-lib.git
+git fetch --depth 1 origin <sha-from-ls-tree>
+git checkout FETCH_HEAD
+```
+
+3. Let `git submodule update --init` record the checkout, then verify:
+
+```bash
+git -C "${AI_PASSPORT_IDF_ROOT}" submodule update --init components/esp_wifi/lib
+git -C "${AI_PASSPORT_IDF_ROOT}" status --short
+```
+
+Do not use `git submodule update --depth=1 <path>` for these pins: it fetches
+only the default-branch tip and fails with
+`Unable to find current revision in submodule path` when the pinned commit is
+not the tip. For any remaining path that stays dirty after the ordinary repair,
+run `git submodule deinit -f <path>` first, then `update --init` again. Always
+use the paths printed by the latest `git status`; do not copy example paths.
+
+### Offline archives as a last resort
+
+If every source is unreachable after repeated attempts, the official Espressif
+release archive is a complete checkout snapshot — it already contains `.git`
+and every v5.5.3 submodule — so unpacking it needs no network or Git operation
+after download:
+
+```bash
+curl -fL -o /tmp/esp-idf-v5.5.3.zip \
+    https://dl.espressif.com/github_assets/espressif/esp-idf/releases/download/v5.5.3/esp-idf-v5.5.3.zip
+mkdir -p "$(dirname "${AI_PASSPORT_IDF_ROOT}")"
+unzip -q /tmp/esp-idf-v5.5.3.zip -d "$(dirname "${AI_PASSPORT_IDF_ROOT}")"
+"${AI_PASSPORT_IDF_ROOT}/install.sh" esp32c3
+```
+
+The archive expands to a `esp-idf-v5.5.3/` directory (about 1.8 GB). Use the
+`dl.espressif.cn` host variant if `dl.espressif.com` is slow; both serve the
+same file. Validate the expanded tree with the checksum released next to the
+archive before reusing it as an installation base.
 
 ## Activate and verify ESP-IDF
 
@@ -337,6 +471,8 @@ acceptance path.
 | `idf.py` not found | Activate the selected installation's `export.sh`; do not guess a private alias. |
 | Wrong ESP-IDF version | Stop and activate/install v5.5.3 side by side. |
 | GitHub source or asset download is slow | Switch to the documented Espressif mainland China route. |
+| Submodule fetch times out or the shell reports an exceeded wait | Confirm `git status` first; if still fetching, rerun with a longer wait limit or in the background, then repair with `git submodule update --init --recursive`. |
+| Submodule fetch 404s or retries against a stale mirror | Inspect `git config --global --get-regexp 'url\..*jihulab'`; obtain user approval to clean residue before retrying. |
 | Component download is slow in China | Set `IDF_COMPONENT_STORAGE_URL` for the current terminal. |
 | Component download fails | Check network, proxy, DNS, and certificates; never disable TLS verification as a shortcut. |
 | Configuration misses tracked defaults | Preserve intentional settings, then rerun `idf.py set-target esp32c3`. |

@@ -28,7 +28,6 @@ def sample_table() -> bytes:
         (1, 1, 0xF000, 0x1000, "phy_init"),
         (0, 0, 0x10000, 0x300000, "factory"),
         (1, 2, 0x356000, 0x4000, "cardid"),
-        (0, 0x20, 0x700000, 0x100000, "recovery"),
     )
     raw = bytearray(b"\xff" * VERIFY.PARTITION_TABLE_SIZE)
     for index, (kind, subtype, offset, size, label) in enumerate(entries):
@@ -53,8 +52,8 @@ class PartitionParserTest(unittest.TestCase):
     def test_parses_protected_layout_and_md5(self) -> None:
         partitions, found_md5 = VERIFY.parse_partition_table(sample_table())
         self.assertTrue(found_md5)
-        self.assertEqual(partitions[-2].label, "cardid")
-        self.assertEqual(partitions[-1].offset, VERIFY.RECOVERY_OFFSET)
+        self.assertEqual(partitions[-1].label, "cardid")
+        self.assertEqual(partitions[-1].offset, VERIFY.CARDID_OFFSET)
 
     def test_rejects_bad_md5(self) -> None:
         raw = bytearray(sample_table())
@@ -64,7 +63,7 @@ class PartitionParserTest(unittest.TestCase):
 
 
 class ProtectedLayoutTest(unittest.TestCase):
-    def test_layout_verification_does_not_require_bootloader_hook(self) -> None:
+    def test_layout_verification_accepts_current_partition_table(self) -> None:
         merged = bytearray(b"\xff" * (0x10000 + 1))
         merged[
             VERIFY.PARTITION_TABLE_OFFSET :

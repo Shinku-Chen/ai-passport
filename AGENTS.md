@@ -9,10 +9,8 @@ This file is the only mandatory entry point for AI-assisted work in this reposit
 ## Project and safety baseline
 
 - Target: ESP32-C3, 8 MB Flash, no PSRAM, ESP-IDF 5.5.3.
-- Preserve the protected Flash layout: the 3 MB application limit, `cardid` at
-  `0x356000`, and factory-owned Recovery at `0x700000` are mandatory template
-  contracts. The template intentionally provides no function-key bootloader
-  hook for entering Recovery.
+- Preserve the protected Flash layout: the 3 MB application limit and `cardid`
+  at `0x356000` are mandatory template contracts.
 - Preserve existing user changes. Start with `git status --short --branch`; never overwrite or clean unrelated files.
 - Hardware facts follow this priority: product specifications and measured results → `components/bsp/include/bsp_pins.h` → BSP headers and implementation → hardware guide → README/demo code. If a task requires a hardware detail not defined by these sources, ask the user instead of guessing.
 - Reusable board logic belongs in `components/bsp`; pages, state machines, animations, and application tasks belong in `main`.

@@ -22,8 +22,6 @@ PARTITION_TABLE_SIZE = 0xC00
 APP_MAX_SIZE = 0x300000
 CARDID_OFFSET = 0x356000
 CARDID_SIZE = 0x4000
-RECOVERY_OFFSET = 0x700000
-RECOVERY_SIZE = 0x100000
 ENTRY = struct.Struct("<HBBII16sI")
 
 
@@ -85,7 +83,6 @@ def verify_protected_layout(merged: bytes, build_dir: Path) -> None:
     expected = {
         "factory": Partition(0, 0, 0x10000, APP_MAX_SIZE, "factory"),
         "cardid": Partition(1, 2, CARDID_OFFSET, CARDID_SIZE, "cardid"),
-        "recovery": Partition(0, 0x20, RECOVERY_OFFSET, RECOVERY_SIZE, "recovery"),
     }
     for label, wanted in expected.items():
         if by_label.get(label) != wanted:
@@ -98,8 +95,6 @@ def verify_protected_layout(merged: bytes, build_dir: Path) -> None:
     for item in partitions:
         if item.label != "cardid" and item.offset < CARDID_OFFSET + CARDID_SIZE and CARDID_OFFSET < item.end:
             raise ValueError(f"partition {item.label!r} overlaps protected cardid")
-        if item.label != "recovery" and item.offset < RECOVERY_OFFSET + RECOVERY_SIZE and RECOVERY_OFFSET < item.end:
-            raise ValueError(f"partition {item.label!r} overlaps permanent Recovery")
 
     app_path = build_dir / "FoloToy-AI-Passport.bin"
     app_size = app_path.stat().st_size
@@ -109,15 +104,13 @@ def verify_protected_layout(merged: bytes, build_dir: Path) -> None:
         raise ValueError("merged artifact has no ESP application image at 0x10000")
 
     # A derivative may add resource partitions after cardid. The merged file is
-    # still acceptable only if protected regions contain padding, never a real
-    # device identity or a replacement Recovery payload.
-    for label, offset, size in (
-        ("cardid", CARDID_OFFSET, CARDID_SIZE),
-        ("recovery", RECOVERY_OFFSET, RECOVERY_SIZE),
-    ):
-        payload = merged[offset : min(len(merged), offset + size)]
-        if any(byte != 0xFF for byte in payload):
-            raise ValueError(f"merged artifact contains forbidden {label} payload bytes")
+    # still acceptable only if the protected cardid region contains padding,
+    # never real device identity data.
+    payload = merged[
+        CARDID_OFFSET : min(len(merged), CARDID_OFFSET + CARDID_SIZE)
+    ]
+    if any(byte != 0xFF for byte in payload):
+        raise ValueError("merged artifact contains forbidden cardid payload bytes")
 
     print(f"Protected firmware layout: PASS (app {app_size} / {APP_MAX_SIZE} bytes)")
 
