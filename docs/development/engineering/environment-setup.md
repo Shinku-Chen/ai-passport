@@ -173,6 +173,40 @@ printf 'IDF_PATH=%s\n' "${IDF_PATH}"
 Stop if the reported version is not exactly `ESP-IDF v5.5.3`. Do not generate
 project configuration with another version.
 
+Activation is shell-scoped: run `export.sh` with a leading dot (or `source`),
+never as `./export.sh`, which spawns a subshell and leaves the current shell
+unconfigured (`IDF_PATH is not set` or `idf.py: command not found` afterward).
+If a custom `IDF_TOOLS_PATH` was used during install, set it again before every
+`export.sh` call — the script does not remember it from an earlier session.
+
+### Toolchain install failures
+
+`install.sh` fetches toolchains themselves from the same mirror nodes. When it
+fails at a checksum mismatch or a corrupted download, clear the cache and
+retry:
+
+```bash
+rm -rf ~/.espressif/dist
+"${AI_PASSPORT_IDF_ROOT}/install.sh" esp32c3
+```
+
+On macOS, a certificate error (`[SSL: CERTIFICATE_VERIFY_FAILED]`) is usually a
+missing Python certificate bundle; run
+`Install Certificates.command` from the Python installation directory, then
+retry. On Apple Silicon, `bad CPU type in executable` or
+`tool xtensa-esp32-elf has no installed versions` means the toolchain binary is
+x86-64 and needs Rosetta 2:
+
+```bash
+/usr/sbin/softwareupdate --install-rosetta --agree-to-license
+```
+
+On Windows the official ESP-IDF Tools Installer already handles mirrors and
+caching; if a manual install still fails at a corrupted archive, the partially
+downloaded files live under `%USERPROFILE%\.espressif\dist` — delete that
+folder, set `IDF_GITHUB_ASSETS` in the same session as `install.bat`, and
+retry.
+
 For mainland China, optionally accelerate Managed Component archives in the
 current terminal:
 

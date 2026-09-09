@@ -147,6 +147,36 @@ printf 'IDF_PATH=%s\n' "${IDF_PATH}"
 
 版本不是严格的 `ESP-IDF v5.5.3` 时必须停止，不得用其他版本生成项目配置。
 
+激活只对当前 shell 生效：运行 `export.sh` 必须用带点的形式（或 `source`），
+不能写成 `./export.sh`——那会在子 shell 中执行，当前 shell 不会配置成功
+（之后报 `IDF_PATH is not set` 或 `idf.py: command not found`）。安装时使用过
+自定义 `IDF_TOOLS_PATH` 的，每次 `export.sh` 前都要重新设置——脚本不会记住
+上一个 session 的值。
+
+### 工具链安装失败
+
+`install.sh` 的工具链本身也走同一套镜像节点。校验和不匹配或下载损坏时，
+清缓存重试：
+
+```bash
+rm -rf ~/.espressif/dist
+"${AI_PASSPORT_IDF_ROOT}/install.sh" esp32c3
+```
+
+macOS 上证书错误（`[SSL: CERTIFICATE_VERIFY_FAILED]`）通常是 Python 证书包
+缺失：运行 Python 安装目录下的 `Install Certificates.command` 后再试。
+Apple Silicon 上 `bad CPU type in executable` 或
+`tool xtensa-esp32-elf has no installed versions` 表示工具链是 x86-64 二进制，
+需要 Rosetta 2：
+
+```bash
+/usr/sbin/softwareupdate --install-rosetta --agree-to-license
+```
+
+Windows 上官方 ESP-IDF Tools Installer 已处理镜像与缓存；手动安装仍因归档
+损坏失败时，部分下载的文件在 `%USERPROFILE%\.espressif\dist`——删除该目录，
+与 `install.bat` 同一 session 设置 `IDF_GITHUB_ASSETS` 后重试。
+
 中国大陆环境可在当前终端临时加速 Managed Component 归档下载：
 
 ```bash

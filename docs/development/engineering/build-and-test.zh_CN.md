@@ -27,6 +27,26 @@ idf.py fullclean              # 只清空过期生成状态（勿用于清理用
 target 或已跟踪 defaults 时，先保留有意的本地设置，再运行
 `idf.py set-target esp32c3`。
 
+### 加速重复编译
+
+ccache 能让增量编译保持快速。ESP-IDF 默认未启用；在当前终端启用，或在项目配置里永久启用：
+
+```bash
+export IDF_CCACHE_ENABLE=1
+idf.py build
+```
+
+```text
+CONFIG_IDF_BUILD_USE_CCACHE=y
+```
+
+ccache 缓存位于 `build/` 之外，因此 `idf.py fullclean` 和临时验证构建都不会清掉它。
+需要清缓存时删除 ccache 目录本身（默认 `~/.ccache`，或 `CCACHE_DIR` 指向的位置）。
+
+在 Windows 上，重复编译慢常见原因是杀毒或终端安全软件实时扫描构建目录；
+把 ESP-IDF 安装目录、工具链目录（`%USERPROFILE%\.espressif` 或自定义
+`IDF_TOOLS_PATH`）和工程构建目录（`build/`）加入扫描排除项。
+
 仓库提交 `dependencies.lock` 以固定 ESP-IDF Managed Components 的解析结果。修改 `idf_component.yml` 后必须使用 ESP-IDF 5.5.3 重新生成锁文件、review 版本变化并与 manifest 一起提交；普通构建不应产生未提交的锁文件差异。
 
 固件门禁使用全新的临时构建目录，并从仓库 `sdkconfig.defaults` 生成隔离的 `sdkconfig`。它不会读取或覆盖开发者根目录的 `sdkconfig`，只把验证通过的合并镜像复制到 `build/FoloToy-AI-Passport-full.bin`。门禁同时强制检查[受保护的 Flash 布局](protected-flash-layout.zh_CN.md)：保护分区地址、应用大小、分区表 MD5 以及保护区数据不入包。

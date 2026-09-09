@@ -29,6 +29,31 @@ changed defaults. Preserve intentional local settings, then run
 `idf.py set-target esp32c3` when the target or tracked defaults must be
 regenerated.
 
+### Speeding up repeated builds
+
+ccache keeps incremental builds fast. ESP-IDF does not enable it by default;
+enable it for the current terminal, or make it permanent per project:
+
+```bash
+export IDF_CCACHE_ENABLE=1
+idf.py build
+```
+
+```text
+CONFIG_IDF_BUILD_USE_CCACHE=y
+```
+
+The ccache cache lives outside `build/`, so neither `idf.py fullclean` nor a
+temporary validation build removes it. When the cache must be cleared, remove
+the ccache directory itself (default `~/.ccache`, or wherever
+`CCACHE_DIR` points).
+
+On Windows, slow repeated builds are frequently caused by antivirus or endpoint
+software scanning build directories in real time; add the ESP-IDF install
+directory, the tools directory (`%USERPROFILE%\.espressif` or a custom
+`IDF_TOOLS_PATH`), and the project build directory (`build/`) to the scan
+exclusions.
+
 The tracked `dependencies.lock` pins Managed Component resolution. After changing an `idf_component.yml`, regenerate the lock with ESP-IDF 5.5.3, review version changes, and commit it with the manifest. An ordinary build must not leave an unexplained lock-file diff.
 
 Firmware validation uses a fresh temporary build directory and an isolated `sdkconfig` generated from the tracked defaults. It does not consume or overwrite a developer's root `sdkconfig`, and it copies only the verified merged image to `build/FoloToy-AI-Passport-full.bin`. The gate also enforces the [protected Flash layout](protected-flash-layout.md): protected partition addresses, application size, partition-table MD5, and absence of protected payload data.
