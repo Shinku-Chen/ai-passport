@@ -31,7 +31,7 @@ regenerated.
 
 The tracked `dependencies.lock` pins Managed Component resolution. After changing an `idf_component.yml`, regenerate the lock with ESP-IDF 5.5.3, review version changes, and commit it with the manifest. An ordinary build must not leave an unexplained lock-file diff.
 
-Firmware validation uses a fresh temporary build directory and an isolated `sdkconfig` generated from the tracked defaults. It does not consume or overwrite a developer's root `sdkconfig`, and it copies only the verified merged image to `build/FoloToy-AI-Passport-full.bin`. The gate also enforces the [protected Flash layout](protected-flash-layout.md): protected partition addresses, application size, partition-table MD5, and absence of protected payload data.
+Firmware validation uses a fresh temporary build directory and an isolated `sdkconfig` generated from the tracked defaults. It does not consume or overwrite a developer's root `sdkconfig`, and it copies only the verified merged image to `build/FoloToy-AI-Passport-full.bin`. The gate also enforces the [protected Flash layout](protected-flash-layout.md): the protected `cardid` address, application size, partition-table MD5, and absence of device-specific identity data.
 
 The baseline also has a hardware-independent logic test:
 

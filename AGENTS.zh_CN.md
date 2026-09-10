@@ -9,9 +9,8 @@
 ## 项目与安全基线
 
 - 目标平台：ESP32-C3、8 MB Flash、无 PSRAM、ESP-IDF 5.5.3。
-- 必须保持受保护的 Flash 布局：3 MB 应用上限、`cardid@0x356000`
-  与工厂所有的 `recovery@0x700000` 均为模板强制契约。模板不提供
-  任何功能键进入 Recovery 的 bootloader hook。
+- 必须保持受保护的 Flash 布局：3 MB 应用上限与 `cardid@0x356000`
+  均为模板强制契约。
 - 保留用户已有修改。先执行 `git status --short --branch`，不得覆盖或清理无关文件。
 - 硬件事实优先级：产品规格与实测结果 → `components/bsp/include/bsp_pins.h` → BSP 头文件与实现 → 硬件指南 → README/demo。任务所需硬件细节未在这些来源中定义时，直接询问用户，不得猜测。
 - 可复用板级逻辑放入 `components/bsp`；页面、状态机、动画和应用任务放入 `main`。
