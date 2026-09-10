@@ -1,5 +1,8 @@
 // main/demo_audio.c —— 播 1kHz 方波 / 录 3 秒后回放。
 // 音频收发会阻塞较久,故放到独立任务里跑,不占用按键回调与 LVGL 任务。
+// Continuous BGM + UI/NVS needs feed-latency and Flash/cache checks; a tone alone
+// does not validate this. See docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md
+// section 8.1 before reusing this demo for continuous playback.
 #include "demo.h"
 #include "bsp_audio.h"
 #include "bsp_display.h"   // bsp_lvgl_lock / bsp_lvgl_unlock(音频任务里操作 LVGL 要加锁)
