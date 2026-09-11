@@ -154,6 +154,15 @@ The MCU is I2S master and the ES8311 is slave. I2S0 TX/RX shares MCLK GPIO6, BCL
 
 The audio demo's three-second recording buffer is about 96 KB and is the largest transient heap allocation. Prefer chunked streaming for longer audio. Production task shutdown needs a cancellable loop and explicit exit handshake rather than deleting a task blocked in codec I/O.
 
+### 8.1 Crackles while navigating or saving
+
+When extending the tone demo into continuous BGM with UI updates and NVS saves, button-correlated crackles can come from interrupted PCM delivery, even if that button plays no sound. Check these two paths separately before changing the sound effect or volume:
+
+- **Task starvation:** measure the longest PCM feed gap alongside redraw and save durations. Six DMA descriptors of 240 frames hold at most `6 * 240 / 16000 = 90 ms` at 16 kHz when full; available headroom can be smaller. Keep blocking work out of button callbacks and LVGL locks, avoid Flash writes for focus-only changes, and give the audio worker enough priority relative to rendering. It must still block/yield; do not use a busy loop or copy a priority number without checking the application's tasks. Preserve saves at meaningful state changes.
+- **Flash/cache stalls:** Flash writes/erases can disable cache and defer the default I2S interrupt. For playback concurrent with saves, enable `CONFIG_I2S_ISR_IRAM_SAFE=y` and verify the generated `sdkconfig` (editing defaults alone does not override an existing configuration). Any registered I2S callbacks and their callees must be IRAM-safe, with accessed data in internal DRAM; `IRAM_ATTR` on the callback alone is insufficient. Do not log, allocate, or read Flash assets in that callback. See [ESP-IDF 5.5.3 I2S IRAM safety](https://docs.espressif.com/projects/esp-idf/en/v5.5.3/esp32c3/api-reference/peripherals/i2s.html#iram-safe).
+
+IRAM-safe interrupts do not keep a Flash-resident producer running or provide unlimited buffering. Budget queued PCM for measured stalls and internal RAM, or schedule saves at a safe playback boundary. On the exact application build, keep BGM playing while repeatedly navigating and confirming actions that really save to NVS, then check save/reload behavior. Compare feed gaps and listen on the device: clean logs or a successful standalone tone do not establish glitch-free concurrent playback.
+
 ## 9. CW2017 fuel gauge
 
 Initialization reads VERSION and checks the profile update flag plus all 80 profile bytes. When needed, it puts the gauge to sleep, writes and verifies the supplied profile for the specified 520 mAh cell, sets the update flag, restarts the gauge with the required `0x30` to `0x00` sequence, and waits up to five seconds for a valid SOC. Replacing the cell requires a matching vendor-generated profile and renewed charge/discharge validation.
