@@ -38,6 +38,7 @@ static void cb_press (void *a, void *u) { on_event(a, u, BSP_BTN_PRESS);  }
 static void cb_click (void *a, void *u) { on_event(a, u, BSP_BTN_CLICK);  }
 static void cb_double(void *a, void *u) { on_event(a, u, BSP_BTN_DOUBLE); }
 static void cb_long  (void *a, void *u) { on_event(a, u, BSP_BTN_LONG);   }
+static void cb_longhold(void *a, void *u){ on_event(a, u, BSP_BTN_LONG_HOLD); }
 
 // 初始化中途失败时先停掉所有 button driver，再释放本文件持有的校准与 ADC unit。
 // button driver 仍在轮询时不能先删 ADC，否则 timer callback 会访问失效句柄。
@@ -73,6 +74,7 @@ static esp_err_t register_callbacks(button_handle_t button, void *index) {
     if (e == ESP_OK) e = iot_button_register_cb(button, BUTTON_SINGLE_CLICK, NULL, cb_click, index);
     if (e == ESP_OK) e = iot_button_register_cb(button, BUTTON_DOUBLE_CLICK, NULL, cb_double, index);
     if (e == ESP_OK) e = iot_button_register_cb(button, BUTTON_LONG_PRESS_START, NULL, cb_long, index);
+    if (e == ESP_OK) e = iot_button_register_cb(button, BUTTON_LONG_PRESS_HOLD, NULL, cb_longhold, index);
     return e;
 }
 
@@ -115,7 +117,12 @@ esp_err_t bsp_button_init(bsp_btn_cb_t cb, void *user) {
             .min          = BTN_MV[i][0],
             .max          = BTN_MV[i][1],
         };
-        const button_config_t bc = { 0 };
+        // 门限: 短按 120ms(灵敏), 长按 300ms(用户指定)。直接写 config 绕开组件
+        // Kconfig 的长按 500ms 下限; 长按后的连续触发间隔(HOLD)由组件 Kconfig 控制。
+        const button_config_t bc = {
+            .long_press_time = 300,
+            .short_press_time = 120,
+        };
         esp_err_t e = iot_button_new_adc_device(&bc, &ac, &s_btn[i]);
         if (e != ESP_OK || !s_btn[i]) {
             ESP_LOGE(TAG, "按键 %d 创建失败 (%s) —— 检查 GPIO%d 的 ADC 配置与分压电阻",
