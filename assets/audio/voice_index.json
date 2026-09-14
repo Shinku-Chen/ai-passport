@@ -1,5 +1,316 @@
 [
   {
+    "dir": "黄色袋鼠",
+    "dir_id": 0,
+    "dir_ascii": "dir00",
+    "files": [
+      {
+        "name": "biubiu击毙你",
+        "src": "biubiu击毙你.mp3",
+        "path": "dir00/clip00.opus",
+        "samples": 26400,
+        "duration": 1.65,
+        "compressed_bytes": 3365
+      },
+      {
+        "name": "七夕节到了还不给我送礼物",
+        "src": "七夕节到了还不给我送礼物.mp3",
+        "path": "dir00/clip01.opus",
+        "samples": 37600,
+        "duration": 2.35,
+        "compressed_bytes": 4943
+      },
+      {
+        "name": "下次再这么敷衍就给你抽成陀螺",
+        "src": "下次再这么敷衍就给你抽成陀螺.mp3",
+        "path": "dir00/clip02.opus",
+        "samples": 46400,
+        "duration": 2.9,
+        "compressed_bytes": 5994
+      },
+      {
+        "name": "为什么不和我过七夕",
+        "src": "为什么不和我过七夕.mp3",
+        "path": "dir00/clip03.opus",
+        "samples": 29120,
+        "duration": 1.82,
+        "compressed_bytes": 3850
+      },
+      {
+        "name": "也不打听打听我是谁",
+        "src": "也不打听打听我是谁.mp3",
+        "path": "dir00/clip04.opus",
+        "samples": 34240,
+        "duration": 2.14,
+        "compressed_bytes": 4330
+      },
+      {
+        "name": "你不会主动给我发信息",
+        "src": "你不会主动给我发信息.wav",
+        "path": "dir00/clip05.opus",
+        "samples": 27040,
+        "duration": 1.69,
+        "compressed_bytes": 3581
+      },
+      {
+        "name": "你个老牧师的",
+        "src": "你个老牧师的.mp3",
+        "path": "dir00/clip06.opus",
+        "samples": 16320,
+        "duration": 1.02,
+        "compressed_bytes": 2111
+      },
+      {
+        "name": "你个老牧师的！",
+        "src": "你个老牧师的！.mp3",
+        "path": "dir00/clip07.opus",
+        "samples": 20320,
+        "duration": 1.27,
+        "compressed_bytes": 2587
+      },
+      {
+        "name": "你也不看看你分享的是什么猎奇视频",
+        "src": "你也不看看你分享的是什么猎奇视频.mp3",
+        "path": "dir00/clip08.opus",
+        "samples": 46880,
+        "duration": 2.93,
+        "compressed_bytes": 5959
+      },
+      {
+        "name": "你们要是敢过七夕节",
+        "src": "你们要是敢过七夕节.mp3",
+        "path": "dir00/clip09.opus",
+        "samples": 28800,
+        "duration": 1.8,
+        "compressed_bytes": 3723
+      },
+      {
+        "name": "你们这些老牧师的",
+        "src": "你们这些老牧师的.mp3",
+        "path": "dir00/clip10.opus",
+        "samples": 20000,
+        "duration": 1.25,
+        "compressed_bytes": 2593
+      },
+      {
+        "name": "你居然敢在我评论区发那个",
+        "src": "你居然敢在我评论区发那个.mp3",
+        "path": "dir00/clip11.opus",
+        "samples": 40160,
+        "duration": 2.51,
+        "compressed_bytes": 5169
+      },
+      {
+        "name": "你的胆子才是肥嘟嘟的",
+        "src": "你的胆子才是肥嘟嘟的.mp3",
+        "path": "dir00/clip12.opus",
+        "samples": 31840,
+        "duration": 1.99,
+        "compressed_bytes": 4103
+      },
+      {
+        "name": "你的胆子真是肥嘟嘟的",
+        "src": "你的胆子真是肥嘟嘟的.mp3",
+        "path": "dir00/clip13.opus",
+        "samples": 36800,
+        "duration": 2.3,
+        "compressed_bytes": 4732
+      },
+      {
+        "name": "再发这种消息我找人弄你",
+        "src": "再发这种消息我找人弄你.mp3",
+        "path": "dir00/clip14.opus",
+        "samples": 38880,
+        "duration": 2.43,
+        "compressed_bytes": 4937
+      },
+      {
+        "name": "就因为我和你没关系吗",
+        "src": "就因为我和你没关系吗.mp3",
+        "path": "dir00/clip15.opus",
+        "samples": 32640,
+        "duration": 2.04,
+        "compressed_bytes": 4132
+      },
+      {
+        "name": "居然不带我打三角洲",
+        "src": "居然不带我打三角洲.mp3",
+        "path": "dir00/clip16.opus",
+        "samples": 32320,
+        "duration": 2.02,
+        "compressed_bytes": 4161
+      },
+      {
+        "name": "居然看完我的抖音已读不回",
+        "src": "居然看完我的抖音已读不回.mp3",
+        "path": "dir00/clip17.opus",
+        "samples": 49920,
+        "duration": 3.12,
+        "compressed_bytes": 6549
+      },
+      {
+        "name": "我不光胆子肥嘟嘟的",
+        "src": "我不光胆子肥嘟嘟的.mp3",
+        "path": "dir00/clip18.opus",
+        "samples": 27200,
+        "duration": 1.7,
+        "compressed_bytes": 3517
+      },
+      {
+        "name": "我就给你们玛莎拉",
+        "src": "我就给你们玛莎拉.mp3",
+        "path": "dir00/clip19.opus",
+        "samples": 25120,
+        "duration": 1.57,
+        "compressed_bytes": 3250
+      },
+      {
+        "name": "我感觉我的眼睛被强将了",
+        "src": "我感觉我的眼睛被强将了.mp3",
+        "path": "dir00/clip20.opus",
+        "samples": 35040,
+        "duration": 2.19,
+        "compressed_bytes": 4512
+      },
+      {
+        "name": "我的肚子也肥嘟嘟的",
+        "src": "我的肚子也肥嘟嘟的.mp3",
+        "path": "dir00/clip21.opus",
+        "samples": 28000,
+        "duration": 1.75,
+        "compressed_bytes": 3654
+      },
+      {
+        "name": "我看你胆子真是肥嘟嘟的",
+        "src": "我看你胆子真是肥嘟嘟的.mp3",
+        "path": "dir00/clip22.opus",
+        "samples": 34560,
+        "duration": 2.16,
+        "compressed_bytes": 4519
+      },
+      {
+        "name": "我真得控制你了",
+        "src": "我真得控制你了.mp3",
+        "path": "dir00/clip23.opus",
+        "samples": 24960,
+        "duration": 1.56,
+        "compressed_bytes": 3195
+      },
+      {
+        "name": "我要拿98k崩了你",
+        "src": "我要拿98k崩了你.mp3",
+        "path": "dir00/clip24.opus",
+        "samples": 26400,
+        "duration": 1.65,
+        "compressed_bytes": 3398
+      },
+      {
+        "name": "敢不回消息",
+        "src": "敢不回消息.mp3",
+        "path": "dir00/clip25.opus",
+        "samples": 18880,
+        "duration": 1.18,
+        "compressed_bytes": 2406
+      },
+      {
+        "name": "既然敢肥嘟嘟的",
+        "src": "既然敢肥嘟嘟的.mp3",
+        "path": "dir00/clip26.opus",
+        "samples": 26400,
+        "duration": 1.65,
+        "compressed_bytes": 3218
+      },
+      {
+        "name": "明天就七夕节了",
+        "src": "明天就七夕节了.mp3",
+        "path": "dir00/clip27.opus",
+        "samples": 23840,
+        "duration": 1.49,
+        "compressed_bytes": 3122
+      },
+      {
+        "name": "有这么多美团老鼠的表情包",
+        "src": "有这么多美团老鼠的表情包.mp3",
+        "path": "dir00/clip28.opus",
+        "samples": 40480,
+        "duration": 2.53,
+        "compressed_bytes": 5232
+      },
+      {
+        "name": "游戏打这么菜还敢看我主页",
+        "src": "游戏打这么菜还敢看我主页.mp3",
+        "path": "dir00/clip29.opus",
+        "samples": 40000,
+        "duration": 2.5,
+        "compressed_bytes": 5135
+      },
+      {
+        "name": "给你分享的视频看都不看就回复",
+        "src": "给你分享的视频看都不看就回复.mp3",
+        "path": "dir00/clip30.opus",
+        "samples": 44800,
+        "duration": 2.8,
+        "compressed_bytes": 5826
+      },
+      {
+        "name": "老是聊天聊着聊着消失",
+        "src": "老是聊天聊着聊着消失.mp3",
+        "path": "dir00/clip31.opus",
+        "samples": 46880,
+        "duration": 2.93,
+        "compressed_bytes": 6016
+      },
+      {
+        "name": "胆子真是肥嘟嘟的",
+        "src": "胆子真是肥嘟嘟的.mp3",
+        "path": "dir00/clip32.opus",
+        "samples": 29280,
+        "duration": 1.83,
+        "compressed_bytes": 3790
+      },
+      {
+        "name": "脸也肥嘟嘟的",
+        "src": "脸也肥嘟嘟的.mp3",
+        "path": "dir00/clip33.opus",
+        "samples": 19680,
+        "duration": 1.23,
+        "compressed_bytes": 2507
+      },
+      {
+        "name": "还不赶紧v我520",
+        "src": "还不赶紧v我520.mp3",
+        "path": "dir00/clip34.opus",
+        "samples": 30400,
+        "duration": 1.9,
+        "compressed_bytes": 3930
+      },
+      {
+        "name": "还有不要在我评论区底下发黄色老鼠的表情包",
+        "src": "还有不要在我评论区底下发黄色老鼠的表情包.mp3",
+        "path": "dir00/clip35.opus",
+        "samples": 66400,
+        "duration": 4.15,
+        "compressed_bytes": 8539
+      },
+      {
+        "name": "这个人也是牛逼",
+        "src": "这个人也是牛逼.mp3",
+        "path": "dir00/clip36.opus",
+        "samples": 19200,
+        "duration": 1.2,
+        "compressed_bytes": 2501
+      },
+      {
+        "name": "雷霆老鼠表情包",
+        "src": "雷霆老鼠表情包.mp3",
+        "path": "dir00/clip37.opus",
+        "samples": 29280,
+        "duration": 1.83,
+        "compressed_bytes": 3719
+      }
+    ]
+  },
+  {
     "dir": "MC",
     "dir_id": 1,
     "dir_ascii": "dir01",
@@ -6397,317 +6708,6 @@
         "samples": 33440,
         "duration": 2.09,
         "compressed_bytes": 4152
-      }
-    ]
-  },
-  {
-    "dir": "黄色袋鼠",
-    "dir_id": 24,
-    "dir_ascii": "dir24",
-    "files": [
-      {
-        "name": "biubiu击毙你",
-        "src": "biubiu击毙你.mp3",
-        "path": "dir24/clip00.opus",
-        "samples": 26400,
-        "duration": 1.65,
-        "compressed_bytes": 3365
-      },
-      {
-        "name": "七夕节到了还不给我送礼物",
-        "src": "七夕节到了还不给我送礼物.mp3",
-        "path": "dir24/clip01.opus",
-        "samples": 37600,
-        "duration": 2.35,
-        "compressed_bytes": 4943
-      },
-      {
-        "name": "下次再这么敷衍就给你抽成陀螺",
-        "src": "下次再这么敷衍就给你抽成陀螺.mp3",
-        "path": "dir24/clip02.opus",
-        "samples": 46400,
-        "duration": 2.9,
-        "compressed_bytes": 5994
-      },
-      {
-        "name": "为什么不和我过七夕",
-        "src": "为什么不和我过七夕.mp3",
-        "path": "dir24/clip03.opus",
-        "samples": 29120,
-        "duration": 1.82,
-        "compressed_bytes": 3850
-      },
-      {
-        "name": "也不打听打听我是谁",
-        "src": "也不打听打听我是谁.mp3",
-        "path": "dir24/clip04.opus",
-        "samples": 34240,
-        "duration": 2.14,
-        "compressed_bytes": 4330
-      },
-      {
-        "name": "你不会主动给我发信息",
-        "src": "你不会主动给我发信息.wav",
-        "path": "dir24/clip05.opus",
-        "samples": 27040,
-        "duration": 1.69,
-        "compressed_bytes": 3581
-      },
-      {
-        "name": "你个老牧师的",
-        "src": "你个老牧师的.mp3",
-        "path": "dir24/clip06.opus",
-        "samples": 16320,
-        "duration": 1.02,
-        "compressed_bytes": 2111
-      },
-      {
-        "name": "你个老牧师的！",
-        "src": "你个老牧师的！.mp3",
-        "path": "dir24/clip07.opus",
-        "samples": 20320,
-        "duration": 1.27,
-        "compressed_bytes": 2587
-      },
-      {
-        "name": "你也不看看你分享的是什么猎奇视频",
-        "src": "你也不看看你分享的是什么猎奇视频.mp3",
-        "path": "dir24/clip08.opus",
-        "samples": 46880,
-        "duration": 2.93,
-        "compressed_bytes": 5959
-      },
-      {
-        "name": "你们要是敢过七夕节",
-        "src": "你们要是敢过七夕节.mp3",
-        "path": "dir24/clip09.opus",
-        "samples": 28800,
-        "duration": 1.8,
-        "compressed_bytes": 3723
-      },
-      {
-        "name": "你们这些老牧师的",
-        "src": "你们这些老牧师的.mp3",
-        "path": "dir24/clip10.opus",
-        "samples": 20000,
-        "duration": 1.25,
-        "compressed_bytes": 2593
-      },
-      {
-        "name": "你居然敢在我评论区发那个",
-        "src": "你居然敢在我评论区发那个.mp3",
-        "path": "dir24/clip11.opus",
-        "samples": 40160,
-        "duration": 2.51,
-        "compressed_bytes": 5169
-      },
-      {
-        "name": "你的胆子才是肥嘟嘟的",
-        "src": "你的胆子才是肥嘟嘟的.mp3",
-        "path": "dir24/clip12.opus",
-        "samples": 31840,
-        "duration": 1.99,
-        "compressed_bytes": 4103
-      },
-      {
-        "name": "你的胆子真是肥嘟嘟的",
-        "src": "你的胆子真是肥嘟嘟的.mp3",
-        "path": "dir24/clip13.opus",
-        "samples": 36800,
-        "duration": 2.3,
-        "compressed_bytes": 4732
-      },
-      {
-        "name": "再发这种消息我找人弄你",
-        "src": "再发这种消息我找人弄你.mp3",
-        "path": "dir24/clip14.opus",
-        "samples": 38880,
-        "duration": 2.43,
-        "compressed_bytes": 4937
-      },
-      {
-        "name": "就因为我和你没关系吗",
-        "src": "就因为我和你没关系吗.mp3",
-        "path": "dir24/clip15.opus",
-        "samples": 32640,
-        "duration": 2.04,
-        "compressed_bytes": 4132
-      },
-      {
-        "name": "居然不带我打三角洲",
-        "src": "居然不带我打三角洲.mp3",
-        "path": "dir24/clip16.opus",
-        "samples": 32320,
-        "duration": 2.02,
-        "compressed_bytes": 4161
-      },
-      {
-        "name": "居然看完我的抖音已读不回",
-        "src": "居然看完我的抖音已读不回.mp3",
-        "path": "dir24/clip17.opus",
-        "samples": 49920,
-        "duration": 3.12,
-        "compressed_bytes": 6549
-      },
-      {
-        "name": "我不光胆子肥嘟嘟的",
-        "src": "我不光胆子肥嘟嘟的.mp3",
-        "path": "dir24/clip18.opus",
-        "samples": 27200,
-        "duration": 1.7,
-        "compressed_bytes": 3517
-      },
-      {
-        "name": "我就给你们玛莎拉",
-        "src": "我就给你们玛莎拉.mp3",
-        "path": "dir24/clip19.opus",
-        "samples": 25120,
-        "duration": 1.57,
-        "compressed_bytes": 3250
-      },
-      {
-        "name": "我感觉我的眼睛被强将了",
-        "src": "我感觉我的眼睛被强将了.mp3",
-        "path": "dir24/clip20.opus",
-        "samples": 35040,
-        "duration": 2.19,
-        "compressed_bytes": 4512
-      },
-      {
-        "name": "我的肚子也肥嘟嘟的",
-        "src": "我的肚子也肥嘟嘟的.mp3",
-        "path": "dir24/clip21.opus",
-        "samples": 28000,
-        "duration": 1.75,
-        "compressed_bytes": 3654
-      },
-      {
-        "name": "我看你胆子真是肥嘟嘟的",
-        "src": "我看你胆子真是肥嘟嘟的.mp3",
-        "path": "dir24/clip22.opus",
-        "samples": 34560,
-        "duration": 2.16,
-        "compressed_bytes": 4519
-      },
-      {
-        "name": "我真得控制你了",
-        "src": "我真得控制你了.mp3",
-        "path": "dir24/clip23.opus",
-        "samples": 24960,
-        "duration": 1.56,
-        "compressed_bytes": 3195
-      },
-      {
-        "name": "我要拿98k崩了你",
-        "src": "我要拿98k崩了你.mp3",
-        "path": "dir24/clip24.opus",
-        "samples": 26400,
-        "duration": 1.65,
-        "compressed_bytes": 3398
-      },
-      {
-        "name": "敢不回消息",
-        "src": "敢不回消息.mp3",
-        "path": "dir24/clip25.opus",
-        "samples": 18880,
-        "duration": 1.18,
-        "compressed_bytes": 2406
-      },
-      {
-        "name": "既然敢肥嘟嘟的",
-        "src": "既然敢肥嘟嘟的.mp3",
-        "path": "dir24/clip26.opus",
-        "samples": 26400,
-        "duration": 1.65,
-        "compressed_bytes": 3218
-      },
-      {
-        "name": "明天就七夕节了",
-        "src": "明天就七夕节了.mp3",
-        "path": "dir24/clip27.opus",
-        "samples": 23840,
-        "duration": 1.49,
-        "compressed_bytes": 3122
-      },
-      {
-        "name": "有这么多美团老鼠的表情包",
-        "src": "有这么多美团老鼠的表情包.mp3",
-        "path": "dir24/clip28.opus",
-        "samples": 40480,
-        "duration": 2.53,
-        "compressed_bytes": 5232
-      },
-      {
-        "name": "游戏打这么菜还敢看我主页",
-        "src": "游戏打这么菜还敢看我主页.mp3",
-        "path": "dir24/clip29.opus",
-        "samples": 40000,
-        "duration": 2.5,
-        "compressed_bytes": 5135
-      },
-      {
-        "name": "给你分享的视频看都不看就回复",
-        "src": "给你分享的视频看都不看就回复.mp3",
-        "path": "dir24/clip30.opus",
-        "samples": 44800,
-        "duration": 2.8,
-        "compressed_bytes": 5826
-      },
-      {
-        "name": "老是聊天聊着聊着消失",
-        "src": "老是聊天聊着聊着消失.mp3",
-        "path": "dir24/clip31.opus",
-        "samples": 46880,
-        "duration": 2.93,
-        "compressed_bytes": 6016
-      },
-      {
-        "name": "胆子真是肥嘟嘟的",
-        "src": "胆子真是肥嘟嘟的.mp3",
-        "path": "dir24/clip32.opus",
-        "samples": 29280,
-        "duration": 1.83,
-        "compressed_bytes": 3790
-      },
-      {
-        "name": "脸也肥嘟嘟的",
-        "src": "脸也肥嘟嘟的.mp3",
-        "path": "dir24/clip33.opus",
-        "samples": 19680,
-        "duration": 1.23,
-        "compressed_bytes": 2507
-      },
-      {
-        "name": "还不赶紧v我520",
-        "src": "还不赶紧v我520.mp3",
-        "path": "dir24/clip34.opus",
-        "samples": 30400,
-        "duration": 1.9,
-        "compressed_bytes": 3930
-      },
-      {
-        "name": "还有不要在我评论区底下发黄色老鼠的表情包",
-        "src": "还有不要在我评论区底下发黄色老鼠的表情包.mp3",
-        "path": "dir24/clip35.opus",
-        "samples": 66400,
-        "duration": 4.15,
-        "compressed_bytes": 8539
-      },
-      {
-        "name": "这个人也是牛逼",
-        "src": "这个人也是牛逼.mp3",
-        "path": "dir24/clip36.opus",
-        "samples": 19200,
-        "duration": 1.2,
-        "compressed_bytes": 2501
-      },
-      {
-        "name": "雷霆老鼠表情包",
-        "src": "雷霆老鼠表情包.mp3",
-        "path": "dir24/clip37.opus",
-        "samples": 29280,
-        "duration": 1.83,
-        "compressed_bytes": 3719
       }
     ]
   }
