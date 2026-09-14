@@ -41,15 +41,15 @@ _Static_assert(sizeof(s_battery_profile) == CW_PROFILE_SIZE,
 
 static i2c_master_dev_handle_t s_dev;
 
-static int cw_read(uint8_t reg, uint8_t *buf, size_t n) {
-    if (!s_dev) return -1;
-    return i2c_master_transmit_receive(s_dev, &reg, 1, buf, n, 100) == ESP_OK ? 0 : -1;
+static esp_err_t cw_read(uint8_t reg, uint8_t *buf, size_t n) {
+    if (!s_dev) return ESP_ERR_INVALID_STATE;
+    return i2c_master_transmit_receive(s_dev, &reg, 1, buf, n, 100);
 }
 
-static int cw_write(uint8_t reg, uint8_t val) {
-    if (!s_dev) return -1;
+static esp_err_t cw_write(uint8_t reg, uint8_t val) {
+    if (!s_dev) return ESP_ERR_INVALID_STATE;
     uint8_t b[2] = { reg, val };
-    return i2c_master_transmit(s_dev, b, 2, 100) == ESP_OK ? 0 : -1;
+    return i2c_master_transmit(s_dev, b, 2, 100);
 }
 
 // CONFIG 的低 4 bit 为保留位。复位、睡眠和激活均按芯片规定的时序切换。
@@ -185,6 +185,31 @@ fail:
     i2c_master_bus_rm_device(s_dev);
     s_dev = NULL;
     return e;
+}
+
+esp_err_t bsp_battery_sleep(void) {
+    if (!s_dev) return ESP_OK;
+
+    for (unsigned attempt = 1; attempt <= 2; attempt++) {
+        uint8_t actual = 0;
+        esp_err_t write_error = cw_write(CW_REG_CONFIG, CW_CONFIG_SLEEP);
+        vTaskDelay(pdMS_TO_TICKS(5));
+        esp_err_t read_error = cw_read(CW_REG_CONFIG, &actual, 1);
+        if (write_error == ESP_OK && read_error == ESP_OK &&
+            actual == CW_CONFIG_SLEEP) {
+            ESP_LOGI(TAG, "CW2017 已进入休眠并通过寄存器校验");
+            return ESP_OK;
+        }
+
+        ESP_LOGW(TAG, "CW2017 休眠失败 attempt=%u write=%s(0x%x) "
+                      "read=%s(0x%x) actual=0x%02X",
+                 attempt, esp_err_to_name(write_error), (unsigned)write_error,
+                 esp_err_to_name(read_error), (unsigned)read_error, actual);
+        if (attempt < 2) vTaskDelay(pdMS_TO_TICKS(5));
+    }
+
+    ESP_LOGE(TAG, "CW2017 连续两次未能进入休眠");
+    return ESP_FAIL;
 }
 
 int bsp_battery_soc(void) {

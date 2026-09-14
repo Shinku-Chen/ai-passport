@@ -24,7 +24,7 @@ The table below describes the application capabilities implemented by the curren
 | Battery | CW2017 state-of-charge and voltage readings | `bsp_battery_*` | This capability is optional at runtime; accuracy depends on the cell and battery profile and is not equivalent to a calibrated result |
 | Wi-Fi | On-demand 2.4 GHz STA scan demo | `main/demo_wifi.c` | Scans only; it does not connect, store credentials, or validate antenna/RF performance |
 | Bluetooth LE | On-demand non-connectable NimBLE advertising as `FoloPassport` | `main/demo_ble.c` | ESP32-C3 does not support Bluetooth Classic; radio range, coexistence, and power draw require device measurements |
-| Low power | Two-second light sleep and five-second deep sleep, both with RTC timer wakeup | `main/demo_low_power.c` | Both modes suspend ES8311 first; light sleep resumes it explicitly, while deep sleep restarts the application; the current demo exposes RTC timer wake only |
+| Low power | Two-second light sleep and five-second deep sleep, both with RTC timer wakeup | `main/demo_low_power.c` | Both modes force and verify ES8311 suspend; light sleep restores audio, while deep sleep first suspends CW2017, releases I2S/shared-I2C pins, sleeps and holds the LCD pins, then restarts on wake; the current demo exposes RTC timer wake only |
 | Shared bus | ES8311 and CW2017 share I2C0 | `bsp_i2c_*` | Every device must reuse the bus owned by the BSP; do not create another bus on the same port for scanning or a new device |
 | Logging and flashing | Native ESP32-C3 USB Serial/JTAG | ESP-IDF console | GPIO18/19 are reserved for USB; the default UART0 TX on GPIO21 conflicts with the backlight |
 
@@ -67,6 +67,8 @@ When details are omitted, the assistant may choose conservative defaults that do
 ## Demo branches are design cases, not a feature pile
 
 Each `demo/*` branch evolves the baseline into an independent application. The branches demonstrate how specific problems were solved. New applications should normally branch from `main` and consult relevant examples instead of merging multiple demos wholesale.
+
+The menu and `demo_*.c` pages on `main` are also hardware-capability demonstrations, not a ready-made product UI. A new application must redesign and implement its screens and interaction flow for its own requirements rather than directly using or copying the current demo interface. BSP APIs, lifecycle patterns, and isolated logic may still be reused.
 
 | Branch | Application | Patterns worth reusing |
 | --- | --- | --- |

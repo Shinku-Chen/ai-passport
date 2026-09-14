@@ -1,15 +1,19 @@
 // main/demo_low_power.c —— light/deep sleep + RTC timer 唤醒验证。
 // 两种模式入睡前均 suspend ES8311；light sleep 返回后显式恢复。
+// deep sleep 还会按 CW2017 -> ES8311 -> I2S -> 共享 I2C -> LCD 顺序停止外设。
 // 不使用按键唤醒：仓库尚无板级唤醒电路证据。
 #include "demo.h"
 #include "bsp_audio.h"
+#include "bsp_battery.h"
 #include "bsp_display.h"
+#include "bsp_i2c.h"
 #include "ui_pixel.h"
 
 #include "esp_attr.h"
 #include "esp_log.h"
 #include "esp_err.h"
 #include "esp_sleep.h"
+#include "esp_system.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
@@ -43,6 +47,14 @@ static int s_selected;
 static RTC_DATA_ATTR uint32_t s_deep_sleep_magic;
 static RTC_DATA_ATTR uint32_t s_deep_sleep_count;
 
+static void log_deep_sleep_warning(const char *step, esp_err_t error)
+{
+    if (error != ESP_OK) {
+        ESP_LOGW(TAG, "deep sleep 继续：%s 失败: %s", step,
+                 esp_err_to_name(error));
+    }
+}
+
 static void menu_refresh(void)
 {
     for (int i = 0; i < 2; i++) {
@@ -67,8 +79,6 @@ static void sleep_task(void *arg)
 
         s_busy = true;
         if (command == SLEEP_COMMAND_DEEP) {
-            const char *failure = "Deep sleep";
-            bool audio_sleeping = false;
             set_status("DEEP SLEEP: 5 SEC\nApplication will restart");
             vTaskDelay(pdMS_TO_TICKS(250));
             if (s_stop_requested) {
@@ -77,35 +87,40 @@ static void sleep_task(void *arg)
             }
             esp_err_t err = esp_sleep_enable_timer_wakeup(DEEP_SLEEP_TIME_US);
             if (err == ESP_OK) {
-                err = bsp_audio_sleep();
-                failure = "Audio suspend";
-                audio_sleeping = (err == ESP_OK);
-            }
-            if (err == ESP_OK) {
-                failure = "Deep sleep";
+                // CW2017 与 ES8311 共用 I2C，必须先完成电量计写入/回读。
+                log_deep_sleep_warning("CW2017 suspend", bsp_battery_sleep());
+                log_deep_sleep_warning("ES8311 suspend", bsp_audio_sleep());
+                // 即使 codec 寄存器操作失败，也继续停时钟并释放引脚。
+                log_deep_sleep_warning("I2S pin release",
+                                       bsp_audio_prepare_deep_sleep());
+                log_deep_sleep_warning("shared I2C pin release",
+                                       bsp_i2c_prepare_deep_sleep());
+
+                // Wi-Fi/BLE 只由各自 demo 页持有；进入本页前已经停止并释放。
+                // 加锁等待当前 flush 完成，然后阻止 LVGL 在 LCD 关闭后再刷屏。
+                if (!bsp_lvgl_lock(1000)) {
+                    ESP_LOGE(TAG, "deep sleep 前无法停止 LVGL 刷屏，重启恢复外设");
+                    esp_restart();
+                }
+                log_deep_sleep_warning("ST7789 suspend",
+                                       bsp_display_prepare_deep_sleep());
+
                 if (s_deep_sleep_magic != DEEP_SLEEP_MAGIC) s_deep_sleep_count = 0;
                 s_deep_sleep_magic = DEEP_SLEEP_MAGIC;
                 s_deep_sleep_count++;
-                bsp_display_backlight(0);
                 esp_deep_sleep_start();
-                err = ESP_FAIL; // deep sleep 正常不会返回
+                // 从 deep-sleep 准备接口返回后总线已不可在本次运行中恢复。
+                ESP_LOGE(TAG, "esp_deep_sleep_start 意外返回，重启恢复外设");
+                esp_restart();
             }
-            if (audio_sleeping) {
-                esp_err_t wake_err = bsp_audio_wake();
-                if (err == ESP_OK && wake_err != ESP_OK) {
-                    err = wake_err;
-                    failure = "Audio resume";
-                }
-            }
-            bsp_display_backlight(100);
             esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_TIMER);
             char text[96];
-            snprintf(text, sizeof(text), "%s failed:\n%s", failure, esp_err_to_name(err));
+            snprintf(text, sizeof(text), "Deep sleep failed:\n%s", esp_err_to_name(err));
             set_status(text);
-            ESP_LOGE(TAG, "%s 失败: %s", failure, esp_err_to_name(err));
+            ESP_LOGE(TAG, "Deep sleep 失败: %s", esp_err_to_name(err));
         } else {
             const char *failure = "Light sleep";
-            bool audio_sleeping = false;
+            bool audio_suspend_attempted = false;
             set_status("LIGHT SLEEP: 2 SEC\nTimer wakeup");
             vTaskDelay(pdMS_TO_TICKS(150));
             if (s_stop_requested) {
@@ -114,9 +129,9 @@ static void sleep_task(void *arg)
             }
             esp_err_t err = esp_sleep_enable_timer_wakeup(LIGHT_SLEEP_TIME_US);
             if (err == ESP_OK) {
+                audio_suspend_attempted = true;
                 err = bsp_audio_sleep();
                 failure = "Audio suspend";
-                audio_sleeping = (err == ESP_OK);
             }
             if (err == ESP_OK) bsp_display_backlight(0);
             int64_t before = esp_timer_get_time();
@@ -126,7 +141,9 @@ static void sleep_task(void *arg)
             }
             int64_t slept_ms = (esp_timer_get_time() - before) / 1000;
             esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_TIMER);
-            if (audio_sleeping) {
+            // bsp_audio_sleep() 可能在已停 I2S 后报寄存器校验失败，
+            // 因此只要尝试过 suspend，未进入 light sleep 也必须恢复。
+            if (audio_suspend_attempted) {
                 esp_err_t wake_err = bsp_audio_wake();
                 if (err == ESP_OK && wake_err != ESP_OK) {
                     err = wake_err;

@@ -4,75 +4,68 @@
 
 # 深睡前关闭板载外设
 
-在「音效钥匙扣」v1.4.0 固件、voice-keychain 版本（提交 `ce9b13d`）发布后沉淀。
-这些是通用、上游受益的经验，适用于任何 AI Passport 应用，而非 fork 专属定制。
+本参考最初沉淀自「音效钥匙扣」v1.4.0 固件的 voice-keychain 版本
+（提交 `ce9b13d`）。原真机测试确认固件可在空闲五分钟后休眠、按键唤醒，
+且 codec/面板/电量计的深睡功耗下降，但没有测量具体待机电流。
 
-> **验证状态。** 以下均已在本项目「音效钥匙扣」固件上真机验证：空闲 5 分钟入睡、
-> 任意按键可唤醒、codec/面板/电量计在深睡时电流下降。待机电流数值未用万用表实测，
-> 故“量级”描述请视为相对大小，不是确切读数。
+上游 BSP 现在采用了比该历史固件更严格的关闭契约。其自动化契约与 ESP-IDF
+编译已检查，实际电流改善幅度仍需在目标板上测量。
 
-## 为什么要关外设
+## 为什么必须关闭外设
 
-`esp_deep_sleep_start()` 只把 MCU 核心断电，但挂在常通 3.3 V 轨上的**外设并不会**
-被切断——它们仍在耗电。若目标是极低待机，每个可关的外设都必须在芯片入睡前被
-点名进入自己的低功耗态。MCU 侧有框架代劳，外设侧没有。
+`esp_deep_sleep_start()` 会关闭 MCU 核心，但常通 3.3 V 电源轨上的器件仍然
+供电。MCU 入睡前，每个可控外设都必须进入自己的低功耗状态。软件 suspend
+可减少工作模块和信号泄漏，但不会切断电源轨。
 
-## 四条关机调用，按顺序
+## 当前终端关闭顺序
 
-在**配好 GPIO 唤醒源之后**、`esp_deep_sleep_start()` 之前调用这些：
+配置唤醒源并停止页面持有的异步工作后，在 `esp_deep_sleep_start()` 前按
+以下顺序执行：
 
-| 外设 | 函数 | 做了什么 |
-|---|---|---|
-| LCD 面板 | `bsp_display_sleep()` | `esp_lcd_panel_disp_on_off(panel, false)`（0x28 DISPOFF）再 `esp_lcd_panel_disp_sleep(panel, true)`（0x10 面板睡眠）。**黑屏并不等于下电**——就算背光灭、DISP 关，面板控制器仍在耗电。 |
-| 背光 | `bsp_display_backlight(0)` | 把 LEDC 占空比归零。深睡本就会把该未被 hold 的引脚浮空，LED 反正灭，但先归零更明确。 |
-| 音频 codec | `bsp_audio_sleep()` | 关闭 codec，内部走 `es8311_suspend()`——写 16 个寄存器停掉 ADC/DAC、门控时钟、禁用 PA。 |
-| 电量计 | `bsp_battery_sleep()` | 让 CW2017 进睡眠：写 CONFIG 0x30（重启）再 0xF0（睡眠）。 |
+| 顺序 | 接口 | 结果 |
+| ---: | --- | --- |
+| 1 | `bsp_battery_sleep()` | 写入 CW2017 CONFIG 睡眠值，等待 5 ms 后回读；写入/回读不符时重试一次。 |
+| 2 | `bsp_audio_sleep()` | 直接执行完整 ES8311 suspend 序列，校验六个关键寄存器，失败重试一次，并显式停止两条 I2S channel。 |
+| 3 | `bsp_audio_prepare_deep_sleep()` | 将 MCLK、BCLK、WS、DOUT 和 DIN 设为关闭内部上下拉的输入。 |
+| 4 | `bsp_i2c_prepare_deep_sleep()` | 两个共享总线外设都完成后，将 SDA/SCL 设为关闭内部上下拉的输入。 |
+| 5 | `bsp_display_prepare_deep_sleep()` | 阻止 LVGL flush 后，发送关闭显示和 Sleep In，将背光停在低电平，设置 LCD SPI 安全电平并在深睡期间保持。 |
 
-## 坑：`esp_codec_dev_close()` 只在 codec 层「被打开过」时才真正 suspend
+Wi-Fi 和 Bluetooth LE 协议栈由各自 demo 页持有，进入 Low Power 页前已经
+停止。若产品应用让无线服务长期存活，必须在 LCD 步骤前另行停止它们。
 
-最花调试时间的一个坑。真正执行 `es8311_suspend()`、把芯片下电的是
-`es8311_enable(false)`，而 `esp_codec_dev_close()` **只在** codec-dev 层的
-`output_opened`/`input_opened` 为 true 时才走到它；否则直接进 cleanup，什么都不做。
+外设寄存器失败会记录日志，但不会阻止后续关闭步骤和 deep sleep。I2S/I2C
+引脚释放后已进入终端路径；若 deep-sleep 入口意外返回，应重启，不应尝试恢复
+已部分脱离的总线。
 
-你自己维护的 `s_opened` 正好镜像这一点：它只在 `bsp_audio_set_format()` 成功后
-才为 true。所以如果设备**开机后从未播放任何音频就超时深睡**，`s_opened == false`，
-close 被跳过，芯片停在 `es8311_open` 的配置态——配好寄存器了，但**没有下电**。
-修复是保证任何时序都走完 suspend 序列：
+## 为什么 `esp_codec_dev_close()` 不够
 
-```c
-esp_err_t bsp_audio_sleep(void) {
-    if (!s_dev) return ESP_ERR_INVALID_STATE;
-    if (!s_opened) {
-        bsp_audio_set_format(16000, 16, 1);   // 无声打开——不发声，只是把 codec-dev 层走成 open
-    }
-    esp_codec_dev_close(s_dev);                 // 这次才真的跑 es8311_suspend()
-    s_opened = false;
-    return ESP_OK;
-}
-```
+`esp_codec_dev_close()` 只在 codec-dev 输入或输出曾被打开时才调用 ES8311 disable
+路径。开机后从未播放或录音时，即使 ES8311 控制接口和 I2S channel 已初始化，
+该路径也可能被跳过。
 
-多出来的 `set_format` 是无声的（从不写 PCM），只是补完 codec-dev 的 `open` 路径，
-让随后的 `close` 真正触发 suspend。「`s_dev` 存在但从未 open 过」正是那个静默泄漏的场景。
+因此 BSP 不再做默认格式的无声 open，而是通过独立控制接口写入 suspend
+寄存器。它还将 REG45 设为 `0x01` 以关闭 BCLK/LRCK 内部上拉，回读 `0x00`、
+`0x01`、`0x0D`、`0x0E`、`0x12` 和 `0x45`，并在 5 ms 后重试一次完整序列。
+无论之前是否打开 PCM，该路径都能执行。
 
-## MCU 侧已经代劳，无需再处理
+## MCU 引脚仍需明确的终端状态
 
-在此平台上 `esp_deep_sleep_start()` 会自动调用 `esp_sleep_isolate_digital_gpio()`
-（ESP32-C3 **未定义** `SOC_GPIO_SUPPORT_HOLD_SINGLE_IO_IN_DSLP`，
-所以 `#if !SOC_GPIO_SUPPORT_HOLD_SINGLE_IO_IN_DSLP` 分支一定会走）。它把每个
-未被 hold 的数字 GPIO——包括 I2S、I2C、SPI 引脚——全部浮空，并禁用其内部上/下拉。
-所以没有任何 MCU 侧漏电路径需要追；残余耗电纯粹来自轨上的外设（以及芯片之外、
-代码够不着的功放和 3.3 V 稳压器）。
+ESP-IDF 在进入 deep sleep 时会隔离未 hold 的数字 GPIO，但显式释放引脚仍有价值：
+它可立即停止 I2S 时钟，在最后一笔事务后去掉 MCU 内部 I2C 上拉，并让过渡契约
+可自动检查。外部 I2C 上拉仍是硬件负载。
 
-## 软件修不了的部分
+LCD 引脚是不浮空的例外：CS 保持高电平，SCLK、MOSI、DC 和背光保持低电平。
+deep-sleep 唤醒后，`bsp_display_init()` 会在 SPI 和 LEDC 接管前解除全局及单引脚 hold。
 
-本板功放用 `BSP_I2S_PA_CTRL = -1`，即 PA 使能脚**没有接到 MCU**——硬件常通。
-要断它只能改板（接使能脚，或把功放放到可切换的电源轨上）。同理，3.3 V 轨稳压器
-自身的静态电流和电池自放电也不是软件能插手的。四条调用全上待机仍偏高时，剩下的
-大头几乎可以肯定是这些硬件常量。
+## 软件无法修复的部分
 
-## 与本工作重叠的一个真实唤醒坑
+`BSP_I2S_PA_CTRL = -1` 表示功放使能脚没有接到 MCU。功放待机电流、稳压器静态
+电流、外部上拉电流和电池自放电都无法由这些 API 消除。寄存器回读通过后若待机
+电流仍偏高，应逐一隔离并测量这些硬件负载。
 
-顺带一提，相关的唤醒坑已单独记录在
-[`display-refresh-and-deep-sleep.zh_CN.md`](display-refresh-and-deep-sleep.zh_CN.md)：
-唤醒源参数是**引脚位掩码**，不是引脚号。两者可以一起复核——跑完这些关机调用后，
-用 GPIO0 低电平唤醒，确认应用会重新初始化它刚关掉的外设。
+## 唤醒与恢复边界
+
+上游 Low Power demo 只使用 RTC 定时器唤醒，因为本仓库尚未定义共享 ADC 按键
+节点的可靠 deep-sleep 唤醒契约。deep sleep 会重启应用；正常 BSP 初始化将解除 LCD
+hold，并重新初始化显示、音频、I2S 和 I2C。light sleep 不得调用任何终端引脚释放
+或 LCD hold 接口，而应使用 `bsp_audio_wake()` 恢复音频。

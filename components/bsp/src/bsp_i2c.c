@@ -1,6 +1,7 @@
 // components/bsp/src/bsp_i2c.c
 #include "bsp_i2c.h"
 #include "bsp_pins.h"
+#include "driver/gpio.h"
 #include "esp_log.h"
 
 static const char *TAG = "bsp_i2c";
@@ -59,5 +60,22 @@ esp_err_t bsp_i2c_scan(void) {
     }
     if (found == 0) ESP_LOGW(TAG, "  未发现任何 I2C 设备 —— 检查接线、上拉电阻与供电");
     else            ESP_LOGI(TAG, "I2C 扫描完成,共 %d 个设备", found);
+    return ESP_OK;
+}
+
+esp_err_t bsp_i2c_prepare_deep_sleep(void) {
+    gpio_config_t cfg = {
+        .pin_bit_mask = (1ULL << BSP_I2C_SDA) | (1ULL << BSP_I2C_SCL),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    esp_err_t e = gpio_config(&cfg);
+    if (e != ESP_OK) {
+        ESP_LOGE(TAG, "I2C SDA/SCL 高阻配置失败: %s", esp_err_to_name(e));
+        return e;
+    }
+    ESP_LOGI(TAG, "I2C SDA/SCL 已切换为高阻；外部上拉功耗仍由硬件决定");
     return ESP_OK;
 }

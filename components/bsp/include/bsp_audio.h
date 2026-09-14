@@ -17,10 +17,16 @@ esp_err_t bsp_audio_init(void);
 //   音调和速度都快一倍。故本函数在格式变化时先 close 再 open。
 esp_err_t bsp_audio_set_format(uint32_t hz, uint8_t bits, uint8_t ch);
 
-// 进入低功耗前暂停 ES8311，并停止 I2S 时钟。即使 codec 从未执行过
-// bsp_audio_set_format()，也会先无声打开再关闭，确保驱动真正执行 suspend。
-// 调用前必须停止所有 PCM 读写；函数幂等，音频未初始化时视为无需处理并返回成功。
+// 进入低功耗前强制执行 ES8311 完整 suspend 寄存器序列，回读关键寄存器，
+// 失败时重试一次，并显式停止 I2S TX/RX。该路径不依赖 codec-dev 是否打开过，
+// 因此开机后从未播放也能正确暂停。调用前必须停止所有 PCM 读写；函数幂等，
+// 音频未初始化时视为无需处理并返回成功。
 esp_err_t bsp_audio_sleep(void);
+
+// deep sleep 专用：确保 I2S TX/RX 已停止，再将 MCLK/BCLK/WS/DOUT/DIN
+// 设为无上下拉的高阻输入。调用后 I2S 不能在本次运行中恢复，必须立即
+// 进入 deep sleep 或重启；不得用于 light sleep。
+esp_err_t bsp_audio_prepare_deep_sleep(void);
 
 // 从 light sleep 返回后恢复 ES8311 和休眠前的采样格式。函数幂等；deep sleep
 // 唤醒会重启应用，应由 bsp_audio_init() 按正常启动流程重新初始化。

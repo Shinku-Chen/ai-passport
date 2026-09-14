@@ -12,7 +12,7 @@ Document scope:
 
 - Applicable target: the ESP32-C3 FoloToy AI Passport mapping implemented by this repository.
 - Product specifications are in [specifications.md](specifications.md); firmware behavior follows `bsp_pins.h`, BSP implementations, `sdkconfig.defaults`, `partitions.csv`, and the demo code.
-- Code audit date: 2026-08-26.
+- Code audit date: 2026-09-14.
 
 ## 1. Before changing hardware-facing code
 
@@ -99,7 +99,7 @@ app_main
 
 Display/LVGL is a hard dependency. Buttons, audio, and battery are soft dependencies whose pages show `[FAIL]` while other pages remain available. Public BSP APIs are under `components/bsp/include/`. Successful display, button, audio, and LVGL initialization is idempotent. Display, button, and audio partial failures release resources acquired by the BSP; failed LVGL display registration deinitializes its port. The caller can correct the fault and retry, while an incomplete lower-level rollback is reported and prevents a handle from being overwritten. There is no universal BSP deinitialization API.
 
-Button callbacks run in the shared `esp_timer` task. They only enqueue input and return; the demo lifecycle task handles navigation and starts or stops slow services without holding the LVGL lock. Page exit first completes a bounded producer stop, then deletes timers and UI objects while holding the lock. Audio and light-sleep workers use cooperative cancellation and an explicit exit handshake rather than forced task deletion. The low-power worker suspends ES8311 before either sleep mode and resumes it after light sleep; deep-sleep wake restarts the application and follows normal BSP initialization.
+Button callbacks run in the shared `esp_timer` task. They only enqueue input and return; the demo lifecycle task handles navigation and starts or stops slow services without holding the LVGL lock. Page exit first completes a bounded producer stop, then deletes timers and UI objects while holding the lock. Audio and light-sleep workers use cooperative cancellation and an explicit exit handshake rather than forced task deletion. The low-power worker force-suspends and verifies ES8311 before either sleep mode and resumes it after light sleep. For deep sleep it suspends and verifies CW2017 first, force-suspends ES8311, stops and releases I2S, releases the shared I2C pins, blocks further LVGL flushes, sleeps the LCD, and holds its safe pin levels before entering deep sleep. Individual peripheral failures are logged but do not strand the system awake; an unexpected return after terminal pin release causes a restart. Deep-sleep wake also restarts the application and follows normal BSP initialization.
 
 Wi-Fi, NimBLE, and sleep use ESP-IDF directly rather than the BSP. `demo_radio.c` owns shared NVS, `esp_netif`, and default-event-loop setup. Wi-Fi and Bluetooth pages allocate their radio stacks after page creation and stop/deinitialize them before page deletion. Do not erase NVS to hide partition errors. Deep sleep restarts the application and the demo uses RTC slow memory for the wake counter.
 
@@ -112,6 +112,10 @@ Wi-Fi, NimBLE, and sleep use ESP-IDF directly rather than the BSP. `demo_radio.c
 - `swap_bytes=true` is required because LVGL emits little-endian RGB565 while SPI sends the high byte first.
 
 The LVGL DMA buffer is one `240 × 20` RGB565 buffer, about 9.6 KB; the LVGL internal pool is 24 KB. Do not add large/double buffers without checking internal RAM, the largest contiguous heap block, and I2S DMA.
+
+The final LVGL RGB565 flush is masked to a global 30 px radius, so the four areas outside the rounded screen remain pure black during page changes as well as normal rendering. The mask is applied directly to the partial draw buffer and does not use root-screen `clip_corner`; full-screen rounded clipping requires an ARGB intermediate layer that can exhaust the 24 KB LVGL pool on this no-PSRAM target. Keep this behavior in the display integration instead of duplicating corner decorations in individual pages.
+
+Before terminal deep sleep, stop new page work and hold the LVGL lock long enough to finish any current flush. `bsp_display_prepare_deep_sleep()` then sends display-off and Sleep In, stops the backlight PWM at low level, drives CS high and SCLK/MOSI/DC/backlight low, enables per-pin hold, and enables the ESP32-C3 global deep-sleep hold. `bsp_display_init()` disables the global and per-pin holds before SPI or LEDC takes ownership after wake. This terminal API is not a reversible display blanking operation and must be followed immediately by deep sleep or restart.
 
 LVGL is not thread-safe. Timer callbacks in LVGL context may access objects directly. Button callbacks must not access LVGL; they enqueue input for the lifecycle task. The lifecycle task and other workers must use `bsp_lvgl_lock()`/`bsp_lvgl_unlock()` for short UI operations. Stop producers before deleting a page and clear static object pointers afterward.
 
@@ -138,6 +142,7 @@ I2C0 uses SDA GPIO10 and SCL GPIO7. ES8311 is 7-bit address `0x18`; CW2017 is `0
 - Scan with `i2c_master_probe()` on the existing bus. The scan covers `0x08` through `0x77`; success means the scan completed, not that a device was found.
 - CW2017 runs at 100 kHz. ES8311 control is managed by `esp_codec_dev`.
 - The codec control API expects an 8-bit address, so ES8311 receives `0x18 << 1`; do not copy that shift into 7-bit ESP-IDF APIs.
+- For deep sleep, complete the CW2017 write/readback and ES8311 write/readback before calling `bsp_i2c_prepare_deep_sleep()`. That terminal call detaches SDA/SCL as inputs with both internal pulls disabled; no later I2C transaction is valid until reboot. External board pull-ups and their resulting static current remain hardware properties.
 
 Troubleshoot in order: bus-init log, scan results for `0x18`/`0x63`, power/ground/wiring/pull-ups, address format, and accidental duplicate-bus creation.
 
@@ -153,9 +158,10 @@ The MCU is I2S master and the ES8311 is slave. I2S0 TX/RX shares MCLK GPIO6, BCL
 - Microphone analog gain is 30 dB; output volume is a separate 0–100% value.
 - `bsp_audio_read/write` block and must not run in button callbacks or the LVGL task.
 - I2S DMA uses six descriptors of 240 frames each.
-- Stop every PCM reader and writer before calling `bsp_audio_sleep()`. It runs and checks the ES8311 software-suspend sequence, then closes the codec and I2S data path; if no format has ever been opened, the BSP first performs a silent default open because `esp_codec_dev_close()` otherwise skips the hardware suspend.
+- Stop every PCM reader and writer before calling `bsp_audio_sleep()`. It executes the complete ES8311 suspend register sequence directly through the already-open control interface, independently of the codec-device opened flag, so a boot that never played audio does not need a silent open. It reads back registers `0x00`, `0x01`, `0x0D`, `0x0E`, `0x12`, and `0x45`, retries the full sequence once after 5 ms, and explicitly disables both I2S channels even when audio was never opened.
 - Call `bsp_audio_wake()` after light sleep to reopen the saved format and restart the codec/I2S path. The calls are idempotent, and an unavailable audio subsystem is treated as having nothing to suspend or resume. Deep-sleep wake reboots and uses the normal `bsp_audio_init()` path instead.
-- Software suspend stops the ES8311 ADC/DAC and clocks but does not switch off its physical 3.3 V rail. The external amplifier also remains outside software control because `BSP_I2S_PA_CTRL` is `-1`; residual standby draw from that hardware must be measured separately.
+- Only for terminal deep sleep, call `bsp_audio_prepare_deep_sleep()` after suspend to leave MCLK, BCLK, WS, DOUT, and DIN as high-impedance inputs without internal pulls. Do not use this API for light sleep: the active I2S pin routing is intentionally not recoverable until reboot.
+- Software suspend stops the ES8311 ADC/DAC, analog paths, microphone-bias path, internal clocks, internal BCLK/LRCK pull-ups, and digital/analog modules, but it does not switch off the physical 3.3 V rail. The external amplifier also remains outside software control because `BSP_I2S_PA_CTRL` is `-1`; residual standby draw from that hardware must be measured separately.
 
 The audio demo's three-second recording buffer is about 96 KB and is the largest transient heap allocation. Prefer chunked streaming for longer audio. Its worker checks cancellation between PCM chunks and acknowledges exit before the page is deleted; retain that bounded handshake when extending the demo.
 
@@ -176,6 +182,7 @@ Initialization reads VERSION and checks the profile update flag plus all 80 prof
 - Voltage uses the 14-bit value at `0x02–0x03`, converted as `raw × 312.5 µV`, and returned in mV.
 - Transactions use a 100 ms timeout at 100 kHz.
 - A missing device returns `ESP_ERR_NOT_FOUND`; the battery page is disabled without stopping the application.
+- Before terminal deep sleep, `bsp_battery_sleep()` writes `CW_CONFIG_SLEEP`, waits 5 ms, reads CONFIG back, and accepts success only when it reads the exact sleep value. It retries once and reports failure, while the application continues shutting down the remaining peripherals.
 
 Accurate production SOC requires the cell parameters, CW2017 datasheet/vendor profile, and full charge/discharge validation.
 
@@ -249,7 +256,7 @@ General board acceptance:
 | Battery | plausible SOC/mV, graceful missing-device behavior, intermittent-I2C recovery |
 | Wi-Fi | visible scan count/SSID/RSSI, rescan, repeated entry/exit |
 | Bluetooth LE | phone sees `FoloPassport`, restart advertising, advertising stops on exit, repeated entry/exit |
-| Light/deep sleep | select with UP/DOWN; confirm ES8311 suspend before both modes; 2 s light sleep resumes codec/audio and backlight; 5 s deep sleep restarts with timer cause, retained count, and working audio after reinitialization |
+| Light/deep sleep | select with UP/DOWN; confirm the ES8311 readback passes before both modes; 2 s light sleep resumes codec/audio and backlight; for 5 s deep sleep confirm CW2017 precedes ES8311, I2S/I2C go high impedance, LCD safe levels remain held, timer wake retains the count, and audio/display work after reinitialization; measure board current in each state |
 | DMA/memory/UI | build memory report, runtime minimum heap/largest block, stable concurrent audio/display |
 
 ## 14. Troubleshooting

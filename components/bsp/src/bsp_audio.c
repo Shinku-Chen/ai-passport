@@ -6,8 +6,11 @@
 #include "esp_codec_dev.h"
 #include "esp_codec_dev_defaults.h"
 #include "es8311_codec.h"
+#include "driver/gpio.h"
 #include "driver/i2s_std.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 static const char *TAG = "bsp_audio";
 
@@ -26,6 +29,109 @@ static bool     s_sleeping;
 #define AUDIO_DEFAULT_HZ   16000
 #define AUDIO_DEFAULT_BITS 16
 #define AUDIO_DEFAULT_CH   1
+#define ES8311_SLEEP_ATTEMPTS 2
+#define ES8311_SLEEP_RETRY_MS 5
+
+typedef struct {
+    uint8_t reg;
+    uint8_t value;
+} es8311_reg_value_t;
+
+// 寄存器序列不依赖 esp_codec_dev 的 opened 标志。REG45=0x01 额外关闭
+// BCLK/LRCK 内部上拉，比当前 esp_codec_dev 1.6.2 的默认 suspend 更彻底。
+static const es8311_reg_value_t s_es8311_sleep_sequence[] = {
+    {0x32, 0x00}, {0x17, 0x00}, {0x0E, 0xFF}, {0x12, 0x02},
+    {0x14, 0x00}, {0x0D, 0xFA}, {0x15, 0x00}, {0x02, 0x10},
+    {0x00, 0x00}, {0x00, 0x1F}, {0x01, 0x30}, {0x01, 0x00},
+    {0x45, 0x01}, {0x0D, 0xFC}, {0x02, 0x00},
+};
+
+static const es8311_reg_value_t s_es8311_sleep_verify[] = {
+    {0x00, 0x1F}, {0x01, 0x00}, {0x0D, 0xFC},
+    {0x0E, 0xFF}, {0x12, 0x02}, {0x45, 0x01},
+};
+
+static esp_err_t audio_disable_i2s_channels(void) {
+    esp_err_t first_error = ESP_OK;
+    const struct {
+        i2s_chan_handle_t channel;
+        const char *name;
+    } channels[] = {
+        {s_tx, "TX"},
+        {s_rx, "RX"},
+    };
+
+    for (size_t i = 0; i < sizeof(channels) / sizeof(channels[0]); i++) {
+        if (!channels[i].channel) continue;
+        esp_err_t e = i2s_channel_disable(channels[i].channel);
+        if (e == ESP_ERR_INVALID_STATE) e = ESP_OK; // READY 即已停止。
+        if (e != ESP_OK) {
+            ESP_LOGE(TAG, "I2S %s 停止失败: %s", channels[i].name,
+                     esp_err_to_name(e));
+            if (first_error == ESP_OK) first_error = e;
+        }
+    }
+    return first_error;
+}
+
+static esp_err_t es8311_force_sleep_once(unsigned attempt) {
+    bool valid = true;
+
+    for (size_t i = 0; i < sizeof(s_es8311_sleep_sequence) /
+                           sizeof(s_es8311_sleep_sequence[0]); i++) {
+        const es8311_reg_value_t *item = &s_es8311_sleep_sequence[i];
+        uint8_t value = item->value;
+        int write_result = s_ctrl->write_reg(s_ctrl, item->reg, 1, &value, 1);
+        if (write_result == ESP_CODEC_DEV_OK) continue;
+
+        uint8_t actual = 0;
+        int read_result = s_ctrl->read_reg(s_ctrl, item->reg, 1, &actual, 1);
+        if (read_result == ESP_CODEC_DEV_OK) {
+            ESP_LOGE(TAG, "ES8311 休眠写入失败 attempt=%u REG%02X "
+                          "expected=0x%02X actual=0x%02X error=%d",
+                     attempt, item->reg, item->value, actual, write_result);
+        } else {
+            ESP_LOGE(TAG, "ES8311 休眠写入失败 attempt=%u REG%02X "
+                          "expected=0x%02X actual=unavailable error=%d read_error=%d",
+                     attempt, item->reg, item->value, write_result, read_result);
+        }
+        valid = false;
+    }
+
+    for (size_t i = 0; i < sizeof(s_es8311_sleep_verify) /
+                           sizeof(s_es8311_sleep_verify[0]); i++) {
+        const es8311_reg_value_t *item = &s_es8311_sleep_verify[i];
+        uint8_t actual = 0;
+        int read_result = s_ctrl->read_reg(s_ctrl, item->reg, 1, &actual, 1);
+        if (read_result == ESP_CODEC_DEV_OK && actual == item->value) continue;
+
+        ESP_LOGE(TAG, "ES8311 休眠校验失败 attempt=%u REG%02X "
+                      "expected=0x%02X actual=0x%02X error=%d",
+                 attempt, item->reg, item->value, actual, read_result);
+        valid = false;
+    }
+    return valid ? ESP_OK : ESP_FAIL;
+}
+
+static esp_err_t es8311_force_sleep(void) {
+    if (!s_ctrl || !s_ctrl->read_reg || !s_ctrl->write_reg) {
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    for (unsigned attempt = 1; attempt <= ES8311_SLEEP_ATTEMPTS; attempt++) {
+        esp_err_t e = es8311_force_sleep_once(attempt);
+        if (e == ESP_OK) {
+            ESP_LOGI(TAG, "ES8311 已进入低功耗状态并通过寄存器校验");
+            return ESP_OK;
+        }
+        if (attempt < ES8311_SLEEP_ATTEMPTS) {
+            vTaskDelay(pdMS_TO_TICKS(ES8311_SLEEP_RETRY_MS));
+        }
+    }
+
+    ESP_LOGE(TAG, "ES8311 强制休眠失败");
+    return ESP_FAIL;
+}
 
 // esp_codec_dev_open() 会先 disable 再重配 I2S；close 后通道处于 READY，
 // 先 enable 一次可让下一次 open 的内部 disable 合法。
@@ -238,37 +344,56 @@ esp_err_t bsp_audio_set_format(uint32_t hz, uint8_t bits, uint8_t ch) {
 esp_err_t bsp_audio_sleep(void) {
     if (!s_dev || s_sleeping) return ESP_OK;
 
-    // esp_codec_dev_close() 仅在 codec-dev 标记为 opened 时才调用
-    // es8311_enable(false)。开机后从未播放的路径也必须先无声 open，
-    // 否则 ES8311 会停留在初始化后的工作配置而没有真正 suspend。
-    if (!s_opened) {
-        esp_err_t e = bsp_audio_set_format(AUDIO_DEFAULT_HZ,
-                                           AUDIO_DEFAULT_BITS,
-                                           AUDIO_DEFAULT_CH);
-        if (e != ESP_OK) {
-            // open 失败时 codec-dev 可能已有部分 opened 状态；尝试 close 回滚。
-            (void)esp_codec_dev_close(s_dev);
-            s_opened = false;
-            ESP_LOGE(TAG, "ES8311 休眠前无声打开失败: %s", esp_err_to_name(e));
-            return e;
+    esp_err_t first_error = ESP_OK;
+    // 已打开路径仍让 codec-dev 更新软件状态；寄存器强制序列在 close
+    // 之后再执行，以覆盖依赖库中 REG45=0x00 的较弱 suspend 序列。
+    if (s_opened) {
+        if (!s_codec || !s_codec->enable ||
+            s_codec->enable(s_codec, false) != ESP_CODEC_DEV_OK) {
+            ESP_LOGE(TAG, "ES8311 codec-dev suspend 状态更新失败");
+            first_error = ESP_FAIL;
+        }
+        if (esp_codec_dev_close(s_dev) != ESP_CODEC_DEV_OK) {
+            ESP_LOGE(TAG, "ES8311 codec-dev close 失败");
+            if (first_error == ESP_OK) first_error = ESP_FAIL;
         }
     }
-
-    // esp_codec_dev_close() 1.6.2 不传播 codec->enable(false) 的返回值；
-    // 先直接执行并检查 suspend，成功后再让 codec-dev 关闭 I2S 与内部 opened 状态。
-    if (!s_codec || !s_codec->enable ||
-        s_codec->enable(s_codec, false) != ESP_CODEC_DEV_OK) {
-        ESP_LOGE(TAG, "ES8311 suspend 寄存器写入失败");
-        return ESP_FAIL;
-    }
-    if (esp_codec_dev_close(s_dev) != ESP_CODEC_DEV_OK) {
-        ESP_LOGE(TAG, "ES8311 codec-dev close 失败");
-        return ESP_FAIL;
-    }
     s_opened = false;
+
+    esp_err_t e = es8311_force_sleep();
+    if (e != ESP_OK && first_error == ESP_OK) first_error = e;
+
+    e = audio_disable_i2s_channels();
+    if (e != ESP_OK && first_error == ESP_OK) first_error = e;
     s_sleeping = true;
-    ESP_LOGI(TAG, "ES8311 已进入低功耗状态");
-    return ESP_OK;
+    return first_error;
+}
+
+esp_err_t bsp_audio_prepare_deep_sleep(void) {
+    esp_err_t first_error = audio_disable_i2s_channels();
+    const int pins[] = {
+        BSP_I2S_MCLK, BSP_I2S_BCLK, BSP_I2S_WS, BSP_I2S_DOUT, BSP_I2S_DIN,
+    };
+    uint64_t mask = 0;
+    for (size_t i = 0; i < sizeof(pins) / sizeof(pins[0]); i++) {
+        if (pins[i] >= 0) mask |= 1ULL << (unsigned)pins[i];
+    }
+
+    gpio_config_t cfg = {
+        .pin_bit_mask = mask,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    esp_err_t e = gpio_config(&cfg);
+    if (e != ESP_OK) {
+        ESP_LOGE(TAG, "I2S 引脚高阻配置失败: %s", esp_err_to_name(e));
+        if (first_error == ESP_OK) first_error = e;
+    } else {
+        ESP_LOGI(TAG, "I2S MCLK/BCLK/WS/DOUT/DIN 已切换为高阻");
+    }
+    return first_error;
 }
 
 esp_err_t bsp_audio_wake(void) {

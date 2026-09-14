@@ -9,6 +9,10 @@
 // 芯片不应答时返回 ESP_ERR_NOT_FOUND —— 上层可据此在 UI 上标记该项不可用。
 esp_err_t bsp_battery_init(void);
 
+// 将 CW2017 CONFIG 写为睡眠值并回读确认，失败时重试一次。这是 deep
+// sleep 前的终端操作；芯片未初始化时视为无需处理并返回成功。
+esp_err_t bsp_battery_sleep(void);
+
 // 剩余电量百分比 0..100;读失败返回 -1。
 int bsp_battery_soc(void);
 

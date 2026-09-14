@@ -7,6 +7,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+// The final LVGL frame is masked to this radius; pixels outside are pure black.
+#define BSP_LVGL_SCREEN_RADIUS 30
+
 // 初始化 SPI 总线、面板、厂商寄存器、背光 LEDC。成功调用可重复；失败会回滚本次
 // 已创建的显示资源，修正故障后可重试。成功后屏幕已上电但内容未定。
 esp_err_t bsp_display_init(void);
@@ -20,6 +23,11 @@ esp_lcd_panel_io_handle_t bsp_display_io(void);
 
 // 背光亮度 0..100(%)。LEDC PWM,0=全灭。
 void bsp_display_backlight(uint8_t percent);
+
+// deep sleep 专用：关闭显示、让 ST7789 进入 Sleep In，停止背光 PWM，
+// 将 CS/SCLK/MOSI/DC/背光设为安全电平并在 deep sleep 中保持。调用时必须
+// 已阻止 LVGL 刷屏，调用后必须立即进入 deep sleep 或重启。
+esp_err_t bsp_display_prepare_deep_sleep(void);
 
 // ---------------------------------------------------------------------------
 // LVGL 接入(可选层)。必须先 bsp_display_init() 成功后再调。

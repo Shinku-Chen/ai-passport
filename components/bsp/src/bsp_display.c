@@ -2,6 +2,7 @@
 // 移植自 trae_card/components/platform/platform_esp32/src/disp_st7789.c
 #include "bsp_display.h"
 #include "bsp_pins.h"
+#include "driver/gpio.h"
 #include "driver/spi_master.h"
 #include "driver/ledc.h"
 #include "esp_lcd_panel_io.h"
@@ -18,6 +19,49 @@ static esp_lcd_panel_io_handle_t s_io;
 static bool                      s_bus_ready;
 static bool                      s_bl_ready;
 static bool                      s_ready;
+
+static const gpio_num_t s_deep_sleep_pins[] = {
+    BSP_LCD_CS, BSP_LCD_SCLK, BSP_LCD_MOSI, BSP_LCD_DC, BSP_LCD_BL,
+};
+
+static const uint8_t s_deep_sleep_levels[] = {
+    1, 0, 0, 0, 0,
+};
+
+static esp_err_t display_set_safe_levels(void) {
+    esp_err_t first_error = ESP_OK;
+    for (size_t i = 0; i < sizeof(s_deep_sleep_pins) /
+                           sizeof(s_deep_sleep_pins[0]); i++) {
+        gpio_num_t pin = s_deep_sleep_pins[i];
+        if ((int)pin < 0) continue;
+        gpio_config_t cfg = {
+            .pin_bit_mask = 1ULL << (unsigned)pin,
+            .mode = GPIO_MODE_OUTPUT,
+            .pull_up_en = GPIO_PULLUP_DISABLE,
+            .pull_down_en = GPIO_PULLDOWN_DISABLE,
+            .intr_type = GPIO_INTR_DISABLE,
+        };
+        esp_err_t e = gpio_config(&cfg);
+        if (e == ESP_OK) e = gpio_set_level(pin, s_deep_sleep_levels[i]);
+        if (e != ESP_OK && first_error == ESP_OK) first_error = e;
+    }
+    return first_error;
+}
+
+// deep-sleep hold 可跨 reset 保留。先禁用全局 deep hold，在单引脚 hold
+// 仍生效时写入与休眠期一致的安全值，再解锁各引脚，避免唤醒瞬间毛刺。
+static esp_err_t display_release_deep_sleep_holds(void) {
+    gpio_deep_sleep_hold_dis();
+    esp_err_t first_error = display_set_safe_levels();
+    for (size_t i = 0; i < sizeof(s_deep_sleep_pins) /
+                           sizeof(s_deep_sleep_pins[0]); i++) {
+        gpio_num_t pin = s_deep_sleep_pins[i];
+        if ((int)pin < 0) continue;
+        esp_err_t e = gpio_hold_dis(pin);
+        if (e != ESP_OK && first_error == ESP_OK) first_error = e;
+    }
+    return first_error;
+}
 
 // ---------------------------------------------------------------------------
 // ST7789P3 厂商专属初始化序列(porch / power / gamma)。
@@ -89,6 +133,11 @@ static esp_err_t backlight_init(void) {
 
 esp_err_t bsp_display_init(void) {
     if (s_ready) return ESP_OK;
+    esp_err_t e = display_release_deep_sleep_holds();
+    if (e != ESP_OK) {
+        ESP_LOGE(TAG, "LCD deep-sleep hold 解除失败: %s", esp_err_to_name(e));
+        return e;
+    }
     if (s_panel || s_io || s_bus_ready) {
         ESP_LOGE(TAG, "上次显示初始化回滚不完整，拒绝覆盖仍存活的 SPI 资源");
         return ESP_ERR_INVALID_STATE;
@@ -100,7 +149,7 @@ esp_err_t bsp_display_init(void) {
         .miso_io_num = -1, .quadwp_io_num = -1, .quadhd_io_num = -1,
         .max_transfer_sz = BSP_LCD_W * 80 * 2,
     };
-    esp_err_t e = spi_bus_initialize(BSP_LCD_SPI_HOST, &bus, SPI_DMA_CH_AUTO);
+    e = spi_bus_initialize(BSP_LCD_SPI_HOST, &bus, SPI_DMA_CH_AUTO);
     if (e != ESP_OK) {
         ESP_LOGE(TAG, "SPI 总线初始化失败 (%s) —— 检查 MOSI=GPIO%d / SCLK=GPIO%d 是否冲突",
                  esp_err_to_name(e), BSP_LCD_MOSI, BSP_LCD_SCLK);
@@ -189,4 +238,51 @@ void bsp_display_backlight(uint8_t percent) {
     uint32_t duty = (max_duty * percent) / 100u;
     ledc_set_duty(BSP_BL_LEDC_MODE, BSP_BL_LEDC_CHANNEL, duty);
     ledc_update_duty(BSP_BL_LEDC_MODE, BSP_BL_LEDC_CHANNEL);
+}
+
+esp_err_t bsp_display_prepare_deep_sleep(void) {
+    esp_err_t first_error = ESP_OK;
+    if (!s_ready || !s_panel) {
+        first_error = ESP_ERR_INVALID_STATE;
+        ESP_LOGE(TAG, "LCD 未就绪，无法发送 deep-sleep 命令");
+    } else {
+        esp_err_t e = esp_lcd_panel_disp_on_off(s_panel, false);
+        if (e != ESP_OK) {
+            ESP_LOGE(TAG, "ST7789 关闭显示失败: %s", esp_err_to_name(e));
+            first_error = e;
+        }
+        e = esp_lcd_panel_disp_sleep(s_panel, true);
+        if (e != ESP_OK) {
+            ESP_LOGE(TAG, "ST7789 Sleep In 失败: %s", esp_err_to_name(e));
+            if (first_error == ESP_OK) first_error = e;
+        }
+    }
+
+    bsp_display_backlight(0);
+    if (s_bl_ready && BSP_LCD_BL >= 0) {
+        esp_err_t e = ledc_stop(BSP_BL_LEDC_MODE, BSP_BL_LEDC_CHANNEL, 0);
+        if (e != ESP_OK) {
+            ESP_LOGE(TAG, "LCD 背光 PWM 停止失败: %s", esp_err_to_name(e));
+            if (first_error == ESP_OK) first_error = e;
+        }
+    }
+
+    esp_err_t e = display_set_safe_levels();
+    if (e != ESP_OK) {
+        ESP_LOGE(TAG, "LCD SPI 安全电平配置失败: %s", esp_err_to_name(e));
+        if (first_error == ESP_OK) first_error = e;
+    }
+    for (size_t i = 0; i < sizeof(s_deep_sleep_pins) /
+                           sizeof(s_deep_sleep_pins[0]); i++) {
+        gpio_num_t pin = s_deep_sleep_pins[i];
+        if ((int)pin < 0) continue;
+        e = gpio_hold_en(pin);
+        if (e != ESP_OK) {
+            ESP_LOGE(TAG, "LCD GPIO%d hold 失败: %s", (int)pin, esp_err_to_name(e));
+            if (first_error == ESP_OK) first_error = e;
+        }
+    }
+    gpio_deep_sleep_hold_en();
+    ESP_LOGI(TAG, "ST7789 已休眠，LCD SPI 与背光安全电平已保持");
+    return first_error;
 }
