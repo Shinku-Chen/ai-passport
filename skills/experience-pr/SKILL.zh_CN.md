@@ -109,8 +109,8 @@ comm -23 \
 ## 交付上报
 
 按 `Build`、`Host tests`、`Device tests`、`Unverified` 分别上报。纯文档变更没有固件或
-host-test 工作，因此这些上报为 NOT RUN 并说明原因。仅当变更影响用户可见行为、兼容性或
-发布流程时更新 `docs/CHANGELOG.md`。
+host-test 工作，因此这些上报为 NOT RUN 并说明原因。经验 PR 不修改中英文变更日志；用户可见或
+发布流程影响写入 PR 正文，后续由发布负责人统一汇总。
 
 ## 本 skill 不做的事
 

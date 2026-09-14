@@ -51,6 +51,7 @@ void demo_display_exit(void) {
 
 void demo_display_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
     if (ev != BSP_BTN_CLICK) return;
+    if (!bsp_lvgl_lock(250)) return;
     if (btn == BSP_BTN_OK) {
         s_color_idx = (s_color_idx + 1) % COLOR_COUNT;
         ui_pixel_mascot_jump(s_mascot);
@@ -60,4 +61,5 @@ void demo_display_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
         bsp_display_backlight(BL_LEVELS[s_bl_idx]);
     }
     refresh();
+    bsp_lvgl_unlock();
 }

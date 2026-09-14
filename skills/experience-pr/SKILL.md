@@ -147,8 +147,9 @@ developer's current branch.
 
 Report the result as `Build`, `Host tests`, `Device tests`, and `Unverified`
 separately. A docs-only change has no firmware or host-test work, so report
-those as NOT RUN and note the reason. Update `docs/CHANGELOG.md` only if the
-change affects user-visible behavior, compatibility, or the release workflow.
+those as NOT RUN and note the reason. An experience pull request leaves the
+paired changelog files unchanged; describe any user-visible or release-flow
+impact in the pull-request body for the release maintainer to aggregate later.
 
 ## What this skill does not do
 

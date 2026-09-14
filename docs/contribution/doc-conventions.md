@@ -38,11 +38,16 @@ These rules apply equally to human contributors and AI agents. Documentation is 
 
 Do not create empty document scaffolding without a concrete purpose. Register added documents in `docs/README.md` or their directory index and update links when moving or deleting files.
 
+## Changelog ownership
+
+- Ordinary feature, application, and documentation pull requests leave `docs/CHANGELOG.md` and `docs/CHANGELOG.zh_CN.md` unchanged. They describe user-visible behavior, compatibility, and release-flow impact in the pull-request body and update the authoritative product or application documentation.
+- During release preparation, the release maintainer reviews merged pull requests since the previous release, keeps only user-visible changes, and updates both changelog languages together before creating the tag.
+- The release-preparation change places the released entries under a version-and-date heading and leaves a fresh `Unreleased` section. Existing entries under `Unreleased` are pending input for the next release and must be checked against the merged changes rather than copied blindly.
+
 ## Writing, safety, and file operations
 
 - Explain rationale, boundaries, failure modes, and validation instead of restating source code.
 - State product facts and public hardware interfaces directly; omit provenance and source-availability commentary.
 - Enforce automatable rules in `tools/` and CI as well as documentation.
-- Record user-visible behavior, compatibility, and release-flow changes in `docs/CHANGELOG.md`.
 - Never commit credentials, tokens, keys, authorization files, private keys, personal data, internal endpoints, or unsanitized device QR parameters. Run `./tools/validate.sh --static` before committing.
 - Preserve existing user changes and untracked files. Use recoverable deletion for user files, and confirm intent before deleting branches, tags, or remote references.

@@ -91,15 +91,17 @@ GPIO0 is both the button ADC node and an ESP32-C3 boot-related pin. GPIO21 is th
 app_main
   ├─ shared I2C init and scan
   ├─ display and LVGL init, then backlight
-  ├─ button init
+  ├─ input queue/lifecycle task, then button init
   ├─ audio init
   ├─ battery init
   └─ LVGL menu and independent demo pages
 ```
 
-Display/LVGL is a hard dependency. Buttons, audio, and battery are soft dependencies whose pages show `[FAIL]` while other pages remain available. Public BSP APIs are under `components/bsp/include/`; most initialization is idempotent, but there is no universal BSP deinitialization API.
+Display/LVGL is a hard dependency. Buttons, audio, and battery are soft dependencies whose pages show `[FAIL]` while other pages remain available. Public BSP APIs are under `components/bsp/include/`. Successful display, button, audio, and LVGL initialization is idempotent. Display, button, and audio partial failures release resources acquired by the BSP; failed LVGL display registration deinitializes its port. The caller can correct the fault and retry, while an incomplete lower-level rollback is reported and prevents a handle from being overwritten. There is no universal BSP deinitialization API.
 
-Wi-Fi, NimBLE, and sleep use ESP-IDF directly rather than the BSP. `demo_radio.c` owns shared NVS, `esp_netif`, and default-event-loop setup. Wi-Fi and Bluetooth pages allocate their radio stacks on entry and stop/deinitialize them on exit. Do not erase NVS to hide partition errors. Deep sleep restarts the application and the demo uses RTC slow memory for the wake counter.
+Button callbacks run in the shared `esp_timer` task. They only enqueue input and return; the demo lifecycle task handles navigation and starts or stops slow services without holding the LVGL lock. Page exit first completes a bounded producer stop, then deletes timers and UI objects while holding the lock. Audio and light-sleep workers use cooperative cancellation and an explicit exit handshake rather than forced task deletion. The low-power worker suspends ES8311 before either sleep mode and resumes it after light sleep; deep-sleep wake restarts the application and follows normal BSP initialization.
+
+Wi-Fi, NimBLE, and sleep use ESP-IDF directly rather than the BSP. `demo_radio.c` owns shared NVS, `esp_netif`, and default-event-loop setup. Wi-Fi and Bluetooth pages allocate their radio stacks after page creation and stop/deinitialize them before page deletion. Do not erase NVS to hide partition errors. Deep sleep restarts the application and the demo uses RTC slow memory for the wake counter.
 
 ## 5. Display and LVGL
 
@@ -111,7 +113,7 @@ Wi-Fi, NimBLE, and sleep use ESP-IDF directly rather than the BSP. `demo_radio.c
 
 The LVGL DMA buffer is one `240 × 20` RGB565 buffer, about 9.6 KB; the LVGL internal pool is 24 KB. Do not add large/double buffers without checking internal RAM, the largest contiguous heap block, and I2S DMA.
 
-LVGL is not thread-safe. Timer callbacks in LVGL context may access objects directly. Button callbacks and worker tasks must use `bsp_lvgl_lock()`/`bsp_lvgl_unlock()`. Stop producers before deleting a page and clear static object pointers afterward.
+LVGL is not thread-safe. Timer callbacks in LVGL context may access objects directly. Button callbacks must not access LVGL; they enqueue input for the lifecycle task. The lifecycle task and other workers must use `bsp_lvgl_lock()`/`bsp_lvgl_unlock()` for short UI operations. Stop producers before deleting a page and clear static object pointers afterward.
 
 ## 6. ADC button ladder
 
@@ -124,7 +126,7 @@ GPIO0 has an external 10 kΩ pull-up to 3.3 V. UP, DOWN, and OK connect it to gr
 | OK | about 595 mV | `[447, 1900)` mV |
 | Released | about 3300 mV | outside all windows |
 
-Do not replace the external resistor with the inaccurate internal pull-up. The BSP creates one ADC1 oneshot unit and shares it with all button devices and voltage reads. Attenuation is `ADC_ATTEN_DB_12`. Callbacks originate in the button component task and must not block or perform heavy UI work.
+Do not replace the external resistor with the inaccurate internal pull-up. The BSP creates one ADC1 oneshot unit and shares it with all button devices and voltage reads. Attenuation is `ADC_ATTEN_DB_12`. Callbacks originate in the button component's shared `esp_timer` task and must only enqueue work or perform similarly bounded operations.
 
 Calibrate thresholds using multiple boards, charge levels, and reasonable temperatures; leave margin between measured distributions rather than relying only on divider theory.
 
@@ -151,8 +153,11 @@ The MCU is I2S master and the ES8311 is slave. I2S0 TX/RX shares MCLK GPIO6, BCL
 - Microphone analog gain is 30 dB; output volume is a separate 0–100% value.
 - `bsp_audio_read/write` block and must not run in button callbacks or the LVGL task.
 - I2S DMA uses six descriptors of 240 frames each.
+- Stop every PCM reader and writer before calling `bsp_audio_sleep()`. It runs and checks the ES8311 software-suspend sequence, then closes the codec and I2S data path; if no format has ever been opened, the BSP first performs a silent default open because `esp_codec_dev_close()` otherwise skips the hardware suspend.
+- Call `bsp_audio_wake()` after light sleep to reopen the saved format and restart the codec/I2S path. The calls are idempotent, and an unavailable audio subsystem is treated as having nothing to suspend or resume. Deep-sleep wake reboots and uses the normal `bsp_audio_init()` path instead.
+- Software suspend stops the ES8311 ADC/DAC and clocks but does not switch off its physical 3.3 V rail. The external amplifier also remains outside software control because `BSP_I2S_PA_CTRL` is `-1`; residual standby draw from that hardware must be measured separately.
 
-The audio demo's three-second recording buffer is about 96 KB and is the largest transient heap allocation. Prefer chunked streaming for longer audio. Production task shutdown needs a cancellable loop and explicit exit handshake rather than deleting a task blocked in codec I/O.
+The audio demo's three-second recording buffer is about 96 KB and is the largest transient heap allocation. Prefer chunked streaming for longer audio. Its worker checks cancellation between PCM chunks and acknowledges exit before the page is deleted; retain that bounded handshake when extending the demo.
 
 ### 8.1 Crackles while navigating or saving
 
@@ -176,11 +181,11 @@ Accurate production SOC requires the cell parameters, CW2017 datasheet/vendor pr
 
 ## 10. Flash, console, and memory
 
-The current product and firmware baseline uses 8 MB Flash. `sdkconfig.defaults` fixes the image to 8 MB and disables automatic flash-size header rewriting. `partitions.csv` defines 24 KB NVS, 4 KB PHY data, one 3 MB factory application, and protected `cardid` at `0x356000`. This is not an ESP-IDF dual-slot OTA layout. A detected non-8-MB device does not match this baseline; identify the board and flash part before changing the project default.
+The default custom-firmware baseline uses 8 MB Flash. `sdkconfig.defaults` fixes the image to 8 MB and disables automatic flash-size header rewriting. By default, `partitions.csv` defines only 24 KB NVS, 4 KB PHY data, and one factory application from `0x10000` through the end of Flash (`0x7F0000` bytes). It has no OTA, device-identity, or unused reserved partition. User firmware may replace this default with another valid 8 MB partition layout. A detected non-8-MB device does not match this hardware baseline; identify the board and flash part before changing the project default.
 
-Do not erase a provisioned device or move/overlap protected `cardid`.
-Community firmware contains no device identity payload. See the
-[protected Flash layout](../development/engineering/protected-flash-layout.md).
+Writing the merged image at `0x0` may reset NVS because gaps are padded in the
+single file. Use segmented `idf.py flash` when stored application state must be
+preserved. See the [firmware layout](../development/engineering/firmware-layout.md).
 
 The console is USB Serial/JTAG. Do not switch to the UART0 default output without resolving its GPIO21 conflict with the backlight.
 
@@ -190,7 +195,7 @@ Review at least the 24 KB LVGL pool, 9.6 KB LCD DMA buffer, I2S DMA, 96 KB demo 
 
 For reusable hardware capability, add `bsp_<feature>.h` and its implementation, keep constants in `bsp_pins.h`, update component CMake/dependencies, return `esp_err_t`, log actionable pin/address context, and document threading, blocking, ownership, initialization, and failure behavior.
 
-For a validation page, implement `enter`, `exit`, and `key` in `main/demo_<feature>.c`; declare it in `demo.h`, list it in CMake, and register it in `DEMOS[]`. Create/load a page-owned screen on entry. Stop workers/timers before deleting it on exit. Keep UI text in English, put slow work in worker tasks, lock LVGL updates, and preserve global OK-long-press return behavior.
+For a validation page, implement `enter`, `exit`, and `key` in `main/demo_<feature>.c`; add optional `start`/`stop` hooks for slow services or page-owned workers, declare it in `demo.h`, list it in CMake, and register it in `DEMOS[]`. Create/load a page-owned screen in `enter`, start slow work without the LVGL lock, stop producers with a bounded handshake, then delete timers and the screen in `exit`. Keep UI text in English, lock short LVGL updates, and preserve global OK-long-press return behavior.
 
 Menu initialization status arrays implicitly follow `DEMOS[]` order; update and review them together.
 
@@ -244,7 +249,7 @@ General board acceptance:
 | Battery | plausible SOC/mV, graceful missing-device behavior, intermittent-I2C recovery |
 | Wi-Fi | visible scan count/SSID/RSSI, rescan, repeated entry/exit |
 | Bluetooth LE | phone sees `FoloPassport`, restart advertising, advertising stops on exit, repeated entry/exit |
-| Light/deep sleep | select with UP/DOWN; 2 s light sleep resumes with backlight; 5 s deep sleep restarts with timer cause and retained count |
+| Light/deep sleep | select with UP/DOWN; confirm ES8311 suspend before both modes; 2 s light sleep resumes codec/audio and backlight; 5 s deep sleep restarts with timer cause, retained count, and working audio after reinitialization |
 | DMA/memory/UI | build memory report, runtime minimum heap/largest block, stable concurrent audio/display |
 
 ## 14. Troubleshooting

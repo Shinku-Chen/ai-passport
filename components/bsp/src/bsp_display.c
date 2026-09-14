@@ -15,7 +15,9 @@ static const char *TAG = "bsp_disp";
 
 static esp_lcd_panel_handle_t    s_panel;
 static esp_lcd_panel_io_handle_t s_io;
+static bool                      s_bus_ready;
 static bool                      s_bl_ready;
+static bool                      s_ready;
 
 // ---------------------------------------------------------------------------
 // ST7789P3 厂商专属初始化序列(porch / power / gamma)。
@@ -53,8 +55,8 @@ static const st_init_cmd_t ST7789P3_CMDS[] = {
             0x40, 0x3A, 0x15, 0x15, 0x26, 0x2A}, 14, 10},  // NVGAMCTRL 负伽马
 };
 
-static void backlight_init(void) {
-    if (BSP_LCD_BL < 0) { ESP_LOGW(TAG, "背光引脚未接 MCU,亮度不可调"); return; }
+static esp_err_t backlight_init(void) {
+    if (BSP_LCD_BL < 0) { ESP_LOGW(TAG, "背光引脚未接 MCU,亮度不可调"); return ESP_OK; }
     ledc_timer_config_t t = {
         .speed_mode      = BSP_BL_LEDC_MODE,
         .timer_num       = BSP_BL_LEDC_TIMER,
@@ -63,7 +65,7 @@ static void backlight_init(void) {
         .clk_cfg         = LEDC_AUTO_CLK,
     };
     esp_err_t e = ledc_timer_config(&t);
-    if (e != ESP_OK) { ESP_LOGE(TAG, "ledc_timer_config 失败: %s", esp_err_to_name(e)); return; }
+    if (e != ESP_OK) { ESP_LOGE(TAG, "ledc_timer_config 失败: %s", esp_err_to_name(e)); return e; }
 
     ledc_channel_config_t ch = {
         .gpio_num   = BSP_LCD_BL,
@@ -74,14 +76,23 @@ static void backlight_init(void) {
         .hpoint     = 0,
     };
     e = ledc_channel_config(&ch);
-    if (e != ESP_OK) { ESP_LOGE(TAG, "ledc_channel_config 失败: %s", esp_err_to_name(e)); return; }
+    if (e != ESP_OK) {
+        ESP_LOGE(TAG, "ledc_channel_config 失败: %s", esp_err_to_name(e));
+        ledc_timer_rst(BSP_BL_LEDC_MODE, BSP_BL_LEDC_TIMER);
+        return e;
+    }
 
     s_bl_ready = true;
     ESP_LOGI(TAG, "背光 LEDC 就绪 gpio=%d", BSP_LCD_BL);
+    return ESP_OK;
 }
 
 esp_err_t bsp_display_init(void) {
-    if (s_panel) return ESP_OK;
+    if (s_ready) return ESP_OK;
+    if (s_panel || s_io || s_bus_ready) {
+        ESP_LOGE(TAG, "上次显示初始化回滚不完整，拒绝覆盖仍存活的 SPI 资源");
+        return ESP_ERR_INVALID_STATE;
+    }
 
     spi_bus_config_t bus = {
         .mosi_io_num = BSP_LCD_MOSI,
@@ -95,6 +106,7 @@ esp_err_t bsp_display_init(void) {
                  esp_err_to_name(e), BSP_LCD_MOSI, BSP_LCD_SCLK);
         return e;
     }
+    s_bus_ready = true;
 
     esp_lcd_panel_io_spi_config_t io_cfg = {
         .cs_gpio_num = BSP_LCD_CS,
@@ -105,7 +117,7 @@ esp_err_t bsp_display_init(void) {
         .trans_queue_depth = 10,
     };
     e = esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t)BSP_LCD_SPI_HOST, &io_cfg, &s_io);
-    if (e != ESP_OK) { ESP_LOGE(TAG, "panel_io 创建失败: %s", esp_err_to_name(e)); return e; }
+    if (e != ESP_OK) { ESP_LOGE(TAG, "panel_io 创建失败: %s", esp_err_to_name(e)); goto fail; }
 
     esp_lcd_panel_dev_config_t dev = {
         .reset_gpio_num = BSP_LCD_RST,          // -1 → SWRESET 软复位
@@ -113,26 +125,57 @@ esp_err_t bsp_display_init(void) {
         .bits_per_pixel = 16,
     };
     e = esp_lcd_new_panel_st7789(s_io, &dev, &s_panel);
-    if (e != ESP_OK) { ESP_LOGE(TAG, "面板创建失败: %s", esp_err_to_name(e)); return e; }
+    if (e != ESP_OK) { ESP_LOGE(TAG, "面板创建失败: %s", esp_err_to_name(e)); goto fail; }
 
-    esp_lcd_panel_reset(s_panel);   // rst=-1 时走 SWRESET
-    esp_lcd_panel_init(s_panel);    // SLPOUT / COLMOD / RAMCTRL
+    e = esp_lcd_panel_reset(s_panel);   // rst=-1 时走 SWRESET
+    if (e != ESP_OK) { ESP_LOGE(TAG, "面板复位失败: %s", esp_err_to_name(e)); goto fail; }
+    e = esp_lcd_panel_init(s_panel);    // SLPOUT / COLMOD / RAMCTRL
+    if (e != ESP_OK) { ESP_LOGE(TAG, "面板初始化失败: %s", esp_err_to_name(e)); goto fail; }
 
     for (size_t i = 0; i < sizeof(ST7789P3_CMDS) / sizeof(ST7789P3_CMDS[0]); i++) {
         const st_init_cmd_t *c = &ST7789P3_CMDS[i];
-        esp_err_t r = esp_lcd_panel_io_tx_param(s_io, c->cmd, c->data, c->len);
-        if (r != ESP_OK) ESP_LOGE(TAG, "厂商初始化命令 0x%02X 失败: %s", c->cmd, esp_err_to_name(r));
+        e = esp_lcd_panel_io_tx_param(s_io, c->cmd, c->data, c->len);
+        if (e != ESP_OK) {
+            ESP_LOGE(TAG, "厂商初始化命令 0x%02X 失败: %s", c->cmd, esp_err_to_name(e));
+            goto fail;
+        }
         if (c->delay_ms) vTaskDelay(pdMS_TO_TICKS(c->delay_ms));
     }
 
-    esp_lcd_panel_invert_color(s_panel, BSP_LCD_INVERT_COLOR);   // 0x21 / 0x20
-    esp_lcd_panel_mirror(s_panel, false, false);                 // 0x36 MADCTL:本板不需镜像(XY 双镜像 = 画面 180°)
-    esp_lcd_panel_set_gap(s_panel, 0, 0);
-    esp_lcd_panel_disp_on_off(s_panel, true);                    // 0x29 DISPON
+    e = esp_lcd_panel_invert_color(s_panel, BSP_LCD_INVERT_COLOR);   // 0x21 / 0x20
+    if (e != ESP_OK) { ESP_LOGE(TAG, "面板反色设置失败: %s", esp_err_to_name(e)); goto fail; }
+    e = esp_lcd_panel_mirror(s_panel, false, false);                 // 0x36 MADCTL:本板不需镜像(XY 双镜像 = 画面 180°)
+    if (e != ESP_OK) { ESP_LOGE(TAG, "面板镜像设置失败: %s", esp_err_to_name(e)); goto fail; }
+    e = esp_lcd_panel_set_gap(s_panel, 0, 0);
+    if (e != ESP_OK) { ESP_LOGE(TAG, "面板偏移设置失败: %s", esp_err_to_name(e)); goto fail; }
+    e = esp_lcd_panel_disp_on_off(s_panel, true);                    // 0x29 DISPON
+    if (e != ESP_OK) { ESP_LOGE(TAG, "面板显示开启失败: %s", esp_err_to_name(e)); goto fail; }
 
-    backlight_init();
+    e = backlight_init();
+    if (e != ESP_OK) goto fail;
+    s_ready = true;
     ESP_LOGI(TAG, "显示就绪 %dx%d", BSP_LCD_W, BSP_LCD_H);
     return ESP_OK;
+
+fail:
+    s_ready = false;
+    if (s_panel) {
+        esp_err_t cleanup = esp_lcd_panel_del(s_panel);
+        if (cleanup == ESP_OK) s_panel = NULL;
+        else ESP_LOGE(TAG, "面板回滚失败: %s", esp_err_to_name(cleanup));
+    }
+    if (!s_panel && s_io) {
+        esp_err_t cleanup = esp_lcd_panel_io_del(s_io);
+        if (cleanup == ESP_OK) s_io = NULL;
+        else ESP_LOGE(TAG, "panel IO 回滚失败: %s", esp_err_to_name(cleanup));
+    }
+    if (!s_io && s_bus_ready) {
+        esp_err_t cleanup = spi_bus_free(BSP_LCD_SPI_HOST);
+        if (cleanup == ESP_OK) s_bus_ready = false;
+        else ESP_LOGE(TAG, "SPI 总线回滚失败: %s", esp_err_to_name(cleanup));
+    }
+    s_bl_ready = false;
+    return e;
 }
 
 esp_lcd_panel_handle_t bsp_display_panel(void) { return s_panel; }

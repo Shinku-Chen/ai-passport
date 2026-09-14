@@ -6,7 +6,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// 初始化 codec 与 I2S。内部会调 bsp_i2c_init()(幂等),无需外部先调。
+// 初始化 codec 与 I2S。内部会调 bsp_i2c_init()(幂等),无需外部先调。成功调用可重复；
+// 失败会释放本次已创建的 codec 接口和 I2S channel，修正故障后可重试。
 esp_err_t bsp_audio_init(void);
 
 // 设置采样格式。同格式重复调用是廉价的(直接复用已打开的 codec)。
@@ -15,6 +16,15 @@ esp_err_t bsp_audio_init(void);
 //   【不重新配置采样率】。若不先 close,16kHz 播完再播 8kHz 会以 16k 时钟送出 ——
 //   音调和速度都快一倍。故本函数在格式变化时先 close 再 open。
 esp_err_t bsp_audio_set_format(uint32_t hz, uint8_t bits, uint8_t ch);
+
+// 进入低功耗前暂停 ES8311，并停止 I2S 时钟。即使 codec 从未执行过
+// bsp_audio_set_format()，也会先无声打开再关闭，确保驱动真正执行 suspend。
+// 调用前必须停止所有 PCM 读写；函数幂等，音频未初始化时视为无需处理并返回成功。
+esp_err_t bsp_audio_sleep(void);
+
+// 从 light sleep 返回后恢复 ES8311 和休眠前的采样格式。函数幂等；deep sleep
+// 唤醒会重启应用，应由 bsp_audio_init() 按正常启动流程重新初始化。
+esp_err_t bsp_audio_wake(void);
 
 // 播放 / 录音。bytes 为字节数(16bit 单声道时 = 采样数 x 2)。
 esp_err_t bsp_audio_write(const void *pcm, size_t bytes);

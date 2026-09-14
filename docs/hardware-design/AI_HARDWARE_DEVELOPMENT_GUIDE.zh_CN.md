@@ -95,7 +95,7 @@ GPIO0 同时是按键 ADC 节点和 ESP32-C3 启动相关管脚；GPIO21 是背�
 app_main
   ├─ bsp_i2c_init → bsp_i2c_scan
   ├─ bsp_display_init → bsp_lvgl_init → backlight 100%
-  ├─ bsp_button_init(on_key)
+  ├─ input queue/lifecycle task → bsp_button_init(on_key)
   ├─ bsp_audio_init
   ├─ bsp_battery_init
   └─ LVGL menu
@@ -119,9 +119,11 @@ app_main
 - `bsp_battery.h`：SOC 与电压。
 - `bsp_pins.h`：硬件常量，不承载业务逻辑。
 
-驱动初始化大多设计为幂等，但当前没有统一 deinit API。不要假设可以在运行时反复销毁和重建总线/驱动。
+显示、按键、音频和 LVGL 成功初始化后可重复调用。显示、按键与音频在 BSP 中途失败时会释放本次取得的资源；LVGL display 注册失败时会 deinit port。调用方修正故障后可以重试；若底层回滚本身失败，会明确报错并拒绝覆盖仍存活的句柄。当前没有统一 deinit API，不要假设可以在运行时任意销毁和重建总线/驱动。
 
-Wi-Fi、NimBLE 和 light/deep sleep 直接使用 ESP-IDF API，不属于板级 BSP。`demo_radio.c` 只管理 NVS、`esp_netif` 和默认 event loop 这些应用级共享前置。Wi-Fi 和 BLE 页在进入时初始化高内存占用的无线栈，退出时停止并释放；不自动抹除已有 NVS 数据来掩盖分区错误。deep sleep 会按 ESP32-C3 语义重启应用，示例用 RTC slow memory 记录唤醒次数。
+按键回调运行在共享 `esp_timer` 任务中，只负责将输入加入队列并立即返回。demo 生命周期任务负责页面导航，并在不持有 LVGL 锁时启动或停止慢服务。退出页面时先以有界等待停止 producer，再持锁删除定时器和 UI 对象。音频与 light-sleep 工作任务使用协作取消和明确的退出握手，不再强制删除仍可能访问外设或 UI 的任务。低功耗工作任务会在两种睡眠前暂停 ES8311，并在 light sleep 返回后恢复；deep sleep 唤醒会重启应用并走正常 BSP 初始化流程。
+
+Wi-Fi、NimBLE 和 light/deep sleep 直接使用 ESP-IDF API，不属于板级 BSP。`demo_radio.c` 只管理 NVS、`esp_netif` 和默认 event loop 这些应用级共享前置。Wi-Fi 和 BLE 页在页面创建后初始化高内存占用的无线栈，在删除页面前停止并释放；不自动抹除已有 NVS 数据来掩盖分区错误。deep sleep 会按 ESP32-C3 语义重启应用，示例用 RTC slow memory 记录唤醒次数。
 
 ## 5. 显示与 LVGL
 
@@ -142,8 +144,8 @@ ESP32-C3 无 PSRAM。当前 LVGL 显示缓冲为 `240 × 20` 像素的单 DMA �
 LVGL 非线程安全：
 
 - LVGL 定时器回调运行在 LVGL 上下文，可直接操作对象。
-- 按键回调运行在 button 组件任务中，必须 `bsp_lvgl_lock()` / `bsp_lvgl_unlock()`。
-- 音频任务等其他 FreeRTOS 任务同样必须加锁。
+- 按键回调不得访问 LVGL，只将输入加入队列，交给生命周期任务处理。
+- 生命周期任务与音频任务等其他 FreeRTOS 任务访问 UI 时，必须短时持有 `bsp_lvgl_lock()` / `bsp_lvgl_unlock()`。
 - 获取锁失败时应安全退出，且每条成功加锁路径都必须解锁。
 - 页面退出时先停止可能访问页面对象的定时器/任务，再删除 screen，并将静态对象指针置空。
 
@@ -167,7 +169,7 @@ LVGL 非线程安全：
 - BSP 先创建唯一的 ADC1 oneshot unit，再把同一句柄交给三个 `iot_button` ADC 设备；`bsp_button_read_mv()` 也复用它。不要为电压显示另建 ADC1 unit。
 - ADC 衰减为 `ADC_ATTEN_DB_12`，必须与依赖的 button 组件内部配置保持一致。升级组件后要重新核对。
 - ADC 校准句柄创建失败不影响按键事件，但 `bsp_button_read_mv()` 返回 `-1`。
-- 回调来自 button 组件的定时器任务，不能阻塞、录音、播放或直接做重 UI 操作。
+- 回调来自 button 组件使用的共享 `esp_timer` 任务，只能入队或执行同等级的有界操作，不能阻塞、录音、播放或访问 UI。
 - 事件包括 PRESS、CLICK、DOUBLE、LONG。应用菜单主要消费 CLICK；页面中的 OK LONG 被全局拦截用于返回。
 
 重标阈值时，在 Button 页逐个长按按键记录稳定电压，采集多块板、不同电量和合理温度范围的数据，再把相邻分布之间留裕量设置为边界。不要只用理论分压值。
@@ -208,10 +210,13 @@ MCU 是 I2S master，ES8311 是 slave；I2S0 的 TX/RX 全双工通道共享 MCL
 - 麦克风模拟输入增益当前为 30 dB；输出音量 API 为 0–100%。增益和音量不是同一个概念。
 - `bsp_audio_read/write` 是阻塞调用，不能放在按键回调或 LVGL 任务中。
 - I2S DMA 当前为 6 个 descriptor、每个 240 frame。更改 DMA 或 LVGL buffer 前必须联合评估内部 RAM。
+- 调用 `bsp_audio_sleep()` 前必须停止所有 PCM 读写。该接口先执行并检查 ES8311 软件 suspend，再关闭 codec 和 I2S 数据通路；若此前从未打开过采样格式，BSP 会先做一次无声的默认格式 open，因为 `esp_codec_dev_close()` 否则会跳过硬件 suspend。
+- light sleep 返回后调用 `bsp_audio_wake()`，以休眠前格式重新打开 codec/I2S 通路。两个接口均为幂等操作；音频子系统不可用时视为无需暂停或恢复。deep sleep 唤醒会重启，改由正常 `bsp_audio_init()` 流程初始化。
+- 软件 suspend 会停止 ES8311 的 ADC/DAC 与时钟，但不会切断芯片物理 3.3 V 供电。由于 `BSP_I2S_PA_CTRL` 为 `-1`，外部功放也不受软件控制；这部分硬件残余待机电流需另行实测。
 
 Audio demo 使用独立 4 KB 栈任务：OK 播放 1 秒 1 kHz 方波，UP 录 3 秒再回放。录音缓冲约 96 KB，是当前最显著的瞬时堆分配，可能因碎片或其他功能增大而失败。新增长录音应优先采用分块流式处理或外部存储，不可假设存在 PSRAM。
 
-当前 demo 的退出会直接删除音频任务。如果任务正阻塞于 codec 读写，实际硬件上需特别验证退出行为；若扩展为生产逻辑，应设计可取消的分块循环与明确的任务退出握手。
+Audio demo 的工作任务在 PCM 分块之间检查取消状态，并在页面删除前确认退出；扩展该页面时必须保留这一有界退出握手，不能强制删除阻塞于 codec I/O 的任务。
 
 ### 8.1 切换选项或存档时出现杂音
 
@@ -235,10 +240,10 @@ SOC 准确度取决于电芯与 profile 的匹配程度。本驱动给出的是�
 
 ## 10. Flash、控制台和资源预算
 
-当前产品与固件基线使用 8 MB Flash。`sdkconfig.defaults` 固定使用 8 MB Flash 镜像配置，并关闭 `CONFIG_ESPTOOLPY_HEADER_FLASHSIZE_UPDATE`（不按探测容量回写镜像头，便于 `idf.py merge-bin`）；`partitions.csv` 提供 24 KB NVS、4 KB PHY data、3 MB factory app，以及位于 `0x356000` 的保护 `cardid`。这不是 ESP-IDF 双槽 OTA 布局。若实机探测结果不是 8 MB，则该设备不符合当前基线；修改项目默认值前应先确认板卡和 Flash 料号。
+默认自定义固件基线使用 8 MB Flash。`sdkconfig.defaults` 固定使用 8 MB Flash 镜像配置，并关闭 `CONFIG_ESPTOOLPY_HEADER_FLASHSIZE_UPDATE`（不按探测容量回写镜像头，便于 `idf.py merge-bin`）；默认 `partitions.csv` 只提供 24 KB NVS、4 KB PHY data，以及从 `0x10000` 延伸到 Flash 末尾的 factory app（大小 `0x7F0000`）。它没有 OTA、设备身份或未使用的预留分区。用户固件可以把它替换成其它合法的 8 MB 分区布局。若实机探测结果不是 8 MB，则该设备不符合当前硬件基线；修改项目默认值前应先确认板卡和 Flash 料号。
 
-不得擦除已写身份的设备，也不得移动或覆盖受保护的 `cardid`。社区固件不包含
-单机身份数据。详见[受保护的 Flash 布局](../development/engineering/protected-flash-layout.zh_CN.md)。
+从 `0x0` 写入合并镜像时，单文件中的间隙填充可能重置 NVS。需要保留已存应用
+状态时，应使用分段 `idf.py flash`。详见[固件布局](../development/engineering/firmware-layout.zh_CN.md)。
 
 控制台固定为 USB Serial/JTAG，不使用 UART0 默认输出，因为其 TX GPIO21 与背光冲突。任何日志接口修改都必须同时检查引脚占用。
 
@@ -265,11 +270,11 @@ SOC 准确度取决于电芯与 profile 的匹配程度。本驱动给出的是�
 
 新增硬件验证页：
 
-1. 创建 `main/demo_<feature>.c`，实现 `enter`、`exit`、`key`。
+1. 创建 `main/demo_<feature>.c`，实现 `enter`、`exit`、`key`；慢服务或页面私有任务另加可选的 `start`、`stop`。
 2. 在 `main/demo.h` 声明，在 `main/CMakeLists.txt` 加源文件，在 `main.c` 的 `DEMOS[]` 注册。
-3. `enter` 创建并加载自己的 screen；`exit` 先停任务/定时器，再删 screen 和清空指针。
+3. `enter` 创建并加载自己的 screen；不持 LVGL 锁调用 `start`，用有界握手完成 `stop` 后，再由 `exit` 删除定时器、screen 并清空指针。
 4. 页面文字保持英文；说明性注释可用中文。
-5. 慢操作放工作任务，结果通过 LVGL 锁更新界面。
+5. 慢操作放工作任务，结果通过短时 LVGL 锁更新界面；禁止在按键回调中启动或停止慢服务。
 6. 保留 OK 长按返回这一全局交互，不在页面重复实现。
 
 如果菜单项依赖新外设，还需扩展 `s_ok[]` 初始化与失败禁用逻辑。注意当前数组索引与 `DEMOS[]` 顺序隐式对应，修改顺序时必须同步核对。
@@ -435,7 +440,7 @@ idf.py flash monitor
 | 电池 | 合理 SOC 和 mV、无电量计时正确降级、断续 I2C 的错误恢复表现 |
 | Wi-Fi | 扫描总数和 SSID/RSSI 可见、OK 重扫描、反复进出后仍可扫描 |
 | Bluetooth LE | 手机看到 `FoloPassport`、OK 重启广播、退出后广播消失、反复进出无重启 |
-| light/deep sleep | Low Power 页用 UP/DOWN 选择、OK 执行；light sleep 约 2 秒后原地恢复背光；deep sleep 约 5 秒后重启，页面显示 timer 唤醒和 RTC 保留计数 |
+| light/deep sleep | Low Power 页用 UP/DOWN 选择、OK 执行；确认两种模式前 ES8311 均 suspend；light sleep 约 2 秒后恢复 codec/音频和背光；deep sleep 约 5 秒后重启，页面显示 timer 唤醒与 RTC 保留计数，并确认音频重新初始化后可用 |
 | DMA/内存/UI | build 内存报告、运行时最小堆/最大块、音频与刷屏并发稳定性 |
 
 ## 14. 故障症状速查

@@ -19,9 +19,11 @@ typedef enum {
     BSP_BTN_LONG,        // 长按
 } bsp_btn_ev_t;
 
-// 按键事件回调。运行于 button 组件的定时器任务,勿在其中阻塞或做重活。
+// 按键事件回调。运行于 button 组件使用的共享 esp_timer 任务,只能入队或执行同等级
+// 的有界操作；勿在其中阻塞、访问 LVGL 或做重活。
 typedef void (*bsp_btn_cb_t)(bsp_btn_t btn, bsp_btn_ev_t ev, void *user);
 
+// 成功调用可重复，并更新回调与 user；失败会回滚本次已创建的按键和 ADC 资源。
 esp_err_t bsp_button_init(bsp_btn_cb_t cb, void *user);
 
 // 读当前 ADC 原始电压(mV)。松开时约 3300;按住某键时约为该键的分压值。

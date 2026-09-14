@@ -196,16 +196,20 @@ commit, push, tag, and release.
 
 ### Steps
 
-1. Commit the change and push it to the fork (`origin`) — confirm separately.
-2. Create and push a tag to trigger the release workflow — confirm separately.
-3. Let the tagged build produce the merged firmware `.bin`.
-4. Create or update the GitHub/GitLab release with the artifact — confirm
+1. When preparing a repository release, review the merged user-visible changes
+   since the previous release and update both changelog languages as described
+   in [Automated Build and Release](../ci/CI-build-and-release.md). Ordinary
+   feature, application, and documentation pull requests skip this step.
+2. Commit the change and push it to the fork (`origin`) — confirm separately.
+3. Create and push a tag to trigger the release workflow — confirm separately.
+4. Let the tagged build produce the merged firmware `.bin`.
+5. Create or update the GitHub/GitLab release with the artifact — confirm
    separately. The workflow sets the default release title to the version/tag
    name; after the release is up, refine it to the project feature name plus the
    version number.
-5. Write release notes in English (and a Simplified Chinese version where the
+6. Write release notes in English (and a Simplified Chinese version where the
    project is bilingual) covering what is new, how to build, and how to use.
-6. Verify the released full build on hardware (see
+7. Verify the released full build on hardware (see
    [Post-release hardware verification](#post-release-hardware-verification)).
 
 ### Rules

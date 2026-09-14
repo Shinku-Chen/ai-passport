@@ -7,10 +7,10 @@
 Use ESP-IDF 5.5.3. On a clean machine or when the toolchain is missing, follow
 the [environment bootstrap](environment-setup.md) first.
 
-> Prefer `./tools/validate.sh --firmware` for firmware builds and flash its
-> verified `build/FoloToy-AI-Passport-full.bin` at offset `0x0` only when the
-> target is blank or the merged byte range ends before protected `cardid`.
-> On a provisioned device, use segmented `idf.py flash`. Treat
+> Prefer `./tools/validate.sh --firmware` for firmware builds. Flash its
+> verified `build/FoloToy-AI-Passport-full.bin` at offset `0x0` for a blank
+> device or an intentional complete refresh. The merged image may reset NVS;
+> use segmented `idf.py flash` when existing NVS state must be preserved. Treat
 > `idf.py build` and `idf.py flash` as incremental development commands, not the
 > default delivery path.
 
@@ -31,7 +31,7 @@ regenerated.
 
 The tracked `dependencies.lock` pins Managed Component resolution. After changing an `idf_component.yml`, regenerate the lock with ESP-IDF 5.5.3, review version changes, and commit it with the manifest. An ordinary build must not leave an unexplained lock-file diff.
 
-Firmware validation uses a fresh temporary build directory and an isolated `sdkconfig` generated from the tracked defaults. It does not consume or overwrite a developer's root `sdkconfig`, and it copies only the verified merged image to `build/FoloToy-AI-Passport-full.bin`. The gate also enforces the [protected Flash layout](protected-flash-layout.md): the protected `cardid` address, application size, partition-table MD5, and absence of device-specific identity data.
+Firmware validation uses a fresh temporary build directory and an isolated `sdkconfig` generated from the tracked defaults. It does not consume or overwrite a developer's root `sdkconfig`, and it copies only the verified merged image to `build/FoloToy-AI-Passport-full.bin`. The gate also validates the [configured firmware layout](firmware-layout.md): image offsets from `flash_args`, partition-table MD5, bounds and non-overlap, and an application that starts in and fits its configured app partition. User-defined partition layouts are allowed.
 
 The baseline also has a hardware-independent logic test:
 
@@ -46,7 +46,7 @@ Use the unified validation entry point:
 
 ```bash
 ./tools/validate.sh --static    # repository checks, workflows, links, secrets, host tests
-./tools/validate.sh --firmware  # build, merge-bin, offsets, and protected layout
+./tools/validate.sh --firmware  # build, merge-bin, offsets, and configured layout
 ./tools/validate.sh             # complete gate; requires an activated ESP-IDF environment
 ```
 

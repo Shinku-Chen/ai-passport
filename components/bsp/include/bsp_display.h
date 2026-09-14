@@ -7,7 +7,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// 初始化 SPI 总线、面板、厂商寄存器、背光 LEDC。成功后屏幕已上电但内容未定。
+// 初始化 SPI 总线、面板、厂商寄存器、背光 LEDC。成功调用可重复；失败会回滚本次
+// 已创建的显示资源，修正故障后可重试。成功后屏幕已上电但内容未定。
 esp_err_t bsp_display_init(void);
 
 // 取底层面板句柄。想直接 esp_lcd_panel_draw_bitmap 画,或接 LVGL 以外的 GUI 时用。
@@ -28,9 +29,10 @@ void bsp_display_backlight(uint8_t percent);
 // 故此处用 struct 形式即可,避免本头文件强行 include lvgl.h。
 struct _lv_display_t;
 
-// 启动 LVGL 与其渲染任务,返回 lv_display_t*。失败返回 NULL。
+// 启动 LVGL 与其渲染任务,返回 lv_display_t*。失败返回 NULL；display 注册失败会回滚 port。
 struct _lv_display_t *bsp_lvgl_init(void);
 
 // LVGL 非线程安全:在【非 LVGL 任务】里操作任何 lv_* 对象前后必须加解锁。
+// LVGL 尚未就绪或超时时 lock 返回 false；只有 lock 成功后才调用 unlock。
 bool bsp_lvgl_lock(int timeout_ms);
 void bsp_lvgl_unlock(void);

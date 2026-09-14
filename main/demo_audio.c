@@ -9,6 +9,7 @@
 #include "ui_pixel.h"
 #include "lvgl.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "esp_log.h"
 #include <stdlib.h>
@@ -21,10 +22,18 @@ static const char *TAG = "demo_audio";
 #define TONE_MS        1000
 #define RECORD_SEC        3
 #define CHUNK_SAMPLES   512          // 每次收发的采样数,控制临时缓冲大小
+#define AUDIO_STOP_TIMEOUT_MS 2000
+
+typedef enum {
+    AUDIO_COMMAND_TONE = 1,
+    AUDIO_COMMAND_RECORD,
+    AUDIO_COMMAND_STOP,
+} audio_command_t;
 
 static lv_obj_t *s_scr, *s_status, *s_mascot;
 static TaskHandle_t s_task;
-static volatile int s_req;           // 1=播音 2=录音回放 0=空闲
+static SemaphoreHandle_t s_stopped;
+static volatile bool s_cancel;
 
 // LVGL 对象只能在持锁时操作;本函数从音频任务调用,故内部加锁。
 static void set_status(const char *text) {
@@ -44,17 +53,20 @@ static void play_tone(void) {
     const int period = SAMPLE_RATE / TONE_HZ;        // 每个方波周期的采样数
     int total = SAMPLE_RATE * TONE_MS / 1000;
     int phase = 0;
-    while (total > 0) {
+    while (total > 0 && !s_cancel) {
         int n = total < CHUNK_SAMPLES ? total : CHUNK_SAMPLES;
         for (int i = 0; i < n; i++) {
             buf[i] = (phase < period / 2) ? 6000 : -6000;
             if (++phase >= period) phase = 0;
         }
-        bsp_audio_write(buf, (size_t)n * sizeof(int16_t));
+        if (bsp_audio_write(buf, (size_t)n * sizeof(int16_t)) != ESP_OK) {
+            set_status("playback failed");
+            break;
+        }
         total -= n;
     }
     free(buf);
-    set_status("done. OK: tone  UP: record");
+    if (!s_cancel && total == 0) set_status("done. OK: tone  UP: record");
 }
 
 static void record_and_play(void) {
@@ -72,29 +84,41 @@ static void record_and_play(void) {
 
     set_status("recording 3s... speak now");
     size_t got = 0;
-    while (got < total) {
+    while (got < total && !s_cancel) {
         size_t n = (total - got) < CHUNK_SAMPLES ? (total - got) : CHUNK_SAMPLES;
         if (bsp_audio_read(rec + got, n * sizeof(int16_t)) != ESP_OK) break;
         got += n;
     }
 
-    set_status("playing back...");
-    bsp_audio_set_volume(80);
-    for (size_t off = 0; off < got; off += CHUNK_SAMPLES) {
-        size_t n = (got - off) < CHUNK_SAMPLES ? (got - off) : CHUNK_SAMPLES;
-        bsp_audio_write(rec + off, n * sizeof(int16_t));
+    if (!s_cancel) {
+        set_status("playing back...");
+        bsp_audio_set_volume(80);
+    }
+    size_t played = 0;
+    while (played < got && !s_cancel) {
+        size_t n = (got - played) < CHUNK_SAMPLES ? (got - played) : CHUNK_SAMPLES;
+        if (bsp_audio_write(rec + played, n * sizeof(int16_t)) != ESP_OK) {
+            set_status("playback failed");
+            break;
+        }
+        played += n;
     }
     free(rec);
-    set_status("done. OK: tone  UP: record");
+    if (!s_cancel && played == got) set_status("done. OK: tone  UP: record");
 }
 
 static void audio_task(void *arg) {
     (void)arg;
     for (;;) {
-        if (s_req == 1)      { s_req = 0; play_tone(); }
-        else if (s_req == 2) { s_req = 0; record_and_play(); }
-        else vTaskDelay(pdMS_TO_TICKS(50));
+        uint32_t command = 0;
+        if (xTaskNotifyWait(0, UINT32_MAX, &command, portMAX_DELAY) != pdTRUE) continue;
+        if (command == AUDIO_COMMAND_STOP) break;
+        if (command == AUDIO_COMMAND_TONE) play_tone();
+        else if (command == AUDIO_COMMAND_RECORD) record_and_play();
     }
+    if (s_stopped) xSemaphoreGive(s_stopped);
+    s_task = NULL;
+    vTaskDelete(NULL);
 }
 
 void demo_audio_enter(void) {
@@ -119,20 +143,66 @@ void demo_audio_enter(void) {
 
     s_mascot = ui_pixel_mascot_create(s_scr, 101, 238);
 
-    s_req = 0;
-    if (!s_task) xTaskCreate(audio_task, "demo_audio", 4096, NULL, 4, &s_task);
     lv_screen_load(s_scr);
 }
 
+esp_err_t demo_audio_start(void) {
+    if (s_task) return ESP_OK;
+    if (s_stopped) {
+        vSemaphoreDelete(s_stopped);
+        s_stopped = NULL;
+    }
+    s_stopped = xSemaphoreCreateBinary();
+    if (!s_stopped) {
+        set_status("Cannot create audio worker");
+        return ESP_ERR_NO_MEM;
+    }
+    s_cancel = false;
+    if (xTaskCreate(audio_task, "demo_audio", 4096, NULL, 4, &s_task) != pdPASS) {
+        vSemaphoreDelete(s_stopped);
+        s_stopped = NULL;
+        set_status("Cannot create audio worker");
+        return ESP_ERR_NO_MEM;
+    }
+    return ESP_OK;
+}
+
+esp_err_t demo_audio_stop(void) {
+    TaskHandle_t task = s_task;
+    if (!task) {
+        if (s_stopped) {
+            vSemaphoreDelete(s_stopped);
+            s_stopped = NULL;
+        }
+        return ESP_OK;
+    }
+
+    s_cancel = true;
+    xTaskNotify(task, AUDIO_COMMAND_STOP, eSetValueWithOverwrite);
+    if (!s_stopped ||
+        xSemaphoreTake(s_stopped, pdMS_TO_TICKS(AUDIO_STOP_TIMEOUT_MS)) != pdTRUE) {
+        set_status("Audio stop timed out; retry");
+        return ESP_ERR_TIMEOUT;
+    }
+    s_task = NULL;
+    vSemaphoreDelete(s_stopped);
+    s_stopped = NULL;
+    return ESP_OK;
+}
+
 void demo_audio_exit(void) {
-    s_req = 0;
-    if (s_task) { vTaskDelete(s_task); s_task = NULL; }
     if (s_scr) { lv_obj_delete(s_scr); s_scr = NULL; s_status = s_mascot = NULL; }
 }
 
 void demo_audio_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
-    if (ev != BSP_BTN_CLICK) return;
-    if (btn == BSP_BTN_OK) s_req = 1;
-    if (btn == BSP_BTN_UP) s_req = 2;
-    if (btn == BSP_BTN_OK || btn == BSP_BTN_UP) ui_pixel_mascot_jump(s_mascot);
+    if (ev != BSP_BTN_CLICK || !s_task || s_cancel) return;
+    uint32_t command = 0;
+    if (btn == BSP_BTN_OK) command = AUDIO_COMMAND_TONE;
+    else if (btn == BSP_BTN_UP) command = AUDIO_COMMAND_RECORD;
+    if (!command) return;
+
+    xTaskNotify(s_task, command, eSetValueWithOverwrite);
+    if (!bsp_lvgl_lock(250)) return;
+    if (s_mascot) ui_pixel_mascot_jump(s_mascot);
+    bsp_lvgl_unlock();
 }

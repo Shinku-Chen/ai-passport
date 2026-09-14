@@ -4,6 +4,8 @@
 #include "bsp_pins.h"
 #include "esp_lvgl_port.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 static const char *TAG = "bsp_lvgl";
 
@@ -38,11 +40,23 @@ lv_display_t *bsp_lvgl_init(void) {
         .flags = { .buff_dma = true, .swap_bytes = true },
     };
     s_disp = lvgl_port_add_disp(&dc);
-    if (!s_disp) { ESP_LOGE(TAG, "lvgl_port_add_disp 失败"); return NULL; }
+    if (!s_disp) {
+        ESP_LOGE(TAG, "lvgl_port_add_disp 失败");
+        esp_err_t e = lvgl_port_deinit();
+        if (e != ESP_OK) ESP_LOGE(TAG, "lvgl_port_deinit 回滚失败: %s", esp_err_to_name(e));
+        // 2.9.0 的 deinit 由 LVGL task 完成；无 display 时该 task 每 tick 检查退出标志。
+        vTaskDelay(pdMS_TO_TICKS(10));
+        return NULL;
+    }
 
     ESP_LOGI(TAG, "LVGL 就绪");
     return s_disp;
 }
 
-bool bsp_lvgl_lock(int timeout_ms) { return lvgl_port_lock(timeout_ms); }
-void bsp_lvgl_unlock(void)         { lvgl_port_unlock(); }
+bool bsp_lvgl_lock(int timeout_ms) {
+    if (!s_disp) return false;
+    return lvgl_port_lock(timeout_ms);
+}
+void bsp_lvgl_unlock(void) {
+    if (s_disp) lvgl_port_unlock();
+}
