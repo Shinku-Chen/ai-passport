@@ -13,7 +13,8 @@
 
 #include "bsp_audio.h"
 #include "bsp_battery.h"
-#include "bsp_display.h"   // bsp_lvgl_lock / bsp_lvgl_unlock
+#include "bsp_display.h"   // bsp_lvgl_lock / bsp_lvgl_unlock / bsp_display_prepare_deep_sleep
+#include "bsp_i2c.h"       // bsp_i2c_prepare_deep_sleep
 #include "voice_index.h"   // 编译期素材索引(VOICE_DIRS)
 #include "fonts/voice_cjk.h" // 中文 UI 字库(黑体 TTF 子集, lv_label 渲染)
 #include "fonts/voice_hint.h" // 底栏提示 12px 小号字库
@@ -242,9 +243,9 @@ static esp_timer_handle_t s_sleep_timer;
 static void do_deep_sleep(void) {
     ESP_LOGI(TAG, "5 分钟无操作, 进入深度休眠(按键唤醒)");
 
-    // 背光无需软件关闭: ESP-IDF 深睡会隔离所有未 hold 的数字 GPIO(见
-    // esp_sleep_isolate_digital_gpio), 背光脚 GPIO21 未被 hold, 会被隔离成高阻浮空,
-    // 背光在深睡期间自然熄灭(已真机确认)。
+    // 先停掉会访问外设/UI 的活动: 让常驻播放 worker 不再写 I2S。
+    stop_playback();
+
     // GPIO0 已有外部 10k 上拉(空闲 3.3V), 无需软件上拉; 配置为纯输入, 低电平唤醒。
     // 显式关掉内部上拉(避免内部上拉叠加在外部 10kΩ 上造成额外泄漏)。
     gpio_config_t io = {
@@ -263,17 +264,28 @@ static void do_deep_sleep(void) {
         ESP_LOGE(TAG, "GPIO0 低电平唤醒配置失败: %s", esp_err_to_name(wak));
     }
 
-    // —— 深睡省电: 让板载外设也进睡眠, 降低待机自耗(它们与 MCU 电源常供, 深睡时
-    //    MCU 断电但外设仍带电自耗)。唤醒=冷重启, 会重新初始化这些外设。
-    // 1) 背光归零 + LCD 面板睡眠(DISPOFF + SLPOFF)
-    bsp_display_backlight(0);
-    bsp_display_sleep();
-    // 2) 音频 codec ES8311 关闭(降低 codec 自耗)
-    bsp_audio_sleep();
-    // 3) 电量计 CW2017 睡眠(降低电量计持续测量自耗)
-    bsp_battery_sleep();
+    // —— 终端关闭序列(对齐上游 BSP 深睡契约, 见 deep-sleep-peripheral-power-off):
+    //    CW2017 -> ES8311 -> I2S 引脚 -> 共享 I2C 引脚 -> 阻止 LVGL 刷屏 -> LCD。
+    //    共享 I2C 的两颗芯片(CW2017/ES8311)必须先用完总线, 再释放 SDA/SCL。
+    //    各步失败只告警并继续, 不因为一步失败就放弃后续关闭。
+    if (bsp_battery_sleep() != ESP_OK) ESP_LOGW(TAG, "CW2017 休眠失败, 继续关闭");
+    if (bsp_audio_sleep() != ESP_OK) ESP_LOGW(TAG, "ES8311 休眠失败, 继续关闭");
+    if (bsp_audio_prepare_deep_sleep() != ESP_OK) ESP_LOGW(TAG, "I2S 引脚释放失败, 继续关闭");
+    if (bsp_i2c_prepare_deep_sleep() != ESP_OK) ESP_LOGW(TAG, "I2C 引脚释放失败, 继续关闭");
+
+    // 同步 LVGL: 取锁等待当前 flush 完成, 并阻止 LCD 关闭后再刷屏(电量定时器也在此上下文)。
+    // 拿不到锁说明 LVGL 卡住, 重启以恢复外设而不是带着半关闭状态睡死。
+    if (!bsp_lvgl_lock(1000)) {
+        ESP_LOGE(TAG, "深睡前无法停止 LVGL 刷屏, 重启恢复外设");
+        esp_restart();
+    }
+    if (bsp_display_prepare_deep_sleep() != ESP_OK) ESP_LOGW(TAG, "ST7789 休眠失败, 继续");
 
     esp_deep_sleep_start();   // 不返回; 唤醒=重启
+
+    // 上面的 prepare 已把 I2S/I2C/LCD 置于本次运行不可恢复的终端态; 意外返回就重启。
+    ESP_LOGE(TAG, "esp_deep_sleep_start 意外返回, 重启恢复外设");
+    esp_restart();
 }
 
 static void sleep_timer_cb(void *arg) {

@@ -145,12 +145,13 @@ flowchart TD
 
 ### 步骤
 
-1. 提交变更并推送到 fork（`origin`）——分开确认。
-2. 创建并推送 tag 以触发 release 工作流——分开确认。
-3. 让 tagged 构建产生合并固件 `.bin`。
-4. 用产物创建或更新 GitHub/GitLab release——分开确认。工作流把 release 标题默认设为版本/tag 名；release 发布后，把它改成项目特性名加版本号。
-5. 用英文写 release notes（项目双语时另附简体中文版），覆盖新增内容、如何构建、如何使用。
-6. 在真机验证发布的完整构建（见 [发布后真机验证](#post-release-hardware-verification)）。
+1. 准备仓库发布时，检查自上一版本以来已合并的用户可见变化，并按[自动构建与发布](../ci/CI-build-and-release.zh_CN.md)同时更新中英文变更日志。普通功能、应用和文档 PR 跳过此步骤。
+2. 提交变更并推送到 fork（`origin`）——分开确认。
+3. 创建并推送 tag 以触发 release 工作流——分开确认。
+4. 让 tagged 构建产生合并固件 `.bin`。
+5. 用产物创建或更新 GitHub/GitLab release——分开确认。工作流把 release 标题默认设为版本/tag 名；release 发布后，把它改成项目特性名加版本号。
+6. 用英文写 release notes（项目双语时另附简体中文版），覆盖新增内容、如何构建、如何使用。
+7. 在真机验证发布的完整构建（见 [发布后真机验证](#post-release-hardware-verification)）。
 
 ### 规则
 

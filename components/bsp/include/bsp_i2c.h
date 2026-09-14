@@ -15,3 +15,8 @@ i2c_master_bus_handle_t bsp_i2c_bus(void);
 // 扫描 0x08..0x77 并打印所有应答的设备。排查"芯片是不是没焊好/地址对不对"极有用。
 // 直接在正式总线上扫,不要另开临时总线 —— 原因见 bsp_i2c.c 中 bsp_i2c_scan() 的注释。
 esp_err_t bsp_i2c_scan(void);
+
+// deep sleep 专用：所有共享外设的最后一笔 I2C 事务完成后，将 SDA/SCL
+// 设为无上下拉的高阻输入。调用后禁止再访问总线，必须立即进入 deep sleep
+// 或重启。板上外部上拉电阻的静态功耗不受此接口控制。
+esp_err_t bsp_i2c_prepare_deep_sleep(void);

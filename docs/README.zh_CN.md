@@ -20,17 +20,17 @@ FoloToy AI Passport 是一个开放式可穿戴 AI 硬件，本仓库是这款 A
 | --- | --- | --- | --- |
 | 显示 | ST7789P3，240 × 320，竖屏 RGB565，SPI2 40 MHz；LEDC 背光 | `bsp_display_*`、`bsp_lvgl_*` | ESP32-C3 无 PSRAM；当前为小型单 DMA 缓冲；BSP 未暴露 LCD MISO、触摸或 TE 接口 |
 | 输入 | `UP` / `DOWN` / `OK` 三键，共用 GPIO0 的 ADC 电阻分压 | `bsp_button_init()`、`bsp_button_read_mv()` | 回调运行在 button 组件任务中，不能阻塞；不能再创建第二个 ADC1 unit |
-| 音频 | ES8311，I2S0 全双工 PCM，可播放和麦克风录音 | `bsp_audio_*` | PCM 读写为阻塞调用，应放工作任务；格式切换必须保留 BSP 内的 close/open 流程 |
+| 音频 | ES8311，I2S0 全双工 PCM，支持播放、麦克风录音及软件休眠/恢复 | `bsp_audio_*` | PCM 读写为阻塞调用，应放工作任务；codec 休眠前必须停止 PCM I/O；格式切换必须保留 BSP 内的 close/open 流程 |
 | 电池 | CW2017 的 SOC 与电压读取 | `bsp_battery_*` | 是可缺省能力；读数精度取决于电芯与 profile，不能等同于已标定结果 |
 | Wi-Fi | 按需 2.4 GHz STA 扫描 demo | `main/demo_wifi.c` | 仅扫描；不连接、不存凭证、不验证天线/射频表现 |
 | Bluetooth LE | 按需以 `FoloPassport` 名义做不可连接的 NimBLE 广播 | `main/demo_ble.c` | ESP32-C3 不支持蓝牙经典；射频范围、共存与功耗需实测 |
-| 低功耗 | 两秒浅睡眠与五秒深睡眠，均以 RTC 定时器唤醒 | `main/demo_low_power.c` | 深睡眠会重启应用；当前 demo 只提供 RTC 定时器唤醒 |
+| 低功耗 | 两秒浅睡眠与五秒深睡眠，均以 RTC 定时器唤醒 | `main/demo_low_power.c` | 两种模式都强制暂停 ES8311 并回读校验；浅睡眠恢复音频，深睡眠则先暂停 CW2017、释放 I2S/共享 I2C 引脚、休眠并保持 LCD 引脚，唤醒时重启应用；当前 demo 只提供 RTC 定时器唤醒 |
 | 共享总线 | ES8311 与 CW2017 共用 I2C0 | `bsp_i2c_*` | 所有设备复用 BSP 持有的总线；不能为扫描或新设备再创建同端口总线 |
 | 日志与烧录 | ESP32-C3 原生 USB Serial/JTAG | ESP-IDF console | GPIO18/19 保留给 USB；UART0 默认 TX GPIO21 与背光冲突 |
 
 所有引脚、地址、面板参数和按键电压窗口只在 [`components/bsp/include/bsp_pins.h`](../components/bsp/include/bsp_pins.h) 定义。应用代码不得复制这些常量。完整引脚表、面板初始化、ADC 阈值、I2C 地址规则、音频时钟和内存说明见 [AI 硬件开发指南](hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.zh_CN.md)。
 
-应用也可以使用 ESP-IDF 提供的定时器、FreeRTOS 任务和内部 Flash/NVS；番茄钟分支提供了 NVS 示例。Wi-Fi 和 Bluetooth LE 仍是 ESP-IDF 应用服务而非 BSP API：其菜单页面仅在打开时初始化对应协议栈、退出时释放。`demo/claude-buddy-port` 仍是更完整的 BLE 应用架构参考，不能替代对当前板卡天线、射频表现、功耗和共存行为的实测。当前产品与固件基线使用 8 MB Flash，包含 3 MB factory-app 分区，并固定保留设备身份与永久 Recovery 区域，使二创固件仍可通过小程序安装。
+应用也可以使用 ESP-IDF 提供的定时器、FreeRTOS 任务和内部 Flash/NVS；番茄钟分支提供了 NVS 示例。Wi-Fi 和 Bluetooth LE 仍是 ESP-IDF 应用服务而非 BSP API：其菜单页面仅在打开时初始化对应协议栈、退出时释放。`demo/claude-buddy-port` 仍是更完整的 BLE 应用架构参考，不能替代对当前板卡天线、射频表现、功耗和共存行为的实测。默认自定义固件基线使用 8 MB Flash，只包含 NVS、PHY data，以及占用剩余空间的单个 factory-app 分区；用户固件可以替换成其它合法的 8 MB 布局。
 
 ### 不属于当前能力契约的事项
 
@@ -65,6 +65,8 @@ FoloToy AI Passport 是一个开放式可穿戴 AI 硬件，本仓库是这款 A
 ## 示例分支是设计案例，不是功能堆叠
 
 每个 `demo/*` 分支都从基线演化出一个独立应用。它们的价值是展示具体问题的实现方式；新应用通常应从 `main` 建分支，按需参考，而不是把多个 demo 整体合并。
+
+`main` 上的菜单和 `demo_*.c` 页面同样只是硬件能力展示与验证界面，不是可直接使用的成品 UI。新开发应用必须根据自身需求重新设计并实现页面与交互流程，不能直接使用或照搬当前 demo 界面；BSP API、生命周期模式和已拆分的纯逻辑仍可按需复用。
 
 | 分支 | 展示的应用 | 值得复用的模式 |
 | --- | --- | --- |
@@ -102,7 +104,7 @@ tools/                   本地与 CI 共用的验证及固件校验脚本
 docs/                    项目说明、变更记录、工程/协作规范与设计参考
 .github/                 GitHub 社区文档、PR 模板、Issue Form 与 CI 工作流
 sdkconfig.defaults       ESP32-C3、USB console、Flash、LVGL 默认配置
-partitions.csv           应用与设备身份/Recovery 保护分区布局
+partitions.csv           应用与设备身份保护分区布局
 dependencies.lock        可复现的 ESP-IDF Managed Component 解析结果
 AGENTS.md                AI agent 必读入口（与 AGENTS.zh_CN.md 配对）
 CLAUDE.md                Claude Code 指向 AGENTS.md 的入口（含中文配对）

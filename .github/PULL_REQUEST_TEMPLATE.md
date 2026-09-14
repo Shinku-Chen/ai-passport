@@ -13,6 +13,7 @@
 - Wiring or pin-map impact: None
 - Flash, partition, or persistent-data impact: None
 - Backward-compatibility impact: None
+- Release-flow impact: None
 
 ## Verification
 
@@ -39,5 +40,5 @@ Commands run:
 - [ ] I ran the relevant validation command or explained why it was not run.
 - [ ] I separated build, host-test, and device-test results.
 - [ ] I updated authoritative documentation for changed hardware facts or durable behavior.
-- [ ] I updated `docs/CHANGELOG.md` if this changes user-visible behavior, compatibility, or release workflow.
+- [ ] I followed changelog ownership: ordinary pull requests leave it unchanged; release-preparation pull requests update both language files together.
 - [ ] I removed credentials, private device links, personal data, and unsanitized logs.

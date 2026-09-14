@@ -7,7 +7,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// 初始化 SPI 总线、面板、厂商寄存器、背光 LEDC。成功后屏幕已上电但内容未定。
+// The final LVGL frame is masked to this radius; pixels outside are pure black.
+#define BSP_LVGL_SCREEN_RADIUS 30
+
+// 初始化 SPI 总线、面板、厂商寄存器、背光 LEDC。成功调用可重复；失败会回滚本次
+// 已创建的显示资源，修正故障后可重试。成功后屏幕已上电但内容未定。
 esp_err_t bsp_display_init(void);
 
 // 取底层面板句柄。想直接 esp_lcd_panel_draw_bitmap 画,或接 LVGL 以外的 GUI 时用。
@@ -20,8 +24,10 @@ esp_lcd_panel_io_handle_t bsp_display_io(void);
 // 背光亮度 0..100(%)。LEDC PWM,0=全灭。
 void bsp_display_backlight(uint8_t percent);
 
-// 关显示并把 ST7789 面板置为睡眠, 降低深睡待机自耗。深睡唤醒后需重新初始化恢复。
-esp_err_t bsp_display_sleep(void);
+// deep sleep 专用：关闭显示、让 ST7789 进入 Sleep In，停止背光 PWM，
+// 将 CS/SCLK/MOSI/DC/背光设为安全电平并在 deep sleep 中保持。调用时必须
+// 已阻止 LVGL 刷屏，调用后必须立即进入 deep sleep 或重启。
+esp_err_t bsp_display_prepare_deep_sleep(void);
 
 // ---------------------------------------------------------------------------
 // LVGL 接入(可选层)。必须先 bsp_display_init() 成功后再调。
@@ -31,9 +37,10 @@ esp_err_t bsp_display_sleep(void);
 // 故此处用 struct 形式即可,避免本头文件强行 include lvgl.h。
 struct _lv_display_t;
 
-// 启动 LVGL 与其渲染任务,返回 lv_display_t*。失败返回 NULL。
+// 启动 LVGL 与其渲染任务,返回 lv_display_t*。失败返回 NULL；display 注册失败会回滚 port。
 struct _lv_display_t *bsp_lvgl_init(void);
 
 // LVGL 非线程安全:在【非 LVGL 任务】里操作任何 lv_* 对象前后必须加解锁。
+// LVGL 尚未就绪或超时时 lock 返回 false；只有 lock 成功后才调用 unlock。
 bool bsp_lvgl_lock(int timeout_ms);
 void bsp_lvgl_unlock(void);

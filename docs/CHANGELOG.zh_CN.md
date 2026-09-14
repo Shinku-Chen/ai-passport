@@ -4,34 +4,20 @@
 
 # Changelog
 
+> **由发布负责人维护：** 普通功能、应用和文档 PR 不修改本文件。创建发布 tag 前，
+> 发布负责人检查已合并的用户可见变化，并与 `CHANGELOG.md` 同步更新。当前
+> `Unreleased` 下的条目是下次发布的待核对内容，不是已经定稿的发布历史。
+
 ## Unreleased
 
-- 深睡前显式关闭所有可关的板载外设, 把待机功耗压到最低: ① LCD 面板 `bsp_display_sleep()`(DISPOFF 0x28 + 面板睡眠 0x10); ② 背光 `bsp_display_backlight(0)`(LEDC 归零, 深睡隔离后引脚浮空); ③ 音频 codec `bsp_audio_sleep()`(走 `es8311_suspend()` 16 个寄存器停掉 ADC/DAC/时钟并关 PA); ④ 电量计 CW2017 `bsp_battery_sleep()`(CONFIG 0x30→0xF0 进睡眠态)。其中 codec 额外修复一个边界: 原来只在"播放过"(`s_opened`)时才 close, 若开机后未播任何音频就超时深睡, 芯片停在 `es8311_open` 配置态未被真正下电 —— 现改为未打开过就先补一次无声 `set_format` 再 close, 任何时序都保证走完 suspend 下电序列。深睡时 MCU 会 `esp_sleep_isolate_digital_gpio()` 把所有未 hold 的数字 GPIO 隔离成高阻浮空(含 I2S/I2C/SPI 引脚), 不从 MCU 侧漏电。以上改动均已真机烧录验证。
-- 按《征服》华强买瓜真实剧本重排整个刘华强包: 开场寒暄与砍价在前, 保熟/生瓜蛋子对峙, 冲突段, 最后是劈瓜后的豪哥中刀/萨日朗/华强线。只改片段顺序与编号, 音频内容不变。
-- 把新加的 7 段刘华强语音从 8kbps Opus 提升到 **24kbps**, 音质明显改善; 其余片段保持 8kbps。`voicefs` 分区已相应重打包。
-- 扩充中文字库, 补上新刘华强片段用到的 5 个汉字(萨/朗/蜘/蛛/豪)。字体源仍为 `simhei.ttf`, 符号集补齐后重新生成, 新片段名不再显示方块。
-- 新增刘华强 7 段语音, 并把整个包按《征服》华强买瓜剧情顺序重排(开场寒暄 → 砍价 → 故意找茬/你要不要吧 交锋 → 蜘蛛感应/豪哥中刀/吸铁石等后续 → 你TM劈我瓜是吧)。dir03 由 24 段增至 31 段; 其余包不变。
-- 降低深睡待机功耗: GPIO0 保留外部 10kΩ 上拉用于按键检测, 并关闭内部上拉以避免叠加额外泄漏。任意按键(GPIO0 低电平)唤醒; 背光无需软件关闭 —— ESP-IDF 深睡会隔离未 hold 的数字 GPIO(esp_sleep_isolate_digital_gpio), 背光脚未被 hold 会被隔离成高阻浮空, 背光自然熄灭(已真机确认)。
-- 关闭蓝牙/NimBLE 栈(`CONFIG_BT_ENABLED=n`): 音效钥匙扣产品 App 不用 BLE, 关掉可节省 Flash/RAM、消除潜在运行期功耗(深睡本就断电蓝牙控制器, 这里是省运行态资源)。同时关闭 `CONFIG_ESP_SLEEP_GPIO_ENABLE_INTERNAL_RESISTORS` —— GPIO0 靠外部 10kΩ 上拉, 叠加的内部上拉纯属泄漏。App 镜像缩小约 4KB。
-- 移除 upstream 的定制 bootloader recovery hook(`bootloader_components/recovery_boot_hook`)及其 `CONFIG_BOOTLOADER_FACTORY_RESET` 配置。upstream 的 hook 在 GPIO0 长按 5 秒时跳转到 `0x700000` Recovery 分区, 但音效钥匙扣产品分区表没有 Recovery 分区 —— 那个偏移落在 voicefs 音频数据中间, 长按会把音频数据当程序执行而崩溃。产品 App 不使用 Recovery/OTA, 故移除该 hook 及工厂复位配置; bootloader 恢复为干净的 ESP-IDF 默认(0x5220 字节)。
-- 修复中英文字库, 让新片段名完整渲染: 重新生成子集字体, 补上缺失的字形——小写 `l`、`f`, 完整 ASCII `a`-`z`/`A`-`Z`, 空格 `U+0020`, 以及此前缺失的汉字「莲」(`U+83B2`, 用于哈基米「蓝莲哈」, 保持原 simhei 风格)。字体源仍为 `simhei.ttf`(用户偏好的黑体), 符号集补齐, 因此 `lookmyeye`、`tell me why`、`啊能能` 等列表行不再显示方块。
-- 把「蓝莲哈」提升到 32kbps 改善音质(其余片段保持 8kbps Opus 档位)。`dir09/clip40.opus` 现为 50052 字节, `voicefs` 分区已相应重打包。
-- 新增四段语音: 哈基米「蓝莲哈」, 小明剑魔「lookmyeye / tell me why / 啊能能」。重新打包 `voicefs` 数据分区并重建完整固件。
-- 修复列表页播放: 按 OK 会停掉当前声音, 但选中项不播。原因是每次播放都 `xTaskCreate` 一个 16KB 的 Opus 解码栈, 在堆不足/碎片时创建失败。改为**单个常驻播放任务 + 静态栈**, 用二值信号量唤醒, 于是 OK 总能"停当前 + 播选中"。已在设备上验证。
-- 修复电量百分比显示。顶栏电量原本只在开机读一次、之后不再刷新, 会随耗电/充电失真——现改为每 30s 重读一次电量计。另外 CW2017 部分上电后 SOC 寄存器读回 `0xFF`(未算出 SOC), 原显示为 0%; `bsp_battery_soc()` 现按单节 Li-Poly 开路电压→SOC 查表兜底(实测 4073mV 电池显示 94% 而非 0%)。已在设备上验证。
-- 修复深度休眠无法唤醒: `esp_deep_sleep_enable_gpio_wakeup()` 的第一个参数是【引脚位掩码】, 而代码误传了引脚号 `GPIO_NUM_0`(值 0); 函数对零掩码视为非法, 直接返回并不配置任何唤醒源, 于是芯片深睡后按键(GPIO0)永远无法唤醒。现改为 `1ULL << GPIO_NUM_0` 并检查返回值(失败时打日志, 不再静默睡死)。已在设备上验证: 空闲 5 分钟入睡, 任意按键可唤醒重进应用。
-- 固件构建与 CI 现在会从已提交片段打包 `voicefs` 数据分区，并入完整的 8 MB 镜像（在 `0x210000` 校验），使 `FoloToy-AI-Passport-full.bin` 自包含。新增零 numpy 依赖的 `tools/pack_voicefs.py` 以便可复现地重打包数据分区，并把语音管线文档修正为当前活跃的 Opus 链路（`tools/encode_opus.py`，`voicefs` 位于 `0x210000`/`0x5F0000`）；`tools/encode_voice.py` 现标注为遗留 IMA-ADPCM 版本。
-- 新增 `FAP_SCREENSHOT_V1` 串口截图协议：固件在 USB-Serial 控制台监听，收到请求即把当前 LVGL 屏幕按 RGB565LE 回传，供社区发布工具获取真实画面做封面；LVGL 内存池相应调大以容纳全屏快照。
-- 音效钥匙扣在 5 分钟无按键操作后自动进入深度休眠，按任意键（GPIO0 低电平）唤醒。
-- 调整音效钥匙扣按键交互：列表页上下移动选中不再打断播放（按 OK 停止并重播当前项）；设置页上下直接调节音量，短按/长按 OK 退出返回目录。
-- 修复中文 UI 字库空格渲染：重新生成 `main/fonts/voice_cjk.c` 加入空格（U+0020）字型，设置页电量/音量等文本不再显示方块。
-- 引入**音效钥匙扣**产品应用作为开机入口：固件启动后直接进入三层音效钥匙扣界面（目录浏览 → 声音列表 → 设置），替代原外设 demo 菜单，因此移除 Wi-Fi、BLE 与示例页。新增 `main/voice_app.c`、`main/voice_app.h`，改写 `main/main.c`，并在 `bsp_button.h`/`bsp_button.c` 暴露可重复触发的 `HOLD` 按键事件以支持长按翻页滚动。
-- 在 `partitions.csv` 新增独立的 SPIFFS 数据分区（`voicefs`，3 MB，`0x310000`）存放压缩语音，并通过 `esp_vfs_spiffs_register` 挂载（SPIFFS 是 ESP-IDF 内置组件，规避了组件注册表不可用的 `espressif/esp_littlefs`）。
-- 新增 `tools/encode_voice.py`：用 miniaudio 解码 `assets/project/**` 音频（mp3/ogg/wav），重采样到 8 kHz 单声道，低通滤波，去静音，编码 IMA-ADPCM 4bit，落盘逐段 `.adpcm`，生成 `main/voice_index.h`（编译期路径/中文名/长度表）与 `assets/audio/voice_index.json`，并用 ESP-IDF `spiffsgen.py` 打包 `voicefs.img`。文件名里的非 BMP 字符（如 `🐦`）会替换成可读中文，避免 CJK 界面出现缺字块。
-- 新增 CJK/中文 UI 子集字体（`main/fonts/voice_cjk.c`，思源黑体 noto CJK SC 子集）用于渲染中文目录与语音名，接入 `main/CMakeLists.txt` 并通过 `LV_LVGL_H_INCLUDE_SIMPLE` 启用。
 - 加入厂家为优特利 520mAh 电芯生成的 80 字节 CW2017 profile，并实现内容与更新标志检查、写入后校验、规定的重启时序以及有上限的 SOC 就绪等待。
+
+- 扩充环境引导文档：新增乐鑫 Git 服务镜像（`git.espressif.com.cn`）作为中国大陆首选线路，覆盖 ESP-IDF v5.5.3 及其子模块；补充子模块长等待/超时处理、原地修复，以及 `esp32-wifi-lib` 等大仓的按钉死 commit 浅取；提示按仓库残留的 Jihulab `insteadOf` 旧配置；并把官方离线 release 压缩包加入兜底方案（经验来自 `esp-mosaico/esp-mosaico-vibe`）。
+
 - 按功能域整理文档并采用双入口：根目录 `AGENTS.md` 变为薄路由（只保留硬约束与任务路由），详细的 AI 开发工作流下沉到 `docs/development/ai-guide.md`，`agent-guide.md` 并入其中。为 `docs/development/` 增加二级分区（`engineering/`、`ci/`、`release/`），把 `plays/` 应用档案与 `experiences/` 移入带专属 README 的 `docs/reference/` 参考区；删除 `docs/software-design/`（空脚手架）；把 `assets/{fonts,images,music}/README` 三个叶子 README 并入 `assets/` README；把 `project-completion` 的六个子文档压平为单文件；并把每个目录统一为单一 README，消除所有 `INDEX` 文件与一处重复经验索引。所有交叉引用与文献链接已更新；未丢弃任何内容。
-- 将小程序 BLE 安装兼容提升为二创模板强制契约：固定保护 `cardid`/Recovery 分区，保留上键持续 5 秒进入 Recovery 的 bootloader hook，并在 CI 强制校验合并镜像结构、分区表 MD5/范围、3 MB 应用上限和保护分区数据不入包。
+
+- 删除位于 `0x700000` 的旧 app/test 分区，以及相关的 bootloader、校验和
+  文档要求；固定的 `cardid` 保护分区及其 CI 校验保持不变。
 - 规定多应用发布的 Release 标题约定：tag 按 `v<版本>-<应用名>`（如 `v0.1.0-voice-keychain`）命名，让 Release 标题同时带版本与应用名；发布成功后核对标题，保证一眼扫 Release 列表就能区分是哪个应用。
 - 新增发布后收尾流程：`issue-suggestions` skill 用于把用户反馈作为 issue 提交到上游项目；`experience-pr` skill 用于把可复用的开发经验作为文档 PR 提交；新增 `docs/experiences/` 目录保存单条经验文件；并配套 `project-completion`、`file-issues` 与经验索引文档。
 - 精简仓库根目录：将 GitHub 可识别的社区治理文档迁入 `.github/`，将变更记录迁入 `docs/`，同步全部引用，并在仓库检查中加入根目录文档白名单。

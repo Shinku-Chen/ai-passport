@@ -1,13 +1,48 @@
 // components/bsp/src/bsp_display_lvgl.c
 // LVGL 接入单独成文件:不用 LVGL 的开发者删掉本文件 + idf_component.yml 里的两条依赖即可。
 #include "bsp_display.h"
+#include "bsp_display_rounding.h"
 #include "bsp_pins.h"
 #include "esp_lvgl_port.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 static const char *TAG = "bsp_lvgl";
 
 static lv_display_t *s_disp;
+
+static void rounded_flush_event(lv_event_t *event)
+{
+    lv_display_t *disp = lv_event_get_target(event);
+    const lv_area_t *area = lv_event_get_param(event);
+    lv_draw_buf_t *draw_buf = lv_display_get_buf_active(disp);
+    if (!area || !draw_buf || !draw_buf->data ||
+        lv_display_get_color_format(disp) != LV_COLOR_FORMAT_RGB565) {
+        return;
+    }
+
+    const int32_t width = lv_area_get_width(area);
+    if (draw_buf->header.stride < (uint32_t)width * sizeof(uint16_t)) return;
+
+    for (int32_t y = area->y1; y <= area->y2; ++y) {
+        if (y >= BSP_LVGL_SCREEN_RADIUS &&
+            y < BSP_LCD_H - BSP_LVGL_SCREEN_RADIUS) {
+            continue;
+        }
+
+        uint16_t *row = (uint16_t *)(draw_buf->data +
+                                     (y - area->y1) * draw_buf->header.stride);
+        for (int32_t x = area->x1; x <= area->x2; ++x) {
+            if (bsp_display_pixel_outside_rounded_rect(
+                    x, y, BSP_LCD_W, BSP_LCD_H, BSP_LVGL_SCREEN_RADIUS)) {
+                // The port swaps RGB565 bytes after this event; black is 0 in
+                // either byte order, so masking here is safe.
+                row[x - area->x1] = 0;
+            }
+        }
+    }
+}
 
 lv_display_t *bsp_lvgl_init(void) {
     if (s_disp) return s_disp;
@@ -38,11 +73,28 @@ lv_display_t *bsp_lvgl_init(void) {
         .flags = { .buff_dma = true, .swap_bytes = true },
     };
     s_disp = lvgl_port_add_disp(&dc);
-    if (!s_disp) { ESP_LOGE(TAG, "lvgl_port_add_disp 失败"); return NULL; }
+    if (!s_disp) {
+        ESP_LOGE(TAG, "lvgl_port_add_disp 失败");
+        esp_err_t e = lvgl_port_deinit();
+        if (e != ESP_OK) ESP_LOGE(TAG, "lvgl_port_deinit 回滚失败: %s", esp_err_to_name(e));
+        // 2.9.0 的 deinit 由 LVGL task 完成；无 display 时该 task 每 tick 检查退出标志。
+        vTaskDelay(pdMS_TO_TICKS(10));
+        return NULL;
+    }
 
-    ESP_LOGI(TAG, "LVGL 就绪");
+    // Mask the final RGB565 flush instead of using root-screen clip_corner.
+    // Full-screen rounded clipping creates an ARGB layer that does not fit the
+    // 24 KB LVGL pool reliably on this no-PSRAM target.
+    lv_display_add_event_cb(s_disp, rounded_flush_event, LV_EVENT_FLUSH_START, NULL);
+
+    ESP_LOGI(TAG, "LVGL 就绪，全局圆角=%d，外部填充=黑色", BSP_LVGL_SCREEN_RADIUS);
     return s_disp;
 }
 
-bool bsp_lvgl_lock(int timeout_ms) { return lvgl_port_lock(timeout_ms); }
-void bsp_lvgl_unlock(void)         { lvgl_port_unlock(); }
+bool bsp_lvgl_lock(int timeout_ms) {
+    if (!s_disp) return false;
+    return lvgl_port_lock(timeout_ms);
+}
+void bsp_lvgl_unlock(void) {
+    if (s_disp) lvgl_port_unlock();
+}
