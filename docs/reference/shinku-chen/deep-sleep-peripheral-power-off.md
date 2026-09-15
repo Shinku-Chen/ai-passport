@@ -55,6 +55,14 @@ REG45 to `0x01` to disable the internal BCLK/LRCK pull-ups, reads back registers
 `0x00`, `0x01`, `0x0D`, `0x0E`, `0x12`, and `0x45`, and retries the full sequence
 once after 5 ms. This works whether or not PCM was previously opened.
 
+REG0E is written as `0xFF`, but only bits 6:0 are checked: mask `0x7F`, expected
+value `0x7F`. A readback of either `0x7F` or `0xFF` passes. Comparing bit 7 would
+falsely reject a successful suspend on hardware where it reads as zero. The
+other five registers retain full-byte checks, and I2C errors or mismatches in
+checked bits still trigger retry and failure. The Low Power demo cancels light
+sleep on a real suspend failure and attempts audio recovery; deep sleep logs
+the failure and continues shutting down.
+
 ## MCU pins still need an explicit terminal state
 
 ESP-IDF isolates unheld digital GPIOs while entering deep sleep, but explicit

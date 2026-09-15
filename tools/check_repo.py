@@ -27,6 +27,49 @@ ROOT_MARKDOWN_ALLOWLIST = {
     "README.md",
     "README.zh_CN.md",
 }
+# Register only concrete, vendored component directories, e.g. "components/foo".
+# These exemptions never change the input to sensitive-content/conflict checks.
+VENDORED_DOC_ROOTS: tuple[str, ...] = ()
+
+
+def vendored_document_roots(errors: list[str]) -> tuple[Path, ...]:
+    """Validate explicit repository-relative directories; reject symlink roots."""
+    roots: list[Path] = []
+    for name in VENDORED_DOC_ROOTS:
+        if (
+            not isinstance(name, str)
+            or not name
+            or "\\" in name
+            or "\x00" in name
+            or re.match(r"^[A-Za-z]:", name)
+            or any(part in ("", ".", "..") for part in name.split("/"))
+        ):
+            errors.append(f"invalid VENDORED_DOC_ROOTS entry {name!r}: use a repository-relative directory")
+            continue
+        path = ROOT / name
+        try:
+            resolved = path.resolve(strict=True)
+        except (OSError, RuntimeError):
+            errors.append(f"invalid VENDORED_DOC_ROOTS entry {name!r}: directory does not resolve")
+            continue
+        if resolved != path or not resolved.is_relative_to(ROOT) or not resolved.is_dir():
+            errors.append(f"invalid VENDORED_DOC_ROOTS entry {name!r}: require a real directory without symlinks")
+            continue
+        roots.append(resolved)
+    return tuple(roots)
+
+
+def is_vendored_document(path: Path, roots: tuple[Path, ...]) -> bool:
+    """Require both the file's listed path and its target to stay in one root."""
+    for root in roots:
+        if not path.is_relative_to(root):
+            continue
+        try:
+            if path.resolve().is_relative_to(root):
+                return True
+        except (OSError, RuntimeError):
+            return False
+    return False
 
 
 def git_files() -> list[Path]:
@@ -86,9 +129,11 @@ def check_required_files(errors: list[str]) -> None:
             )
 
 
-def check_markdown_links(files: list[Path], errors: list[str]) -> None:
+def check_markdown_links(
+    files: list[Path], errors: list[str], vendored_roots: tuple[Path, ...] = ()
+) -> None:
     for path in files:
-        if path.suffix.lower() != ".md":
+        if path.suffix.lower() != ".md" or is_vendored_document(path, vendored_roots):
             continue
         text = path.read_text(encoding="utf-8")
         for raw_target in MARKDOWN_LINK_RE.findall(text):
@@ -101,9 +146,14 @@ def check_markdown_links(files: list[Path], errors: list[str]) -> None:
                 errors.append(f"{path.relative_to(ROOT)}: missing link target {target}")
 
 
-def check_document_languages(files: list[Path], errors: list[str]) -> None:
+def check_document_languages(
+    files: list[Path], errors: list[str], vendored_roots: tuple[Path, ...] = ()
+) -> None:
     """Require an English default and a linked Simplified Chinese peer."""
-    markdown = {path.resolve() for path in files if path.suffix.lower() == ".md"}
+    markdown = {
+        path for path in files
+        if path.suffix.lower() == ".md" and not is_vendored_document(path, vendored_roots)
+    }
 
     for path in sorted(markdown):
         name = path.name
@@ -112,7 +162,7 @@ def check_document_languages(files: list[Path], errors: list[str]) -> None:
 
         if name.endswith(".zh_CN.md"):
             default_name = f"{name[:-len('.zh_CN.md')]}.md"
-            default_path = path.with_name(default_name).resolve()
+            default_path = path.with_name(default_name)
             if default_path not in markdown:
                 errors.append(
                     f"{path.relative_to(ROOT)}: missing English default {default_name}"
@@ -124,7 +174,7 @@ def check_document_languages(files: list[Path], errors: list[str]) -> None:
             continue
 
         chinese_name = f"{path.stem}.zh_CN.md"
-        chinese_path = path.with_name(chinese_name).resolve()
+        chinese_path = path.with_name(chinese_name)
         if chinese_path not in markdown:
             errors.append(
                 f"{path.relative_to(ROOT)}: missing Simplified Chinese peer {chinese_name}"
@@ -195,10 +245,11 @@ def check_conflict_markers(files: list[Path], errors: list[str]) -> None:
 
 def main() -> int:
     errors: list[str] = []
+    vendored_roots = vendored_document_roots(errors)
     files = text_files()
     check_required_files(errors)
-    check_markdown_links(files, errors)
-    check_document_languages(files, errors)
+    check_markdown_links(files, errors, vendored_roots)
+    check_document_languages(files, errors, vendored_roots)
     check_action_pins(errors)
     check_issue_forms(errors)
     check_sensitive_content(files, errors)

@@ -48,6 +48,12 @@ Wi-Fi 和 Bluetooth LE 协议栈由各自 demo 页持有，进入 Low Power 页�
 `0x01`、`0x0D`、`0x0E`、`0x12` 和 `0x45`，并在 5 ms 后重试一次完整序列。
 无论之前是否打开 PCM，该路径都能执行。
 
+REG0E 写入值仍为 `0xFF`，但只校验 bit6:0：掩码和预期值均为 `0x7F`。
+读回 `0x7F` 或 `0xFF` 都通过。在 bit7 读为零的硬件上，比较该位会把成功的
+suspend 误判为失败。其余五个寄存器仍做完整字节校验，I2C 错误或参与校验的位
+不符仍触发重试和失败。真正 suspend 失败时，Low Power demo 会取消 light sleep
+并尝试恢复音频；deep sleep 则记录失败并继续关闭流程。
+
 ## MCU 引脚仍需明确的终端状态
 
 ESP-IDF 在进入 deep sleep 时会隔离未 hold 的数字 GPIO，但显式释放引脚仍有价值：

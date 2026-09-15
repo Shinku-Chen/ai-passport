@@ -217,6 +217,7 @@ MCU 是 I2S master，ES8311 是 slave；I2S0 的 TX/RX 全双工通道共享 MCL
 - I2S DMA 当前为 6 个 descriptor、每个 240 frame。更改 DMA 或 LVGL buffer 前必须联合评估内部 RAM。
 - 调用 `bsp_audio_sleep()` 前必须停止所有 PCM 读写。该接口通过已打开的控制接口直接执行完整 ES8311 suspend 寄存器序列，不依赖 codec-device opened 标志，因此开机后从未播放也不需无声 open。它会回读 `0x00`、`0x01`、`0x0D`、`0x0E`、`0x12` 和 `0x45`，失败后等待 5 ms 重试一次完整序列，并即使音频从未打开也显式停止两条 I2S channel。
 - light sleep 返回后调用 `bsp_audio_wake()`，以休眠前格式重新打开 codec/I2S 通路。两个接口均为幂等操作；音频子系统不可用时视为无需暂停或恢复。deep sleep 唤醒会重启，改由正常 `bsp_audio_init()` 流程初始化。
+- REG0E 仍写入 `0xFF`，但回读只比较 bit6:0，掩码和预期值均为 `0x7F`。读到 `0x7F` 或 `0xFF` 都通过，bit7 读为零不应误判为 suspend 失败。其余五个寄存器继续逐字节完整校验。I2C 错误或参与校验的位不符，重试一次后仍返回失败：Low Power demo 取消 light sleep 并尝试恢复音频；deep sleep 则记录错误并继续终端关闭流程。
 - 只在终端 deep sleep 中，suspend 后调用 `bsp_audio_prepare_deep_sleep()`，使 MCLK、BCLK、WS、DOUT 和 DIN 成为无内部上下拉的高阻输入。不得将该接口用于 light sleep；活动 I2S 引脚路由只会在重启后恢复。
 - 软件 suspend 会停止 ES8311 的 ADC/DAC、模拟路径、麦克风偏置路径、内部时钟、BCLK/LRCK 内部上拉及数字/模拟功能模块，但不会切断芯片物理 3.3 V 供电。由于 `BSP_I2S_PA_CTRL` 为 `-1`，外部功放也不受软件控制；这部分硬件残余待机电流需另行实测。
 

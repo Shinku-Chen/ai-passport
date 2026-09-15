@@ -66,15 +66,19 @@ class DeepSleepContractTest(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     def test_es8311_critical_registers_are_read_back(self) -> None:
-        expected = [
-            (0x00, 0x1F), (0x01, 0x00), (0x0D, 0xFC),
-            (0x0E, 0xFF), (0x12, 0x02), (0x45, 0x01),
-        ]
-        actual = register_pairs(initializer(self.audio, "s_es8311_sleep_verify"))
-        self.assertEqual(actual, expected)
+        # The C host test exhausts all readback values against the actual policy.
+        # This integration contract makes sure the driver uses it, and that an
+        # I2C read failure cannot pass even when the output byte matches.
         body = function_body(self.audio, "es8311_force_sleep_once")
         self.assertIn("s_ctrl->write_reg", body)
         self.assertIn("s_ctrl->read_reg", body)
+        self.assertIn("i < bsp_es8311_sleep_check_count", body)
+        self.assertIn("&bsp_es8311_sleep_checks[i]", body)
+        self.assertRegex(
+            body,
+            r"read_result == ESP_CODEC_DEV_OK\s*&&\s*"
+            r"bsp_es8311_sleep_check_matches\(item, actual\)",
+        )
 
     def test_es8311_force_sleep_retries_once_after_five_ms(self) -> None:
         self.assertRegex(self.audio, r"#define\s+ES8311_SLEEP_ATTEMPTS\s+2\b")

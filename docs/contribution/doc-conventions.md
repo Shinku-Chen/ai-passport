@@ -15,6 +15,39 @@ These rules apply equally to human contributors and AI agents. Documentation is 
 - Code, commands, paths, URLs, identifiers, and data fields remain unchanged between translations where appropriate.
 - The repository check rejects an unpaired document, a missing language switch, or CJK prose in an English default file.
 
+## Vendored third-party documentation
+
+Preserve upstream documentation when copying a third-party component into the
+repository. To exempt its original Markdown from local-link and bilingual
+checks, explicitly register the component's directory in `VENDORED_DOC_ROOTS`
+in [`tools/check_repo.py`](../../tools/check_repo.py). The registry is empty by
+default. For example, after adding a component at `components/vendor_audio`:
+
+```python
+VENDORED_DOC_ROOTS: tuple[str, ...] = (
+    "components/vendor_audio",
+)
+```
+
+Register an existing, concrete component directory using a repository-relative
+path with `/` separators. Empty paths, the repository root, absolute paths,
+`.` or `..` segments, and symlink directories are rejected. Matching uses whole
+path segments: this entry does not exempt `components/vendor_audio_extra`.
+Files linked outside the registered directory are not exempt. Do not register
+broad first-party trees such as `components` or `docs`.
+
+Only upstream Markdown under the registered roots skips `check_markdown_links`
+and `check_document_languages`. Keep those files in the normal repository scan:
+secret patterns, unsanitized device QR links, and merge-conflict markers still
+fail validation. Do not implement these exceptions through `.gitignore`,
+`git_files()`, or `text_files()` filters.
+
+Record the component's upstream source URL, pinned version or commit, license,
+and any local modifications in a project-maintained English/Chinese document
+pair outside its exempt directory. Project-authored integration guides remain
+subject to the normal language and link rules. Adding an exemption does not
+require rewriting or translating the original upstream documents.
+
 ## Task-based context
 
 - Every task starts with root `AGENTS.md` only.

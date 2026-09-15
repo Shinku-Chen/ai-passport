@@ -14,6 +14,34 @@
 - 新增、移动或删除任一语言文件时，必须同步处理配对文件和所有索引。
 - `tools/check_repo.py` 与 CI 会拒绝缺少配对文件、缺少切换链接或英文默认页包含中文正文的变更。
 
+## 随仓库引入的第三方文档
+
+把第三方组件复制到仓库时，应保留其上游原始文档。如需豁免其中 Markdown
+的本地链接和双语检查，在 [`tools/check_repo.py`](../../tools/check_repo.py)
+的 `VENDORED_DOC_ROOTS` 中显式登记组件目录。该列表默认为空。例如，引入位于
+`components/vendor_audio` 的组件后，可登记：
+
+```python
+VENDORED_DOC_ROOTS: tuple[str, ...] = (
+    "components/vendor_audio",
+)
+```
+
+登记项必须是已存在的具体组件目录，使用相对仓库根目录的路径和 `/` 分隔符。
+空路径、仓库根目录、绝对路径、`.` 或 `..` 路径段以及符号链接目录均会被拒绝。
+匹配按完整路径段进行，因此此项不会豁免 `components/vendor_audio_extra`。
+链接到登记目录之外的文件也不豁免。不要登记 `components`、`docs` 等包含自有
+内容的大范围目录。
+
+只有登记目录内的上游 Markdown 跳过 `check_markdown_links` 和
+`check_document_languages`。这些文件仍参加正常的仓库扫描：敏感凭证模式、
+未脱敏的设备二维码链接和合并冲突标记仍会导致校验失败。不得通过 `.gitignore`、
+`git_files()` 或 `text_files()` 过滤来实现这些豁免。
+
+组件的上游来源 URL、固定版本或提交、许可证以及本地修改，应记录在豁免目录外、
+由项目维护的中英文配对文档中。项目自己编写的集成说明仍须遵守正常的双语和链接
+规则。添加豁免不要求改写或翻译第三方原始文档。
+
 ## 按任务加载上下文
 
 - 所有任务只强制先读仓库根 `AGENTS.md`。

@@ -17,7 +17,8 @@ esp_err_t bsp_audio_init(void);
 //   音调和速度都快一倍。故本函数在格式变化时先 close 再 open。
 esp_err_t bsp_audio_set_format(uint32_t hz, uint8_t bits, uint8_t ch);
 
-// 进入低功耗前强制执行 ES8311 完整 suspend 寄存器序列，回读关键寄存器，
+// 进入低功耗前强制执行 ES8311 完整 suspend 寄存器序列，回读关键寄存器
+// （REG0E 只比较 bit6:0，其余寄存器比较全部位），
 // 失败时重试一次，并显式停止 I2S TX/RX。该路径不依赖 codec-dev 是否打开过，
 // 因此开机后从未播放也能正确暂停。调用前必须停止所有 PCM 读写；函数幂等，
 // 音频未初始化时视为无需处理并返回成功。

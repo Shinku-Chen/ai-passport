@@ -1,6 +1,7 @@
 // components/bsp/src/bsp_audio.c
 // 移植自 trae_card/components/platform/platform_esp32/src/audio_es8311.c
 #include "bsp_audio.h"
+#include "bsp_es8311_sleep_check.h"
 #include "bsp_i2c.h"
 #include "bsp_pins.h"
 #include "esp_codec_dev.h"
@@ -44,11 +45,6 @@ static const es8311_reg_value_t s_es8311_sleep_sequence[] = {
     {0x14, 0x00}, {0x0D, 0xFA}, {0x15, 0x00}, {0x02, 0x10},
     {0x00, 0x00}, {0x00, 0x1F}, {0x01, 0x30}, {0x01, 0x00},
     {0x45, 0x01}, {0x0D, 0xFC}, {0x02, 0x00},
-};
-
-static const es8311_reg_value_t s_es8311_sleep_verify[] = {
-    {0x00, 0x1F}, {0x01, 0x00}, {0x0D, 0xFC},
-    {0x0E, 0xFF}, {0x12, 0x02}, {0x45, 0x01},
 };
 
 static esp_err_t audio_disable_i2s_channels(void) {
@@ -98,16 +94,16 @@ static esp_err_t es8311_force_sleep_once(unsigned attempt) {
         valid = false;
     }
 
-    for (size_t i = 0; i < sizeof(s_es8311_sleep_verify) /
-                           sizeof(s_es8311_sleep_verify[0]); i++) {
-        const es8311_reg_value_t *item = &s_es8311_sleep_verify[i];
+    for (size_t i = 0; i < bsp_es8311_sleep_check_count; i++) {
+        const bsp_es8311_reg_check_t *item = &bsp_es8311_sleep_checks[i];
         uint8_t actual = 0;
         int read_result = s_ctrl->read_reg(s_ctrl, item->reg, 1, &actual, 1);
-        if (read_result == ESP_CODEC_DEV_OK && actual == item->value) continue;
+        if (read_result == ESP_CODEC_DEV_OK &&
+            bsp_es8311_sleep_check_matches(item, actual)) continue;
 
         ESP_LOGE(TAG, "ES8311 休眠校验失败 attempt=%u REG%02X "
-                      "expected=0x%02X actual=0x%02X error=%d",
-                 attempt, item->reg, item->value, actual, read_result);
+                      "expected=0x%02X mask=0x%02X actual=0x%02X error=%d",
+                 attempt, item->reg, item->value, item->mask, actual, read_result);
         valid = false;
     }
     return valid ? ESP_OK : ESP_FAIL;
