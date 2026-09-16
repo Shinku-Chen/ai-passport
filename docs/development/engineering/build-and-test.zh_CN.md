@@ -7,6 +7,11 @@
 使用 ESP-IDF 5.5.3。全新机器或缺少工具链时，先按
 [环境引导](environment-setup.zh_CN.md)完成安装。
 
+> **向设备下载（烧录）新固件前，无需备份设备内部原有固件。** 不要求先读出
+> 原固件，也不把原固件备份作为烧录前置条件。烧录会覆盖原固件，不会自动恢复
+> 原固件。这不代表用户数据会被保留：如果需要保留已有设置或记录，应事先
+> 导出或另行保存。详见[烧录与已存数据](firmware-layout.zh_CN.md#烧录与已存数据)。
+
 > 固件编译优先运行 `./tools/validate.sh --firmware`。空白设备初始化或有意完整
 > 刷新时，把验证通过的 `build/FoloToy-AI-Passport-full.bin` 从 `0x0` 写入；
 > 合并镜像可能重置 NVS，需要保留已有 NVS 状态时使用分段 `idf.py flash`。
@@ -26,6 +31,50 @@ idf.py fullclean              # 只清空过期生成状态（勿用于清理用
 `idf.py fullclean` 不能让已有 `sdkconfig` 完整同步变更后的 defaults。需要重建
 target 或已跟踪 defaults 时，先保留有意的本地设置，再运行
 `idf.py set-target esp32c3`。
+
+### 加速重复编译
+
+ccache 能在源码需要重新编译时复用已有编译结果。ESP-IDF 5.5.3 默认不启用
+ccache。激活 ESP-IDF 后，先确认 ccache 可用，再为单次构建启用（以下命令
+同样适用于 Linux/macOS shell 和 Windows 原生 ESP-IDF 终端）：
+
+```text
+ccache --version
+idf.py --ccache build
+```
+
+也可以在当前 Linux/macOS shell 及其子进程中启用，让验证脚本一并使用：
+
+```bash
+export IDF_CCACHE_ENABLE=1
+idf.py build
+```
+
+这是 `idf.py` 选项，不是 `sdkconfig` 或 `menuconfig` 配置。需要在项目或 CI
+中重复启用时，显式传入 `--ccache`，或在该构建环境设置
+`IDF_CCACHE_ENABLE=1`；不要擅自修改 shell 启动文件。参见
+[ESP-IDF 5.5.3 选项定义](https://github.com/espressif/esp-idf/blob/v5.5.3/tools/idf_py_actions/core_ext.py)。
+
+先检查当前缓存配置，不要假定固定路径：
+
+```text
+ccache --show-config
+ccache --show-stats
+```
+
+实际 `cache_dir` 取决于 ccache 版本、平台、配置以及 `CCACHE_DIR`，并不总是
+`~/.ccache`。把它放在 `build/` 和临时验证目录之外，清理这些目录时才能保留
+缓存。清缓存不是日常构建步骤。只有明确需要清空当前缓存时，才使用保留
+配置文件的 `ccache --clear`，而不是删除整个目录；这也会清除共用该缓存的
+其他项目的编译结果。参见 [ccache 手册](https://ccache.dev/manual/latest.html)。
+
+Windows 上的杀毒或终端安全软件实时扫描可能拖慢构建，但应先诊断瓶颈。
+Microsoft Defender 可使用其
+[性能分析器](https://learn.microsoft.com/en-us/defender-endpoint/performance-analyzer-reference)，
+分析结果不等于自动建议添加排除项。排除项会降低防护能力，且属于可选措施：
+必须按适用安全策略取得用户或管理员批准，再把例外限制在已确认问题的最小
+范围内。不要例行排除整个 ESP-IDF 安装目录、工具链目录或工程，也不要关闭
+实时防护。
 
 仓库提交 `dependencies.lock` 以固定 ESP-IDF Managed Components 的解析结果。修改 `idf_component.yml` 后必须使用 ESP-IDF 5.5.3 重新生成锁文件、review 版本变化并与 manifest 一起提交；普通构建不应产生未提交的锁文件差异。
 

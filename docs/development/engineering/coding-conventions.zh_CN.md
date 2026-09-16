@@ -4,8 +4,8 @@
 
 # 代码约定（Coding Conventions）
 
-- **语言/风格**：C 用四空格缩进 + K&R 大括号，跟随相邻文件；函数/局部变量 `snake_case`，公开硬件常量 `BSP_*`，文件内状态 `s_` 前缀；BSP API 用 `bsp_` 前缀，demo 入口 `demo_<feature>_<action>`；内部符号优先 `static`。UI 文案用英文，解释性注释可用中文；保留记录硬件寄存器值与内存约束的注释。
-- **中文方框字陷阱**：当前基线只启用 LVGL Montserrat 14 和 20，这些字体不包含 CJK glyph。即使源码和字符串均为 UTF-8，中文也会显示为缺字方框，修改源文件编码不能解决。添加中文 UI 前，必须编译并选用覆盖全部实际字符的 CJK 字体，优先生成 glyph 子集而非引入完整字库；中英文混排时配置合适的 fallback，同时核对 Flash、内部 RAM 占用并在真机逐字验证。
+- **语言/风格**：C 用四空格缩进 + K&R 大括号，跟随相邻文件；函数/局部变量 `snake_case`，公开硬件常量 `BSP_*`，文件内状态 `s_` 前缀；BSP API 用 `bsp_` 前缀，demo 入口 `demo_<feature>_<action>`；内部符号优先 `static`。基础 demo UI 文案与默认文档用英文；应用 UI 可以使用中文，但必须实现并验证字体支持。解释性注释可用中文并保留通用英文技术术语；保留记录硬件寄存器值与内存约束的注释。
+- **中文空白/方框陷阱**：添加中文 UI 前必须完成[字体检查清单](#中文字体与缺字排查)；仅把字符串改成 UTF-8 不会补齐缺失的字形。
 - **复用既有组件**：可复用硬件逻辑放 `components/bsp`；菜单/动画/业务交互/验证页面放 `main`。不要另造轮子，遵循既有 BSP API。
 - **主题不是可删组件**：`ui_pixel` 主题体系（天空底色、草地、标题牌、吉祥物、墨色描边面板）属于用户界面的一部分，不是可删除的"不必要组件"。精简组件或直接载入功能界面时，保留该主题，并通过 `ui_pixel_screen_create()` / `ui_pixel_panel_create()` 建屏。
 - **默认右上角电量**：用户界面在没有默认要求的情况下，默认在**右上角显示电量信息**；除非开发者明确指定其它位置或明确不需要。电量读取 `bsp_battery_soc()`（需要时用 `bsp_battery_mv()`），以小型电池图标或百分比呈现在屏幕右上区域；读值为 `-1`（不可用）时优雅降级，不要画一个数字。**位置不能和右上角已有的白云装饰冲突**（`add_cloud`，约 `x≈188, y≈8`）：放在白云旁边或下方的空闲蓝天区，或屏幕最右上边角，不要盖住白云。
@@ -18,3 +18,45 @@
 - **缓存组件**：若引入缓存组件（如 NVS 缓存、内存缓存等），默认设置过期时间；长期缓存需说明保留原因、过期风险与清理机制。当前固件不含需要 TTL 约束的缓存，无需特别处理。
 - **资源约束**：ESP32-C3 无 PSRAM，不增加 LVGL buffer / 音频分配 / 任务栈前先核对内部 RAM；足够的总空闲堆不保证有足够大连续块。
 - **关注功耗**：本设备是小电池供电的可穿戴产品，编写固件时要留意功耗。避免让屏幕长时间点亮：屏幕空闲时调暗或关闭背光，并及时回到低功耗状态（light/deep sleep），不要让它无事可做地一直亮着。睡眠相关指引见 [`../hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md`](../../hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.zh_CN.md)。
+
+## 中文字体与缺字排查
+
+配置项、转换命令、CMake 接入、安全 fallback 代码和缺字检查示例见 [LVGL 中文显示详细指南](lvgl-chinese-fonts.zh_CN.md)。
+
+基线在 [`sdkconfig.defaults`](../../../sdkconfig.defaults) 中启用 Montserrat 14 和 20，两者都不包含中文字形。因此，即使字符串是正确的 UTF-8，中文仍可能显示为方框或空白。串口能打印中文、电脑安装了中文字体、固件编译成功，都不能证明 LVGL 能显示这些文字。
+
+### 开发或修改中文 UI 前
+
+1. **明确字符范围。** 收集所有显示文案，包括标题、按钮、提示、空状态/错误状态、单位、标点和动态内容。所选字体或 fallback 链必须覆盖实际使用的英文字母、数字、全角标点以及 `LV_SYMBOL_*` 图标。文案变化时，重新生成受影响的各字号/子集。内置 CJK 子集或从固定 UI 文案提取的子集不保证覆盖任意中文姓名、Wi-Fi SSID、服务器/用户输入；必须声明支持的字符范围和明确的超范围字符处理策略。
+2. **生成可复现的素材。** 选用授权允许且源字库确实包含所需字形的字体。优先按应用实际字号生成子集，不直接塞入整套字体家族。可复用源文件/生成文件放在 `assets/fonts/`，并在[素材文档](../../../assets/README.zh_CN.md)记录授权、转换工具版本、命令、字符清单、字号和位深。生成结果须兼容 [`dependencies.lock`](../../../dependencies.lock) 锁定的 LVGL 版本（当前为 9.5.0）。生成选项见[官方字体转换工具](https://github.com/lvgl/lv_font_conv)；本基线不自带应用专用中文字库。
+3. **编译并实际选用字体。** 把生成的 `.c` 加入使用方组件的 CMake `SRCS`，用 `LV_FONT_DECLARE` 声明导出的字体符号，再绑定到实际绘制文字的控件/部件。只把 TTF/OTF 或 `.c` 复制进 `assets/`，不会自动完成编译、加载或选用。检查生成的 `sdkconfig` 中 `CONFIG_LV_TXT_ENC_UTF8=y`；仅修改默认值不一定更新已有配置（见[构建与验证](build-and-test.zh_CN.md)）。
+4. **检查样式覆盖与 fallback。** 修改默认字体或 screen 上可继承的字体，并不会覆盖子控件显式指定的字体。[`main/ui_pixel.c`](../../../main/ui_pixel.c) 的 `ui_pixel_label()` 会设置局部字体，标题明确使用 Montserrat 20；菜单/demo 标签也有直接选用字体的代码。逐项检查标题、标签、控件部件及焦点/按下/禁用状态。混排可使用覆盖全部所需字形的字体，或明确配置 fallback 链。不得通过强制去掉 `const` 来修改 Flash 中的字体描述符，不得形成 fallback 环路，也不得在控件仍使用字体时释放它。
+5. **评估资源。** 生成后检查 Flash/静态 RAM，运行时检查 free heap/largest free block，并包含网络同时启用的场景。常量位图字体数据可以驻留 Flash；动态加载、解码和缓存仍可能消耗 RAM。不要为解决缺字而盲目扩大 LVGL 内存池或显示缓冲；更多内存不会生成字库中不存在的字形。
+
+例如，生成并链接包含所需字形的 `app_font_20` 后，显式选用它。此符号仅作示例，不是仓库已经提供的字体。对象操作必须在 LVGL 任务中执行，或持有 `bsp_lvgl_lock()`：
+
+```c
+LV_FONT_DECLARE(app_font_20);
+
+/* Inside the application's UI creation function. */
+lv_obj_t *label = lv_label_create(parent);
+lv_obj_set_style_text_font(label, &app_font_20, LV_PART_MAIN | LV_STATE_DEFAULT);
+lv_label_set_text(label, "\u4E2D\u6587 ABC 123");
+```
+
+### 排查顺序
+
+| 现象 | 优先检查 |
+| --- | --- |
+| 英文正常，中文空白或方框 | 控件实际字体及 fallback 覆盖、UTF-8 输入和 `CONFIG_LV_TXT_ENC_UTF8`；关闭 `CONFIG_LV_USE_FONT_PLACEHOLDER` 只会隐藏缺字提示，不会修复缺字 |
+| 只有部分字符或新文案异常 | 子集漏字、标点、各字号字库及超出支持范围的动态内容；重新生成并链接受影响的素材 |
+| 正文正常，标题/按钮或选中状态异常 | 局部显式字体、主题/状态覆盖，以及真正绘制文字的控件部件所用字体 |
+| 字形覆盖正确，但文字不可见或被截断 | 文字颜色/透明度、隐藏标志、标签尺寸、行高、父容器裁剪及绘制/内存分配错误；不能把所有空白标签都认定为字库问题 |
+
+### 必须完成的验收
+
+- 对实际使用的每个字体/fallback 链检查全部所需可打印 Unicode 码点。在当前锁定的 LVGL API 中，`lv_font_get_glyph_dsc()` 必须成功且 `is_placeholder` 为 false；占位字形不算覆盖。应先将 UTF-8 解码为码点，不能逐字节检查。记录未覆盖的码点，并在应用的字体生成流程中加入可重复执行的覆盖检查。
+- 真机检查所有页面、错误/空状态，中英数/标点/图标混排，不同字号和交互状态、长文本，以及支持范围内外的动态内容。确认无方框、空白、裁剪和 fallback 基线/行高错位；不能只凭一个测试标签显示成功就认定整个应用通过。
+- 交付时记录测试文案/字符范围、字号与资源变化。基线 host tests 不会验证衍生应用的字库覆盖或屏幕输出。没有进行真机检查时，报告 `Device tests: NOT RUN`，并在 `Unverified` 中明确列出中文显示。
+
+字体选择与 fallback 语义见 [LVGL 9.5 字体概览](https://docs.lvgl.io/9.5/main-modules/fonts/overview.html)，缺字处理见 [LVGL 9.5 实现](https://github.com/lvgl/lvgl/blob/v9.5.0/src/font/lv_font.c)。

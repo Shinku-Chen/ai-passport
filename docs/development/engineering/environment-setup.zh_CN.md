@@ -267,6 +267,52 @@ printf 'IDF_PATH=%s\n' "${IDF_PATH}"
 
 版本不是严格的 `ESP-IDF v5.5.3` 时必须停止，不得用其他版本生成项目配置。
 
+激活只对当前 shell 生效：运行 `export.sh` 必须用带点的形式（或 `source`），
+不能写成 `./export.sh`——那会在子 shell 中执行，当前 shell 不会配置成功
+（之后报 `IDF_PATH is not set` 或 `idf.py: command not found`）。安装时使用过
+自定义 `IDF_TOOLS_PATH` 的，每次 `export.sh` 前都要重新设置——脚本不会记住
+上一个 session 的值。
+
+### 工具链安装失败
+
+工具链下载出现校验和不匹配或归档损坏时，先从选定的 ESP-IDF 5.5.3 checkout
+重新运行安装器，保持相同的 `IDF_TOOLS_PATH` 和下载路线设置。例如在
+Linux/macOS 上：
+
+```bash
+"${AI_PASSPORT_IDF_ROOT}/install.sh" esp32c3
+```
+
+使用中国大陆路线时，按[选择下载路线](#选择下载路线)中的示例，把
+`IDF_GITHUB_ASSETS` 应用于这次调用。
+[ESP-IDF 5.5.3 安装器](https://github.com/espressif/esp-idf/blob/v5.5.3/tools/idf_tools.py)
+会校验已有归档并替换失败的归档，而不是清空全部下载缓存。
+
+下载缓存位于实际 `IDF_TOOLS_PATH` 下的 `dist` 目录。未覆盖路径时，通常为
+Linux/macOS 的 `~/.espressif/dist` 或 Windows 的
+`%USERPROFILE%\.espressif\dist`。不要清空整个目录，其中可能含其他 ESP-IDF
+版本共用的有效离线归档。若仍需手动处理，先根据日志和实际工具路径确认
+具体失败的归档，取得批准后仅把该文件移到可恢复的位置，再重试。
+Windows 上重试官方安装器，或在 ESP-IDF Command Prompt 中进入选定 checkout
+后重新运行 `install.bat esp32c3`；在该终端中保留相同的自定义工具路径和下载
+路线设置。
+
+macOS 上的 `[SSL: CERTIFICATE_VERIFY_FAILED]` 只表示证书校验失败，并不能
+确定唯一修复方式。先确认安装器实际使用的 Python 解释器及其安装来源，
+再检查该解释器的信任证书和已批准使用的代理。
+[`Install Certificates.command` 辅助脚本](https://docs.python.org/3.13/using/mac.html#installation-steps)
+属于 python.org 的 macOS 安装器流程，只对提供该脚本的对应 Python 安装使用。
+Homebrew 等其他 Python 发行方式不一定提供它，应按其证书配置流程处理。
+更改信任证书前需取得批准，禁止通过关闭 TLS 校验绕过错误。
+
+Apple Silicon 上的 `tool riscv32-esp-elf has no installed versions` 可能只是
+工具未安装或工具路径错误，不能据此判断架构不匹配。先核对 `IDF_TOOLS_PATH`
+并重新运行 ESP32-C3 安装器。若出现 `bad CPU type in executable`，再检查
+主机、当前 shell／Python 和失败二进制的架构。ESP-IDF 5.5.3 提供
+[原生 macOS ARM64 ESP32-C3 工具链](https://github.com/espressif/esp-idf/blob/v5.5.3/tools/tools.json)，
+应优先使用。只有确认必须使用仅支持 x86-64 的可执行程序后，才考虑 Rosetta，
+且安装前必须取得批准；它不是 ESP32-C3 的常规前置条件。
+
 中国大陆环境可在当前终端临时加速 Managed Component 归档下载：
 
 ```bash

@@ -15,7 +15,9 @@ This directory contains AI Passport engineering rules and reusable workflows, gr
 - [environment-setup.md](engineering/environment-setup.md): clean-machine bootstrap for AI agents, including international and mainland China download routes.
 - [build-and-test.md](engineering/build-and-test.md): ESP-IDF build and validation.
 - [firmware-layout.md](engineering/firmware-layout.md): default and user-defined partition layouts and merged-artifact validation.
-- [coding-conventions.md](engineering/coding-conventions.md): source-code and resource conventions.
+- [coding-conventions.md](engineering/coding-conventions.md): source-code and resource conventions, including Chinese font integration, blank/boxed text troubleshooting, and display acceptance.
+- [lvgl-chinese-fonts.md](engineering/lvgl-chinese-fonts.md): step-by-step CJK configuration, font generation/linking, fallback examples, glyph checks, and troubleshooting.
+- [wifi-provisioning.md](engineering/wifi-provisioning.md): Bluetooth-based Wi-Fi setup using the BLUFI reference branch, the companion mini program, and integration checks.
 
 ## CI
 

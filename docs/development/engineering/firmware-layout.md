@@ -50,8 +50,24 @@ table.
 
 ## Flashing and stored data
 
+> **No backup of the firmware already installed on the device is required
+> before downloading (flashing) new firmware.** Do not make reading out the
+> original firmware or saving a full-Flash dump a prerequisite for this
+> workflow. The new firmware replaces the original firmware; this workflow
+> does not retain an automatic rollback copy or promise that the original
+> firmware can be restored.
+
+Firmware and user data are different. If existing NVS settings, application
+records, or files must be kept, export or otherwise save them before flashing
+using a method supported by that application. Not requiring an original-firmware
+backup does not guarantee data preservation or authorize a full-chip erase.
+
 The verified merged image is written from `0x0`. Because the merged file pads
 the gaps between images, flashing it can reset the NVS and PHY data regions.
 Use the merged image for blank-device provisioning or an intentional complete
 refresh. During normal development, use segmented `idf.py flash` when existing
-NVS state should be preserved. `idf.py erase-flash` erases all user data.
+NVS state should be preserved; this also requires a compatible partition layout
+and flash targets that do not overwrite those data regions. `idf.py erase-flash`
+erases all user data. Do not add it as a routine prerequisite: use it only when
+a complete erase is explicitly intended and any data that must be kept has
+been saved.

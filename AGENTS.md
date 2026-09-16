@@ -14,9 +14,11 @@ This file is the only mandatory entry point for AI-assisted work in this reposit
   may deliberately change this layout; validate the resulting table and do not
   turn product-specific partitions into mandatory template contracts.
 - Preserve existing user changes. Start with `git status --short --branch`; never overwrite or clean unrelated files.
+- Flashing new firmware does not require backing up the firmware already on the device; do not make a Flash readback a prerequisite. This does not guarantee preservation of user data or authorize a full-chip erase. Follow the [flashing and data policy](docs/development/engineering/firmware-layout.md#flashing-and-stored-data).
 - Hardware facts follow this priority: product specifications and measured results → `components/bsp/include/bsp_pins.h` → BSP headers and implementation → hardware guide → README/demo code. If a task requires a hardware detail not defined by these sources, ask the user instead of guessing.
 - Reusable board logic belongs in `components/bsp`; pages, state machines, animations, and application tasks belong in `main`.
 - LVGL is not thread-safe. Code outside the LVGL task must hold `bsp_lvgl_lock()` while accessing LVGL objects.
+- Before adding Chinese UI text, follow the [font checklist](docs/development/engineering/coding-conventions.md#chinese-fonts-and-missing-glyphs). The default Montserrat fonts have no Chinese glyphs; UTF-8 and a successful build do not prove display support. Verify glyph coverage, widget font selection, and on-device rendering.
 - Button callbacks must stay non-blocking. Audio, storage, networking, and other slow operations belong in worker tasks.
 - A demo must stop every task, timer, callback, and event handler that can access its UI before deleting the screen.
 - Keep testable state machines, protocols, timing, and layout calculations independent from ESP-IDF/LVGL and cover them with host tests.
@@ -31,6 +33,8 @@ This file is the only mandatory entry point for AI-assisted work in this reposit
 | Environment bootstrap or missing toolchain | `docs/development/engineering/environment-setup.md` |
 | BSP, pins, buses, display, audio, battery | `docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md`, `components/bsp/include/bsp_pins.h` |
 | Demo or menu | `main/demo.h`, `main/main.c`, the nearest `main/demo_*.c` implementation |
+| Chinese UI text or fonts | `docs/development/engineering/lvgl-chinese-fonts.md`, the application's font assets, configuration, and widget styles |
+| Wi-Fi connection or Bluetooth provisioning | `docs/development/engineering/wifi-provisioning.md`, the referenced `demo/blufi-provisioning` implementation |
 | Build, test, dependencies, partitions | `docs/development/engineering/build-and-test.md`, `docs/development/engineering/firmware-layout.md`, `sdkconfig.defaults`, `partitions.csv` |
 | CI or release | the matching file in `docs/development/ci/CI-*.md` and `.github/workflows/` |
 | Project completion | `docs/development/release/project-completion.md` (then the `issue-suggestions` or `experience-pr` skill) |
@@ -57,6 +61,13 @@ Host tests: PASS / FAIL / NOT RUN
 Device tests: PASS / FAIL / NOT RUN
 Unverified: remaining board, instrument, or user checks
 ```
+
+After each complete implementation of a user-requested firmware change,
+proactively ask whether to flash it to the device for testing; do not wait for
+a release request. If no device is detected, ask the user to turn it on and
+connect it to a computer USB port with a data-capable cable. Follow the
+[on-device testing handoff](docs/development/ai-guide.md#offer-on-device-testing)
+and obtain approval before flashing; detection alone is not consent.
 
 Create commits and push only when the user requests them or the active workflow explicitly requires them. Ordinary feature, application, and documentation pull requests must not edit `docs/CHANGELOG.md` or `docs/CHANGELOG.zh_CN.md`; describe user-visible behavior, compatibility, and release-flow impact in the pull-request body and authoritative documentation instead. During release preparation, the release maintainer aggregates merged user-visible changes into both changelog files before creating the tag.
 

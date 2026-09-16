@@ -24,7 +24,9 @@
 - [environment-setup.zh_CN.md](engineering/environment-setup.zh_CN.md)：AI 在全新机器上的环境引导，包含国际与中国大陆下载线路。
 - [build-and-test.zh_CN.md](engineering/build-and-test.zh_CN.md)：构建与验证（ESP-IDF 命令、逻辑测试、改动验证要求）。
 - [firmware-layout.zh_CN.md](engineering/firmware-layout.zh_CN.md)：默认/用户自定义分区布局与合并产物验证。
-- [coding-conventions.zh_CN.md](engineering/coding-conventions.zh_CN.md)：代码约定（语言风格、复用、注释、测试同步、资源约束等）。
+- [coding-conventions.zh_CN.md](engineering/coding-conventions.zh_CN.md)：代码约定（语言风格、复用、注释、测试同步、资源约束等），包含中文字体接入、空白/方框排查与显示验收。
+- [lvgl-chinese-fonts.zh_CN.md](engineering/lvgl-chinese-fonts.zh_CN.md)：CJK 配置、字体生成/链接、fallback 示例、缺字检查和故障排查的分步指南。
+- [wifi-provisioning.zh_CN.md](engineering/wifi-provisioning.zh_CN.md)：参考 BLUFI 分支实现蓝牙 Wi-Fi 配网，包含配套小程序名称及接入检查。
 
 ## CI（ci）
 

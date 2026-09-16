@@ -307,6 +307,58 @@ printf 'IDF_PATH=%s\n' "${IDF_PATH}"
 Stop if the reported version is not exactly `ESP-IDF v5.5.3`. Do not generate
 project configuration with another version.
 
+Activation is shell-scoped: run `export.sh` with a leading dot (or `source`),
+never as `./export.sh`, which spawns a subshell and leaves the current shell
+unconfigured (`IDF_PATH is not set` or `idf.py: command not found` afterward).
+If a custom `IDF_TOOLS_PATH` was used during install, set it again before every
+`export.sh` call — the script does not remember it from an earlier session.
+
+### Toolchain install failures
+
+For a checksum mismatch or corrupted toolchain download, first rerun the
+installer from the selected ESP-IDF 5.5.3 checkout, keeping the same
+`IDF_TOOLS_PATH` and download-route settings. For example, on Linux/macOS:
+
+```bash
+"${AI_PASSPORT_IDF_ROOT}/install.sh" esp32c3
+```
+
+If using the mainland China route, apply `IDF_GITHUB_ASSETS` to this invocation
+as shown in [Choose a download route](#choose-a-download-route). The
+[ESP-IDF 5.5.3 installer](https://github.com/espressif/esp-idf/blob/v5.5.3/tools/idf_tools.py)
+validates existing archives and replaces the failed archive rather than
+clearing all cached downloads.
+
+The download cache is `dist` under the effective `IDF_TOOLS_PATH`. Without an
+override, this is normally `~/.espressif/dist` on Linux/macOS or
+`%USERPROFILE%\.espressif\dist` on Windows. Do not clear the whole directory:
+it can contain valid offline archives shared by other ESP-IDF versions. If a
+manual intervention is still needed, identify the exact failed archive from
+the log and the actual tools path, obtain approval, and move only that file
+aside for recovery before retrying. On Windows, retry the official installer
+or rerun `install.bat esp32c3` in an ESP-IDF Command Prompt from the selected
+checkout, with the same custom tools path and route settings in that terminal.
+
+On macOS, `[SSL: CERTIFICATE_VERIFY_FAILED]` means certificate verification
+failed; it does not identify one universal fix. Confirm which Python
+interpreter the installer uses and how it was installed, then check that
+interpreter's trust store and any approved proxy. The
+[`Install Certificates.command` helper](https://docs.python.org/3.13/using/mac.html#installation-steps)
+belongs to the python.org macOS installer: use it only for the matching Python
+installation that provides it. Homebrew and other Python distributions may
+not include it; follow their certificate setup instead. Obtain approval for
+trust-store changes and never disable TLS verification.
+
+On Apple Silicon, `tool riscv32-esp-elf has no installed versions` can mean the
+tool has not been installed or the tools path is wrong; it does not establish
+an architecture mismatch. Verify `IDF_TOOLS_PATH` and rerun the ESP32-C3
+installer first. For `bad CPU type in executable`, check the host, active
+shell/Python, and failing binary architectures. ESP-IDF 5.5.3 provides a
+[native macOS ARM64 ESP32-C3 toolchain](https://github.com/espressif/esp-idf/blob/v5.5.3/tools/tools.json);
+prefer it. Only consider Rosetta after confirming that a required executable
+is x86-64-only, and obtain approval before installing it. It is not a routine
+ESP32-C3 prerequisite.
+
 For mainland China, optionally accelerate Managed Component archives in the
 current terminal:
 

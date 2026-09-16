@@ -27,6 +27,13 @@ Offer the six-action menu when either signal occurs:
 In both cases, remind the developer that the following six closing actions are
 available, each selectable on its own or with others.
 
+The [on-device testing invitation](../ai-guide.md#offer-on-device-testing)
+is required after every completed firmware implementation, independently of
+this menu; do not defer it until a release or a closing action is selected.
+Asking is mandatory, but flashing still requires the user's approval. Follow
+that handoff for device discovery, the power-on/data-cable/USB prompt when no
+device is detected, and reporting tests that remain unperformed.
+
 ## The six actions
 
 The actions are grouped by purpose. Delivery actions publish the result of the
@@ -121,6 +128,11 @@ no CI artifact, the local `full.bin` the developer built. If it does not run,
 stop and fix before closing out. See
 [`CI-build-and-release.md`](../ci/CI-build-and-release.md) for the artifact and
 flashing.
+
+Apply the same [device-access and consent checks](../ai-guide.md#offer-on-device-testing)
+to this release artifact. Approval to publish is not approval to flash. If
+device testing cannot proceed, keep it explicitly unverified rather than
+treating a successful upload as completed hardware acceptance.
 
 ## Shared safety and consent gates
 
