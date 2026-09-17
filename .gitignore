@@ -11,3 +11,9 @@ managed_components/
 /.agents/skills/passport-build
 /.agents/skills/passport-device-test
 /.agents/skills/passport-debug
+
+# 本地 AI 工作区状态,不属于项目内容:
+# Cindy 的 worktree 目录与 Claude Code 的技能桥接目录。
+/.cindy-worktrees/
+/.claude/
+
