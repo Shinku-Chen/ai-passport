@@ -56,3 +56,34 @@
 - Updated software-design and project README references for the new documentation structure.
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
+
+## v1.6.0-connect-four - 2026-09-17
+
+First public release of the Connect Four application.
+
+- New application: **Connect Four** boots straight into a landscape (320 × 240)
+  game on a 10 × 7 board (70 positions). Two modes — human vs AI (EASY / MEDIUM /
+  HARD) and two players on one device — plus a selectable drop preview (the real
+  landing spot or only the top row), a settings screen for mode/difficulty/preview,
+  synthesized drop/win/draw/column sounds, and idle deep sleep after 60 s on the
+  settings screen or 180 s in a match (any key wakes the device).
+- AI opponent: iterative-deepening alpha-beta limited by a wall-clock search
+  budget (about 0.5 s per move on this board), with a deliberate blunder rate at
+  the lower difficulties and a periodic yield so the search never starves the idle
+  task.
+- Board support: `bsp_lvgl_set_landscape(true)` switches the LVGL logical
+  resolution to 320 × 240 through the panel's MADCTL rotation, and the
+  rounded-corner flush mask now follows the current logical resolution instead of
+  a hard-coded 240 × 320.
+- Board support: new `bsp_button_prepare_deep_sleep()` releases the shared ADC and
+  restores GPIO0 as a digital input with a pull-up. Without it a low-level
+  deep-sleep wake source is already satisfied when the chip sleeps, and the device
+  wakes up by itself instead of staying asleep.
+- Board support: press timing moved into `bsp_pins.h`
+  (`BSP_BTN_SHORT_MS` = 120 ms, `BSP_BTN_LONG_MS` = 300 ms); the button component
+  defaults (180 ms / 1500 ms) are too slow for cursor movement.
+- The application answers the `FAP_SCREENSHOT_V1` serial command with the real
+  320 × 240 RGB565 frame, so a release cover can be captured from the device
+  instead of being redrawn.
+- The baseline hardware-test demo sources stay in the tree but are no longer built
+  or registered by this application.

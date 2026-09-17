@@ -53,3 +53,15 @@
 - 同步更新索引：`docs/software-design/README.md`、`README.en_US.md` / `README.zh_CN.md` 的 `docs/` 目录说明。
 - 参考 cindy 仓库文档组织完善索引：新增 `docs/README.md` 根总索引；AGENTS.md 规则索引按触发场景改写（附触发条件）；`docs/contribution/` 与 `docs/development/` 的 README 补充收录标准。
 - 引入社区治理文档（参照 cindy 改写，放仓库根目录）：新增 `CONTRIBUTING.md` / `.zh_CN.md`（贡献指南，针对 ESP-IDF/AI agent/fork 场景改写）、`CODE_OF_CONDUCT.md` / `.zh_CN.md`（贡献者公约）、`SECURITY.md` / `.zh_CN.md`（安全报告流程）、`SUPPORT.md` / `.zh_CN.md`（支持渠道）；AGENTS.md 与 docs/README.md 同步引用。
+
+## v1.6.0-connect-four - 2026-09-17
+
+四子棋应用的首次公开发布。
+
+- 新应用：**四子棋**开机直接进入横屏（320 × 240）对局，棋盘 10 列 × 7 行共 70 格。两种模式——人机对战（低 / 中 / 高三档）与双人同机轮下；落子预览可选“真实落点”或“只在该列最上一行”；另有设置屏切换模式 / 难度 / 预览、代码合成的落子/胜/负/平/换列音效，以及空闲自动深睡（设置屏 60 秒、对局中 180 秒，任意键唤醒）。
+- 电脑对手：迭代加深 + alpha-beta，用**墙钟搜索预算**限时（本棋盘上每步约 0.5 秒），低难度带固定失误率放水；搜索每隔若干节点主动让出 CPU，避免饿死空闲任务触发看门狗。
+- 板级支持：`bsp_lvgl_set_landscape(true)` 通过面板 MADCTL 硬件旋转把 LVGL 逻辑分辨率切到 320 × 240，圆角刷屏遮罩改为跟随当前逻辑分辨率，不再写死 240 × 320。
+- 板级支持：新增 `bsp_button_prepare_deep_sleep()`，释放共享 ADC 并把 GPIO0 恢复为带上拉的数字输入。少了这一步，低电平唤醒条件在芯片入睡瞬间就已成立，设备会自己醒回来而无法保持睡眠。
+- 板级支持：按键时长门限移入 `bsp_pins.h`（`BSP_BTN_SHORT_MS` = 120 ms、`BSP_BTN_LONG_MS` = 300 ms）；button 组件自带默认值（180 ms / 1500 ms）对移动光标来说太慢。
+- 应用会响应 `FAP_SCREENSHOT_V1` 串口命令，回传真实 320 × 240 RGB565 画面，发布封面可以直接取自设备屏幕而不是重绘。
+- baseline 硬件自检 demo 源码仍保留在仓库中，但本应用不再编译、也不再注册它们。

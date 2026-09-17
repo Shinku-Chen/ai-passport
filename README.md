@@ -70,6 +70,35 @@ reveals the answer; learned marks persist to NVS. Latest: **v1.0.0**.
 - Branch: [`feature/shengzi-cards`](https://github.com/Shinku-Chen/ai-passport/tree/feature/shengzi-cards)
 - Release: [v1.0.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0)
 
+### Connect Four
+
+A landscape Connect Four for the AI Passport: a **10 × 7 board**, human versus
+computer with three difficulty levels, or two players on one device. Latest:
+**v1.6.0-connect-four**.
+
+- Branch: [`feature/connect-four`](https://github.com/Shinku-Chen/ai-passport/tree/feature/connect-four)
+- Release: [v1.6.0-connect-four](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.6.0-connect-four)
+
+**Controls:** UP / DOWN move the column cursor (held in landscape, UP is the
+right-hand key), **OK** drops a disc, **OK (hold)** returns to the settings
+screen. On the settings screen UP / DOWN picks a row and OK changes it (mode:
+`HUMAN vs AI` / `TWO PLAYERS`, level: `EASY` / `MEDIUM` / `HARD`, preview:
+`LANDING` / `TOP ROW`); selecting `START` begins a match.
+
+**Highlights:**
+
+- **Landscape 320 × 240 with a dense board** — 70 positions of 26 px discs spaced
+  3 px apart, fitted to the panel by a BSP-level MADCTL rotation.
+- **Three AI levels** — a wall-clock search budget keeps every move under about a
+  second, while EASY and MEDIUM deliberately blunder at a fixed rate so the game
+  stays winnable.
+- **Sound without assets** — column, drop, win, loss and draw cues are synthesized
+  from a sine table; no audio files are stored in flash.
+- **Idle deep sleep** — 60 s on the settings screen or 180 s in a match, then any
+  key wakes the device (GPIO0 low-level wake, fixed for the ADC-owned pad).
+- **Serial screenshots** — the `FAP_SCREENSHOT_V1` command returns the real
+  320 × 240 frame, which is how the release cover was captured.
+
 ## Notes
 
 - Each application is a separate `feature/*` branch off the upstream baseline.
