@@ -78,7 +78,46 @@ Microsoft Defender 可使用其
 
 仓库提交 `dependencies.lock` 以固定 ESP-IDF Managed Components 的解析结果。修改 `idf_component.yml` 后必须使用 ESP-IDF 5.5.3 重新生成锁文件、review 版本变化并与 manifest 一起提交；普通构建不应产生未提交的锁文件差异。
 
-固件门禁使用全新的临时构建目录，并从仓库 `sdkconfig.defaults` 生成隔离的 `sdkconfig`。它不会读取或覆盖开发者根目录的 `sdkconfig`，只把验证通过的合并镜像复制到 `build/FoloToy-AI-Passport-full.bin`。门禁同时验证[当前配置的固件布局](firmware-layout.zh_CN.md)：从 `flash_args` 读取镜像偏移，检查分区表 MD5、边界和不重叠，并确认应用从所配置的 app 分区起点开始且未超出分区。允许用户自定义分区布局。
+固件门禁使用全新的临时构建目录，并从仓库 `sdkconfig.defaults` 生成隔离的 `sdkconfig`。它不会读取或覆盖开发者根目录的 `sdkconfig`。清理临时构建前，先归档已验证固件及匹配的调试产物，再把已验证合并镜像复制到 `build/FoloToy-AI-Passport-full.bin`。门禁同时验证[当前配置的固件布局](firmware-layout.zh_CN.md)：从 `flash_args` 读取镜像偏移，检查分区表 MD5、边界和不重叠，并确认应用从所配置的 app 分区起点开始且未超出分区。允许用户自定义分区布局。
+
+### 保留匹配的崩溃调试产物
+
+每次成功的固件门禁都会在本地保留 `build/firmware/<full-bin-sha256>/`
+归档。`manifest.json` 记录完整镜像与 ELF 的 SHA-256、项目／应用／IDF
+版本字段、偏移，以及每个保留文件的大小和哈希。归档包含：
+
+- 已校验合并镜像及其应用 ELF、MAP、应用镜像。
+- `bootloader/bootloader.bin`、`partition_table/partition-table.bin` 和 `flash_args`。
+
+不重新构建、不写入归档即可复验：
+
+```text
+python3 tools/archive_firmware.py verify <archive-directory>
+```
+
+对已有构建目录，`python3 tools/archive_firmware.py create <build-directory>`
+会执行同样的归档校验，但不会运行 host tests，也不能证明使用了当前源码／
+配置；不能代替门禁。归档工具本身不要求激活 ESP-IDF。
+
+工具检查 ELF 的 SHA-256 是否与应用镜像内嵌身份一致，并检查保留的分段
+镜像是否与合并镜像一致。分析对应固件崩溃时使用该 ELF，不拿后续重新编译
+的 ELF 替代，尤其是版本带 `-dirty` 时。MAP 没有内嵌身份，依靠同次构建
+留存和清单哈希保护；固件／ELF 与其他保留文件逐字节一致时，重复归档复用
+首份已验证归档及 MAP，因为临时构建路径可能改变 MAP 内容。不覆盖冲突归档。
+
+额外自定义分区镜像不作为独立文件留存，但其内容仍可能包含在合并镜像中；
+这**不是**完整的分段烧录包，也不保证已脱敏。用户特定分段烧录需要的额外
+匹配镜像，应在审核内容后另行保留。把 `flash_args` 当作数据，不作为 shell
+脚本执行。
+
+验证失败可能仍保留旧 `build/FoloToy-AI-Passport-full.bin` 和历史归档，
+不能将它们当成本轮失败构建的新产物。交接时给出实际成功归档路径和完整
+镜像哈希；哈希一致不代表硬件通过验收，也不能证明发布者可信。
+
+`build/` 仍被 Git 忽略。固件与调试文件可能含内嵌凭证或其他私密数据，
+不能自动提交或上传。现有 CI／发布流程仍只上传其配置的产物，不上传这些
+调试包；runner 删除时，本地归档也会消失。扩大留存／上传范围前须明确审核
+内容和访问权限。构建／归档命令不会烧录设备。
 
 当前基线含一个可独立运行的纯逻辑测试：
 

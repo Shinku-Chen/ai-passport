@@ -15,6 +15,21 @@ These rules apply equally to human contributors and AI agents. Documentation is 
 - Code, commands, paths, URLs, identifiers, and data fields remain unchanged between translations where appropriate.
 - The repository check rejects an unpaired document, a missing language switch, or CJK prose in an English default file.
 
+### GitHub community-document links
+
+GitHub also renders `.github/CONTRIBUTING`, `CODE_OF_CONDUCT`, `SECURITY`, and
+`SUPPORT` documents outside their file view. In both language versions, put a
+Markdown language switch on the first nonempty line, outside HTML blocks, with
+a repository-root path, for example
+`[简体中文](/.github/CODE_OF_CONDUCT.zh_CN.md)`, and use repository-root paths for
+other internal links, such as `/docs/README.md`. Bare filenames in HTML language
+switches can lose the `.github/` directory in the repository overview. Do not
+hardcode the upstream owner or `main` into these document links: root-relative
+links keep the current repository and branch. See GitHub's
+[relative-link rules](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#relative-links).
+The repository gate checks these community-document links; after deployment,
+also click both language directions from the overview and individual file views.
+
 ## Vendored third-party documentation
 
 Preserve upstream documentation when copying a third-party component into the

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Host tests for bounded third-party documentation exemptions."""
+"""Host tests for documentation exemptions and community-document navigation."""
 
 from __future__ import annotations
 
@@ -177,6 +177,164 @@ class VendoredDocumentationTest(unittest.TestCase):
             "possible unsanitized device QR link", "unresolved merge conflict marker",
         ):
             self.assertTrue(any(expected in error for error in errors), errors)
+
+
+class CommunityDocumentLinksTest(unittest.TestCase):
+    def setUp(self) -> None:
+        temporary = tempfile.TemporaryDirectory(prefix="ai-passport-community-doc-tests-")
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name).resolve()
+        root_patch = patch.object(CHECKS, "ROOT", self.root)
+        root_patch.start()
+        self.addCleanup(root_patch.stop)
+
+    def document(self, name: str, content: str) -> Path:
+        path = self.root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        return path
+
+    def errors(self, files: list[Path]) -> list[str]:
+        errors: list[str] = []
+        CHECKS.check_community_document_links(files, errors)
+        return errors
+
+    def test_all_community_language_pairs_use_existing_root_targets(self) -> None:
+        files = []
+        for name in sorted(CHECKS.COMMUNITY_DOCUMENT_NAMES):
+            peer = (
+                name.removesuffix(".zh_CN.md") + ".md"
+                if name.endswith(".zh_CN.md") else name.removesuffix(".md") + ".zh_CN.md"
+            )
+            files.append(self.document(f".github/{name}", f"[Language](/.github/{peer})\n"))
+        errors = self.errors(files)
+        CHECKS.check_markdown_links(files, errors)
+        CHECKS.check_document_languages(files, errors)
+        self.assertEqual(errors, [])
+
+    def test_original_html_switch_is_rejected_despite_existing_peer(self) -> None:
+        page = self.document(
+            ".github/CODE_OF_CONDUCT.md",
+            '<p align="right"><a href="CODE_OF_CONDUCT.zh_CN.md">Language</a></p>\n',
+        )
+        self.document(".github/CODE_OF_CONDUCT.zh_CN.md", "# Translation\n")
+        errors = self.errors([page])
+        self.assertTrue(any("language switch must use a Markdown link" in error for error in errors))
+        self.assertTrue(any("repository-root path" in error for error in errors))
+
+    def test_wrong_directory_and_fixed_upstream_switches_are_rejected(self) -> None:
+        for target in (
+            "CODE_OF_CONDUCT.zh_CN.md",
+            "/CODE_OF_CONDUCT.zh_CN.md",
+            "https://github.com/FoloToy/ai-passport/blob/main/.github/CODE_OF_CONDUCT.zh_CN.md",
+        ):
+            with self.subTest(target=target):
+                page = self.document(".github/CODE_OF_CONDUCT.md", f"[Language]({target})\n")
+                self.assertTrue(any("language switch" in error for error in self.errors([page])))
+
+    def test_root_target_still_requires_a_real_file(self) -> None:
+        page = self.document(
+            ".github/SUPPORT.md", "[Language](/.github/SUPPORT.zh_CN.md)\n"
+        )
+        errors = self.errors([page])
+        CHECKS.check_markdown_links([page], errors)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("missing link target", errors[0])
+
+    def test_language_switch_allows_markdown_titles_and_angle_targets(self) -> None:
+        for target in (
+            '/.github/SUPPORT.zh_CN.md "Chinese"',
+            '</.github/SUPPORT.zh_CN.md> "Chinese"',
+        ):
+            with self.subTest(target=target):
+                page = self.document(".github/SUPPORT.md", f"\nEnglish | [Language]({target})\n")
+                self.assertEqual(self.errors([page]), [])
+
+    def test_markdown_switch_inside_raw_html_is_rejected(self) -> None:
+        for content in (
+            '<p align="right">\n[Language](/.github/SUPPORT.zh_CN.md)\n</p>\n',
+            '<p>[Language](/.github/SUPPORT.zh_CN.md)</p>\n',
+            '<!-- [Language](/.github/SUPPORT.zh_CN.md) -->\n',
+        ):
+            with self.subTest(content=content):
+                page = self.document(".github/SUPPORT.md", content)
+                self.assertTrue(any("language switch" in error for error in self.errors([page])))
+
+    def test_relative_body_links_are_rejected_for_markdown_and_html(self) -> None:
+        for link in (
+            "[Security](SECURITY.md)",
+            "[Guide](../docs/README.md)",
+            '<a href="SECURITY.md">Security</a>',
+            "<a HREF='SECURITY.md'>Security</a>",
+            "[Security](//example.com/SECURITY.md)",
+            "[Security][security]\n\n[security]: SECURITY.md",
+            '[Security][security]\n\n[security]: <SECURITY.md> "Policy"',
+        ):
+            with self.subTest(link=link):
+                page = self.document(
+                    ".github/SUPPORT.md", "[Language](/.github/SUPPORT.zh_CN.md)\n\n" + link
+                )
+                self.assertTrue(any("repository-root path" in error for error in self.errors([page])))
+
+    def test_root_links_external_links_and_fragments_are_allowed(self) -> None:
+        page = self.document(
+            ".github/CONTRIBUTING.md",
+            "[Language](/.github/CONTRIBUTING.zh_CN.md)\n\n"
+            "[Guide](/docs/README.md) [Rules](/AGENTS.md) [License](/LICENSE)\n"
+            "[Security](/.github/SECURITY.md#reporting-a-vulnerability)\n"
+            "[Site](https://example.com) [Mail](mailto:security@example.com) [Top](#top)\n",
+        )
+        self.assertEqual(self.errors([page]), [])
+
+    def test_root_reference_links_and_external_attribution_are_allowed(self) -> None:
+        page = self.document(
+            ".github/CODE_OF_CONDUCT.md",
+            "[Language](/.github/CODE_OF_CONDUCT.zh_CN.md)\n\n"
+            "[Security][security] [Upstream][attribution]\n\n"
+            '[security]: </.github/SECURITY.md> "Security policy"\n'
+            "[attribution]: https://github.com/mozilla/diversity\n",
+        )
+        self.assertEqual(self.errors([page]), [])
+
+    def test_body_cannot_pin_internal_docs_to_upstream_but_reporting_is_allowed(self) -> None:
+        for link in (
+            "[Rules](https://github.com/FoloToy/ai-passport/blob/main/AGENTS.md)",
+            "[Docs](https://github.com/FoloToy/ai-passport/tree/main/docs)",
+            "[Rules][rules]\n[rules]: https://github.com/FoloToy/ai-passport/blob/main/AGENTS.md",
+            '<a href="https://github.com/FoloToy/ai-passport/blob/main/AGENTS.md">Rules</a>',
+        ):
+            with self.subTest(link=link):
+                page = self.document(
+                    ".github/SUPPORT.md", "[Language](/.github/SUPPORT.zh_CN.md)\n\n" + link
+                )
+                self.assertTrue(any("must not hardcode" in error for error in self.errors([page])))
+        page = self.document(
+            ".github/SECURITY.md",
+            "[Language](/.github/SECURITY.zh_CN.md)\n\n"
+            "[Report](https://github.com/FoloToy/ai-passport/security/advisories/new)\n",
+        )
+        self.assertEqual(self.errors([page]), [])
+
+    def test_other_documents_and_pr_template_keep_their_own_context(self) -> None:
+        files = [
+            self.document("docs/README.md", "[Language](README.zh_CN.md)\n"),
+            self.document(".github/PULL_REQUEST_TEMPLATE.md", "[Language](PULL_REQUEST_TEMPLATE.zh_CN.md)\n"),
+        ]
+        self.assertEqual(self.errors(files), [])
+
+    def test_main_runs_community_link_guard(self) -> None:
+        page = self.document(
+            ".github/SECURITY.md", '<a href="SECURITY.zh_CN.md">Language</a>\n'
+        )
+        with (
+            patch.object(CHECKS, "git_files", return_value=[page]),
+            patch.object(CHECKS, "check_required_files"),
+            patch.object(CHECKS, "check_action_pins"),
+            patch.object(CHECKS, "check_issue_forms"),
+            contextlib.redirect_stderr(io.StringIO()) as output,
+        ):
+            self.assertEqual(CHECKS.main(), 1)
+        self.assertIn("language switch must use a Markdown link", output.getvalue())
 
 
 if __name__ == "__main__":

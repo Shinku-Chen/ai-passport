@@ -87,7 +87,55 @@ or project, and do not disable real-time protection.
 
 The tracked `dependencies.lock` pins Managed Component resolution. After changing an `idf_component.yml`, regenerate the lock with ESP-IDF 5.5.3, review version changes, and commit it with the manifest. An ordinary build must not leave an unexplained lock-file diff.
 
-Firmware validation uses a fresh temporary build directory and an isolated `sdkconfig` generated from the tracked defaults. It does not consume or overwrite a developer's root `sdkconfig`, and it copies only the verified merged image to `build/FoloToy-AI-Passport-full.bin`. The gate also validates the [configured firmware layout](firmware-layout.md): image offsets from `flash_args`, partition-table MD5, bounds and non-overlap, and an application that starts in and fits its configured app partition. User-defined partition layouts are allowed.
+Firmware validation uses a fresh temporary build directory and an isolated `sdkconfig` generated from the tracked defaults. It does not consume or overwrite a developer's root `sdkconfig`. Before cleaning the temporary build, it archives the verified firmware and matching debug artifacts, then copies the verified merged image to `build/FoloToy-AI-Passport-full.bin`. The gate also validates the [configured firmware layout](firmware-layout.md): image offsets from `flash_args`, partition-table MD5, bounds and non-overlap, and an application that starts in and fits its configured app partition. User-defined partition layouts are allowed.
+
+### Retain matching crash-debugging artifacts
+
+Each successful firmware gate retains a local bundle under
+`build/firmware/<full-bin-sha256>/`. Its `manifest.json` records full-image and ELF
+SHA-256 values, project/application/IDF version fields, offsets, and each retained
+file's size and hash. The archive includes:
+
+- The verified merged image and its application ELF, MAP, and application image.
+- `bootloader/bootloader.bin`, `partition_table/partition-table.bin`, and `flash_args`.
+
+Verify a bundle without rebuilding or writing to it:
+
+```text
+python3 tools/archive_firmware.py verify <archive-directory>
+```
+
+For an existing build directory, `python3 tools/archive_firmware.py create
+<build-directory>` performs the same archival checks, but does not run host
+tests or prove that the build used the current source/configuration. It is not a
+replacement for the gate. The archive tool needs no activated ESP-IDF environment.
+
+The tool checks that the ELF's SHA-256 matches the identity embedded in the
+application image and that the retained component images match the merged image.
+Use that ELF to decode a crash from the corresponding firmware, not an ELF from
+a later rebuild, especially when the version contains `-dirty`. MAP files have
+no embedded identity: they are retained with the build and protected by the
+manifest checksum. For byte-identical firmware/ELF and other retained files,
+repeat archival reuses the first verified bundle and MAP; temporary build paths
+may otherwise change MAP contents. Existing conflicting bundles are not replaced.
+
+Extra custom partition images are not retained as separate files. Their payloads
+can still be inside the merged image; this is **not** a complete segmented-flash
+package or a sanitization guarantee. Preserve any additional matching images
+needed for a user-specific segmented workflow separately, after reviewing their
+content. Treat `flash_args` as data, not a shell script.
+
+A failed validation may leave a previous `build/FoloToy-AI-Passport-full.bin`
+and older bundles intact. Never present those as the failed run's new output.
+Hand off the exact successful bundle path and full-image hash. Hash consistency
+is not proof of hardware behavior or a trusted publisher.
+
+`build/` remains Git-ignored. Firmware and debug artifacts can contain embedded
+credentials or other private data; do not commit or upload bundles automatically.
+Existing CI/release workflows still upload only their configured artifacts, not
+these debug bundles; runner-local archives disappear when the runner is removed.
+Any additional retention/upload policy needs an explicit content and access review.
+No build/archive command flashes a device.
 
 The baseline also has a hardware-independent logic test:
 

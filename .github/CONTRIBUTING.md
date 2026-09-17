@@ -1,6 +1,4 @@
-<p align="right">
-  <a href="CONTRIBUTING.zh_CN.md">简体中文</a> · <strong>English</strong>
-</p>
+English | [简体中文](/.github/CONTRIBUTING.zh_CN.md)
 
 # Contributing
 
@@ -8,17 +6,17 @@ Thank you for contributing to FoloToy AI Passport — code, documentation,
 firmware, and feedback. This repository is the development baseline for
 open-source wearable AI hardware designed for AI agents. It is often forked for
 second development; the fork conventions are in
-[`docs/fork-guide.md`](../docs/fork-guide.md).
+[`docs/fork-guide.md`](/docs/fork-guide.md).
 
 ## Before you start
 
-- Read [`AGENTS.md`](../AGENTS.md): it is the authoritative entry and index for the
+- Read [`AGENTS.md`](/AGENTS.md): it is the authoritative entry and index for the
   rules an AI agent should follow. It is not a replacement for this guide.
-- Read [`README.md`](../docs/README.md) for the hardware capability contract,
-  and the [AI Hardware Development Guide](../docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md)
+- Read [`README.md`](/docs/README.md) for the hardware capability contract,
+  and the [AI Hardware Development Guide](/docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md)
   for the complete hardware context.
-- Follow [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) when participating in the
-  community. For ordinary usage questions, see [`SUPPORT.md`](SUPPORT.md).
+- Follow [`CODE_OF_CONDUCT.md`](/.github/CODE_OF_CONDUCT.md) when participating in the
+  community. For ordinary usage questions, see [`SUPPORT.md`](/.github/SUPPORT.md).
 - Do not commit credentials, tokens, authorization files, or personal data.
 - The repository's `main` branch stays in sync with the upstream baseline; fork
   users develop feature work in `feature/*` branches (see `docs/fork-guide.md`).
@@ -26,7 +24,7 @@ second development; the fork conventions are in
 ## Development and verification
 
 Use ESP-IDF 5.5.3. For a clean-machine setup, follow the
-[environment bootstrap](../docs/development/engineering/environment-setup.md).
+[environment bootstrap](/docs/development/engineering/environment-setup.md).
 
 Prefer the repository firmware gate for builds and flash its verified merged
 image at `0x0`. The direct IDF commands below are for incremental development.
@@ -59,7 +57,7 @@ The repository provides one validation entry point for local development and CI:
 ```
 
 Follow the verification requirements in
-[`docs/development/build-and-test.md`](../docs/development/engineering/build-and-test.md):
+[`docs/development/engineering/build-and-test.md`](/docs/development/engineering/build-and-test.md):
 a clean `idf.py build` is the minimum automated check, not hardware validation.
 Record build results and on-device results separately; never present a successful
 build as successful hardware validation.
@@ -70,7 +68,7 @@ build as successful hardware validation.
    focused on one clear problem.
 2. Use `<type>(<scope>): <short description>` for the pull request title, for
    example `feat(bsp): ...`, `docs: ...`. Available types are defined in
-   [`docs/contribution/commit-and-pr.md`](../docs/contribution/commit-and-pr.md).
+   [`docs/contribution/commit-and-pr.md`](/docs/contribution/commit-and-pr.md).
 3. Review the complete diff and confirm that it contains no credentials,
    unrelated generated files, or unintended changes.
 4. Follow the PR requirements in `docs/contribution/commit-and-pr.md`: state the
@@ -86,11 +84,11 @@ scope and compatibility.
 
 ## Licensing of contributions
 
-This repository is licensed under [MIT](../LICENSE). By contributing, you agree that
+This repository is licensed under [MIT](/LICENSE). By contributing, you agree that
 your contribution is submitted under the MIT license terms of the repository.
 
 ## Security issues
 
 Do not disclose vulnerabilities, credentials, or exploitable details in public
 issues, pull requests, or discussions. Follow the private reporting process in
-[`SECURITY.md`](SECURITY.md).
+[`SECURITY.md`](/.github/SECURITY.md).

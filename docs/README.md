@@ -48,6 +48,7 @@ Follow AGENTS.md and docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md. Insp
 keep hardware logic in components/bsp and application logic in main, deliver a runnable
 implementation with tests, and report the build result, unexecuted device checks, and exact
 on-device acceptance steps separately.
+Redesign the application's UI; do not use the current demo test menu or screens.
 ```
 
 Before starting, check [`reference/`](reference/README.md) for an existing or
@@ -59,7 +60,7 @@ The more specific the requirement, the more likely the assistant is to implement
 - User flow: what each page displays and what short press, double press, and long press do for each button.
 - State and data: whether the application needs timing, persistence across power loss, networking, recording, or communication with a computer.
 - Experience goals: fonts, colors, animation, sound, response time, and error states.
-- Constraints: whether the main menu may be replaced, dependencies added, Flash used, or default interactions changed.
+- Constraints: application navigation and controls, permitted dependencies, and Flash/data usage. The baseline test menu is not an application UI option.
 - Acceptance criteria: which behaviors require automated tests and which must be observed on real hardware.
 
 When details are omitted, the assistant may choose conservative defaults that do not change the product direction, but it must list those assumptions in the delivery. Decisions involving new wiring, electrical safety, board revisions, or irreversible data formats require confirmation first.
@@ -68,7 +69,7 @@ When details are omitted, the assistant may choose conservative defaults that do
 
 Each `demo/*` branch evolves the baseline into an independent application. The branches demonstrate how specific problems were solved. New applications should normally branch from `main` and consult relevant examples instead of merging multiple demos wholesale.
 
-The menu and `demo_*.c` pages on `main` are also hardware-capability demonstrations, not a ready-made product UI. A new application must redesign and implement its screens and interaction flow for its own requirements rather than directly using or copying the current demo interface. BSP APIs, lifecycle patterns, and isolated logic may still be reused.
+The menu and `demo_*.c` pages on `main` are hardware-capability tests, not an application UI. Every derivative application must redesign and implement its own screens and interaction flow; using the current test menu, screens, or visual shell is prohibited. Renaming or recoloring them does not satisfy this requirement. BSP APIs, ordinary LVGL widgets, lifecycle patterns, and isolated logic may still be reused. See the [mandatory UI redesign rule](development/ai-guide.md#mandatory-ui-redesign-for-derivative-applications); maintenance of the baseline hardware-test demo itself is a separate task.
 
 | Branch | Application | Patterns worth reusing |
 | --- | --- | --- |

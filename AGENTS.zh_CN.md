@@ -6,6 +6,22 @@
 
 本文是本仓库 AI 辅助工作的唯一必读入口。根据下方路由表读取当前任务所需文档，不要默认加载全部 README。
 
+## 必需 AI 技能
+
+以下五个技能是本仓库 AI 辅助开发的必需项：`passport-develop`、
+`passport-setup`、`passport-build`、`passport-device-test`、`passport-debug`。
+技能权威源文件位于 `skills/`。
+
+开始开发前，AI 必须自行检查这五个技能是否已在当前环境安装并可用。缺少时，
+由 AI 根据所用工具和环境，自行选择合适的安装方式、完成安装并验证可用性。
+不等待用户另外提出安装要求，也不把选择安装方式或执行安装命令交给用户。
+不强制使用特定脚本、安装目录或 AI 客户端。
+
+安装必须遵守环境的权限审批要求，保留已有技能和用户配置。权限、冲突或平台
+限制导致无法安装时，说明阻碍，只请求必要的用户配合，不得谎报安装成功。
+五个技能必须可用，不代表每次任务都加载或调用全部技能；只使用匹配当前任务
+的技能。烧录、Git 写操作和发布仍须分别取得相应授权。
+
 ## 项目与安全基线
 
 - 目标平台：ESP32-C3、8 MB Flash、无 PSRAM、ESP-IDF 5.5.3。
@@ -16,6 +32,7 @@
 - 下载（烧录）新固件无需备份设备内原有固件，不得把读取 Flash 备份作为前置条件。这不保证保留用户数据，也不授权全片擦除；遵循[烧录与数据说明](docs/development/engineering/firmware-layout.zh_CN.md#烧录与已存数据)。
 - 硬件事实优先级：产品规格与实测结果 → `components/bsp/include/bsp_pins.h` → BSP 头文件与实现 → 硬件指南 → README/demo。任务所需硬件细节未在这些来源中定义时，直接询问用户，不得猜测。
 - 可复用板级逻辑放入 `components/bsp`；页面、状态机、动画和应用任务放入 `main`。
+- 二次开发应用必须重新设计并实现独立 UI，禁止沿用当前 demo 测试菜单、页面或界面外壳；仅改名、换颜色或在原界面增加功能不算重新设计。BSP API 和非 UI 逻辑仍可复用。详见[二次开发 UI 强制重新设计规则](docs/development/ai-guide.zh_CN.md#二次开发-ui-强制重新设计)。
 - LVGL 非线程安全。LVGL 任务之外访问 LVGL 对象时必须持有 `bsp_lvgl_lock()`。
 - 添加中文 UI 前必须遵循[字体检查清单](docs/development/engineering/coding-conventions.zh_CN.md#中文字体与缺字排查)。默认 Montserrat 字体不含中文字形；UTF-8 正确、编译成功均不代表能够显示中文。必须核对字形覆盖、控件实际字体并完成真机显示验收。
 - 按键回调不得阻塞。音频、存储、网络等慢操作必须放入工作任务。
@@ -29,6 +46,7 @@
 | 任务 | 修改前读取 |
 | --- | --- |
 | 任意代码修改 | `docs/development/ai-guide.zh_CN.md`、相关头文件和相邻实现 |
+| 应用工作流或核心技能配置 | `skills/README.zh_CN.md`；确认五个必需技能可用，再使用匹配当前任务的技能 |
 | 环境引导或缺少工具链 | `docs/development/engineering/environment-setup.zh_CN.md` |
 | BSP、引脚、总线、显示、音频、电池 | `docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.zh_CN.md`、`components/bsp/include/bsp_pins.h` |
 | Demo 或菜单 | `main/demo.h`、`main/main.c`、最近的 `main/demo_*.c` 实现 |

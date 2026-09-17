@@ -1,6 +1,4 @@
-<p align="right">
-  <strong>简体中文</strong> · <a href="SECURITY.md">English</a>
-</p>
+[English](/.github/SECURITY.md) | 简体中文
 
 # 安全漏洞报告
 

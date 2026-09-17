@@ -244,9 +244,15 @@ General board acceptance:
 
 - Stable USB Serial/JTAG logs without reboot loops, assertions, watchdogs, or persistent errors.
 - I2C scan sees ES8311 at `0x18` and, when fitted, CW2017 at `0x63`.
-- UP/DOWN wraps menu navigation, OK click enters, and OK long press returns.
-- An optional peripheral failure disables only its page.
+- In the baseline test demo, UP/DOWN wraps menu navigation, OK click enters, and OK long press returns. Derivative applications validate their own redesigned navigation and controls.
+- An optional peripheral failure degrades only the dependent feature (disabling its test page in the baseline demo), without blocking unrelated functionality.
 - Repeated navigation and operation do not leak heap, tasks, timers, or objects.
+
+The menu operations, page names, and timings below are baseline hardware-test
+examples, not a required application UI. Derivative applications must follow the
+[mandatory UI redesign rule](../development/ai-guide.md#mandatory-ui-redesign-for-derivative-applications)
+and exercise the relevant hardware checks through their own flows; do not retain
+the demo test UI just to follow these examples.
 
 | Change | Required physical observations |
 | --- | --- |

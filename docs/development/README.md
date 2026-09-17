@@ -9,6 +9,7 @@ This directory contains AI Passport engineering rules and reusable workflows, gr
 ## AI workflow
 
 - [ai-guide.md](ai-guide.md): AI-assisted development workflow.
+- [Core AI skills](../../skills/README.md): development, setup, build, device testing, and diagnosis; installation and usage examples.
 
 ## Engineering
 

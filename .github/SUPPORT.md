@@ -1,6 +1,4 @@
-<p align="right">
-  <a href="SUPPORT.zh_CN.md">简体中文</a> · <strong>English</strong>
-</p>
+English | [简体中文](/.github/SUPPORT.zh_CN.md)
 
 # Support
 
@@ -12,12 +10,12 @@ guaranteed.
 ## Where to start
 
 - Hardware facts, wiring, and known traps: read
-  [`README.md`](../docs/README.md) and the
-  [AI Hardware Development Guide](../docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md).
+  [`README.md`](/docs/README.md) and the
+  [AI Hardware Development Guide](/docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md).
 - AI agent workflow and engineering rules: read
-  [`AGENTS.md`](../AGENTS.md) and its rule index.
+  [`AGENTS.md`](/AGENTS.md) and its rule index.
 - Security vulnerabilities, credentials, or exploitable details: follow
-  [`SECURITY.md`](SECURITY.md) and report privately.
+  [`SECURITY.md`](/.github/SECURITY.md) and report privately.
 - Ordinary bugs: open a GitHub issue with the board revision, firmware version,
   and reproduction steps.
 - Feature requests: use the feature request template and describe the use case

@@ -14,6 +14,18 @@
 - 新增、移动或删除任一语言文件时，必须同步处理配对文件和所有索引。
 - `tools/check_repo.py` 与 CI 会拒绝缺少配对文件、缺少切换链接或英文默认页包含中文正文的变更。
 
+### GitHub 社区文档链接
+
+GitHub 还会在文件页面之外展示 `.github/` 中的 `CONTRIBUTING`、`CODE_OF_CONDUCT`、
+`SECURITY` 和 `SUPPORT` 文档。两种语言的切换均须放在第一个非空行、HTML 块之外，
+使用仓库根路径的 Markdown 链接，例如 `[简体中文](/.github/CODE_OF_CONDUCT.zh_CN.md)`；其他仓库内链接也使用
+根路径，例如 `/docs/README.md`。HTML 语言切换中的裸文件名在仓库首页可能丢失
+`.github/` 目录。不要把上游仓库所有者或 `main` 写死在这些文档链接中，根相对
+链接会保留当前仓库与分支。参见 GitHub 的
+[相对链接规则](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#relative-links)。
+仓库门禁会检查这些社区文档链接；上线后还需从首页和单文件页面实际点击中英文
+双向切换。
+
 ## 随仓库引入的第三方文档
 
 把第三方组件复制到仓库时，应保留其上游原始文档。如需豁免其中 Markdown

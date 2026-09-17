@@ -1,6 +1,4 @@
-<p align="right">
-  <a href="CODE_OF_CONDUCT.zh_CN.md">简体中文</a> · <strong>English</strong>
-</p>
+English | [简体中文](/.github/CODE_OF_CONDUCT.zh_CN.md)
 
 # Contributor Covenant Code of Conduct
 
@@ -71,7 +69,7 @@ All community leaders are obligated to respect the privacy and security of the
 reporter of any incident.
 
 Security vulnerabilities are not a Code of Conduct issue — please report them
-privately via [`SECURITY.md`](SECURITY.md).
+privately via [`SECURITY.md`](/.github/SECURITY.md).
 
 ## Enforcement Guidelines
 

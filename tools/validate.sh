@@ -43,6 +43,8 @@ run_static_checks() {
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_deep_sleep_contract.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_check_repo.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_verify_firmware.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_archive_firmware.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_install_passport_skills.py
     rm -rf "${test_dir}"
     echo "Host tests: PASS"
 }
@@ -64,6 +66,8 @@ run_firmware_checks() (
     idf.py -B "${validation_build_dir}" merge-bin \
         -o "${validation_build_dir}/FoloToy-AI-Passport-full.bin"
     python3 tools/verify_firmware.py "${validation_build_dir}"
+    PYTHONDONTWRITEBYTECODE=1 python3 tools/archive_firmware.py create \
+        "${validation_build_dir}" --archive-root "${repo_root}/build/firmware"
     mkdir -p "${repo_root}/build"
     install -m 0644 \
         "${validation_build_dir}/FoloToy-AI-Passport-full.bin" \
