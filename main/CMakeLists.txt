@@ -1,16 +1,16 @@
+# 四子棋应用:只编译游戏自己的源码。
+# baseline 的 demo_*.c / ui_pixel.c 仍留在仓库里(可随时切回硬件自检 demo),
+# 但不再参与本应用的构建,也不再注册到菜单。
 idf_component_register(
     SRCS "main.c"
-         "demo_navigation.c"
-         "ui_pixel.c"
-         "ui_pixel_math.c"
-         "demo_display.c"
-         "demo_button.c"
-         "demo_audio.c"
-         "demo_battery.c"
-         "demo_radio.c"
-         "demo_wifi.c"
-         "demo_ble.c"
-         "demo_low_power.c"
+         "c4_model.c"
+         "c4_ai.c"
+         "c4_layout.c"
+         "c4_settings.c"
+         "c4_ui.c"
+         "c4_sound.c"
+         "c4_screenshot.c"
+         "c4_app.c"
     INCLUDE_DIRS "."
-    REQUIRES bsp bt esp_event esp_hw_support esp_netif esp_timer esp_wifi nvs_flash
+    REQUIRES bsp lvgl esp_hw_support esp_timer esp_driver_usb_serial_jtag
 )
