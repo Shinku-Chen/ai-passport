@@ -18,7 +18,7 @@ FoloToy AI Passport 是一个开放式可穿戴 AI 硬件，本仓库是这款 A
 
 | 能力 | 已确认实现 | 应用接口 | 必须遵守的边界 |
 | --- | --- | --- | --- |
-| 显示 | ST7789P3，240 × 320，竖屏 RGB565，SPI2 40 MHz；LEDC 背光 | `bsp_display_*`、`bsp_lvgl_*` | ESP32-C3 无 PSRAM；当前为小型单 DMA 缓冲；BSP 未暴露 LCD MISO、触摸或 TE 接口 |
+| 显示 | ST7789P3，240 × 320，竖屏 RGB565，SPI2 40 MHz；LEDC 背光；可选横屏 320 × 240 | `bsp_display_*`、`bsp_lvgl_*` | ESP32-C3 无 PSRAM；当前为小型单 DMA 缓冲；BSP 未暴露 LCD MISO、触摸或 TE 接口 |
 | 输入 | `UP` / `DOWN` / `OK` 三键，共用 GPIO0 的 ADC 电阻分压 | `bsp_button_init()`、`bsp_button_read_mv()` | 回调运行在 button 组件任务中，不能阻塞；不能再创建第二个 ADC1 unit |
 | 音频 | ES8311，I2S0 全双工 PCM，支持播放、麦克风录音及软件休眠/恢复 | `bsp_audio_*` | PCM 读写为阻塞调用，应放工作任务；codec 休眠前必须停止 PCM I/O；格式切换必须保留 BSP 内的 close/open 流程 |
 | 电池 | CW2017 的 SOC 与电压读取 | `bsp_battery_*` | 是可缺省能力；读数精度取决于电芯与 profile，不能等同于已标定结果 |

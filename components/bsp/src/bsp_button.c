@@ -4,6 +4,8 @@
 #include "bsp_pins.h"
 #include "iot_button.h"
 #include "button_adc.h"
+#include "driver/gpio.h"
+#include "freertos/task.h"
 #include "esp_adc/adc_oneshot.h"
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
@@ -115,7 +117,12 @@ esp_err_t bsp_button_init(bsp_btn_cb_t cb, void *user) {
             .min          = BTN_MV[i][0],
             .max          = BTN_MV[i][1],
         };
-        const button_config_t bc = { 0 };
+        // 按键门限放到 bsp_pins.h:短按 120ms 起算,按住 300ms 触发长按。
+        // (组件默认是 180ms / 1500ms,对游戏来说长按太慢。)
+        const button_config_t bc = {
+            .long_press_time = BSP_BTN_LONG_MS,
+            .short_press_time = BSP_BTN_SHORT_MS,
+        };
         esp_err_t e = iot_button_new_adc_device(&bc, &ac, &s_btn[i]);
         if (e != ESP_OK || !s_btn[i]) {
             ESP_LOGE(TAG, "按键 %d 创建失败 (%s) —— 检查 GPIO%d 的 ADC 配置与分压电阻",
@@ -147,7 +154,8 @@ esp_err_t bsp_button_init(bsp_btn_cb_t cb, void *user) {
     }
 
     s_ready = true;
-    ESP_LOGI(TAG, "按键就绪:ADC1_CH%d 三键分压", BSP_BTN_ADC_CHANNEL);
+    ESP_LOGI(TAG, "按键就绪:ADC1_CH%d 三键分压,短按>=%dms 长按>=%dms",
+             BSP_BTN_ADC_CHANNEL, BSP_BTN_SHORT_MS, BSP_BTN_LONG_MS);
     return ESP_OK;
 }
 
@@ -160,4 +168,28 @@ int bsp_button_read_mv(void) {
     if (adc_oneshot_read(s_adc, BSP_BTN_ADC_CHANNEL, &raw) != ESP_OK) return -1;
     if (adc_cali_raw_to_voltage(s_cali, raw, &mv) != ESP_OK) return -1;
     return mv;
+}
+
+esp_err_t bsp_button_prepare_deep_sleep(int *level) {
+    if (level) *level = 0;
+
+    // ① 先停按键驱动,再放 ADC —— 反过来会让 timer 回调碰到已释放的句柄。
+    button_cleanup();
+
+    // ② 按键脚交回普通数字输入 + 上拉。ADC 接管的脚数字读回是 0,而深睡低电平唤醒
+    //    正是比这个值;不恢复的话唤醒条件在入睡瞬间就成立。
+    const gpio_num_t pin = (gpio_num_t)BSP_BTN_GPIO;
+    esp_err_t err = gpio_set_direction(pin, GPIO_MODE_INPUT);
+    if (err == ESP_OK) err = gpio_set_pull_mode(pin, GPIO_PULLUP_ONLY);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "按键脚切回数字输入失败: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    // 上拉建立需要一点时间,再回读。
+    vTaskDelay(pdMS_TO_TICKS(20));
+    if (level) *level = gpio_get_level(pin);
+    ESP_LOGI(TAG, "按键就绪状态已释放,深度休眠唤醒脚 GPIO%d 电平=%d",
+             (int)pin, level ? *level : -1);
+    return ESP_OK;
 }

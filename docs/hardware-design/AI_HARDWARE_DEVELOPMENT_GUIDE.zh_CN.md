@@ -136,12 +136,13 @@ Wi-Fi、NimBLE 和 light/deep sleep 直接使用 ESP-IDF API，不属于板级 B
 - 当前 gap 为 `(0, 0)`，镜像 X/Y 都关闭。
 - 厂商 porch、power、gamma 初始化表在 `bsp_display.c`。它来自特定面板参考例程，**不是通用 ST7789 默认值**；换面板应取得对应供应商序列。
 - 不要手写 MADCTL(0x36) 与现有 mirror/rotation 配置竞争。LVGL 注册显示时还会重新设置旋转。
+- `bsp_lvgl_set_landscape(true)` 把 LVGL 逻辑分辨率切到 **320 × 240**,传 `false` 回到默认竖屏 240 × 320。旋转由面板 MADCTL(MV + 一个 mirror)完成,不占 CPU、不需要额外缓冲。必须在 `bsp_lvgl_init()` 之后、持 `bsp_lvgl_lock()` 时调用,并在其后建界面,否则排版仍按竖屏尺寸算。若实测发现横屏画面按目标持握方向上下颠倒,把 `bsp_display_lvgl.c` 里的 `LV_DISPLAY_ROTATION_90` 改成 `LV_DISPLAY_ROTATION_270`。
 
 ### 5.2 LVGL 内存和线程规则
 
 ESP32-C3 无 PSRAM。当前 LVGL 显示缓冲为 `240 × 20` 像素的单 DMA 缓冲，RGB565 约 9.6 KB；`sdkconfig.defaults` 的 LVGL 内部池为 24 KB。不要直接改为大行数双缓冲，也不要扩大 UI 内存池而不检查内部 RAM、最大连续堆和 I2S DMA 初始化。
 
-LVGL 最终输出的 RGB565 刷新区域会统一套用 30 px 圆角遮罩，因此正常刷新和页面切换期间，圆角之外的四角区域都会保持纯黑。遮罩直接作用于局部绘制缓冲，不使用根 screen 的 `clip_corner`；全屏圆角裁剪需要 ARGB 中间图层，在本项目无 PSRAM、LVGL 内存池仅 24 KB 的条件下可能耗尽内存。该行为统一放在显示接入层，不应在各页面重复绘制四角装饰。
+LVGL 最终输出的 RGB565 刷新区域会统一套用 30 px 圆角遮罩,因此正常刷新和页面切换期间,圆角之外的四角区域都会保持纯黑。遮罩直接作用于局部绘制缓冲,不使用根 screen 的 `clip_corner`;全屏圆角裁剪需要 ARGB 中间图层,在本项目无 PSRAM、LVGL 内存池仅 24 KB 的条件下可能耗尽内存。该行为统一放在显示接入层,不应在各页面重复绘制四角装饰。遮罩按当前逻辑分辨率计算,所以横竖屏切换后圆角半径依旧成立;页面代码必须读当前分辨率,不能写死 240 × 320(横屏下一行逻辑像素宽 320,LVGL 会按刷新区域重新切分这块局部缓冲)。
 
 终端 deep sleep 前，应先阻止新页面任务，并持有 LVGL 锁等待当前 flush 完成。`bsp_display_prepare_deep_sleep()` 随后发送关闭显示和 Sleep In，将背光 PWM 停在低电平，设置 CS 为高电平，SCLK/MOSI/DC/背光为低电平，开启单引脚 hold 及 ESP32-C3 全局 deep-sleep hold。唤醒后 `bsp_display_init()` 会在 SPI 或 LEDC 接管前解除全局与单引脚 hold。该终端接口不是可恢复的息屏操作，调用后必须立即进入 deep sleep 或重启。
 
@@ -175,6 +176,8 @@ LVGL 非线程安全：
 - ADC 校准句柄创建失败不影响按键事件，但 `bsp_button_read_mv()` 返回 `-1`。
 - 回调来自 button 组件使用的共享 `esp_timer` 任务，只能入队或执行同等级的有界操作，不能阻塞、录音、播放或访问 UI。
 - 事件包括 PRESS、CLICK、DOUBLE、LONG。应用菜单主要消费 CLICK；页面中的 OK LONG 被全局拦截用于返回。
+- 按键时长本身就是 BSP 默认值：`BSP_BTN_SHORT_MS`（120 ms）是“算一次单击”的最短按压，`BSP_BTN_LONG_MS`（300 ms）到点触发长按；两个常量与电压窗口一起放在 `bsp_pins.h`。button 组件自带的默认值（180 ms / 1500 ms）对“每次单击都可能移动光标”的游戏来说太慢。短于短按时长的按压按抖动丢弃，长按也不会额外再产生一次单击。
+- 按键脚是本板唯一的 deep sleep 唤醒源，而按键工作时该脚被 ADC 接管：即使板上装了外部上拉，它的【数字】电平也读回 0。在这个状态下武装低电平唤醒，条件在芯片入睡瞬间就已成立，设备会自己醒回来而不是保持睡眠。所以 `bsp_button_prepare_deep_sleep()` 会停掉按键设备、释放共享 ADC unit，并把 GPIO0 切回带上拉的数字输入；它同时回填该脚电平，调用方可以据此拒绝在按键被按住时入睡。它属于终端休眠流程的一步，调用后按键到下次启动前不可用。
 
 重标阈值时，在 Button 页逐个长按按键记录稳定电压，采集多块板、不同电量和合理温度范围的数据，再把相邻分布之间留裕量设置为边界。不要只用理论分压值。
 
@@ -461,7 +464,8 @@ idf.py flash monitor
 | --- | --- |
 | 无画面但背光亮 | LCD CS/DC/MOSI/SCLK、厂商序列、SWRESET、DISPON、SPI mode |
 | 颜色颠倒或怪色 | `swap_bytes`、RGB/BGR、反色配置；一次只改一个变量 |
-| 画面旋转修改无效 | `bsp_display_lvgl.c` rotation 覆盖底层 mirror |
+| 画面旋转修改无效 | `bsp_display_lvgl.c` rotation 覆盖底层 mirror；应改用 `bsp_lvgl_set_landscape()`，不要把 240 × 320 写死在页面里 |
+| 刚进 deep sleep 就自己醒来 | 低电平唤醒源在入睡时已满足：先 `bsp_button_prepare_deep_sleep()` 释放 ADC 并把 GPIO0 恢复成带上拉的数字输入，再用它回填的电平决定能不能睡 |
 | 背光或串口异常 | GPIO21 与 UART0 默认 TX 冲突 |
 | 三键混淆/误触 | 外部 10 kΩ 上拉、实测电压、阈值、ADC attenuation 一致性 |
 | `adc1 is already in use` | 是否又创建了 ADC1 oneshot unit |

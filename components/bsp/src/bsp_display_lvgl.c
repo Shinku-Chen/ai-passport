@@ -25,9 +25,14 @@ static void rounded_flush_event(lv_event_t *event)
     const int32_t width = lv_area_get_width(area);
     if (draw_buf->header.stride < (uint32_t)width * sizeof(uint16_t)) return;
 
+    // 刷屏区域始终是 LVGL 逻辑坐标系(硬件旋转由面板 MADCTL 完成),所以遮罩必须用
+    // 当前逻辑分辨率:横屏是 320x240,写死 BSP_LCD_W/H 会把整条边涂黑。
+    const int32_t screen_w = lv_display_get_horizontal_resolution(disp);
+    const int32_t screen_h = lv_display_get_vertical_resolution(disp);
+
     for (int32_t y = area->y1; y <= area->y2; ++y) {
         if (y >= BSP_LVGL_SCREEN_RADIUS &&
-            y < BSP_LCD_H - BSP_LVGL_SCREEN_RADIUS) {
+            y < screen_h - BSP_LVGL_SCREEN_RADIUS) {
             continue;
         }
 
@@ -35,7 +40,7 @@ static void rounded_flush_event(lv_event_t *event)
                                      (y - area->y1) * draw_buf->header.stride);
         for (int32_t x = area->x1; x <= area->x2; ++x) {
             if (bsp_display_pixel_outside_rounded_rect(
-                    x, y, BSP_LCD_W, BSP_LCD_H, BSP_LVGL_SCREEN_RADIUS)) {
+                    x, y, screen_w, screen_h, BSP_LVGL_SCREEN_RADIUS)) {
                 // The port swaps RGB565 bytes after this event; black is 0 in
                 // either byte order, so masking here is safe.
                 row[x - area->x1] = 0;
@@ -97,4 +102,21 @@ bool bsp_lvgl_lock(int timeout_ms) {
 }
 void bsp_lvgl_unlock(void) {
     if (s_disp) lvgl_port_unlock();
+}
+
+esp_err_t bsp_lvgl_set_landscape(bool landscape) {
+    if (!s_disp) return ESP_FAIL;
+
+    // LVGL ROTATION_90/270 只是“相对 disp_cfg.rotation 再转 90 度”:esp_lvgl_port
+    // 收到 RESOLUTION_CHANGED 后会写入 MADCTL(MV 翻转行列 + 一个 mirror 保证是
+    // 旋转而不是镜像),并同步 LVGL 逻辑分辨率。
+    // 方向若上下颠倒,把这里的 90 换成 270 即可(对应另一组 mirror)。
+    const lv_display_rotation_t rotation =
+        landscape ? LV_DISPLAY_ROTATION_90 : LV_DISPLAY_ROTATION_0;
+    lv_display_set_rotation(s_disp, rotation);
+
+    ESP_LOGI(TAG, "LVGL 方向: %s(%dx%d)", landscape ? "横屏" : "竖屏",
+             (int)lv_display_get_horizontal_resolution(s_disp),
+             (int)lv_display_get_vertical_resolution(s_disp));
+    return ESP_OK;
 }

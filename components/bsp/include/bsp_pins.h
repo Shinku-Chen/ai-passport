@@ -50,6 +50,13 @@
 // ★ 换了分压/上拉阻值怎么办:进 demo 的 Button 页,它实时显示当前 ADC 电压;
 //   逐个按住三个键记下读数,取相邻两档的中点作为窗口边界,改下面的 BSP_BTN_MV 即可。
 // ============================================================================
+// 按键短按/长按门限(iot_button 的 TICKS_INTERVAL=10ms)。
+// 短按 < 120ms 视为抖动丢弃;按住 300ms 触发长按(BSP_BTN_LONG)。
+#define BSP_BTN_SHORT_MS     120
+#define BSP_BTN_LONG_MS      300
+// 三键共用的那一个 GPIO。除了 ADC 读取,deep sleep 的按键唤醒也用它
+// (任一键都把该脚拉到低电平,故唤醒按低电平触发)。
+#define BSP_BTN_GPIO         0
 #define BSP_BTN_ADC_UNIT     ADC_UNIT_1
 #define BSP_BTN_ADC_CHANNEL  ADC_CHANNEL_0    // GPIO0
 #define BSP_BTN_COUNT        3

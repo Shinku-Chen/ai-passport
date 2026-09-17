@@ -40,6 +40,13 @@ struct _lv_display_t;
 // 启动 LVGL 与其渲染任务,返回 lv_display_t*。失败返回 NULL；display 注册失败会回滚 port。
 struct _lv_display_t *bsp_lvgl_init(void);
 
+// 横屏开关:true → LVGL 逻辑分辨率 320x240,false → 竖屏 240x320(默认)。
+// 底层靠面板 MADCTL 的 MV+MX/MY 做硬件旋转,不占用 CPU、不需要额外缓冲;
+// 圆角遮罩按当前逻辑分辨率自动跟随,不必改 BSP_LVGL_SCREEN_RADIUS。
+// 必须在 bsp_lvgl_init() 成功之后调用,且调用时持 bsp_lvgl_lock()(会即时触发
+// LVGL 分辨率变更并重绘)。幂等;LVGL 未就绪返回 ESP_FAIL。
+esp_err_t bsp_lvgl_set_landscape(bool landscape);
+
 // LVGL 非线程安全:在【非 LVGL 任务】里操作任何 lv_* 对象前后必须加解锁。
 // LVGL 尚未就绪或超时时 lock 返回 false；只有 lock 成功后才调用 unlock。
 bool bsp_lvgl_lock(int timeout_ms);

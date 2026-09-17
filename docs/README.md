@@ -18,7 +18,7 @@ The table below describes the application capabilities implemented by the curren
 
 | Capability | Confirmed implementation | Application interface | Boundaries that must be respected |
 | --- | --- | --- | --- |
-| Display | ST7789P3, 240 × 320 portrait RGB565, SPI2 at 40 MHz; LEDC backlight | `bsp_display_*`, `bsp_lvgl_*` | The ESP32-C3 has no PSRAM; the current design uses a small single DMA buffer; the BSP exposes no LCD MISO, touch, or TE interface |
+| Display | ST7789P3, 240 × 320 portrait RGB565, SPI2 at 40 MHz; LEDC backlight; optional landscape 320 × 240 | `bsp_display_*`, `bsp_lvgl_*` | The ESP32-C3 has no PSRAM; the current design uses a small single DMA buffer; the BSP exposes no LCD MISO, touch, or TE interface |
 | Input | `UP`, `DOWN`, and `OK` share an ADC resistor ladder on GPIO0 | `bsp_button_init()`, `bsp_button_read_mv()` | Callbacks run in the button component task and must not block; do not create a second ADC1 unit |
 | Audio | ES8311 with full-duplex PCM over I2S0, supporting playback, microphone capture, and software suspend/resume | `bsp_audio_*` | PCM reads and writes block and belong in a worker task; stop PCM I/O before codec sleep; format changes must retain the BSP close/open sequence |
 | Battery | CW2017 state-of-charge and voltage readings | `bsp_battery_*` | This capability is optional at runtime; accuracy depends on the cell and battery profile and is not equivalent to a calibrated result |

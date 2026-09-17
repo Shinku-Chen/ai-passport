@@ -108,12 +108,13 @@ Wi-Fi, NimBLE, and sleep use ESP-IDF directly rather than the BSP. `demo_radio.c
 - Panel: ST7789P3, 240 × 320 portrait, RGB565, SPI2 MOSI-only at 40 MHz, mode 0.
 - `BSP_LCD_INVERT_COLOR=1`; change inversion only after measurement with the replacement panel.
 - Reset is software-only, gap is `(0, 0)`, X/Y mirroring is disabled, and LVGL rotation may override lower-level mirror settings.
+- `bsp_lvgl_set_landscape(true)` switches the LVGL logical resolution to **320 × 240**; `false` restores the default 240 × 320 portrait. The rotation is done by the panel's MADCTL (MV plus one mirror), so it costs no CPU and needs no extra buffer. Call it after `bsp_lvgl_init()` while holding `bsp_lvgl_lock()`, and build the UI afterwards so layout uses the new resolution. If a landscape page appears upside down for the intended hold, check it on the device, then change `LV_DISPLAY_ROTATION_90` to `LV_DISPLAY_ROTATION_270` in `bsp_display_lvgl.c`.
 - The vendor porch, power, and gamma sequence in `bsp_display.c` is panel-specific. Do not treat it as a universal ST7789 sequence.
 - `swap_bytes=true` is required because LVGL emits little-endian RGB565 while SPI sends the high byte first.
 
 The LVGL DMA buffer is one `240 × 20` RGB565 buffer, about 9.6 KB; the LVGL internal pool is 24 KB. Do not add large/double buffers without checking internal RAM, the largest contiguous heap block, and I2S DMA.
 
-The final LVGL RGB565 flush is masked to a global 30 px radius, so the four areas outside the rounded screen remain pure black during page changes as well as normal rendering. The mask is applied directly to the partial draw buffer and does not use root-screen `clip_corner`; full-screen rounded clipping requires an ARGB intermediate layer that can exhaust the 24 KB LVGL pool on this no-PSRAM target. Keep this behavior in the display integration instead of duplicating corner decorations in individual pages.
+The final LVGL RGB565 flush is masked to a global 30 px radius, so the four areas outside the rounded screen remain pure black during page changes as well as normal rendering. The mask is applied directly to the partial draw buffer and does not use root-screen `clip_corner`; full-screen rounded clipping requires an ARGB intermediate layer that can exhaust the 24 KB LVGL pool on this no-PSRAM target. Keep this behavior in the display integration instead of duplicating corner decorations in individual pages. The mask uses the display's current logical resolution, so the same radius follows a landscape rotation; page code must read the resolution instead of hard-coding 240 × 320 (in landscape one logical row is 320 px wide, and LVGL reshapes the partial buffer per flushed area).
 
 Before terminal deep sleep, stop new page work and hold the LVGL lock long enough to finish any current flush. `bsp_display_prepare_deep_sleep()` then sends display-off and Sleep In, stops the backlight PWM at low level, drives CS high and SCLK/MOSI/DC/backlight low, enables per-pin hold, and enables the ESP32-C3 global deep-sleep hold. `bsp_display_init()` disables the global and per-pin holds before SPI or LEDC takes ownership after wake. This terminal API is not a reversible display blanking operation and must be followed immediately by deep sleep or restart.
 
@@ -131,6 +132,10 @@ GPIO0 has an external 10 kΩ pull-up to 3.3 V. UP, DOWN, and OK connect it to gr
 | Released | about 3300 mV | outside all windows |
 
 Do not replace the external resistor with the inaccurate internal pull-up. The BSP creates one ADC1 oneshot unit and shares it with all button devices and voltage reads. Attenuation is `ADC_ATTEN_DB_12`. Callbacks originate in the button component's shared `esp_timer` task and must only enqueue work or perform similarly bounded operations.
+
+Press timing is part of the BSP default: `BSP_BTN_SHORT_MS` (120 ms) is the minimum press that counts as a click, and `BSP_BTN_LONG_MS` (300 ms) is when the long-press event fires; both live in `bsp_pins.h` next to the voltage windows. The button component's own defaults (180 ms / 1500 ms) are too slow for a game that moves a cursor on every click. A press shorter than the short-press time is dropped as contact bounce, and a long press does not additionally produce a click.
+
+The button pin is the only deep-sleep wake source on this board, and the ADC owns the pad while buttons are active: its **digital** level reads 0 even with the external pull-up fitted. A low-level wake source armed in that state is satisfied the moment the chip sleeps, so the device wakes up by itself instead of staying asleep. `bsp_button_prepare_deep_sleep()` therefore stops the button devices, releases the shared ADC unit, and switches GPIO0 back to a digital input with a pull-up; it returns the pin level so the caller can refuse to sleep while a key is held. Call it as part of the terminal deep-sleep sequence, after which buttons are unusable until the next boot.
 
 Calibrate thresholds using multiple boards, charge levels, and reasonable temperatures; leave margin between measured distributions rather than relying only on divider theory.
 
@@ -272,7 +277,8 @@ the demo test UI just to follow these examples.
 | --- | --- |
 | Backlight but no image | CS/DC/MOSI/SCLK, vendor sequence, software reset, display-on, SPI mode |
 | Wrong colors | byte swap, RGB/BGR, inversion; change one variable at a time |
-| Rotation change has no effect | LVGL rotation overriding lower-level mirror |
+| Rotation change has no effect | LVGL rotation overriding lower-level mirror; use `bsp_lvgl_set_landscape()` instead of writing MADCTL, and read the current logical resolution instead of hard-coding 240 × 320 |
+| Device wakes immediately after entering deep sleep | The low-level GPIO wake source is already satisfied: release the ADC and restore GPIO0 as a digital input with a pull-up via `bsp_button_prepare_deep_sleep()`, and check the returned level before sleeping |
 | Backlight or console failure | GPIO21 conflict with UART0 default TX |
 | Button confusion | external 10 kΩ pull-up, measured voltage, thresholds, attenuation |
 | `adc1 is already in use` | accidental second ADC1 oneshot unit |
