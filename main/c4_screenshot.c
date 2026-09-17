@@ -2,6 +2,7 @@
 #include "c4_screenshot.h"
 
 #include "bsp_display.h"
+#include "bsp_pins.h"
 #include "driver/usb_serial_jtag.h"
 #include "driver/usb_serial_jtag_vfs.h"
 #include "esp_log.h"
@@ -16,13 +17,14 @@ static const char *TAG = "c4_shot";
 
 #define C4_SHOT_CMD        "FAP_SCREENSHOT_V1"
 #define C4_SHOT_CMD_LEN    (sizeof(C4_SHOT_CMD) - 1)
-#define C4_SHOT_MAX_PX     (320 * 320)          // 覆盖横竖屏两种逻辑分辨率
-#define C4_SHOT_FRAME_MAX  (C4_SHOT_MAX_PX * 2)
+// 一帧就是面板的全部像素:横屏 320x240 与竖屏 240x320 像素数相同,故这一个尺寸通用。
+#define C4_SHOT_FRAME_MAX  ((size_t)BSP_LCD_W * (size_t)BSP_LCD_H * 2u)
 #define C4_SHOT_CHUNK      512                  // 远小于 1024B tx 环形缓冲
 #define C4_SHOT_TASK_STACK 8192                 // 全屏软件渲染需要余量
 #define C4_SHOT_TASK_PRIO  3                    // 低于 LVGL 任务(4)
 #define C4_SHOT_IO_WAIT_MS 200
 
+#if C4_ENABLE_SCREENSHOT
 // 编译期静态预留:运行时堆里拿不到 150KB 连续块(见参考文档)。
 static uint8_t s_frame[C4_SHOT_FRAME_MAX] __attribute__((aligned(64)));
 static bool s_started;
@@ -119,8 +121,13 @@ static void screenshot_task(void *arg)
     }
 }
 
+#endif  // C4_ENABLE_SCREENSHOT
+
 esp_err_t c4_screenshot_start(void)
 {
+#if !C4_ENABLE_SCREENSHOT
+    return ESP_ERR_NOT_SUPPORTED;
+#else
     if (s_started) return ESP_OK;
 
     // 控制台默认走寄存器级 VFS 路径,不装驱动会在读命令时踩空驱动对象。
@@ -143,6 +150,7 @@ esp_err_t c4_screenshot_start(void)
 
     s_started = true;
     ESP_LOGI(TAG, "截图就绪:发 " C4_SHOT_CMD " 取一帧 %u 字节 RGB565LE",
-             (unsigned)(320u * 240u * 2u));
+             (unsigned)C4_SHOT_FRAME_MAX);
     return ESP_OK;
+#endif  // C4_ENABLE_SCREENSHOT
 }
