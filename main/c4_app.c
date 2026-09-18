@@ -270,19 +270,24 @@ static void human_drop(void)
     after_move(&move);
 }
 
-// 上下键在横屏下就是左右移动:UP 在右手边(设备顺时针转 90 度持握),所以 UP 往右。
+// 横屏持握时的方向约定:设备顺时针转 90 度,「上」键在右手边,所以:
+//   * 对局中:UP 往右移列,DOWN 往左;
+//   * 设置屏列表:右手边的 UP 往下走一行(与对局里“UP = 朝屏幕前进方向”一致)。
+// 按竖屏直觉给 UP 配“往上”实测手感是反的,所以列表方向与光标方向在这里统一。
 #define C4_CURSOR_STEP_UP   (+1)
 #define C4_CURSOR_STEP_DOWN (-1)
+#define C4_MENU_STEP_UP     (+1)
+#define C4_MENU_STEP_DOWN   (-1)
 
 static void on_menu_key(bsp_btn_t btn, bsp_btn_ev_t ev)
 {
     if (ev != BSP_BTN_CLICK) return;
 
     if (btn == BSP_BTN_UP) {
-        c4_settings_move(&s_settings, -1);
+        c4_settings_move(&s_settings, C4_MENU_STEP_UP);
         render_menu();
     } else if (btn == BSP_BTN_DOWN) {
-        c4_settings_move(&s_settings, +1);
+        c4_settings_move(&s_settings, C4_MENU_STEP_DOWN);
         render_menu();
     } else if (btn == BSP_BTN_OK) {
         if (c4_settings_is_start(&s_settings)) {
