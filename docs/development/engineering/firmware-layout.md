@@ -44,6 +44,13 @@ partition bounds, unique labels, and non-overlap, then ensures the application
 offset matches an app partition large enough to contain it. It intentionally
 does not require the default partition list. CI runs the same gate.
 
+Every image listed in `flash_args`, including user-defined resources and OTA
+data, must exist, be nonempty and match the merged bytes at its configured
+offset. Image ranges must stay within 8 MB and must not overlap. Additional
+images must fit entirely inside a configured partition; an offset inside that
+partition is allowed. Merely declaring a resource partition does not require a
+preloaded image, but listing an image in `flash_args` makes it mandatory.
+
 Upload only `build/FoloToy-AI-Passport-full.bin`; the similarly named app-only
 `build/FoloToy-AI-Passport.bin` does not contain the bootloader or partition
 table.

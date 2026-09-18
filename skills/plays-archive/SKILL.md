@@ -1,16 +1,16 @@
 ---
 name: plays-archive
-description: After a firmware release, archive the published application into the upstream FoloToy ai-passport repository's plays/ directory with an AI-generated bilingual functional summary (text-only; the cover image is recorded by file name and format, not committed).
+description: After a firmware release, archive the published application into the upstream FoloToy ai-passport repository's docs/reference/ directory with an AI-generated bilingual functional summary (text-only; the cover image is recorded by file name and format, not committed).
 ---
 
 <p align="right">
   <a href="SKILL.zh_CN.md">简体中文</a> · <strong>English</strong>
 </p>
 
-# Archive an Application to plays
+# Archive an Application to Reference
 
 This skill archives a published application into the upstream
-`FoloToy/ai-passport` repository's `plays/` application archive so it is
+`FoloToy/ai-passport` repository's `docs/reference/` application archive so it is
 discoverable in-repository for later querying. It runs after a firmware release
 (see `docs/development/release/publish-to-community.md` for publishing itself) and only
 when the developer asks to archive the application.
@@ -35,8 +35,8 @@ Do not create, write, or commit anything until every gate below is satisfied.
 
 Confirm the application name, the source it belongs to (for example a `demo/*`
 branch or `main/`), and the contributor's GitHub username. Use the
-lowercase-kebab-case username and application name as the two-level path:
-`plays/<username>/<app-name>/`. See
+lowercase-kebab-case username and application name beneath the repository-relative
+path `docs/reference/<username>/<app-name>/`. See
 [`../../docs/reference/README.md`](../../docs/reference/README.md) for the full convention.
 
 ## Check the project README
@@ -69,7 +69,7 @@ actually owns one.
 
 First collect the metadata the developer filled in when publishing to the
 community (bilingual title, bilingual description, and the source address they
-submitted), then write `plays/<username>/<app-name>/README.md` and its paired
+submitted), then write `docs/reference/<username>/<app-name>/README.md` and its paired
 `.zh_CN.md` as an AI-generated functional summary for later querying (not a
 publishing artifact). Record:
 
@@ -88,7 +88,8 @@ If the root README exists, merge its content into the summary rather than
 ignoring the human-facing description.
 
 Write the default `.md` in English and the `.zh_CN.md` in Simplified Chinese,
-aligned in the same change.
+aligned in the same change. Register the application in both language versions
+of `docs/reference/README.md` so the archive can be discovered from the index.
 
 ## Cover image
 
@@ -108,7 +109,7 @@ convention in [`docs/brand/README.md`](../../docs/brand/README.md).
 
 Commit the summary on the dedicated branch (English imperative
 Conventional Commit title, for example
-`docs(plays): add <app-name> application archive`). If a root README was created
+`docs(reference): add <app-name> application archive`). If a root README was created
 or updated, include it in the same change. Do **not** store the merged
 firmware `.bin` here; it is a build/publish artifact. Report Build, Host tests,
 Device tests, and Unverified separately.

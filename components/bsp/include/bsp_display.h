@@ -37,7 +37,9 @@ esp_err_t bsp_display_prepare_deep_sleep(void);
 // 故此处用 struct 形式即可,避免本头文件强行 include lvgl.h。
 struct _lv_display_t;
 
-// 启动 LVGL 与其渲染任务,返回 lv_display_t*。失败返回 NULL；display 注册失败会回滚 port。
+// 启动 LVGL 与其渲染任务,返回 lv_display_t*。失败返回 NULL；display/回调注册失败
+// 回滚 display 并保留已初始化的 port，后续可重试。port 自身部分初始化失败需重启，
+// 不覆盖依赖中可能尚未退出的任务。首次初始化由单一任务串行调用。
 struct _lv_display_t *bsp_lvgl_init(void);
 
 // 横屏开关:true → LVGL 逻辑分辨率 320x240,false → 竖屏 240x320(默认)。

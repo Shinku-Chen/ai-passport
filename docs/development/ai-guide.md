@@ -77,7 +77,7 @@ rule does not require deleting the reference demo from the baseline repository.
 
 ## Material placement
 
-When the developer submits a reusable asset through you — an image, font, audio clip, or similar project material — save it under the repository-root [`assets/`](../../assets/README.md) by default so it stays available for development and later reuse. Place it in the matching subdirectory (`assets/images/`, `assets/fonts/`, `assets/music/`) and record the destination, naming, integration method, and source/license in the [`assets/` README](../../assets/README.md). Never mix binary assets with Markdown documentation. Application or experience archive records (cover, manual, summary) belong in `reference/<username>/`, not in `assets/`; deviate from `assets/` only when the developer explicitly directs another location.
+When the developer submits a reusable asset through you — an image, font, audio clip, or similar project material — save it under the repository-root [`assets/`](../../assets/README.md) by default so it stays available for development and later reuse. Place it in the matching subdirectory (`assets/images/`, `assets/fonts/`, `assets/music/`) and record the destination, naming, integration method, and source/license in the [`assets/` README](../../assets/README.md). Never mix binary assets with Markdown documentation. Text-only application archives (cover metadata, manual, summary) belong in the repository-relative `docs/reference/<username>/<app-name>/`; experience entries belong in `docs/reference/<username>/`. Do not put those records in `assets/` or commit cover images into the archive. For reusable assets, deviate from `assets/` only when the developer explicitly directs another location.
 
 ## Delivery
 

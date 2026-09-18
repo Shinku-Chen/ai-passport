@@ -10,4 +10,9 @@ The workflow checks out the target `main` without persisting credentials and use
 
 Keep fork-specific firmware and documentation on feature branches so `main` stays synchronized. If development must happen directly on `main`, disable this workflow first to avoid automatic merges or conflicts. Fork owners must explicitly enable Actions after forking.
 
+The checkout explicitly sets `ref: main`, even when a manual dispatch selects
+another branch. The sync Action expects a local `main` branch before fetching;
+without that explicit checkout, `git checkout main` can interpret this
+repository's `main/` directory as a path instead of switching branches.
+
 When upgrading an Action, verify the release and full commit SHA from the official repository and update the inline version comment.

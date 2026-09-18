@@ -137,7 +137,15 @@ these debug bundles; runner-local archives disappear when the runner is removed.
 Any additional retention/upload policy needs an explicit content and access review.
 No build/archive command flashes a device.
 
-The baseline also has a hardware-independent logic test:
+The static gate also compiles the actual BSP and demo implementations against
+small platform stubs. These fault-injection tests cover task handoff and stop
+retries, recording failures, Wi-Fi/BLE startup rollback, button allocation and
+ADC failures, LVGL initialization locking/retry, and codec open/sleep/wake
+recovery. They need only a host C compiler and Python, not ESP-IDF or downloaded
+Managed Components. They do not establish real timing, electrical behavior or
+device compatibility; the firmware gate compiles against the pinned dependencies.
+
+To run an individual pure-logic test:
 
 ```bash
 cc -std=c11 -Wall -Wextra -Werror -Imain \

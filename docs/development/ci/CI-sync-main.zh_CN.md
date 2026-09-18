@@ -17,7 +17,7 @@
 
 ## 流水线做了什么
 
-1. **Checkout 目标仓库**：`actions/checkout` 检出当前 fork 的 `main` 分支，并关闭 Git 凭证持久化。
+1. **Checkout 目标仓库**：`actions/checkout` 显式设置 `ref: main`，即使手动触发选择其他分支，也检出当前 fork 的 `main`，并关闭 Git 凭证持久化。同步 Action 在 fetch 前需要本地 `main`；否则 `git checkout main` 可能把仓库内的 `main/` 目录作为路径处理，并未切换分支。
 2. **同步上游**：使用固定到完整 commit SHA 的 `aormsby/fork-sync-with-upstream-action`（对应 v3.4.3），把 `FoloToy/ai-passport` 的 `main` 同步到本 fork 的 `main`。`target_repo_token` 使用自动生成且仅具 `contents: write` 权限的 `GITHUB_TOKEN`，无需手动配置。
 3. **失败检查**：同步失败时输出提示——上游 workflow 文件变更可能导致 GitHub 暂停自动同步，需手动 Sync Fork 一次。
 

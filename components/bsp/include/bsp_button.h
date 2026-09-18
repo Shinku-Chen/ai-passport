@@ -24,6 +24,7 @@ typedef enum {
 typedef void (*bsp_btn_cb_t)(bsp_btn_t btn, bsp_btn_ev_t ev, void *user);
 
 // 成功调用可重复，并更新回调与 user；失败会回滚本次已创建的按键和 ADC 资源。
+// ADC 校准失败时返回错误而不是把无效电压解码为按键，修正故障后可重试。
 esp_err_t bsp_button_init(bsp_btn_cb_t cb, void *user);
 
 // deep sleep 专用:停掉三个按键设备、释放共享 ADC unit,再把按键脚交回普通数字输入

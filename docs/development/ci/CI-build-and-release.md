@@ -26,8 +26,8 @@ make sure the release title shows both.
 - **Tag naming convention**: name tags as `v<version>-<app-name>` in
   lowercase-kebab-case, e.g. `v0.1.0-voice-keychain`, `v1.0.0-pocket-pomodoro`.
   The `<app-name>` is the application this release builds (see the
-  `plays/<username>/<app-name>/` archive naming). A tag that only says a version
-  is ambiguous when several apps share the tree.
+  repository-relative `docs/reference/<username>/<app-name>/` archive naming).
+  A tag that only says a version is ambiguous when several apps share the tree.
 - **After the release is published, confirm the release title.** The workflow
   sets the title to the tag name, so a correctly-named tag already reads
   `v0.1.0-voice-keychain`. If the tag did not include the app, or the title is
@@ -68,9 +68,11 @@ things:
 
 - **What's new**: the features, behaviors, or fixes this release adds or
   changes compared with the previous one. Keep it user-facing, not a commit log.
-- **How to build**: how to produce and verify the merged firmware
-  (`./tools/validate.sh --firmware` or `idf.py build`), and the artifact file to
-  flash (`FoloToy-AI-Passport-full.bin` flashed from `0x0`).
+- **How to build**: run `./tools/validate.sh --firmware` to produce and verify
+  the merged firmware, then identify `FoloToy-AI-Passport-full.bin` as the file
+  to flash from `0x0`. `idf.py build` alone performs incremental compilation;
+  it does not create or verify the merged full image and is not an alternative
+  delivery command.
 - **How to use**: how to flash the build (the browser flasher above) and the key
   interactions or hardware requirements of the release.
 

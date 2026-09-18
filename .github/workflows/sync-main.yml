@@ -19,6 +19,7 @@ jobs:
       - name: Checkout target repo
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
+          ref: main
           persist-credentials: false
 
       # Step 2: run the sync action
@@ -34,6 +35,6 @@ jobs:
       - name: Sync check
         if: failure()
         run: |
-          echo "[Error] 由于上游仓库的 workflow 文件变更，GitHub 可能暂停本次自动更新。请手动 Sync Fork，详见 docs/development/CI-sync-main.md。"
-          echo "[Error] An upstream workflow change may have paused automatic synchronization. Sync the fork manually; see docs/development/CI-sync-main.md."
+          echo "[Error] 同步失败，请检查日志；若涉及上游 workflow 变更，请手动 Sync Fork，详见 docs/development/ci/CI-sync-main.md。"
+          echo "[Error] Synchronization failed; inspect the logs. For upstream workflow changes, Sync the fork manually; see docs/development/ci/CI-sync-main.md."
           exit 1

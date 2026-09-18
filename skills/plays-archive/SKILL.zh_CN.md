@@ -1,15 +1,15 @@
 ---
 name: plays-archive
-description: 固件发布之后，把已发布的应用归档到上游 FoloToy ai-passport 仓库的 plays/ 目录，附一份 AI 生成的双语功能说明（纯文本；封面图只记录文件名与格式，不提交）。
+description: 固件发布之后，把已发布的应用归档到上游 FoloToy ai-passport 仓库的 docs/reference/ 目录，附一份 AI 生成的双语功能说明（纯文本；封面图只记录文件名与格式，不提交）。
 ---
 
 <p align="right">
   <strong>简体中文</strong> · <a href="SKILL.md">English</a>
 </p>
 
-# 把应用归档到 plays
+# 把应用归档到参考区
 
-本 skill 把已发布的应用归档到上游 `FoloToy/ai-passport` 仓库的 `plays/` 应用档案库，让它在
+本 skill 把已发布的应用归档到上游 `FoloToy/ai-passport` 仓库的 `docs/reference/` 应用档案库，让它在
 仓库内可被检索、便于后续查询。它只在固件发布后（发布流程见
 `docs/development/release/publish-to-community.md`）运行，且仅在开发者要求归档该应用时执行。
 
@@ -28,7 +28,7 @@ description: 固件发布之后，把已发布的应用归档到上游 FoloToy a
 ## 确定要归档的内容
 
 确认应用名、其所属源码（例如某个 `demo/*` 分支或 `main/`），以及贡献者的 GitHub 用户名。
-用小写连字符的用户名和应用名作为两级路径：`plays/<username>/<app-name>/`。
+用户名和应用名用小写连字符，存放在相对仓库根目录的 `docs/reference/<username>/<app-name>/` 路径下。
 完整约定见 [`../../docs/reference/README.md`](../../docs/reference/README.zh_CN.md)。
 
 ## 检查项目 README
@@ -52,7 +52,7 @@ description: 固件发布之后，把已发布的应用归档到上游 FoloToy a
 ## 生成功能说明
 
 先收集开发者发布到社区时填写的元数据（双语标题、双语描述，以及他们提交的源码地址），然后写
-`plays/<username>/<app-name>/README.md` 及其配对 `.zh_CN.md`，作为为后续查询而生成的 AI 功能说明
+`docs/reference/<username>/<app-name>/README.md` 及其配对 `.zh_CN.md`，作为为后续查询而生成的 AI 功能说明
 （不是发布产物）。记录：
 
 - **发布标题与描述**：发布到社区时开发者提交的双语标题、双语描述。
@@ -65,6 +65,7 @@ description: 固件发布之后，把已发布的应用归档到上游 FoloToy a
 若根 README 存在，把它合并进说明，而不是忽略人类可读的描述。
 
 默认 `.md` 用英文、配对 `.zh_CN.md` 用简体中文，并在同一次变更中对齐。
+同时在 `docs/reference/README.md` 的中英文版本中登记该应用，使档案可从索引中发现。
 
 ## 封面图
 
@@ -78,7 +79,7 @@ description: 固件发布之后，把已发布的应用归档到上游 FoloToy a
 ## 提交
 
 在独立分支上提交总结（英文祈使句 Conventional Commit 标题，例如
-`docs(plays): add <app-name> application archive`）。若创建或更新了根 README，一并纳入同一次变更。
+`docs(reference): add <app-name> application archive`）。若创建或更新了根 README，一并纳入同一次变更。
 **不要**在这里存合并固件 `.bin`；它是构建/发布产物。按 Build、Host tests、Device tests、
 Unverified 分别上报。
 

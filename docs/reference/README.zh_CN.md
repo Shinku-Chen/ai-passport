@@ -4,7 +4,7 @@
 
 # 参考（Reference）
 
-本目录存放 AI Passport 开发中**不构成硬性要求**的参考资料：可复用的开发经验与已归档的应用档案。开发新东西时参考它们，而不是把它们当作强制规则。参考资料按贡献者的 GitHub 用户名组织：每个 `reference/<username>/` 目录下，经验条目以平铺文件存放，应用档案以子目录存放。
+本目录存放 AI Passport 开发中**不构成硬性要求**的参考资料：可复用的开发经验与已归档的应用档案。开发新东西时参考它们，而不是把它们当作强制规则。参考资料按贡献者的 GitHub 用户名组织：每个相对仓库根目录的 `docs/reference/<username>/` 目录下，经验条目以平铺文件存放，应用档案以子目录存放。
 
 工程规则本身位于 [`../development/`](../development/README.zh_CN.md)；协作规范位于 [`../contribution/`](../contribution/README.zh_CN.md)。
 
@@ -48,11 +48,11 @@
 
 一次发布可沉淀**一条或多条**可复用经验，每条作为独立条目新增，以发布版本（tag 或 commit）作为上下文。遵守仓库语言规则：默认 `.md` 路径用英文、配套 `.zh_CN.md` 用简体中文，并在同一次变更中对齐。
 
-条目是放在 `reference/<username>/` 下的单个 `.md`（及其 `.zh_CN.md`），按条目内容概要命名（小写连字符，例如 `audio-compression-trade-offs.md`），描述主题而非时间戳。每条经验在提交前分流：通用、上游也受益的经验作为 PR 提交到上游 `FoloToy/ai-passport`；纯 fork 定制按 [`docs/fork-guide.md`](../fork-guide.zh_CN.md) 留在 fork。
+条目是放在 `docs/reference/<username>/` 下的单个 `.md`（及其 `.zh_CN.md`），按条目内容概要命名（小写连字符，例如 `audio-compression-trade-offs.md`），描述主题而非时间戳。每条经验在提交前分流：通用、上游也受益的经验作为 PR 提交到上游 `FoloToy/ai-passport`；纯 fork 定制按 [`docs/fork-guide.md`](../fork-guide.zh_CN.md) 留在 fork。
 
 ## 归档应用
 
-应用发布后，在 `reference/<username>/<app-name>/` 下归档，附一份 AI 生成的双语功能说明（`README.md` / `.zh_CN.md`），可选配一份使用指南。档案为**纯文本**——封面图仅记录文件名与格式，不存放固件 `.bin`。`plays-archive` skill 驱动归档及其约定。
+应用发布后，在相对仓库根目录的 `docs/reference/<username>/<app-name>/` 下归档，附一份 AI 生成的双语功能说明（`README.md` / `.zh_CN.md`），可选配一份使用指南。档案为**纯文本**——封面图仅记录文件名与格式，不存放固件 `.bin`。`plays-archive` skill 驱动归档及其约定。同一次变更中，在本索引及其英文版本中登记该应用。
 
 ## 相关
 

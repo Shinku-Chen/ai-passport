@@ -6,12 +6,12 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include "freertos/task.h"
 #include "host/ble_gap.h"
 #include "host/ble_hs.h"
 #include "host/util/util.h"
 #include "lvgl.h"
 #include "nimble/nimble_port.h"
-#include "nimble/nimble_port_freertos.h"
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
 #include <string.h>
@@ -32,11 +32,12 @@ static lv_obj_t *s_scr;
 static lv_obj_t *s_status;
 static lv_timer_t *s_timer;
 static SemaphoreHandle_t s_host_stopped;
+static TaskHandle_t s_host_task;
 static volatile ble_demo_state_t s_state;
 static volatile int s_error;
 static uint8_t s_addr_type;
 static bool s_initialized;
-static bool s_start_requested;
+static volatile bool s_start_requested;
 static bool s_stop_in_progress;
 static bool s_host_done;
 
@@ -95,8 +96,10 @@ static void host_task(void *arg)
 {
     (void)arg;
     nimble_port_run();
-    if (s_host_stopped) xSemaphoreGive(s_host_stopped);
-    nimble_port_freertos_deinit();
+    // Do not use the port wrapper: it keeps a private task handle and ignores
+    // task-creation failure. This demo owns creation, acknowledgement and deletion.
+    xSemaphoreGive(s_host_stopped);
+    for (;;) vTaskSuspend(NULL);
 }
 
 esp_err_t demo_ble_start(void)
@@ -126,31 +129,41 @@ esp_err_t demo_ble_start(void)
     s_initialized = true;
     s_host_stopped = xSemaphoreCreateBinary();
     if (!s_host_stopped) {
-        nimble_port_deinit();
-        s_initialized = false;
-        s_error = ESP_ERR_NO_MEM;
-        s_state = BLE_DEMO_FAILED;
-        return ESP_ERR_NO_MEM;
+        err = ESP_ERR_NO_MEM;
+        goto failed_start;
     }
 
     ble_svc_gap_init();
     ble_svc_gatt_init();
     int rc = ble_svc_gap_device_name_set(DEVICE_NAME);
     if (rc != 0) {
-        vSemaphoreDelete(s_host_stopped);
-        s_host_stopped = NULL;
-        nimble_port_deinit();
-        s_initialized = false;
-        s_error = rc;
-        s_state = BLE_DEMO_FAILED;
-        return ESP_FAIL;
+        ESP_LOGE(TAG, "NimBLE device name failed: %d", rc);
+        err = ESP_FAIL;
+        goto failed_start;
     }
 
     ble_hs_cfg.reset_cb = on_reset;
     ble_hs_cfg.sync_cb = on_sync;
     s_start_requested = true;
-    nimble_port_freertos_init(host_task);
+    if (xTaskCreatePinnedToCore(host_task, "nimble_host", NIMBLE_HS_STACK_SIZE,
+                               NULL, configMAX_PRIORITIES - 4, &s_host_task,
+                               NIMBLE_CORE) != pdPASS) {
+        err = ESP_ERR_NO_MEM;
+        goto failed_start;
+    }
     return ESP_OK;
+
+failed_start:
+    // No host task exists, so nimble_port_stop() would return BLE_HS_EALREADY.
+    // Directly deinitialize; retain ownership if cleanup itself needs a retry.
+    s_start_requested = false;
+    esp_err_t cleanup = demo_ble_stop();
+    if (cleanup != ESP_OK) {
+        ESP_LOGE(TAG, "NimBLE startup cleanup failed: %s", esp_err_to_name(cleanup));
+    }
+    s_error = err;
+    s_state = BLE_DEMO_FAILED;
+    return err;
 }
 
 esp_err_t demo_ble_stop(void)
@@ -158,7 +171,7 @@ esp_err_t demo_ble_stop(void)
     s_start_requested = false;
     if (!s_initialized) return ESP_OK;
 
-    if (!s_stop_in_progress) {
+    if (s_host_task && !s_stop_in_progress) {
         (void)ble_gap_adv_stop();
         int rc = nimble_port_stop();
         if (rc != 0) {
@@ -170,7 +183,7 @@ esp_err_t demo_ble_stop(void)
         s_stop_in_progress = true;
     }
 
-    if (!s_host_done) {
+    if (s_host_task && !s_host_done) {
         if (!s_host_stopped ||
             xSemaphoreTake(s_host_stopped, pdMS_TO_TICKS(BLE_STOP_TIMEOUT_MS)) != pdTRUE) {
             ESP_LOGE(TAG, "等待 NimBLE host 停止超时");
@@ -179,6 +192,11 @@ esp_err_t demo_ble_stop(void)
             return ESP_ERR_TIMEOUT;
         }
         s_host_done = true;
+    }
+
+    if (s_host_task) {
+        vTaskDelete(s_host_task);
+        s_host_task = NULL;
     }
 
     esp_err_t err = nimble_port_deinit();

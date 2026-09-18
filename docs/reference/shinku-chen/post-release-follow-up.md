@@ -41,8 +41,9 @@ rejected upload automatically.
 ## Post-release follow-up has its own consent gates
 
 After publishing, three independent tracks can follow: archive the application
-to `plays/`, gather improvement suggestions as an upstream issue, and submit
-reusable development experience as an upstream documentation PR. Each touches
+to the repository-relative `docs/reference/<username>/<app-name>/`, gather
+improvement suggestions as an upstream issue, and submit reusable development
+experience as an upstream documentation PR. Each touches
 project-private content and each requires explicit developer consent, an
 available GitHub channel, and no submission before review. All three keep the
 change off the developer's current branch.

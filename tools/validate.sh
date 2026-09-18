@@ -57,6 +57,27 @@ run_static_checks() {
         tests/test_bsp_es8311_sleep_check.c components/bsp/src/bsp_es8311_sleep_check.c \
         -o "${test_dir}/test_bsp_es8311_sleep_check"
     "${test_dir}/test_bsp_es8311_sleep_check"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
+        -Itests/bsp_stubs -Icomponents/bsp/include \
+        tests/test_bsp_button.c -o "${test_dir}/test_bsp_button"
+    "${test_dir}/test_bsp_button"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
+        -Itests/bsp_stubs -Icomponents/bsp/include \
+        tests/test_bsp_lvgl_init.c components/bsp/src/bsp_display_rounding.c \
+        -o "${test_dir}/test_bsp_lvgl_init"
+    "${test_dir}/test_bsp_lvgl_init"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
+        -Itests/audio_stubs -Icomponents/bsp/include -Icomponents/bsp/src \
+        tests/test_bsp_audio_recovery.c components/bsp/src/bsp_es8311_sleep_check.c \
+        -o "${test_dir}/test_bsp_audio_recovery"
+    "${test_dir}/test_bsp_audio_recovery"
+    for demo in audio low_power ble wifi; do
+        "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
+            -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \
+            "tests/test_demo_${demo}_runtime.c" -Wl,--gc-sections \
+            -o "${test_dir}/test_demo_${demo}_runtime"
+        "${test_dir}/test_demo_${demo}_runtime"
+    done
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_deep_sleep_contract.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_check_repo.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_verify_firmware.py

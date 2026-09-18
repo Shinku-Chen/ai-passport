@@ -12,7 +12,7 @@ Use this when the project is being **released** — that is, when the code is fi
 
 When the developer says "publish" or "release", the first thing to decide is **where** to publish. Do not assume a route.
 
-- **To the community** — release the firmware to the [AI Passport Community market](https://ai-passport.folotoy.cn). Use the publisher workflow below. See also the project completion flow (`docs/development/project-completion.md`) once it is published.
+- **To the community** — release the firmware to the [AI Passport Community market](https://ai-passport.folotoy.cn). Use the publisher workflow below. See also the [project completion flow](project-completion.md) once it is published.
 - **To Git** — publish the finished code to a version-controlled repository. The flow is: commit the finished code, then open a release for it. The release artifact may be produced by the CI/CD pipeline (**recommended**, tag-triggered via `.github/workflows/build-firmware.yml`), or it may be a local `.bin` the developer already built. Follow the repository commit and PR rules (`docs/contribution/commit-and-pr.md`) and the fork workflow (`docs/fork-guide.md`); see [`CI-build-and-release.md`](../ci/CI-build-and-release.md) for the automated build and release artifacts.
 - **Neither yet** — the code is not finished and usable; keep developing, do not publish.
 
@@ -47,15 +47,17 @@ The skill's `SKILL.md` defines the exact workflow: inspect the project, prepare 
 
 The assistant fetches the official bundle from the URL in the prompt and follows the workflow described in its `SKILL.md`. No skill needs to be kept or committed in this repository; the prompt reproduces the official install source each time.
 
-## After publishing: archive to plays
+## After publishing: archive to reference
 
 Once the firmware is published, ask the developer whether to archive this application
-into the upstream repository's [`plays/`](../../reference/README.md) application
+into the upstream repository's [`docs/reference/`](../../reference/README.md) application
 archive. If they agree, generate an AI-generated functional summary for the application under
-`plays/<username>/<app-name>/` (bilingual `README.md` / `.zh_CN.md`). The archive is
+the repository-relative `docs/reference/<username>/<app-name>/` (bilingual
+`README.md` / `.zh_CN.md`). The archive is
 **text-only**: record the cover image only by its file name and format as publish
-metadata, and do **not** commit the cover image into `plays/` (see the convention in
-[`plays/README.md`](../../reference/README.md)). Do not store the firmware `.bin` here
+metadata, and do **not** commit the cover image into `docs/reference/` (see the convention in
+[`docs/reference/README.md`](../../reference/README.md)). Register the application
+in both language versions of that index. Do not store the firmware `.bin` here
 either. Use the `plays-archive` skill, which opens the archive PR against the
 upstream `FoloToy/ai-passport`.
 

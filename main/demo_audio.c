@@ -86,7 +86,11 @@ static void record_and_play(void) {
     size_t got = 0;
     while (got < total && !s_cancel) {
         size_t n = (total - got) < CHUNK_SAMPLES ? (total - got) : CHUNK_SAMPLES;
-        if (bsp_audio_read(rec + got, n * sizeof(int16_t)) != ESP_OK) break;
+        if (bsp_audio_read(rec + got, n * sizeof(int16_t)) != ESP_OK) {
+            free(rec);
+            if (!s_cancel) set_status("recording failed");
+            return;
+        }
         got += n;
     }
 
@@ -104,7 +108,7 @@ static void record_and_play(void) {
         played += n;
     }
     free(rec);
-    if (!s_cancel && played == got) set_status("done. OK: tone  UP: record");
+    if (!s_cancel && got == total && played == total) set_status("done. OK: tone  UP: record");
 }
 
 static void audio_task(void *arg) {
@@ -116,9 +120,11 @@ static void audio_task(void *arg) {
         if (command == AUDIO_COMMAND_TONE) play_tone();
         else if (command == AUDIO_COMMAND_RECORD) record_and_play();
     }
-    if (s_stopped) xSemaphoreGive(s_stopped);
-    s_task = NULL;
-    vTaskDelete(NULL);
+    // The lifecycle owner retains the handle until it receives this acknowledgement.
+    // No shared state or UI accesses are allowed after giving it. Stay alive so a
+    // timed-out stop can safely retry; only the owner deletes/replaces this task.
+    xSemaphoreGive(s_stopped);
+    for (;;) vTaskSuspend(NULL);
 }
 
 void demo_audio_enter(void) {
@@ -184,6 +190,7 @@ esp_err_t demo_audio_stop(void) {
         set_status("Audio stop timed out; retry");
         return ESP_ERR_TIMEOUT;
     }
+    vTaskDelete(task);
     s_task = NULL;
     vSemaphoreDelete(s_stopped);
     s_stopped = NULL;
