@@ -8,6 +8,8 @@ static lv_display_t display;
 static int panel_present = 1, lock_depth, port_live, display_live, callback_live;
 static int fail_lock, fail_port, fail_display, fail_event, init_calls, unlocked_flushes;
 static int panel_token, io_token;
+static int rotation_calls, landscape_live;
+static lv_display_rotation_t last_rotation;
 esp_lcd_panel_handle_t bsp_display_panel(void) { return panel_present ? &panel_token : NULL; }
 esp_lcd_panel_io_handle_t bsp_display_io(void) { return &io_token; }
 esp_err_t lvgl_port_init(const lvgl_port_cfg_t *cfg) {
@@ -53,6 +55,23 @@ uint32_t lv_display_get_event_count(lv_display_t *disp) {
     assert(disp == &display && lock_depth);
     return 1 + callback_live; // The display already owns an internal callback.
 }
+
+// Landscape support is a runtime rotation request: record it and let the
+// resolution getters follow it, the way LVGL swaps the logical size.
+void lv_display_set_rotation(lv_display_t *disp, lv_display_rotation_t rotation) {
+    assert(disp == &display);
+    ++rotation_calls;
+    last_rotation = rotation;
+    landscape_live = (rotation == LV_DISPLAY_ROTATION_90 || rotation == LV_DISPLAY_ROTATION_270);
+}
+int32_t lv_display_get_horizontal_resolution(const lv_display_t *disp) {
+    assert(disp == &display);
+    return landscape_live ? BSP_LCD_H : BSP_LCD_W;
+}
+int32_t lv_display_get_vertical_resolution(const lv_display_t *disp) {
+    assert(disp == &display);
+    return landscape_live ? BSP_LCD_W : BSP_LCD_H;
+}
 static void expect_failure(void) {
     assert(bsp_lvgl_init() == NULL);
     assert(!s_disp && !lock_depth && !display_live);
@@ -82,5 +101,19 @@ int main(void) {
     lv_event_t ev = { .target = &display, .area = &area };
     rounded_flush_event(&ev);
     assert(pixels[0] == 0 && pixels[BSP_LCD_W - 1] == 0 && pixels[BSP_LCD_W / 2] == 0xffff);
+
+    // Rotation is requested at runtime and must be reversible; without a display
+    // it has to fail instead of writing through a null handle.
+    rotation_calls = 0;
+    assert(bsp_lvgl_set_landscape(true) == ESP_OK);
+    assert(rotation_calls == 1 && last_rotation == LV_DISPLAY_ROTATION_90);
+    assert(bsp_lvgl_set_landscape(false) == ESP_OK);
+    assert(rotation_calls == 2 && last_rotation == LV_DISPLAY_ROTATION_0);
+    lv_display_t *held = s_disp;
+    s_disp = NULL;
+    assert(bsp_lvgl_set_landscape(true) == ESP_FAIL);
+    assert(rotation_calls == 2);
+    s_disp = held;
+
     puts("BSP LVGL initialization tests: PASS");
 }
