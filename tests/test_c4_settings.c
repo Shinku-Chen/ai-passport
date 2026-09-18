@@ -57,11 +57,13 @@ static void test_cycle_values(void)
     c4_settings_t s;
     c4_settings_init(&s);
 
-    // MODE: 人先手 -> 电脑先手 -> 双人 -> 人先手
+    // MODE: 人先手 -> 电脑先手 -> 双人 -> 联机 -> 人先手
     c4_settings_cycle(&s);
     assert(s.mode == C4_MODE_AI_FIRST);
     c4_settings_cycle(&s);
     assert(s.mode == C4_MODE_TWO_PLAYER);
+    c4_settings_cycle(&s);
+    assert(s.mode == C4_MODE_LINK);
     c4_settings_cycle(&s);
     assert(s.mode == C4_MODE_HUMAN_FIRST);
 
