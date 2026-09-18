@@ -25,6 +25,7 @@
 | [`images/readme-hardware-specs.png`](images/readme-hardware-specs.png) | 2172 × 724，PNG RGBA | 保留为可选技术参考图，不再用于首页主视觉。于 2026-09-17 使用内置图像生成工具为本仓库生成；已根据文档中的硬件能力契约核对图中的六项标签与参数。 |
 | [`images/logo-wordmark.png`](images/logo-wordmark.png) | 1648 × 336，PNG RGBA | 从仓库原始 `images/logo.png` 中精确裁切并去除背景的黑色字标；用于中英文项目 README 的浅色主题。 |
 | [`images/logo-wordmark-dark.png`](images/logo-wordmark-dark.png) | 1648 × 336，PNG RGBA | 提取字标的白色版本；README 使用 `<picture>` 在 GitHub 深色主题下显示。 |
+| [`images/connect-four-cover.png`](images/connect-four-cover.png) | 1152 × 1536，PNG | 四子棋应用的社区封面，符合发布脚本要求的精确竖版 3:4。于 2026-09-18 由官方发布 skill 附带的设备渲染图 + 两张真实 `FAP_SCREENSHOT_V1` 真机截图合成（一局结束、四连高亮的棋盘；以及 `MODE = LINK PLAY` 的设置屏）。图中设备按游戏真实持握的横屏方向摆放；它是渲染与截图的合成，不是实拍照片。重新抓图后可用 `build/make_cover.py`（build 目录，不入库）重新生成。 |
 
 - 使用描述性命名，并记录尺寸、像素格式、转换步骤与目标路径。
 - 优先采用适合 240 × 320 RGB565 显示的格式，并纳入 Flash 与内部 RAM 考量。
