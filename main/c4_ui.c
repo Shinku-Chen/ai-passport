@@ -391,6 +391,13 @@ void c4_ui_show_board(void)
     if (s_board_scr) lv_screen_load(s_board_scr);
 }
 
+void c4_ui_set_menu_hint(const char *text)
+{
+    if (!s_menu_hint) return;
+    lv_label_set_text(s_menu_hint, text ? text : "");
+    set_text_color(s_menu_hint, C4_UI_TEXT);
+}
+
 void c4_ui_show_sleeping(void)
 {
     if (s_menu_hint) {

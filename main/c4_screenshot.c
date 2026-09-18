@@ -13,7 +13,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#if C4_ENABLE_SCREENSHOT
 static const char *TAG = "c4_shot";
+#endif
 
 #define C4_SHOT_CMD        "FAP_SCREENSHOT_V1"
 #define C4_SHOT_CMD_LEN    (sizeof(C4_SHOT_CMD) - 1)

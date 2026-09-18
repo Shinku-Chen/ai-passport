@@ -22,6 +22,9 @@ void c4_ui_show_board(void);
 // 进入 deep sleep 前的提示:在两张屏上都写下「按任意键唤醒」。
 void c4_ui_show_sleeping(void);
 
+// 改写设置屏底部的提示行(联机验证用来显示 BLE 状态)。
+void c4_ui_set_menu_hint(const char *text);
+
 // 重画设置屏:选中行高亮、被禁用的行变暗。
 void c4_ui_render_menu(const c4_settings_t *settings);
 

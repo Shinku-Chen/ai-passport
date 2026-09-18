@@ -15,6 +15,7 @@
 #include "bsp_i2c.h"
 #include "bsp_pins.h"
 #include "c4_app.h"
+#include "c4_link.h"
 #include "c4_screenshot.h"
 #include "c4_sound.h"
 #include "c4_ui.h"
@@ -129,6 +130,13 @@ void app_main(void)
     if (!c4_sound_init()) {
         ESP_LOGW(TAG, "音效不可用,静音运行");
     }
+
+#if C4_ENABLE_LINK
+    // 联机验证构建:BLE 外设启动失败只影响联机,不影响单机玩法。
+    if (c4_link_start() != ESP_OK) {
+        ESP_LOGW(TAG, "BLE 联机模块启动失败");
+    }
+#endif
 
     // 串口截图也是软依赖:发布到社区时用它抓设备真实画面做封面。
     if (c4_screenshot_start() != ESP_OK) {
