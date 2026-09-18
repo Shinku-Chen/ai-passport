@@ -80,21 +80,54 @@ def parse_flash_args(raw: str) -> dict[str, int]:
     images: dict[str, int] = {}
     for line in raw.splitlines():
         fields = shlex.split(line)
-        if len(fields) != 2:
+        if not fields:
             continue
         try:
             offset = int(fields[0], 0)
-        except ValueError:
-            continue
+        except ValueError as error:
+            if fields[0].startswith("--"):
+                continue
+            raise ValueError(f"invalid image offset in flash_args: {fields[0]}") from error
+        if len(fields) != 2:
+            raise ValueError(f"invalid image entry in flash_args: {line}")
         if fields[1] in images:
             raise ValueError(f"duplicate image in flash_args: {fields[1]}")
         images[fields[1]] = offset
     return images
 
 
+def verify_flash_images(
+    merged: bytes, build_dir: Path, image_offsets: dict[str, int]
+) -> dict[str, int]:
+    """Verify every configured image, not just the minimum bootable set."""
+    image_sizes: dict[str, int] = {}
+    for name, offset in image_offsets.items():
+        image_path = build_dir / name
+        if not image_path.is_file():
+            raise ValueError(f"missing image {image_path}")
+        size = image_path.stat().st_size
+        if not size:
+            raise ValueError(f"image {name} is empty")
+        if offset < 0 or offset + size > FLASH_SIZE:
+            raise ValueError(f"image {name} is outside the 8 MB flash bounds")
+        image_sizes[name] = size
+
+    ordered = sorted(image_offsets, key=image_offsets.__getitem__)
+    for left, right in zip(ordered, ordered[1:]):
+        if image_offsets[left] + image_sizes[left] > image_offsets[right]:
+            raise ValueError(f"images {left!r} and {right!r} overlap")
+
+    for name, offset in image_offsets.items():
+        image = (build_dir / name).read_bytes()
+        if merged[offset : offset + len(image)] != image:
+            raise ValueError(f"{name} differs at merged offset 0x{offset:x}")
+        print(f"Verified {name}: {len(image)} bytes at 0x{offset:x}")
+    return image_sizes
+
+
 def verify_firmware_layout(
     merged: bytes, build_dir: Path, partition_table_offset: int, app_offset: int
-) -> None:
+) -> list[Partition]:
     """Validate the configured partition table and its application image."""
     table = merged[
         partition_table_offset : partition_table_offset + PARTITION_TABLE_SIZE
@@ -137,6 +170,20 @@ def verify_firmware_layout(
         f"Firmware layout: PASS (app {app_size} / {app_partition.size} bytes "
         f"in {app_partition.label!r} at 0x{app_offset:x})"
     )
+    return partitions
+
+
+def verify_extra_image_partitions(
+    image_offsets: dict[str, int], image_sizes: dict[str, int],
+    partitions: list[Partition],
+) -> None:
+    """Allow custom images anywhere within one partition, never across its end."""
+    for name, offset in image_offsets.items():
+        if name in REQUIRED_IMAGES:
+            continue
+        end = offset + image_sizes[name]
+        if not any(part.offset <= offset and end <= part.end for part in partitions):
+            raise ValueError(f"image {name} must fit entirely within one partition")
 
 
 def main() -> int:
@@ -148,46 +195,27 @@ def main() -> int:
         print("ERROR: merged firmware or flash_args is missing", file=sys.stderr)
         return 1
 
-    flash_args = flash_args_path.read_text(encoding="utf-8")
-    if "--flash_size 8MB" not in flash_args:
-        print("ERROR: flash_args does not select the required 8 MB flash size", file=sys.stderr)
-        return 1
-
     try:
+        flash_args = flash_args_path.read_text(encoding="utf-8")
+        if "--flash_size 8MB" not in flash_args:
+            raise ValueError("flash_args does not select the required 8 MB flash size")
         image_offsets = parse_flash_args(flash_args)
         missing = [name for name in REQUIRED_IMAGES if name not in image_offsets]
         if missing:
             raise ValueError(f"flash_args is missing required images: {missing}")
         if image_offsets["bootloader/bootloader.bin"] != 0:
             raise ValueError("the merged bootloader must start at 0x0")
-    except ValueError as error:
-        print(f"ERROR: {error}", file=sys.stderr)
-        return 1
-
-    merged = merged_path.read_bytes()
-    for relative_name in REQUIRED_IMAGES:
-        offset = image_offsets[relative_name]
-        image_path = build_dir / relative_name
-        if not image_path.is_file():
-            print(f"ERROR: missing image {image_path}", file=sys.stderr)
-            return 1
-        image = image_path.read_bytes()
-        if merged[offset : offset + len(image)] != image:
-            print(f"ERROR: {relative_name} differs at merged offset 0x{offset:x}", file=sys.stderr)
-            return 1
-        print(f"Verified {relative_name}: {len(image)} bytes at 0x{offset:x}")
-
-    if len(merged) > FLASH_SIZE:
-        print("ERROR: merged firmware exceeds 8 MB", file=sys.stderr)
-        return 1
-
-    try:
-        verify_firmware_layout(
+        if merged_path.stat().st_size > FLASH_SIZE:
+            raise ValueError("merged firmware exceeds 8 MB")
+        merged = merged_path.read_bytes()
+        image_sizes = verify_flash_images(merged, build_dir, image_offsets)
+        partitions = verify_firmware_layout(
             merged,
             build_dir,
             image_offsets["partition_table/partition-table.bin"],
             image_offsets["FoloToy-AI-Passport.bin"],
         )
+        verify_extra_image_partitions(image_offsets, image_sizes, partitions)
     except (OSError, UnicodeDecodeError, ValueError) as error:
         print(f"ERROR: {error}", file=sys.stderr)
         return 1

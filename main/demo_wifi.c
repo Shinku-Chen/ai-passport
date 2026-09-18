@@ -64,17 +64,27 @@ static void wifi_stack_stop(void);
 
 esp_err_t demo_wifi_start(void)
 {
+    if (s_sta_netif || s_wifi_initialized) return ESP_ERR_INVALID_STATE;
     s_state = WIFI_DEMO_STARTING;
     esp_err_t err = demo_radio_nvs_prepare();
     if (err != ESP_OK) goto fail;
     err = demo_radio_network_prepare();
     if (err != ESP_OK) goto fail;
 
-    s_sta_netif = esp_netif_create_default_wifi_sta();
+    // The convenience creator asserts/aborts on allocation or handler failure.
+    // Use its checked steps so this optional demo can fail without rebooting.
+    esp_netif_config_t netif_cfg = ESP_NETIF_DEFAULT_WIFI_STA();
+    s_sta_netif = esp_netif_new(&netif_cfg);
     if (!s_sta_netif) {
         err = ESP_ERR_NO_MEM;
         goto fail;
     }
+    // attach records the netif even on failure; destroy_default_wifi below also
+    // clears that registration and any partially attached driver/handlers.
+    err = esp_netif_attach_wifi_station(s_sta_netif);
+    if (err != ESP_OK) goto fail;
+    err = esp_wifi_set_default_wifi_sta_handlers();
+    if (err != ESP_OK) goto fail;
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     err = esp_wifi_init(&cfg);

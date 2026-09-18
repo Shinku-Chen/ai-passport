@@ -51,7 +51,7 @@ project; recording actions capture documentation and open collaboration.
 | ID | Action | Detail |
 | --- | --- | --- |
 | C | Publish experience | [Action C](#action-c) |
-| D | Archive the application to plays | [Action D](#action-d) |
+| D | Archive the application to reference | [Action D](#action-d) |
 | E | Update the root README | [Action E](#action-e) |
 | F | File an issue | [Action F](#action-f) |
 
@@ -77,7 +77,7 @@ flowchart TD
 
     subgraph RECORDING["Recording"]
         CHOOSE -- C --> C["Publish experience"]
-        CHOOSE -- D --> D["Archive to plays"]
+        CHOOSE -- D --> D["Archive to reference"]
         CHOOSE -- E --> E["Update root README"]
         CHOOSE -- F --> F["File an issue"]
     end
@@ -286,9 +286,9 @@ Decide where each learning belongs before submitting:
 
 Related: [experience index](../../reference/README.md), [fork workflow](../../fork-guide.md).
 
-## Action D: Archive the Application to plays
+## Action D: Archive the Application to Reference
 
-This action archives a published application into the upstream `plays/` application
+This action archives a published application into the upstream `docs/reference/` application
 archive so it is discoverable in-repository for later querying. The workflow is
 driven by the `plays-archive` skill.
 
@@ -301,8 +301,10 @@ driven by the `plays-archive` skill.
 ### Steps
 
 1. Confirm consent and a GitHub channel (GitHub MCP, a GitHub skill, or `gh`).
-2. Generate a bilingual AI-functional summary under `plays/<username>/<app-name>/`
-   (`README.md` / `.zh_CN.md`), merging the root README when one exists.
+2. Generate a bilingual AI-functional summary under the repository-relative
+   `docs/reference/<username>/<app-name>/` (`README.md` / `.zh_CN.md`), merging
+   the root README when one exists, and register it in both language versions
+   of `docs/reference/README.md`.
 3. Record the publish metadata — the bilingual title and description and the
    source address — which include the cover image by file name and format, but
    do not commit the cover image itself. The archive is text-only.
@@ -338,7 +340,7 @@ separate decisions.
 ### When this is recommended
 
 The README update is an **optional** action like the other five, and it is also
-the default companion to archiving: when the application is archived to `plays/`
+the default companion to archiving: when the application is archived to `docs/reference/`
 (action D), the README sync runs as part of that action. Archiving itself is
 optional — the developer may decline — but whenever a project is completed, the
 README should be refreshed on the hosting branch and on fork `main` so the

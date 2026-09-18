@@ -5,12 +5,12 @@
 #include "bsp_pins.h"
 #include "esp_lvgl_port.h"
 #include "esp_log.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 
 static const char *TAG = "bsp_lvgl";
 
 static lv_display_t *s_disp;
+static bool s_port_initialized;
+static bool s_port_init_failed;
 
 static void rounded_flush_event(lv_event_t *event)
 {
@@ -51,10 +51,20 @@ lv_display_t *bsp_lvgl_init(void) {
         return NULL;
     }
 
-    const lvgl_port_cfg_t pc = ESP_LVGL_PORT_INIT_CONFIG();
-    if (lvgl_port_init(&pc) != ESP_OK) {
-        ESP_LOGE(TAG, "lvgl_port_init 失败");
-        return NULL;
+    if (!s_port_initialized) {
+        // Port 2.9.0 has no public completion handshake for asynchronous deinit.
+        // Never overwrite a possibly live context after a partial port failure.
+        if (s_port_init_failed) {
+            ESP_LOGE(TAG, "LVGL port 初始化未完成，需重启后重试");
+            return NULL;
+        }
+        const lvgl_port_cfg_t pc = ESP_LVGL_PORT_INIT_CONFIG();
+        if (lvgl_port_init(&pc) != ESP_OK) {
+            s_port_init_failed = true;
+            ESP_LOGE(TAG, "lvgl_port_init 失败，需重启后重试");
+            return NULL;
+        }
+        s_port_initialized = true;
     }
 
     const lvgl_port_display_cfg_t dc = {
@@ -72,20 +82,34 @@ lv_display_t *bsp_lvgl_init(void) {
         // swap_bytes:LVGL 输出小端 RGB565,ST7789 走 SPI 要大端 → 需交换高低字节。
         .flags = { .buff_dma = true, .swap_bytes = true },
     };
-    s_disp = lvgl_port_add_disp(&dc);
-    if (!s_disp) {
-        ESP_LOGE(TAG, "lvgl_port_add_disp 失败");
-        esp_err_t e = lvgl_port_deinit();
-        if (e != ESP_OK) ESP_LOGE(TAG, "lvgl_port_deinit 回滚失败: %s", esp_err_to_name(e));
-        // 2.9.0 的 deinit 由 LVGL task 完成；无 display 时该 task 每 tick 检查退出标志。
-        vTaskDelay(pdMS_TO_TICKS(10));
+    // The port mutex is recursive. Keep registration and the mask callback in
+    // one critical section, before the new display can produce its first flush.
+    if (!lvgl_port_lock(0)) {
+        ESP_LOGE(TAG, "LVGL 初始化加锁失败");
+        return NULL;
+    }
+    lv_display_t *disp = lvgl_port_add_disp(&dc);
+    bool mask_registered = false;
+    if (disp) {
+        // LVGL 9.5 returns void here; check the list while still holding the lock.
+        const uint32_t count = lv_display_get_event_count(disp);
+        lv_display_add_event_cb(disp, rounded_flush_event, LV_EVENT_FLUSH_START, NULL);
+        mask_registered = lv_display_get_event_count(disp) == count + 1;
+    }
+    if (!mask_registered) {
+        ESP_LOGE(TAG, "LVGL display 或圆角回调注册失败");
+        if (disp) lvgl_port_remove_disp(disp);
+        lvgl_port_unlock();
+        // Retain the initialized port for retry. Deinit is asynchronous and can
+        // race the next init (or even run before the task sets running=true).
         return NULL;
     }
 
     // Mask the final RGB565 flush instead of using root-screen clip_corner.
     // Full-screen rounded clipping creates an ARGB layer that does not fit the
     // 24 KB LVGL pool reliably on this no-PSRAM target.
-    lv_display_add_event_cb(s_disp, rounded_flush_event, LV_EVENT_FLUSH_START, NULL);
+    s_disp = disp;
+    lvgl_port_unlock();
 
     ESP_LOGI(TAG, "LVGL 就绪，全局圆角=%d，外部填充=黑色", BSP_LVGL_SCREEN_RADIUS);
     return s_disp;

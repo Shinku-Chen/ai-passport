@@ -40,7 +40,7 @@
 | 编号 | 动作 | 详情 |
 | --- | --- | --- |
 | C | 发布经验 | [动作 C](#action-c) |
-| D | 归档应用到 plays | [动作 D](#action-d) |
+| D | 归档应用到参考区 | [动作 D](#action-d) |
 | E | 更新根 README | [动作 E](#action-e) |
 | F | 提交 issue | [动作 F](#action-f) |
 
@@ -65,7 +65,7 @@ flowchart TD
 
     subgraph RECORDING["沉淀"]
         CHOOSE -- C --> C["发布经验"]
-        CHOOSE -- D --> D["归档到 plays"]
+        CHOOSE -- D --> D["归档到参考区"]
         CHOOSE -- E --> E["更新根 README"]
         CHOOSE -- F --> F["提交 issue"]
     end
@@ -203,9 +203,9 @@ flowchart TD
 
 相关：[经验索引](../../reference/README.zh_CN.md)、[fork 工作流](../../fork-guide.zh_CN.md)。
 
-## 动作 D：归档应用到 plays
+## 动作 D：归档应用到参考区
 
-本动作把已发布应用归档到上游 `plays/` 应用归档，使其在仓库内可被发现、供后续查询。工作流由 `plays-archive` skill 驱动。
+本动作把已发布应用归档到上游 `docs/reference/` 应用归档，使其在仓库内可被发现、供后续查询。工作流由 `plays-archive` skill 驱动。
 
 ### 输入
 
@@ -215,7 +215,7 @@ flowchart TD
 ### 步骤
 
 1. 确认同意与可用 GitHub 通道（GitHub MCP、GitHub skill 或 `gh`）。
-2. 在 `plays/<username>/<app-name>/` 下生成双语 AI 功能摘要（`README.md` / `.zh_CN.md`），存在根 README 时合并它。
+2. 在相对仓库根目录的 `docs/reference/<username>/<app-name>/` 下生成双语 AI 功能摘要（`README.md` / `.zh_CN.md`），存在根 README 时合并它，并在 `docs/reference/README.md` 的中英文索引中登记。
 3. 记录发布元数据——双语标题与简介、源码地址——其中以文件名和格式记录封面图，但**不提交封面图本身**。归档仅文本。
 4. 独立处理每个分支的根 README（必需 README 同步见 [动作 E](#action-e)）。
 5. 只在独立分支提交摘要；不存储固件 `.bin` 或封面图。
@@ -238,7 +238,7 @@ fork 让 `main` 与上游同步、把产品工作放在 `feature/*` 分支上，
 
 ### 何时推荐
 
-README 更新与其他五项一样是**可选**动作，也是归档的默认伴随动作：当应用归档到 `plays/`（动作 D）时，README 同步随该动作运行。归档本身可选——开发者可拒绝——但每当项目完成，都应在承载分支与 fork `main` 上刷新 README，让应用在它被开发的地方被登记。
+README 更新与其他五项一样是**可选**动作，也是归档的默认伴随动作：当应用归档到 `docs/reference/`（动作 D）时，README 同步随该动作运行。归档本身可选——开发者可拒绝——但每当项目完成，都应在承载分支与 fork `main` 上刷新 README，让应用在它被开发的地方被登记。
 
 ### 规则
 

@@ -12,7 +12,7 @@
 
 当开发者说"发布"或"发版"时，第一件事是决定**发到哪里**。不要默认其中一条。
 
-- **发布到社区** —— 把固件发布到 [AI Passport 社区市场](https://ai-passport.folotoy.cn)。走下面的 publisher 工作流；发布后见项目开发完成流程（`docs/development/project-completion.md`）。
+- **发布到社区** —— 把固件发布到 [AI Passport 社区市场](https://ai-passport.folotoy.cn)。走下面的 publisher 工作流；发布后见[项目开发完成流程](project-completion.zh_CN.md)。
 - **发布到 Git** —— 把开发完成的代码发布到版本仓库。逻辑：先**提交**完成后的代码，再为它**开 release 流程**。release 产物可由 **CI/CD 流水线生成（推荐）**，tag 触发 `.github/workflows/build-firmware.yml` 自动构建；也**可用开发者本地已构建的 `.bin` 文件**。遵循仓库提交与 PR 规则（`docs/contribution/commit-and-pr.md`）与 fork 工作流（`docs/fork-guide.md`）；自动构建与产物见 [`CI-build-and-release.md`](../ci/CI-build-and-release.zh_CN.md)。
 - **还没到发布时机** —— 代码尚未开发完成、不能使用；继续开发，不发布。
 
@@ -49,12 +49,13 @@ skill 的 `SKILL.md` 定义了精确流程：检查项目、准备中英文标�
 
 助手从提示词里的 URL 拉取官方包，并按其中 `SKILL.md` 描述的工作流执行。本仓库无需保留或提交该 skill；提示词每次都会复现官方安装源。
 
-## 发布之后：归档到 plays
+## 发布之后：归档到参考区
 
-固件发布后，询问开发者是否把该应用归档到上游仓库的 [`plays/`](../../reference/README.zh_CN.md)
-应用档案。若同意，在 `plays/<username>/<app-name>/` 下生成该应用的 AI 功能总结（双语
+固件发布后，询问开发者是否把该应用归档到上游仓库的 [`docs/reference/`](../../reference/README.zh_CN.md)
+应用档案。若同意，在相对仓库根目录的 `docs/reference/<username>/<app-name>/` 下生成该应用的 AI 功能总结（双语
 `README.md` / `.zh_CN.md`）。档案为**纯文本**：封面图只记录文件名与格式作为发布元数据，
-**不要**把封面图提交进 `plays/`（约定见 [`plays/README.md`](../../reference/README.zh_CN.md)）。
+**不要**把封面图提交进 `docs/reference/`（约定见 [`docs/reference/README.md`](../../reference/README.zh_CN.md)），
+并在该索引的中英文版本中登记应用。
 也不要在这里存固件 `.bin`。用 `plays-archive` skill，它会向上游
 `FoloToy/ai-passport` 开归档 PR。
 

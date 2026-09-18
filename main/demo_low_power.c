@@ -165,9 +165,11 @@ static void sleep_task(void *arg)
         s_busy = false;
     }
     s_busy = false;
-    if (s_stopped) xSemaphoreGive(s_stopped);
-    s_task = NULL;
-    vTaskDelete(NULL);
+    // Acknowledge only after all shared-state/UI work. The lifecycle owner deletes
+    // the task, so retries never notify a stale handle and re-entry cannot race an
+    // old worker clearing the new worker's handle.
+    xSemaphoreGive(s_stopped);
+    for (;;) vTaskSuspend(NULL);
 }
 
 void demo_low_power_enter(void)
@@ -249,6 +251,7 @@ esp_err_t demo_low_power_stop(void)
         set_status("Sleep stop timed out; retry");
         return ESP_ERR_TIMEOUT;
     }
+    vTaskDelete(task);
     s_task = NULL;
     vSemaphoreDelete(s_stopped);
     s_stopped = NULL;
@@ -273,7 +276,7 @@ void demo_low_power_exit(void)
 
 void demo_low_power_key(bsp_btn_t btn, bsp_btn_ev_t ev)
 {
-    if (ev != BSP_BTN_CLICK || s_busy || !s_task) return;
+    if (ev != BSP_BTN_CLICK || s_busy || s_stop_requested || !s_task) return;
     if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) {
         if (!bsp_lvgl_lock(250)) return;
         s_selected = (s_selected + 1) % 2;

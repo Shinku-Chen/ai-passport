@@ -44,7 +44,7 @@
 
 - **Tag 命名约定**：按 `v<版本>-<应用名>` 小写连字符命名，例如 `v0.1.0-voice-keychain`、
   `v1.0.0-pocket-pomodoro`。`<应用名>` 是该 Release 构建的应用（见
-  `plays/<username>/<app-name>/` 档案命名）。多应用共享同一棵树时，只写版本号的 tag 会有歧义。
+  相对仓库根目录的 `docs/reference/<username>/<app-name>/` 档案命名）。多应用共享同一棵树时，只写版本号的 tag 会有歧义。
 - **发布成功后，核对 Release 标题**：workflow 会把标题设为 tag 名，因此命名正确的 tag 本身就显示成
   `v0.1.0-voice-keychain`。若 tag 没带应用名，或标题一眼看不出是哪个应用，就编辑该 Release
   （GitHub：`Edit release`；GitLab：编辑 tag），让标题为 `<版本> <应用名>`，例如 `v0.1.0 Voice
@@ -71,8 +71,9 @@ tag 触发的 Release 只有在合并固件与它的 Release 说明一起发布�
 
 - **功能（What's new / 功能）**：本次 Release 相对上一版新增或变更的功能、行为或修复。面向用户，
   不是 commit 日志。
-- **方法（How to build / 方法）**：如何生成并校验合并固件（`./tools/validate.sh --firmware` 或
-  `idf.py build`），以及要烧录的产物文件（从 `0x0` 烧录的 `FoloToy-AI-Passport-full.bin`）。
+- **方法（How to build / 方法）**：运行 `./tools/validate.sh --firmware` 生成并校验合并固件，
+  明确从 `0x0` 烧录的产物为 `FoloToy-AI-Passport-full.bin`。单独执行 `idf.py build`
+  仅做增量编译，不生成也不校验合并完整镜像，不能作为交付命令的替代。
 - **使用（How to use / 使用）**：如何烧录（上方在线刷机工具），以及本次 Release 的关键交互或硬件
   要求。
 

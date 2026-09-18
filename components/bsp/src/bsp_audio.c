@@ -26,6 +26,102 @@ static uint32_t s_hz;
 static uint8_t  s_bits, s_ch;
 static bool     s_opened;
 static bool     s_sleeping;
+static bool     s_initialized;
+static esp_err_t s_sleep_result;
+static bool     s_codec_release_failed;
+static uint8_t  s_volume;
+static int      s_io_error;
+
+// esp_codec_dev 1.6.2 discards some control/data interface errors. Remember the
+// first one at the public interface boundary; never inspect its private state.
+static int audio_track_error(int result) {
+    if (result != ESP_CODEC_DEV_OK && s_io_error == ESP_CODEC_DEV_OK) {
+        s_io_error = result;
+    }
+    return result;
+}
+
+static bool audio_ctrl_is_open(const audio_codec_ctrl_if_t *ctrl) {
+    (void)ctrl;
+    return s_ctrl && s_ctrl->is_open(s_ctrl);
+}
+
+static int audio_ctrl_read(const audio_codec_ctrl_if_t *ctrl, int reg,
+                           int reg_len, void *data, int data_len) {
+    (void)ctrl;
+    return audio_track_error(s_ctrl->read_reg(s_ctrl, reg, reg_len, data, data_len));
+}
+
+static int audio_ctrl_write(const audio_codec_ctrl_if_t *ctrl, int reg,
+                            int reg_len, void *data, int data_len) {
+    (void)ctrl;
+    return audio_track_error(s_ctrl->write_reg(s_ctrl, reg, reg_len, data, data_len));
+}
+
+static int audio_ctrl_info(const audio_codec_ctrl_if_t *ctrl,
+                           audio_codec_ctrl_info_t *info) {
+    (void)ctrl;
+    return audio_track_error(s_ctrl->get_info(s_ctrl, info));
+}
+
+static const audio_codec_ctrl_if_t s_checked_ctrl = {
+    .is_open = audio_ctrl_is_open, .read_reg = audio_ctrl_read,
+    .write_reg = audio_ctrl_write, .get_info = audio_ctrl_info,
+};
+
+static bool audio_data_is_open(const audio_codec_data_if_t *data) {
+    (void)data;
+    return s_data && s_data->is_open(s_data);
+}
+
+static int audio_data_enable(const audio_codec_data_if_t *data,
+                             esp_codec_dev_type_t type, bool enable) {
+    (void)data;
+    // IN_OUT overwrites a failed TX result with the RX result in 1.6.2.
+    // Enable TX first (master clock), disable RX first (no deferred TX stop).
+    esp_codec_dev_type_t first = enable ? ESP_CODEC_DEV_TYPE_OUT : ESP_CODEC_DEV_TYPE_IN;
+    esp_codec_dev_type_t last = enable ? ESP_CODEC_DEV_TYPE_IN : ESP_CODEC_DEV_TYPE_OUT;
+    int result = ESP_CODEC_DEV_OK;
+    if (type & first) result = audio_track_error(s_data->enable(s_data, first, enable));
+    if (type & last) {
+        int next = audio_track_error(s_data->enable(s_data, last, enable));
+        if (result == ESP_CODEC_DEV_OK) result = next;
+    }
+    return result;
+}
+
+static int audio_data_set_fmt(const audio_codec_data_if_t *data,
+                              esp_codec_dev_type_t type,
+                              esp_codec_dev_sample_info_t *fs) {
+    (void)data;
+    if (type != ESP_CODEC_DEV_TYPE_IN_OUT) return ESP_CODEC_DEV_NOT_SUPPORT;
+    // Configure directions separately so a failed TX configuration cannot be
+    // hidden by a successful RX configuration. Keep TX enabled while configuring
+    // RX: the dependency otherwise reconfigures/restarts TX a second time.
+    int result = audio_track_error(s_data->set_fmt(s_data, ESP_CODEC_DEV_TYPE_OUT, fs));
+    if (result != ESP_CODEC_DEV_OK) return result;
+    result = audio_track_error(s_data->enable(s_data, ESP_CODEC_DEV_TYPE_OUT, true));
+    if (result == ESP_CODEC_DEV_OK) {
+        result = audio_track_error(s_data->set_fmt(s_data, ESP_CODEC_DEV_TYPE_IN, fs));
+    }
+    int stopped = audio_track_error(s_data->enable(s_data, ESP_CODEC_DEV_TYPE_OUT, false));
+    return result == ESP_CODEC_DEV_OK ? stopped : result;
+}
+
+static int audio_data_read(const audio_codec_data_if_t *data, uint8_t *pcm, int size) {
+    (void)data;
+    return s_data->read(s_data, pcm, size);
+}
+
+static int audio_data_write(const audio_codec_data_if_t *data, uint8_t *pcm, int size) {
+    (void)data;
+    return s_data->write(s_data, pcm, size);
+}
+
+static const audio_codec_data_if_t s_checked_data = {
+    .is_open = audio_data_is_open, .enable = audio_data_enable,
+    .set_fmt = audio_data_set_fmt, .read = audio_data_read, .write = audio_data_write,
+};
 
 #define AUDIO_DEFAULT_HZ   16000
 #define AUDIO_DEFAULT_BITS 16
@@ -146,15 +242,29 @@ static esp_err_t audio_prepare_i2s_reopen(void) {
 }
 
 // esp_codec_dev 不拥有传入的接口和 I2S channel；失败回滚必须按依赖逆序逐一释放。
-static void audio_cleanup(void) {
+static void audio_delete_codec(void) {
     if (s_dev) {
         esp_codec_dev_delete(s_dev);
         s_dev = NULL;
     }
     if (s_codec) {
-        audio_codec_delete_codec_if(s_codec);
+        // The dependency frees the interface even when close() fails (for
+        // example, a reference-manager lock timeout). Its shared reference may
+        // then survive: rebuilding could silently skip hardware initialization.
+        // Such an unrecoverable release error needs a reboot, never a false OK.
+        int result = audio_codec_delete_codec_if(s_codec);
+        if (result != ESP_CODEC_DEV_OK) {
+            s_codec_release_failed = true;
+            audio_track_error(result);
+            ESP_LOGE(TAG, "ES8311 codec 释放失败，需重启恢复: %d", result);
+        }
         s_codec = NULL;
     }
+    s_opened = false;
+}
+
+static void audio_cleanup(void) {
+    audio_delete_codec();
     if (s_gpio) {
         audio_codec_delete_gpio_if(s_gpio);
         s_gpio = NULL;
@@ -181,6 +291,9 @@ static void audio_cleanup(void) {
     }
     s_opened = false;
     s_sleeping = false;
+    s_initialized = false;
+    s_sleep_result = ESP_OK;
+    s_volume = 0;
     s_hz = 0;
     s_bits = 0;
     s_ch = 0;
@@ -240,8 +353,40 @@ static esp_err_t i2s_full_duplex_init(void) {
     return e;
 }
 
+static esp_err_t audio_create_codec(void) {
+    if (s_codec_release_failed) return ESP_ERR_INVALID_STATE;
+    s_io_error = ESP_CODEC_DEV_OK;
+    s_codec = es8311_codec_new(&(es8311_codec_cfg_t){
+        .ctrl_if = &s_checked_ctrl,
+        .gpio_if = s_gpio,
+        .codec_mode = ESP_CODEC_DEV_WORK_MODE_BOTH,
+        .pa_pin = BSP_I2S_PA_CTRL,
+        .pa_reverted = false,
+        .master_mode = false,
+        .use_mclk = true,
+        .hw_gain = { .pa_voltage = 5.0f, .codec_dac_voltage = 3.3f },
+        .no_dac_ref = true, // Mono capture must use ADC, not the DAC reference.
+    });
+    if (!s_codec || s_io_error != ESP_CODEC_DEV_OK) {
+        ESP_LOGE(TAG, "es8311_codec_new 失败: %d", s_io_error);
+        audio_delete_codec();
+        return ESP_FAIL;
+    }
+    s_dev = esp_codec_dev_new(&(esp_codec_dev_cfg_t){
+        .dev_type = ESP_CODEC_DEV_TYPE_IN_OUT,
+        .codec_if = s_codec,
+        .data_if = &s_checked_data,
+    });
+    if (!s_dev) {
+        audio_delete_codec();
+        return ESP_ERR_NO_MEM;
+    }
+    return ESP_OK;
+}
+
 esp_err_t bsp_audio_init(void) {
-    if (s_dev) return ESP_OK;
+    if (s_codec_release_failed) return ESP_ERR_INVALID_STATE;
+    if (s_initialized) return ESP_OK;
     if (s_tx || s_rx || s_ctrl || s_data || s_codec || s_gpio) {
         ESP_LOGE(TAG, "上次音频初始化回滚不完整，拒绝覆盖仍存活的资源句柄");
         return ESP_ERR_INVALID_STATE;
@@ -272,50 +417,35 @@ esp_err_t bsp_audio_init(void) {
     s_gpio = audio_codec_new_gpio();
     if (!s_gpio) { ESP_LOGE(TAG, "codec GPIO 接口创建失败"); e = ESP_ERR_NO_MEM; goto fail; }
 
-    s_codec = es8311_codec_new(&(es8311_codec_cfg_t){
-        .ctrl_if     = s_ctrl,
-        .gpio_if     = s_gpio,
-        .codec_mode  = ESP_CODEC_DEV_WORK_MODE_BOTH,
-        .pa_pin      = BSP_I2S_PA_CTRL,
-        .pa_reverted = false,
-        .master_mode = false,          // MCU I2S 为 master,codec 为 slave
-        .use_mclk    = true,
-        .hw_gain     = { .pa_voltage = 5.0f, .codec_dac_voltage = 3.3f },
-        // ⚠ 单声道纯麦克风录音必须为 true。false 会让驱动写 REG44=0x58 进入
-        //   ADCL+DACR 参考模式,单声道读到的那一路是 DAC 参考 → 【录音恒为 0】。
-        .no_dac_ref  = true,
-    });
-    if (!s_codec) { ESP_LOGE(TAG, "es8311_codec_new 失败"); e = ESP_ERR_NO_MEM; goto fail; }
+    if ((e = audio_create_codec()) != ESP_OK) goto fail;
 
-    s_dev = esp_codec_dev_new(&(esp_codec_dev_cfg_t){
-        .dev_type = ESP_CODEC_DEV_TYPE_IN_OUT,
-        .codec_if = s_codec,
-        .data_if  = s_data,
-    });
-    if (!s_dev) { ESP_LOGE(TAG, "esp_codec_dev_new 失败"); e = ESP_ERR_NO_MEM; goto fail; }
-
+    s_initialized = true;
     ESP_LOGI(TAG, "ES8311 就绪");
     return ESP_OK;
 
 fail:
+    audio_delete_codec();
+    if (s_ctrl) (void)es8311_force_sleep();
     audio_cleanup();
     return e;
 }
 
 esp_err_t bsp_audio_set_format(uint32_t hz, uint8_t bits, uint8_t ch) {
-    if (!s_dev) return ESP_ERR_INVALID_STATE;
+    if (!s_initialized) return ESP_ERR_INVALID_STATE;
     if (s_sleeping) return ESP_ERR_INVALID_STATE;
     if (s_opened && s_hz == hz && s_bits == bits && s_ch == ch) return ESP_OK;   // 同格式复用
 
-    if (s_opened) {
-        if (esp_codec_dev_close(s_dev) != ESP_CODEC_DEV_OK) {
-            ESP_LOGE(TAG, "esp_codec_dev_close 失败");
-            return ESP_FAIL;
-        }
-        s_opened = false;
-        esp_err_t e = audio_prepare_i2s_reopen();
-        if (e != ESP_OK) return e;
-    }
+    esp_err_t e = ESP_FAIL;
+    s_io_error = ESP_CODEC_DEV_OK;
+    if (s_opened) audio_delete_codec();
+    if (s_io_error != ESP_CODEC_DEV_OK) goto fail;
+    // Always normalize the channels, including after a failed partial open.
+    e = audio_disable_i2s_channels();
+    if (e != ESP_OK) goto fail;
+    e = audio_prepare_i2s_reopen();
+    if (e != ESP_OK) goto fail;
+    if (!s_dev && (e = audio_create_codec()) != ESP_OK) goto fail;
+    s_io_error = ESP_CODEC_DEV_OK;
 
     esp_codec_dev_sample_info_t fs = {
         .bits_per_sample = bits,
@@ -325,36 +455,46 @@ esp_err_t bsp_audio_set_format(uint32_t hz, uint8_t bits, uint8_t ch) {
         .mclk_multiple = 0,          // 0 → 驱动按默认 256xfs 取 MCLK
     };
     int r = esp_codec_dev_open(s_dev, &fs);
-    if (r != 0) { ESP_LOGE(TAG, "esp_codec_dev_open 失败: %d", r); return ESP_FAIL; }
+    if (r != ESP_CODEC_DEV_OK || s_io_error != ESP_CODEC_DEV_OK) {
+        ESP_LOGE(TAG, "esp_codec_dev_open 失败: %d interface=%d", r, s_io_error);
+        e = ESP_FAIL;
+        goto fail;
+    }
 
     // ⚠ open 之后【不要】手动覆写 ES8311 的时钟分频寄存器(REG01~06):
     //   驱动已按采样率与 MCLK 精确算好,覆写会导致 ADC/DAC 时序错乱、录音回放全是杂音。
     //   这里只设麦克风模拟 PGA 增益。
-    esp_codec_dev_set_in_gain(s_dev, 30.0f);
+    r = esp_codec_dev_set_in_gain(s_dev, 30.0f);
+    if (r == ESP_CODEC_DEV_OK) r = esp_codec_dev_set_out_vol(s_dev, s_volume);
+    if (r != ESP_CODEC_DEV_OK || s_io_error != ESP_CODEC_DEV_OK) {
+        e = ESP_FAIL;
+        goto fail;
+    }
 
     s_opened = true; s_hz = hz; s_bits = bits; s_ch = ch;
     ESP_LOGI(TAG, "codec 打开 %luHz/%ubit/%uch", (unsigned long)hz, bits, ch);
     return ESP_OK;
+
+fail:
+    // A failed open can already have set codec-dev's opened flags and the
+    // ES8311 enabled/reference state. Recreate through public APIs next time.
+    audio_delete_codec();
+    (void)es8311_force_sleep();
+    (void)audio_disable_i2s_channels();
+    return e == ESP_OK ? ESP_FAIL : e;
 }
 
 esp_err_t bsp_audio_sleep(void) {
-    if (!s_dev || s_sleeping) return ESP_OK;
+    if (!s_initialized) return ESP_OK;
+    if (s_sleeping) return s_sleep_result;
 
     esp_err_t first_error = ESP_OK;
-    // 已打开路径仍让 codec-dev 更新软件状态；寄存器强制序列在 close
-    // 之后再执行，以覆盖依赖库中 REG45=0x00 的较弱 suspend 序列。
-    if (s_opened) {
-        if (!s_codec || !s_codec->enable ||
-            s_codec->enable(s_codec, false) != ESP_CODEC_DEV_OK) {
-            ESP_LOGE(TAG, "ES8311 codec-dev suspend 状态更新失败");
-            first_error = ESP_FAIL;
-        }
-        if (esp_codec_dev_close(s_dev) != ESP_CODEC_DEV_OK) {
-            ESP_LOGE(TAG, "ES8311 codec-dev close 失败");
-            if (first_error == ESP_OK) first_error = ESP_FAIL;
-        }
-    }
-    s_opened = false;
+    // Drop stale enabled/opened state, even if suspend fails. Deletion may write
+    // the dependency's weaker suspend sequence, so force-sleep MUST run last.
+    // Only codec objects are released: I2C bus and I2S channels remain owned.
+    s_io_error = ESP_CODEC_DEV_OK;
+    audio_delete_codec();
+    if (s_io_error != ESP_CODEC_DEV_OK) first_error = ESP_FAIL;
 
     esp_err_t e = es8311_force_sleep();
     if (e != ESP_OK && first_error == ESP_OK) first_error = e;
@@ -362,6 +502,7 @@ esp_err_t bsp_audio_sleep(void) {
     e = audio_disable_i2s_channels();
     if (e != ESP_OK && first_error == ESP_OK) first_error = e;
     s_sleeping = true;
+    s_sleep_result = first_error;
     return first_error;
 }
 
@@ -393,24 +534,22 @@ esp_err_t bsp_audio_prepare_deep_sleep(void) {
 }
 
 esp_err_t bsp_audio_wake(void) {
-    if (!s_dev || !s_sleeping) return ESP_OK;
-
-    esp_err_t e = audio_prepare_i2s_reopen();
-    if (e != ESP_OK) return e;
+    if (!s_initialized || !s_sleeping) return ESP_OK;
 
     // 允许内部格式设置重新 open codec；失败时再次 close，避免留下半唤醒状态。
     s_sleeping = false;
-    e = bsp_audio_set_format(s_hz ? s_hz : AUDIO_DEFAULT_HZ,
+    esp_err_t e = bsp_audio_set_format(s_hz ? s_hz : AUDIO_DEFAULT_HZ,
                              s_bits ? s_bits : AUDIO_DEFAULT_BITS,
                              s_ch ? s_ch : AUDIO_DEFAULT_CH);
     if (e != ESP_OK) {
-        (void)esp_codec_dev_close(s_dev);
         s_opened = false;
         s_sleeping = true;
+        s_sleep_result = e;
         ESP_LOGE(TAG, "ES8311 唤醒失败: %s", esp_err_to_name(e));
         return e;
     }
 
+    s_sleep_result = ESP_OK;
     ESP_LOGI(TAG, "ES8311 已从低功耗状态恢复");
     return ESP_OK;
 }
@@ -426,5 +565,6 @@ esp_err_t bsp_audio_read(void *pcm, size_t bytes) {
 }
 
 void bsp_audio_set_volume(uint8_t percent) {
-    if (s_dev && s_opened && !s_sleeping) esp_codec_dev_set_out_vol(s_dev, percent);
+    s_volume = percent > 100 ? 100 : percent;
+    if (s_dev && s_opened && !s_sleeping) esp_codec_dev_set_out_vol(s_dev, s_volume);
 }

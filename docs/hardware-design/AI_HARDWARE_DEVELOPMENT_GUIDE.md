@@ -97,11 +97,19 @@ app_main
   └─ LVGL menu and independent demo pages
 ```
 
-Display/LVGL is a hard dependency. Buttons, audio, and battery are soft dependencies whose pages show `[FAIL]` while other pages remain available. Public BSP APIs are under `components/bsp/include/`. Successful display, button, audio, and LVGL initialization is idempotent. Display, button, and audio partial failures release resources acquired by the BSP; failed LVGL display registration deinitializes its port. The caller can correct the fault and retry, while an incomplete lower-level rollback is reported and prevents a handle from being overwritten. There is no universal BSP deinitialization API.
+Display/LVGL is a hard dependency. Buttons, audio, and battery are soft dependencies whose pages show `[FAIL]` while other pages remain available. Public BSP APIs are under `components/bsp/include/`. Successful display, button, audio, and LVGL initialization is idempotent. Display, button, and audio partial failures release resources acquired by the BSP. Failed LVGL display/callback registration removes the display but retains the initialized port for retry; port initialization itself failing requires a reboot because its asynchronous cleanup has no public completion handshake. Other incomplete lower-level rollbacks are reported and prevent live handles from being overwritten. Serialize BSP initialization from one owner; there is no universal BSP deinitialization API.
 
 Button callbacks run in the shared `esp_timer` task. They only enqueue input and return; the demo lifecycle task handles navigation and starts or stops slow services without holding the LVGL lock. Page exit first completes a bounded producer stop, then deletes timers and UI objects while holding the lock. Audio and light-sleep workers use cooperative cancellation and an explicit exit handshake rather than forced task deletion. The low-power worker force-suspends and verifies ES8311 before either sleep mode and resumes it after light sleep. For deep sleep it suspends and verifies CW2017 first, force-suspends ES8311, stops and releases I2S, releases the shared I2C pins, blocks further LVGL flushes, sleeps the LCD, and holds its safe pin levels before entering deep sleep. Individual peripheral failures are logged but do not strand the system awake; an unexpected return after terminal pin release causes a restart. Deep-sleep wake also restarts the application and follows normal BSP initialization.
 
 Wi-Fi, NimBLE, and sleep use ESP-IDF directly rather than the BSP. `demo_radio.c` owns shared NVS, `esp_netif`, and default-event-loop setup. Wi-Fi and Bluetooth pages allocate their radio stacks after page creation and stop/deinitialize them before page deletion. Do not erase NVS to hide partition errors. Deep sleep restarts the application and the demo uses RTC slow memory for the wake counter.
+
+Audio, low-power, and BLE workers acknowledge completion only after their final
+shared-state access, then park until the lifecycle owner deletes them. A timed-out
+stop retains the task handle and completion semaphore for retry; do not let an
+old worker clear a replacement task's handle. Wi-Fi uses checked netif creation,
+attachment and handler registration; BLE checks host task creation and cleans up
+without calling host-stop when no task was created. Allocation failure must not
+be hidden behind an SDK helper that asserts or ignores task-creation results.
 
 ## 5. Display and LVGL
 
@@ -114,6 +122,10 @@ Wi-Fi, NimBLE, and sleep use ESP-IDF directly rather than the BSP. `demo_radio.c
 The LVGL DMA buffer is one `240 × 20` RGB565 buffer, about 9.6 KB; the LVGL internal pool is 24 KB. Do not add large/double buffers without checking internal RAM, the largest contiguous heap block, and I2S DMA.
 
 The final LVGL RGB565 flush is masked to a global 30 px radius, so the four areas outside the rounded screen remain pure black during page changes as well as normal rendering. The mask is applied directly to the partial draw buffer and does not use root-screen `clip_corner`; full-screen rounded clipping requires an ARGB intermediate layer that can exhaust the 24 KB LVGL pool on this no-PSRAM target. Keep this behavior in the display integration instead of duplicating corner decorations in individual pages.
+
+Register the display and rounding callback under the same recursive LVGL port
+lock, before the first flush. Registration failure must not leave an unmasked
+display running or reinitialize a port whose previous task may still be alive.
 
 Before terminal deep sleep, stop new page work and hold the LVGL lock long enough to finish any current flush. `bsp_display_prepare_deep_sleep()` then sends display-off and Sleep In, stops the backlight PWM at low level, drives CS high and SCLK/MOSI/DC/backlight low, enables per-pin hold, and enables the ESP32-C3 global deep-sleep hold. `bsp_display_init()` disables the global and per-pin holds before SPI or LEDC takes ownership after wake. This terminal API is not a reversible display blanking operation and must be followed immediately by deep sleep or restart.
 
@@ -130,7 +142,7 @@ GPIO0 has an external 10 kΩ pull-up to 3.3 V. UP, DOWN, and OK connect it to gr
 | OK | about 595 mV | `[447, 1900)` mV |
 | Released | about 3300 mV | outside all windows |
 
-Do not replace the external resistor with the inaccurate internal pull-up. The BSP creates one ADC1 oneshot unit and shares it with all button devices and voltage reads. Attenuation is `ADC_ATTEN_DB_12`. Callbacks originate in the button component's shared `esp_timer` task and must only enqueue work or perform similarly bounded operations.
+Do not replace the external resistor with the inaccurate internal pull-up. The BSP owns one ADC1 oneshot unit and calibration handle, shared by its static drivers through the public `iot_button` driver interface and by voltage reads. Attenuation is `ADC_ATTEN_DB_12`; one averaged sample is reused across the three keys in each polling cycle. Half-open windows prevent overlapping keys at a boundary. Calibration failure aborts initialization and rolls back; read/conversion failures are inactive readings, never a zero-voltage UP press. The BSP avoids the dependency's ADC index registry so partial allocation failure cannot strand an occupied index on retry. Callbacks originate in the button component's shared `esp_timer` task and must only enqueue work or perform similarly bounded operations.
 
 Calibrate thresholds using multiple boards, charge levels, and reasonable temperatures; leave margin between measured distributions rather than relying only on divider theory.
 
@@ -153,6 +165,7 @@ The MCU is I2S master and the ES8311 is slave. I2S0 TX/RX shares MCLK GPIO6, BCL
 - Call `bsp_audio_set_format()` before PCM I/O.
 - A format change must close and reopen `esp_codec_dev`; an already open device is not reconfigured.
 - Preserve the I2S enable/disable sequence around close/open.
+- Track underlying I2C and I2S configuration errors even when codec-dev drops their return values. Failed opens and format changes release codec objects, force suspend and stop I2S; retries recreate the codec instead of reusing partial opened/enabled state. Sleep also releases codec objects before the final forced register sequence; wake recreates them and restores format and volume while retaining the shared bus and channels. A failed codec-reference release requires reboot rather than a false successful recovery. Repeated sleep calls retain an earlier failure result until recovery.
 - Do not write ES8311 clock-divider registers after open; the driver derives them from sample rate and 256×fs MCLK.
 - Keep `no_dac_ref=true` for mono microphone input; false can produce all-zero capture.
 - Microphone analog gain is 30 dB; output volume is a separate 0–100% value.
@@ -165,6 +178,9 @@ The MCU is I2S master and the ES8311 is slave. I2S0 TX/RX shares MCLK GPIO6, BCL
 - Software suspend stops the ES8311 ADC/DAC, analog paths, microphone-bias path, internal clocks, internal BCLK/LRCK pull-ups, and digital/analog modules, but it does not switch off the physical 3.3 V rail. The external amplifier also remains outside software control because `BSP_I2S_PA_CTRL` is `-1`; residual standby draw from that hardware must be measured separately.
 
 The audio demo's three-second recording buffer is about 96 KB and is the largest transient heap allocation. Prefer chunked streaming for longer audio. Its worker checks cancellation between PCM chunks and acknowledges exit before the page is deleted; retain that bounded handshake when extending the demo.
+
+Failed recording reads show `recording failed` and discard the partial capture;
+only a complete recording and playback may show `done`.
 
 ### 8.1 Crackles while navigating or saving
 

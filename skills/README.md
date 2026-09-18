@@ -22,7 +22,7 @@ Each skill must contain at least `SKILL.md` with YAML frontmatter defining `name
 | [passport-debug](passport-debug/SKILL.md) | Diagnose crashes, memory problems, blank Chinese text, and peripheral failures using evidence and matching symbols. |
 | [issue-suggestions](issue-suggestions/SKILL.md) | After a release, collect the releasing developer's own improvement points and file them as feature request issues against the upstream project. |
 | [experience-pr](experience-pr/SKILL.md) | After a release, collect reusable development experience and submit it as a documentation pull request. |
-| [plays-archive](plays-archive/SKILL.md) | After a release, archive the published application into the upstream `plays/` with an AI-generated bilingual summary and a cover image. |
+| [plays-archive](plays-archive/SKILL.md) | After a release, archive the published application under the repository-relative `docs/reference/<username>/<app-name>/` with an AI-generated bilingual summary; record cover metadata only, without committing the image. |
 
 ## Required preparation, handled by the AI
 
