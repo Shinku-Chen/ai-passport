@@ -54,6 +54,17 @@
 - 参考 cindy 仓库文档组织完善索引：新增 `docs/README.md` 根总索引；AGENTS.md 规则索引按触发场景改写（附触发条件）；`docs/contribution/` 与 `docs/development/` 的 README 补充收录标准。
 - 引入社区治理文档（参照 cindy 改写，放仓库根目录）：新增 `CONTRIBUTING.md` / `.zh_CN.md`（贡献指南，针对 ESP-IDF/AI agent/fork 场景改写）、`CODE_OF_CONDUCT.md` / `.zh_CN.md`（贡献者公约）、`SECURITY.md` / `.zh_CN.md`（安全报告流程）、`SUPPORT.md` / `.zh_CN.md`（支持渠道）；AGENTS.md 与 docs/README.md 同步引用。
 
+## v1.7.0-connect-four - 2026-09-18
+
+新增两台设备通过蓝牙联机对战，并把串口截图改为可选构建，让射频在这块无 PSRAM 的板子上放得下。
+
+- 新增 **`LINK PLAY` 联机模式**：两台 AI Passport 自己找到对方——两边同时广播并扫描，BLE 地址较大的一方主动连接，因此菜单里不需要“主机 / 加入”这个选择。握手完成后自动开局；只有轮到的一方能落子，对端的滑落动画与音效与本人落子一致；任一方都可以提议再来一局（双方都按下后才开新局）。先手逐局交替。
+- 新增独立的联机屏，依次显示 `SEARCHING...` / `CONNECTING...` / `HANDSHAKE...`；对端离开或链路中断时显示 `PEER LEFT` 并继续搜索。
+- 每一手都带序号、确认与超时重传，并在收到时校验落子总数，所以蓝牙通知丢包不会让两块棋盘各走各的；真出现不一致时以 `LINK DESYNC` 结束本局，而不是继续错下去。
+- 联机对局中的空闲休眠放宽到 10 分钟（设置屏仍为 60 秒、单机对局 180 秒），入睡前会先停掉射频。
+- 串口截图改为可选构建（`idf.py -DC4_ENABLE_SCREENSHOT=ON build`）：它静态预留的 320 × 240 整屏缓冲是 150KB，与联机所需的约 60KB 在这块板子上无法共存。发布固件带 `LINK PLAY`；截图构建下联机起不来，联机屏会显示 `BLE UNAVAILABLE`。
+- 蓝牙启动前会初始化 NVS，射频因此可以复用缓存好的校准数据，不再每次启动都做全量校准。
+
 ## v1.6.0-connect-four - 2026-09-17
 
 四子棋应用的首次公开发布。

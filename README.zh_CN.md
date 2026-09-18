@@ -6,10 +6,10 @@
 
 AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对战（低 / 中 / 高三档难度，先手可选玩家或电脑）、双人同机轮下，也可以**两台设备通过蓝牙联机对战**。
 
-最新版本：**v1.6.0-connect-four**；分支 tip 新增的 `LINK PLAY` 模式尚未包含在该发布中。
+最新版本：**v1.7.0-connect-four**，新增两台设备通过蓝牙联机对战。
 
 - 分支：[`feature/connect-four`](https://github.com/Shinku-Chen/ai-passport/tree/feature/connect-four)
-- 发布：[v1.6.0-connect-four](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.6.0-connect-four)
+- 发布：[v1.7.0-connect-four](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.7.0-connect-four)
 
 ## 操作
 

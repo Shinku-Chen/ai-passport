@@ -8,11 +8,10 @@ A landscape Connect Four for the AI Passport: a **10 × 7 board**, human versus
 computer with three difficulty levels (either side can move first), two players
 sharing one device, or **two devices playing each other over Bluetooth LE**.
 
-Latest release: **v1.6.0-connect-four**. The branch tip adds the `LINK PLAY`
-mode, which is not part of that release yet.
+Latest release: **v1.7.0-connect-four**, which adds two-device play over Bluetooth LE.
 
 - Branch: [`feature/connect-four`](https://github.com/Shinku-Chen/ai-passport/tree/feature/connect-four)
-- Release: [v1.6.0-connect-four](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.6.0-connect-four)
+- Release: [v1.7.0-connect-four](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.7.0-connect-four)
 
 ## Controls
 

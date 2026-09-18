@@ -57,6 +57,36 @@
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
 
+## v1.7.0-connect-four - 2026-09-18
+
+Adds two-device play over Bluetooth LE, and turns the serial screenshot tool into
+an opt-in build so the radio fits on a board without PSRAM.
+
+- New **`LINK PLAY` mode**: two AI Passport boards find each other by themselves —
+  each one advertises and scans at the same time, and the larger BLE address
+  initiates the connection, so the menu needs no host/join choice. A handshake
+  starts the match, only the player whose turn it is can drop a disc, the
+  opponent's disc lands with the same animation and sound, and either side can
+  propose a rematch (the next match starts once both have asked). The first player
+  alternates with every match.
+- A dedicated link screen reports `SEARCHING...`, `CONNECTING...` and
+  `HANDSHAKE...`, and falls back to `PEER LEFT` while it keeps searching if the
+  peer leaves or the link drops mid-match.
+- Every move carries a sequence number and an acknowledgement with a
+  retransmission timeout, and its move count is verified on arrival, so a lost
+  Bluetooth notification cannot leave the two boards showing different positions;
+  a detected divergence ends the match with `LINK DESYNC` instead.
+- Idle sleep is extended to 10 minutes while a match is linked (the settings
+  screen stays at 60 s, a single-device match at 180 s), and the radio is stopped
+  before the device sleeps.
+- The serial screenshot tool is now an opt-in build
+  (`idf.py -DC4_ENABLE_SCREENSHOT=ON build`): its statically reserved 320 × 240
+  frame buffer is 150 KB and cannot coexist with the ~60 KB the link needs on this
+  board. The released firmware ships `LINK PLAY`; a screenshot build cannot start
+  the link and reports `BLE UNAVAILABLE` on the link screen.
+- Bluetooth now initializes NVS before starting, so the radio reuses its cached RF
+  calibration data instead of running a full calibration on every start.
+
 ## v1.6.0-connect-four - 2026-09-17
 
 First public release of the Connect Four application.
