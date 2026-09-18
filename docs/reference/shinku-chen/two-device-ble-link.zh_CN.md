@@ -19,6 +19,10 @@
 
 `CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1` 对 1:1 对战是正确设置，但也意味着上面那条规则必须严格：同时扫描又接受连接的多角色设备，否则可能撞进"连接竞争"。
 
+### 在 sdkconfig 里打开四个角色
+
+这条链路需要 **peripheral + broadcaster**（广播自己）与 **central + observer**（扫描对端并主动连接）。模板为了给示例瘦身，默认写了 `CONFIG_BT_NIMBLE_ROLE_CENTRAL=n` 与 `CONFIG_BT_NIMBLE_ROLE_OBSERVER=n`；只要有一个没打开，设备就会**静默地**既发现不了对端也连不上（对应的 GAP 过程直接失败）。把四个角色都打开（它们只在链路启动时才实际占用资源），并保持 `CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1` 用于 1:1 对战。
+
 ## 先算内存，再定功能集
 
 在已经跑起游戏界面、音频任务和 LVGL 的 ESP32-C3 板子（无 PSRAM）上实测：

@@ -9,6 +9,9 @@
 //     选“主机/加入”,也不会出现两个人同时连对方。
 //   * 只支持 1:1。`CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1`,多台设备同场时会按
 //     同样的地址规则两两配对,当前不做仲裁,不要在一个场地放三台以上。
+//   * 需要四个 NimBLE 角色:peripheral + broadcaster(广播自己)、central +
+//     observer(扫描并主动连对端)。模板为给示例瘦身把 CENTRAL/OBSERVER 默认设成 n,
+//     用本模块前必须在 sdkconfig 里打开这四个角色(否则连不上,且不会报错)。
 //   * 服务里有一条可写特征(对端写进来)和一条可读+可通知特征(本机发出去)。
 //     可读那一侧返回两个字节的识别信息,给手机/通用 BLE 工具调试用。
 //   * 收发都是“尽力而为”的字节流:peripheral 侧用 notify、central 侧用

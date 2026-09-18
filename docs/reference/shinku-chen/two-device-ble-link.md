@@ -40,6 +40,16 @@ decide who connects:
 also means the tiebreak rule must be strict: a multirole board that both scans
 and accepts connections can otherwise end up in a connect race.
 
+### Enable all four roles in sdkconfig
+
+The link needs **peripheral + broadcaster** (to advertise itself) and **central +
+observer** (to scan for the peer and initiate). The template trims its demo
+configuration with `CONFIG_BT_NIMBLE_ROLE_CENTRAL=n` and
+`CONFIG_BT_NIMBLE_ROLE_OBSERVER=n`; with either one off, the board silently never
+finds or connects to the peer, because the corresponding GAP procedure simply
+fails. Turn all four roles on (they are only paid for at runtime, when the link
+is started) and keep `CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1` for 1:1 play.
+
 ## Budget the RAM before choosing the feature set
 
 Measured on the ESP32-C3 board (no PSRAM), with the game UI, audio task and LVGL
