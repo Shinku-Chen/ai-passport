@@ -10,15 +10,14 @@
 </p>
 
 <p align="center">
-  <strong>Open Wearable AI Agent</strong><br>
-  WEAR · PLAY · CREATE<br>
-  Your idea. Your firmware. Your everyday companion.
+  <strong>Wear it. Flash it. Make it anything.</strong><br>
+  Simple and open. Anyone can build.
 </p>
 
 <p align="center">
-  <a href="/docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md"><img src="https://img.shields.io/badge/ESP32--C3-8_MB_Flash-334155?style=flat-square" alt="ESP32-C3 with 8 MB Flash"></a>
-  <a href="/docs/development/engineering/environment-setup.md"><img src="https://img.shields.io/badge/ESP--IDF-5.5.3-2563eb?style=flat-square" alt="ESP-IDF 5.5.3"></a>
-  <a href="/components/bsp/include/bsp_display.h"><img src="https://img.shields.io/badge/UI-LVGL-0d9488?style=flat-square" alt="LVGL user interface"></a>
+  <a href="/docs/README.md"><img src="https://img.shields.io/badge/Open-firmware-14b8a6?style=flat-square" alt="Open firmware"></a>
+  <a href="/docs/README.md"><img src="https://img.shields.io/badge/Wearable-AI-2563eb?style=flat-square" alt="Wearable AI"></a>
+  <a href="/docs/development/ai-guide.md"><img src="https://img.shields.io/badge/Built-for_makers-f97316?style=flat-square" alt="Built for makers"></a>
   <a href="/LICENSE"><img src="https://img.shields.io/badge/License-MIT-64748b?style=flat-square" alt="MIT License"></a>
 </p>
 
@@ -31,17 +30,17 @@
 
 ---
 
-Build something you can wear. **FoloToy AI Passport** is open wearable AI hardware,
-and this repository is its firmware development baseline: board support, working
-examples, AI workflows, and validation tools in one place.
+**FoloToy AI Passport** is an open wearable AI platform made for people to shape,
+remix, and create. Start with a simple idea, build your own experience, and make
+it anything—from a pocket companion to something no one has imagined yet.
 
 <p align="center">
-  <img src="../assets/images/readme-hardware-specs.png" alt="Hardware at a glance: ESP32-C3, 8 MB Flash, no PSRAM, a 240 by 320 display, three physical buttons, and ES8311 audio." width="100%">
+  <img src="../assets/images/home.jpg" alt="FoloToy AI Passport wearable device shown from the front, side, and back." width="100%">
 </p>
 
-| Make it yours | Start with working code | Check what you build |
+| Open and remixable | Easy to start | Yours to create |
 | --- | --- | --- |
-| Create timers, small games, or an everyday companion with your own UI. | Reuse the BSP for display, buttons, audio, and battery; learn from independent demo branches. | Run host tests, build a verified merged image, then validate on your device. |
+| Open firmware and reusable examples give you room to shape your own experience. | Start from an idea and follow clear guides to make it real, even if this is your first build. | Make a companion, a tool, a game—or anything you can imagine. |
 
 ## Find your starting point
 

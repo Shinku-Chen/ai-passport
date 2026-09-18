@@ -10,15 +10,14 @@
 </p>
 
 <p align="center">
-  <strong>开放式可穿戴 AI Agent</strong><br>
-  WEAR · PLAY · CREATE<br>
-  把你的创意，变成随身的日常伙伴。
+  <strong>戴上它，刷入固件，把它变成任何你想要的东西。</strong><br>
+  简单开放，人人可造。
 </p>
 
 <p align="center">
-  <a href="/docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.zh_CN.md"><img src="https://img.shields.io/badge/ESP32--C3-8_MB_Flash-334155?style=flat-square" alt="ESP32-C3，8 MB Flash"></a>
-  <a href="/docs/development/engineering/environment-setup.zh_CN.md"><img src="https://img.shields.io/badge/ESP--IDF-5.5.3-2563eb?style=flat-square" alt="ESP-IDF 5.5.3"></a>
-  <a href="/components/bsp/include/bsp_display.h"><img src="https://img.shields.io/badge/UI-LVGL-0d9488?style=flat-square" alt="LVGL 用户界面"></a>
+  <a href="/docs/README.zh_CN.md"><img src="https://img.shields.io/badge/Open-firmware-14b8a6?style=flat-square" alt="开放固件"></a>
+  <a href="/docs/README.zh_CN.md"><img src="https://img.shields.io/badge/Wearable-AI-2563eb?style=flat-square" alt="可穿戴 AI"></a>
+  <a href="/docs/development/ai-guide.zh_CN.md"><img src="https://img.shields.io/badge/Built-for_makers-f97316?style=flat-square" alt="为创作者而造"></a>
   <a href="/LICENSE"><img src="https://img.shields.io/badge/License-MIT-64748b?style=flat-square" alt="MIT 许可证"></a>
 </p>
 
@@ -31,16 +30,16 @@
 
 ---
 
-让创意不止停留在屏幕里。**FoloToy AI Passport** 是开放式可穿戴 AI 硬件，
-本仓库是它的固件开发基线，将板级支持、可运行示例、AI 工作流和验证工具放在一起。
+**FoloToy AI Passport** 是开放的可穿戴 AI 平台，人人都可以动手改造、自由创作。
+从一个简单想法开始，打造专属体验——无论是随身伙伴、小工具、游戏，还是任何新点子。
 
 <p align="center">
-  <img src="../assets/images/readme-hardware-specs.png" alt="硬件参数一览：ESP32-C3、8 MB Flash、无 PSRAM、240 × 320 屏幕、三个实体按键和 ES8311 音频。" width="100%">
+  <img src="../assets/images/home.jpg" alt="FoloToy AI Passport 可穿戴设备的正面、侧面和背面展示。" width="100%">
 </p>
 
-| 定义你的玩法 | 从可运行代码出发 | 让每次交付有据可查 |
+| 开放自由，随心改造 | 人人都能开始 | 创造专属玩法 |
 | --- | --- | --- |
-| 用独立 UI 打造计时器、小游戏或日常随身伙伴。 | 复用显示、按键、音频、电池 BSP，参考独立 demo 分支。 | 运行主机测试，生成已校验的合并固件，再到设备上验收。 |
+| 开放固件与可复用示例，为你的创意留出发挥空间。 | 从一个简单想法出发，跟随清晰指南把它变成现实。 | 打造随身伙伴、小工具、游戏，或任何你能想到的东西。 |
 
 ## 找到你的起点
 
