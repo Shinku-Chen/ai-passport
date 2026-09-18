@@ -22,6 +22,12 @@ void c4_ui_show_board(void);
 // 进入 deep sleep 前的提示:在两张屏上都写下「按任意键唤醒」。
 void c4_ui_show_sleeping(void);
 
+// 联机屏:搜索/连接/等对端时的专用界面(与设置屏、棋盘屏并列的第三种屏)。
+void c4_ui_show_link(void);
+
+// 重画联机屏的两行文字:状态大字 + 提示小字。
+void c4_ui_render_link(const char *status, uint32_t status_color, const char *hint);
+
 // 改写设置屏底部的提示行(联机验证用来显示 BLE 状态)。
 void c4_ui_set_menu_hint(const char *text);
 

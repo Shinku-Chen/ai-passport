@@ -8,6 +8,7 @@ static const char *const MODE_VALUES[C4_MODE_COUNT] = {
     [C4_MODE_HUMAN_FIRST] = "HUMAN vs AI",
     [C4_MODE_AI_FIRST] = "AI vs HUMAN",
     [C4_MODE_TWO_PLAYER] = "TWO PLAYERS",
+    [C4_MODE_LINK] = "LINK PLAY",
 };
 
 static const char *const LEVEL_VALUES[C4_LEVEL_COUNT] = {
@@ -50,7 +51,11 @@ bool c4_settings_row_enabled(const c4_settings_t *settings, int row)
 {
     if (!settings) return false;
     if (row < 0 || row >= C4_MENU_ROW_COUNT) return false;
-    if (row == C4_MENU_ROW_LEVEL && settings->mode == C4_MODE_TWO_PLAYER) return false;
+    // 没有电脑对手的模式里,难度行不参与选择。
+    if (row == C4_MENU_ROW_LEVEL &&
+        (settings->mode == C4_MODE_TWO_PLAYER || settings->mode == C4_MODE_LINK)) {
+        return false;
+    }
     return true;
 }
 

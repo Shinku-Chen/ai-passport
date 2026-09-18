@@ -1,276 +1,301 @@
-// main/c4_link.c —— 两机联机的最小 BLE 外设实现(可行性验证用)。
-//
-// 只在 C4_ENABLE_LINK=1 的构建里编译;默认构建只留桩函数。
+// main/c4_link.c —— 联机会话实现(见 c4_link.h 的线程说明)。
 #include "c4_link.h"
 
-#include "bsp_display.h"   // bsp_lvgl_lock / bsp_lvgl_unlock
-#include "c4_sound.h"
-#include "c4_ui.h"
+#include "bsp_ble_link.h"
+#include "c4_model.h"
 #include "esp_log.h"
 #include "esp_mac.h"
-#include "esp_system.h"
-#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 #include "freertos/task.h"
 
-#if C4_ENABLE_LINK
-
-#include "host/ble_gap.h"
-#include "host/ble_hs.h"
-#include "host/util/util.h"
-#include "nimble/nimble_port.h"
-#include "nimble/nimble_port_freertos.h"
-#include "services/gap/ble_svc_gap.h"
-#include "services/gatt/ble_svc_gatt.h"
-
-#include <stdio.h>
 #include <string.h>
 
 static const char *TAG = "c4_link";
 
-// Nordic UART 布局的 128 位 UUID(服务 / 写入 / 通知),对端用通用 BLE 工具或脚本即可。
-static const ble_uuid128_t s_svc_uuid =
-    BLE_UUID128_INIT(0x9e, 0xca, 0xdc, 0x24, 0x0e, 0xe5, 0xa9, 0xe0,
-                     0x93, 0xf3, 0xa3, 0xb5, 0x01, 0x00, 0x40, 0x6e);
-static const ble_uuid128_t s_rx_uuid =
-    BLE_UUID128_INIT(0x9e, 0xca, 0xdc, 0x24, 0x0e, 0xe5, 0xa9, 0xe0,
-                     0x93, 0xf3, 0xa3, 0xb5, 0x02, 0x00, 0x40, 0x6e);
-static const ble_uuid128_t s_tx_uuid =
-    BLE_UUID128_INIT(0x9e, 0xca, 0xdc, 0x24, 0x0e, 0xe5, 0xa9, 0xe0,
-                     0x93, 0xf3, 0xa3, 0xb5, 0x03, 0x00, 0x40, 0x6e);
+// 与 BSP 约定的一段自定义 128 位 UUID:服务 / 对端写入 / 本机通知。
+// 布局与 Nordic UART 一致,方便手机或通用 BLE 工具当对端调试。
+#define C4_LINK_SVC_UUID \
+    { 0x9e, 0xca, 0xdc, 0x24, 0x0e, 0xe5, 0xa9, 0xe0, \
+      0x93, 0xf3, 0xa3, 0xb5, 0x01, 0x00, 0x40, 0x6e }
+#define C4_LINK_RX_UUID \
+    { 0x9e, 0xca, 0xdc, 0x24, 0x0e, 0xe5, 0xa9, 0xe0, \
+      0x93, 0xf3, 0xa3, 0xb5, 0x02, 0x00, 0x40, 0x6e }
+#define C4_LINK_TX_UUID \
+    { 0x9e, 0xca, 0xdc, 0x24, 0x0e, 0xe5, 0xa9, 0xe0, \
+      0x93, 0xf3, 0xa3, 0xb5, 0x03, 0x00, 0x40, 0x6e }
 
-static char s_name[16];
-static uint8_t s_addr_type;
-static uint16_t s_conn_handle = BLE_HS_CONN_HANDLE_NONE;
-static uint16_t s_tx_val_handle;
-static bool s_notify_enabled;
+#define C4_LINK_NAME_PREFIX "C4-"
+#define C4_LINK_RAW_DEPTH   8
+#define C4_LINK_EVENT_DEPTH 8
+
+// —— BSP 回调 → 输入任务的原始事件队列 ——
+typedef enum {
+    C4_RAW_STATE = 0,
+    C4_RAW_RX,
+} c4_raw_kind_t;
+
+typedef struct {
+    uint8_t kind;   // c4_raw_kind_t
+    uint8_t state;  // C4_RAW_STATE:bsp_ble_link_state_t
+    uint8_t len;    // C4_RAW_RX
+    uint8_t data[BSP_BLE_LINK_MAX_PAYLOAD];
+} c4_raw_t;
+
+static QueueHandle_t s_raw_queue;
+static c4_link_proto_t s_proto;
+
 static bool s_started;
-static uint8_t s_last_rx;
+static bool s_transport_up;                  // 本机已判定“通道就绪”
+static bool s_failed_reported;
+static volatile uint8_t s_bsp_state = BSP_BLE_LINK_IDLE;
 
-static int gap_event(struct ble_gap_event *event, void *arg);
+static c4_link_event_t s_events[C4_LINK_EVENT_DEPTH];
+static uint8_t s_ev_head;
+static uint8_t s_ev_tail;
 
-// BLE 回调跑在 NimBLE host 任务里:碰 LVGL 必须持锁(短操作,符合仓库既有约定)。
-static void set_hint(const char *text)
+static void push_event(uint8_t kind, uint8_t col, uint8_t ply, uint8_t first_side,
+                       uint8_t game_id, uint8_t version)
 {
-    if (!bsp_lvgl_lock(200)) return;
-    c4_ui_set_menu_hint(text);
-    bsp_lvgl_unlock();
-}
-
-static int notify_byte(uint8_t value)
-{
-    if (s_conn_handle == BLE_HS_CONN_HANDLE_NONE || !s_notify_enabled) return -1;
-
-    struct os_mbuf *om = ble_hs_mbuf_from_flat(&value, sizeof(value));
-    if (!om) return -1;
-    return ble_gatts_notify_custom(s_conn_handle, s_tx_val_handle, om);
-}
-
-static int advertise(void)
-{
-    struct ble_hs_adv_fields fields = { 0 };
-    fields.flags = BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP;
-    fields.uuids128 = &s_svc_uuid;
-    fields.num_uuids128 = 1;
-    fields.uuids128_is_complete = 1;
-    fields.name = (const uint8_t *)s_name;
-    fields.name_len = (uint8_t)strlen(s_name);
-    fields.name_is_complete = 1;
-
-    int rc = ble_gap_adv_set_fields(&fields);
-    if (rc != 0) {
-        ESP_LOGE(TAG, "广播字段设置失败 rc=%d", rc);
-        return rc;
-    }
-
-    // 需要可连接:对端要能连进来(基线 demo 只做不可连接广播)。
-    struct ble_gap_adv_params params = { 0 };
-    params.conn_mode = BLE_GAP_CONN_MODE_UND;
-    params.disc_mode = BLE_GAP_DISC_MODE_GEN;
-    rc = ble_gap_adv_start(s_addr_type, NULL, BLE_HS_FOREVER, &params, gap_event, NULL);
-    if (rc == 0) {
-        ESP_LOGI(TAG, "开始广播,设备名 %s", s_name);
-        char hint[48];
-        snprintf(hint, sizeof(hint), "LINK: %s ADVERTISING", s_name);
-        set_hint(hint);
-    } else {
-        ESP_LOGE(TAG, "广播启动失败 rc=%d", rc);
-    }
-    return rc;
-}
-
-static int on_tx_read(uint16_t conn_handle, uint16_t attr_handle,
-                      struct ble_gatt_access_ctxt *ctxt, void *arg)
-{
-    (void)conn_handle; (void)attr_handle; (void)arg;
-    if (ctxt->op != BLE_GATT_ACCESS_OP_READ_CHR) return BLE_ATT_ERR_UNLIKELY;
-    // 两个字节:是否已连接 + 最后一次收到的列号,便于对端只读也能判断状态。
-    const uint8_t status[2] = { (uint8_t)(s_conn_handle != BLE_HS_CONN_HANDLE_NONE), s_last_rx };
-    return os_mbuf_append(ctxt->om, status, sizeof(status)) == 0
-               ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
-}
-
-// 对端写入:最小验证只回显 + 响一声,证明链路是双向的。
-static int on_rx_write(uint16_t conn_handle, uint16_t attr_handle,
-                       struct ble_gatt_access_ctxt *ctxt, void *arg)
-{
-    (void)conn_handle; (void)attr_handle; (void)arg;
-
-    uint8_t value = 0;
-    if (ctxt->om->om_len != 1 ||
-        ble_hs_mbuf_to_flat(ctxt->om, &value, sizeof(value), NULL) != 0) {
-        ESP_LOGW(TAG, "收到非预期负载,长度=%d", (int)ctxt->om->om_len);
-        return BLE_ATT_ERR_UNLIKELY;
-    }
-
-    s_last_rx = value;
-    ESP_LOGI(TAG, "收到对端写入 col=%u", (unsigned)value);
-    c4_sound_play(C4_SOUND_DROP);          // 音频与 BLE 能否共存也是本次要验的
-    char hint[48];
-    snprintf(hint, sizeof(hint), "LINK: RX COL %u, ECHO...", (unsigned)value);
-    set_hint(hint);
-    notify_byte(value);                    // 回显 = 双向链路证据
-    return 0;
-}
-
-static const struct ble_gatt_svc_def s_svcs[] = {
-    {
-        .type = BLE_GATT_SVC_TYPE_PRIMARY,
-        .uuid = &s_svc_uuid.u,
-        .characteristics = (struct ble_gatt_chr_def[]) {
-            {
-                .uuid = &s_rx_uuid.u,
-                .access_cb = on_rx_write,
-                .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_WRITE_NO_RSP,
-            },
-            {
-                .uuid = &s_tx_uuid.u,
-                .access_cb = on_tx_read,
-                .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
-                .val_handle = &s_tx_val_handle,
-            },
-            { 0 },
-        },
-    },
-    { 0 },
-};
-
-static int gap_event(struct ble_gap_event *event, void *arg)
-{
-    (void)arg;
-    switch (event->type) {
-    case BLE_GAP_EVENT_CONNECT:
-        if (event->connect.status == 0) {
-            s_conn_handle = event->connect.conn_handle;
-            s_notify_enabled = false;
-            ESP_LOGI(TAG, "对端已连接 handle=%d,空闲堆=%u", s_conn_handle,
-                     (unsigned)esp_get_free_heap_size());
-            set_hint("LINK: CONNECTED");
-            const uint8_t hello = 0xA5;
-            notify_byte(hello);            // 握手字节(通知未订阅时会失败,属正常)
-        } else {
-            ESP_LOGW(TAG, "连接失败 status=%d", event->connect.status);
-            advertise();
-        }
-        return 0;
-
-    case BLE_GAP_EVENT_DISCONNECT:
-        ESP_LOGI(TAG, "对端断开 reason=%d,空闲堆=%u", event->disconnect.reason,
-                 (unsigned)esp_get_free_heap_size());
-        s_conn_handle = BLE_HS_CONN_HANDLE_NONE;
-        s_notify_enabled = false;
-        set_hint("LINK: DISCONNECTED");
-        advertise();                       // 断开后重新广播,便于反复验证
-        return 0;
-
-    case BLE_GAP_EVENT_SUBSCRIBE:
-        if (event->subscribe.attr_handle == s_tx_val_handle) {
-            s_notify_enabled = event->subscribe.cur_notify != 0;
-            ESP_LOGI(TAG, "对端订阅通知=%d", (int)s_notify_enabled);
-        }
-        return 0;
-
-    case BLE_GAP_EVENT_ADV_COMPLETE:
-        advertise();
-        return 0;
-
-    default:
-        return 0;
-    }
-}
-
-static void on_reset(int reason)
-{
-    ESP_LOGE(TAG, "NimBLE reset reason=%d", reason);
-}
-
-static void on_sync(void)
-{
-    if (ble_hs_util_ensure_addr(0) != 0 || ble_hs_id_infer_auto(0, &s_addr_type) != 0) {
-        ESP_LOGE(TAG, "取本地 BLE 地址失败");
+    const uint8_t next = (uint8_t)((s_ev_head + 1) % C4_LINK_EVENT_DEPTH);
+    if (next == s_ev_tail) {
+        ESP_LOGW(TAG, "事件队列满,丢弃事件 kind=%u", kind);
         return;
     }
-    advertise();
+    s_events[s_ev_head] = (c4_link_event_t){
+        .kind = kind, .col = col, .ply = ply,
+        .first_side = first_side, .game_id = game_id, .version = version,
+    };
+    s_ev_head = next;
 }
 
-static void host_task(void *arg)
+// —— BSP 回调(NimBLE host 任务):只入队,不做别的 ——
+static void on_transport_state(bsp_ble_link_state_t state, void *user)
 {
-    (void)arg;
-    nimble_port_run();                     // 返回即表示已请求停止
-    nimble_port_freertos_deinit();
+    (void)user;
+    s_bsp_state = (uint8_t)state;
+    if (!s_raw_queue) return;
+
+    c4_raw_t raw;
+    memset(&raw, 0, sizeof(raw));
+    raw.kind = C4_RAW_STATE;
+    raw.state = (uint8_t)state;
+    (void)xQueueSend(s_raw_queue, &raw, 0);
+}
+
+static void on_transport_rx(const uint8_t *data, uint16_t len, void *user)
+{
+    (void)user;
+    if (!s_raw_queue || !data || len == 0 || len > BSP_BLE_LINK_MAX_PAYLOAD) return;
+
+    c4_raw_t raw;
+    memset(&raw, 0, sizeof(raw));
+    raw.kind = C4_RAW_RX;
+    raw.len = (uint8_t)len;
+    memcpy(raw.data, data, len);
+    (void)xQueueSend(s_raw_queue, &raw, 0);
+}
+
+static void send_frame(const uint8_t *frame, uint8_t len)
+{
+    if (len == 0) return;
+    const esp_err_t err = bsp_ble_link_send(frame, len);
+    if (err != ESP_OK) {
+        // 对端刚走或通道还没就绪都会走到这里;可靠层会按超时重传。
+        ESP_LOGD(TAG, "发送失败: %s", esp_err_to_name(err));
+    }
+}
+
+static void deliver(const c4_link_result_t *result)
+{
+    if (result->tx_len > 0) send_frame(result->tx, result->tx_len);
+
+    switch (result->ev.kind) {
+    case C4_LINK_EV_NONE:
+        break;
+    case C4_LINK_EV_PEER_READY:
+        push_event(C4_LINK_EVENT_PEER_READY, 0, 0, result->ev.first_side,
+                   result->ev.game_id, 0);
+        break;
+    case C4_LINK_EV_MOVE:
+        push_event(C4_LINK_EVENT_MOVE, result->ev.col, result->ev.ply, 0, 0, 0);
+        break;
+    case C4_LINK_EV_REMATCH:
+        push_event(C4_LINK_EVENT_REMATCH, 0, 0, 0, result->ev.game_id, 0);
+        break;
+    case C4_LINK_EV_LEAVE:
+        push_event(C4_LINK_EVENT_LEAVE, 0, 0, 0, 0, 0);
+        break;
+    case C4_LINK_EV_LOST:
+        ESP_LOGW(TAG, "重传耗尽,判定对端已丢");
+        push_event(C4_LINK_EVENT_DOWN, 0, 0, 0, 0, 0);
+        break;
+    case C4_LINK_EV_BAD_VERSION:
+        push_event(C4_LINK_EVENT_BAD_VERSION, 0, 0, 0, 0, result->ev.version);
+        break;
+    default:
+        break;
+    }
+}
+
+// 用 BSP 的实时状态判定通道起落。状态事件可能因为队列满而丢,
+// 所以每次 pump 都直接查 bsp_ble_link_ready() 作为权威判据。
+static void sync_transport_state(void)
+{
+    const bool ready = bsp_ble_link_ready();
+    if (ready == s_transport_up) return;
+
+    s_transport_up = ready;
+    if (ready) {
+        ESP_LOGI(TAG, "通道就绪(本机角色 %s)", bsp_ble_link_is_central() ? "central" : "peripheral");
+        push_event(C4_LINK_EVENT_UP, 0, 0, 0, 0, 0);
+    } else {
+        // 一次连接结束:序号从 0 重新开始,两边都在断开后重置,配对不会错位。
+        c4_link_proto_init(&s_proto);
+        ESP_LOGW(TAG, "通道断开");
+        push_event(C4_LINK_EVENT_DOWN, 0, 0, 0, 0, 0);
+    }
 }
 
 esp_err_t c4_link_start(void)
 {
-    if (s_started) return ESP_OK;
+    if (s_started) return ESP_ERR_INVALID_STATE;
 
-    // 设备名用 MAC 后两字节,便于对端在扫描列表里分辨两台机器。
+    if (!s_raw_queue) {
+        s_raw_queue = xQueueCreate(C4_LINK_RAW_DEPTH, sizeof(c4_raw_t));
+        if (!s_raw_queue) return ESP_ERR_NO_MEM;
+    }
+    s_ev_head = s_ev_tail = 0;
+    s_transport_up = false;
+    s_failed_reported = false;
+    c4_link_proto_init(&s_proto);
+
+    // 设备名带上 MAC 后两字节,两台机器在扫描列表里能区分开。
     uint8_t mac[6] = { 0 };
     if (esp_efuse_mac_get_default(mac) != ESP_OK) return ESP_FAIL;
-    snprintf(s_name, sizeof(s_name), "C4-%02X%02X", mac[4], mac[5]);
 
-    esp_err_t err = nimble_port_init();
+    char name[16];
+    snprintf(name, sizeof(name), "%s%02X%02X", C4_LINK_NAME_PREFIX, mac[4], mac[5]);
+
+    const bsp_ble_link_cfg_t cfg = {
+        .local_name = name,
+        .name_prefix = C4_LINK_NAME_PREFIX,
+        .service_uuid = C4_LINK_SVC_UUID,
+        .rx_uuid = C4_LINK_RX_UUID,
+        .tx_uuid = C4_LINK_TX_UUID,
+    };
+
+    const esp_err_t err = bsp_ble_link_start(&cfg, on_transport_state,
+                                             on_transport_rx, NULL);
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "nimble_port_init 失败: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "BLE 链路启动失败: %s", esp_err_to_name(err));
+        push_event(C4_LINK_EVENT_FAILED, 0, 0, 0, 0, 0);
         return err;
     }
-
-    ble_svc_gap_init();
-    ble_svc_gatt_init();
-    int rc = ble_svc_gap_device_name_set(s_name);
-    if (rc == 0) rc = ble_gatts_count_cfg(s_svcs);
-    if (rc == 0) rc = ble_gatts_add_svcs(s_svcs);
-    if (rc != 0) {
-        ESP_LOGE(TAG, "GATT 服务注册失败 rc=%d", rc);
-        nimble_port_deinit();
-        return ESP_FAIL;
-    }
-
-    ble_hs_cfg.reset_cb = on_reset;
-    ble_hs_cfg.sync_cb = on_sync;
-    ble_hs_cfg.gatts_register_cb = NULL;
-    ble_hs_cfg.store_status_cb = NULL;
-
-    ESP_LOGI(TAG, "BLE 启动前空闲堆=%u", (unsigned)esp_get_free_heap_size());
-    nimble_port_freertos_init(host_task);
     s_started = true;
+    ESP_LOGI(TAG, "联机已就绪,设备名 %s", name);
     return ESP_OK;
 }
 
-bool c4_link_connected(void)
+esp_err_t c4_link_stop(void)
 {
-    return s_conn_handle != BLE_HS_CONN_HANDLE_NONE;
+    if (!s_started) return ESP_OK;
+
+    const esp_err_t err = bsp_ble_link_stop();
+    s_started = false;
+    s_transport_up = false;
+    s_bsp_state = BSP_BLE_LINK_IDLE;
+    c4_link_proto_init(&s_proto);
+    return err;
 }
 
-#else  // !C4_ENABLE_LINK
-
-esp_err_t c4_link_start(void)
+void c4_link_pump(uint32_t elapsed_ms)
 {
-    return ESP_ERR_NOT_SUPPORTED;
+    if (!s_raw_queue) return;
+
+    // 先处理 BSP 送来的原始事件(状态事件只用于界面展示,权威判据是 ready())。
+    c4_raw_t raw;
+    while (xQueueReceive(s_raw_queue, &raw, 0) == pdTRUE) {
+        if (raw.kind == C4_RAW_RX && s_transport_up) {
+            c4_link_result_t result = c4_link_proto_recv(&s_proto, raw.data, raw.len);
+            deliver(&result);
+        }
+    }
+
+    // 控制器/host 起来但 sync 失败的场合:状态由回调置成 FAILED,这里上报一次。
+    if (s_bsp_state == BSP_BLE_LINK_FAILED && !s_failed_reported) {
+        s_failed_reported = true;
+        push_event(C4_LINK_EVENT_FAILED, 0, 0, 0, 0, 0);
+    }
+
+    sync_transport_state();
+
+    if (!s_transport_up) return;
+
+    // 重传计时。
+    if (elapsed_ms > 0) {
+        c4_link_result_t result = c4_link_proto_tick(&s_proto, elapsed_ms);
+        deliver(&result);
+    }
 }
 
-bool c4_link_connected(void)
+bool c4_link_next_event(c4_link_event_t *out)
 {
-    return false;
+    if (!out || s_ev_tail == s_ev_head) return false;
+    *out = s_events[s_ev_tail];
+    s_ev_tail = (uint8_t)((s_ev_tail + 1) % C4_LINK_EVENT_DEPTH);
+    return true;
 }
 
-#endif  // C4_ENABLE_LINK
+c4_link_state_t c4_link_state(void)
+{
+    if (!s_started) return C4_LINK_STATE_OFF;
+    if (s_bsp_state == BSP_BLE_LINK_FAILED) return C4_LINK_STATE_FAILED;
+    if (s_transport_up) return C4_LINK_STATE_READY;
+    if (s_bsp_state == BSP_BLE_LINK_CONNECTING) return C4_LINK_STATE_CONNECTING;
+    return C4_LINK_STATE_SEARCHING;
+}
+
+bool c4_link_ready(void)
+{
+    return s_transport_up;
+}
+
+uint8_t c4_link_local_first_side(uint8_t game_id)
+{
+    // 主动连接的一方(central)执先手开局,之后逐局交替。game_id 相同 → 两边算出相反结果。
+    const bool even = (game_id % 2u) == 0u;
+    const bool central_first = !even;
+    const bool first = bsp_ble_link_is_central() ? central_first : !central_first;
+    return first ? C4_P1 : C4_P2;
+}
+
+// 发一个协议包并把结果交给链路层(确认帧/事件都从这里出去)。
+static void send_packet(uint8_t type, const uint8_t *payload, uint8_t len)
+{
+    c4_link_result_t result = c4_link_proto_send(&s_proto, type, payload, len);
+    deliver(&result);
+}
+
+void c4_link_send_hello(uint8_t game_id)
+{
+    const uint8_t payload[3] = { C4_LINK_PROTO_VERSION,
+                                c4_link_local_first_side(game_id), game_id };
+    send_packet(C4_LINK_TYPE_HELLO, payload, sizeof(payload));
+}
+
+void c4_link_send_move(uint8_t col, uint8_t ply)
+{
+    const uint8_t payload[2] = { col, ply };
+    send_packet(C4_LINK_TYPE_MOVE, payload, sizeof(payload));
+}
+
+void c4_link_send_rematch(uint8_t game_id)
+{
+    const uint8_t payload[1] = { game_id };
+    send_packet(C4_LINK_TYPE_REMATCH, payload, sizeof(payload));
+}
+
+void c4_link_send_leave(void)
+{
+    send_packet(C4_LINK_TYPE_LEAVE, NULL, 0);
+}

@@ -10,6 +10,7 @@ typedef enum {
     C4_MODE_HUMAN_FIRST = 0,   // 人先手(玩家执琥珀色先下)
     C4_MODE_AI_FIRST,          // 电脑先手(电脑先下,玩家后手)
     C4_MODE_TWO_PLAYER,        // 双人同机轮流(琥珀色先手)
+    C4_MODE_LINK,              // 两台设备蓝牙联机对战
     C4_MODE_COUNT,
 } c4_mode_t;
 
@@ -45,7 +46,7 @@ typedef struct {
 // 默认:人先手 + 中等 + 顶部行预览,光标停在第一行。
 void c4_settings_init(c4_settings_t *settings);
 
-// 双人模式下难度无意义,该行不参与选择也不可改。
+// 双人同机与联机模式下难度无意义,该行不参与选择也不可改。
 bool c4_settings_row_enabled(const c4_settings_t *settings, int row);
 
 // 上下移动选中行(环形,跳过被禁用的行);step 只取 ±1。

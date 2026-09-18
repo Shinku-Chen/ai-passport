@@ -14,10 +14,11 @@
 #include "esp_err.h"
 
 // 截图功能会在 .bss 里静态预留一帧完整画面(320x240 RGB565 = 150KB,无 PSRAM 的板子
-// 上堆里拿不到这么大的连续块,所以必须静态留)。默认开启;想把这 150KB 还给堆时,
-// 用 -DC4_ENABLE_SCREENSHOT=0 构建(此时 c4_screenshot_start() 直接返回不支持)。
+// 上堆里拿不到这么大的连续块,所以必须静态留)。默认关闭:它和联机对战要的 BLE 堆
+// (约 73KB)在无 PSRAM 的 C3 上没法共存。出封面/调试时用
+// -DC4_ENABLE_SCREENSHOT=ON 单独构建(此时联机会因堆不够而启动失败,属预期)。
 #ifndef C4_ENABLE_SCREENSHOT
-#define C4_ENABLE_SCREENSHOT 1
+#define C4_ENABLE_SCREENSHOT 0
 #endif
 
 // 启动截图服务(装 USB-serial-JTAG 驱动 + 读命令任务)。失败只返回错误,游戏照常运行。

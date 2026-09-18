@@ -15,13 +15,13 @@
 #include "bsp_i2c.h"
 #include "bsp_pins.h"
 #include "c4_app.h"
-#include "c4_link.h"
 #include "c4_screenshot.h"
 #include "c4_sound.h"
 #include "c4_ui.h"
 #include "esp_log.h"
 #include "esp_heap_caps.h"
 #include "esp_sleep.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
@@ -39,11 +39,19 @@ static void input_task(void *arg)
     (void)arg;
     c4_event_t event;
 
+    // 每轮都按真实经过的毫秒推进联机计时:事件密集时队列会连续非空,
+    // 只靠“等队列超时”会把重传计时饿掉。
+    int64_t last_us = esp_timer_get_time();
+
     for (;;) {
-        if (xQueueReceive(s_input_queue, &event,
-                          pdMS_TO_TICKS(C4_APP_IDLE_TICK_MS)) == pdTRUE) {
-            c4_app_handle_event(&event);
-        } else if (c4_app_idle_tick(C4_APP_IDLE_TICK_MS)) {
+        const bool got = xQueueReceive(s_input_queue, &event,
+                                       pdMS_TO_TICKS(C4_APP_TICK_MS)) == pdTRUE;
+        const int64_t now_us = esp_timer_get_time();
+        const uint32_t elapsed_ms = (uint32_t)((now_us - last_us) / 1000);
+        last_us = now_us;
+
+        if (got) c4_app_handle_event(&event);
+        if (c4_app_idle_tick(elapsed_ms)) {
             c4_app_enter_sleep();   // 正常路径不返回
         }
     }
@@ -131,16 +139,13 @@ void app_main(void)
         ESP_LOGW(TAG, "音效不可用,静音运行");
     }
 
-#if C4_ENABLE_LINK
-    // 联机验证构建:BLE 外设启动失败只影响联机,不影响单机玩法。
-    if (c4_link_start() != ESP_OK) {
-        ESP_LOGW(TAG, "BLE 联机模块启动失败");
-    }
-#endif
-
-    // 串口截图也是软依赖:发布到社区时用它抓设备真实画面做封面。
+    // 串口截图是可选开发工具:默认构建里根本没编进来,所以只在编入时才当作故障报。
     if (c4_screenshot_start() != ESP_OK) {
+#if C4_ENABLE_SCREENSHOT
         ESP_LOGW(TAG, "串口截图不可用");
+#else
+        ESP_LOGD(TAG, "串口截图未编入本固件(开发构建加 -DC4_ENABLE_SCREENSHOT=ON)");
+#endif
     }
 
     // 控制器就绪后再载入标题屏;最后才开闸放按键事件,避免处理到一半的初始状态。

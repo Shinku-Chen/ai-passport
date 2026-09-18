@@ -35,10 +35,13 @@ void c4_app_init(void);
 // 处理一个事件;由输入任务调用(非 LVGL 任务)。任何事件都会重新计时空闲。
 void c4_app_handle_event(const c4_event_t *event);
 
-// 输入任务每次等队列超时调用一次,传入本次等待的实际毫秒数。
-// 返回 true 表示空闲已超时,调用方应立刻调用 c4_app_enter_sleep()。
-// 空闲阈值:标题屏 60s,对局中 180s(避免“想太久”把棋局睡没了)。
-#define C4_APP_IDLE_TICK_MS 1000u
+// 输入任务的循环周期:无论收到事件还是等队列超时,每轮都会调用一次
+// c4_app_idle_tick()。联机的重传计时依赖这个稳定的推进节奏,不要随意调大。
+#define C4_APP_TICK_MS 100u
+
+// 输入任务每轮调用一次,传入距离上次调用的实际毫秒数;同时驱动联机收包、
+// 重传与联机屏刷新。返回 true 表示空闲已超时,调用方应立刻调用 c4_app_enter_sleep()。
+// 空闲阈值:设置屏/联机屏 60s,对局中 180s,联机对阵 600s(睡着等于断线)。
 bool c4_app_idle_tick(uint32_t elapsed_ms);
 
 // 空闲休眠:停外设 → 熄屏 → deep sleep(任意按键唤醒,唤醒即重启应用)。

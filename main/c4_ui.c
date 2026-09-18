@@ -45,6 +45,10 @@
 
 static lv_obj_t *s_menu_scr;
 static lv_obj_t *s_board_scr;
+static lv_obj_t *s_link_scr;
+static lv_obj_t *s_link_status;
+static lv_obj_t *s_link_hint;
+static lv_obj_t *s_bat_link;
 static lv_obj_t *s_board;
 static lv_obj_t *s_status;
 static lv_obj_t *s_bat_menu;
@@ -58,6 +62,9 @@ static lv_timer_t *s_bat_timer;
 static c4_layout_t s_layout;
 static const c4_game_t *s_game;   // 控制器持有,界面只读
 static int s_cursor;
+
+// 联机屏的建屏函数定义在后面,这里先声明(它依赖上面的配色常量)。
+static void build_link_screen(void);
 static bool s_cursor_on;
 static c4_preview_t s_preview;
 
@@ -261,7 +268,7 @@ static void battery_tick(lv_timer_t *timer)
         if (soc < 20) color = C4_UI_BAT_LOW;
     }
 
-    lv_obj_t *labels[2] = { s_bat_menu, s_bat_board };
+    lv_obj_t *labels[3] = { s_bat_menu, s_bat_board, s_bat_link };
     for (size_t i = 0; i < sizeof(labels) / sizeof(labels[0]); i++) {
         if (!labels[i]) continue;
         lv_label_set_text(labels[i], text);
@@ -378,6 +385,7 @@ void c4_ui_build(void)
 
     build_menu_screen();
     build_board_screen();
+    build_link_screen();
     lv_screen_load(s_menu_scr);
 }
 
@@ -398,6 +406,74 @@ void c4_ui_set_menu_hint(const char *text)
     set_text_color(s_menu_hint, C4_UI_TEXT);
 }
 
+// ——— 联机屏 ———————————————————————————————————————————————
+
+// 这台屏是联机专用:上方用两颗棋子 + 中间连线表达“两台设备对接”,
+// 下面是状态大字与操作提示。颜色沿用棋盘屏的棋子色,保持同一套语言。
+static void build_link_screen(void)
+{
+    s_link_scr = make_screen();
+
+    lv_obj_t *title = make_label(s_link_scr, &lv_font_montserrat_20, C4_UI_P1);
+    lv_label_set_text(title, "LINK PLAY");
+    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 6);
+
+    s_bat_link = make_label(s_link_scr, &lv_font_montserrat_14, C4_UI_BAT_OK);
+    lv_label_set_text(s_bat_link, "--");
+    lv_obj_align(s_bat_link, LV_ALIGN_TOP_RIGHT, -16, 8);
+
+    // 左侧棋子(琥珀) + 右侧棋子(珊瑚) + 中间连线。
+    lv_obj_t *left = lv_obj_create(s_link_scr);
+    style_plain(left);
+    lv_obj_set_style_radius(left, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_opa(left, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_color(left, lv_color_hex(C4_UI_P1), 0);
+    lv_obj_set_size(left, 44, 44);
+    lv_obj_align(left, LV_ALIGN_TOP_MID, -64, 44);
+
+    lv_obj_t *right = lv_obj_create(s_link_scr);
+    style_plain(right);
+    lv_obj_set_style_radius(right, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_opa(right, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_color(right, lv_color_hex(C4_UI_P2), 0);
+    lv_obj_set_size(right, 44, 44);
+    lv_obj_align(right, LV_ALIGN_TOP_MID, 64, 44);
+
+    lv_obj_t *wire = lv_obj_create(s_link_scr);
+    style_plain(wire);
+    lv_obj_set_style_radius(wire, 2, 0);
+    lv_obj_set_style_bg_opa(wire, LV_OPA_60, 0);
+    lv_obj_set_style_bg_color(wire, lv_color_hex(C4_UI_MUTED), 0);
+    lv_obj_set_size(wire, 84, 4);
+    lv_obj_align(wire, LV_ALIGN_TOP_MID, 0, 64);
+
+    s_link_status = make_label(s_link_scr, &lv_font_montserrat_20, C4_UI_TEXT);
+    lv_label_set_text(s_link_status, "STARTING...");
+    lv_obj_align(s_link_status, LV_ALIGN_TOP_MID, 0, 108);
+
+    s_link_hint = make_label(s_link_scr, &lv_font_montserrat_14, C4_UI_MUTED);
+    lv_obj_set_width(s_link_hint, 288);
+    lv_label_set_long_mode(s_link_hint, LV_LABEL_LONG_WRAP);
+    lv_label_set_text(s_link_hint, "BOTH DEVICES: MODE = LINK PLAY");
+    lv_obj_align(s_link_hint, LV_ALIGN_TOP_MID, 0, 146);
+}
+
+void c4_ui_show_link(void)
+{
+    if (s_link_scr) lv_screen_load(s_link_scr);
+}
+
+void c4_ui_render_link(const char *status, uint32_t status_color, const char *hint)
+{
+    if (s_link_status) {
+        lv_label_set_text(s_link_status, status ? status : "");
+        set_text_color(s_link_status, status_color);
+    }
+    if (s_link_hint) {
+        lv_label_set_text(s_link_hint, hint ? hint : "");
+    }
+}
+
 void c4_ui_show_sleeping(void)
 {
     if (s_menu_hint) {
@@ -407,6 +483,13 @@ void c4_ui_show_sleeping(void)
     if (s_status) {
         lv_label_set_text(s_status, "SLEEPING");
         set_text_color(s_status, C4_UI_MUTED);
+    }
+    if (s_link_status) {
+        lv_label_set_text(s_link_status, "SLEEPING");
+        set_text_color(s_link_status, C4_UI_MUTED);
+    }
+    if (s_link_hint) {
+        lv_label_set_text(s_link_hint, "PRESS ANY KEY TO WAKE");
     }
 }
 

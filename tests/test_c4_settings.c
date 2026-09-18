@@ -106,6 +106,15 @@ static void test_two_player_skips_level(void)
     assert(c4_settings_row_enabled(&s, C4_MENU_ROW_START));
     assert(strcmp(c4_settings_row_value(&s, C4_MENU_ROW_LEVEL), "-") == 0);
 
+    // 联机模式同样没有难度可言。
+    s.mode = C4_MODE_LINK;
+    assert(!c4_settings_row_enabled(&s, C4_MENU_ROW_LEVEL));
+    assert(c4_settings_row_enabled(&s, C4_MENU_ROW_MODE));
+    assert(c4_settings_row_enabled(&s, C4_MENU_ROW_START));
+    assert(strcmp(c4_settings_row_value(&s, C4_MENU_ROW_LEVEL), "-") == 0);
+    assert(strcmp(c4_settings_row_value(&s, C4_MENU_ROW_MODE), "LINK PLAY") == 0);
+
+    s.mode = C4_MODE_TWO_PLAYER;
     // 从 MODE 往下走应直接跳到 PREVIEW。
     s.row = C4_MENU_ROW_MODE;
     c4_settings_move(&s, 1);
@@ -129,7 +138,8 @@ static void test_two_player_skips_level(void)
 static void test_rows_are_all_reachable(void)
 {
     // 从任意一条取值出发,上下各走一圈都能回到自己,且不会卡死。
-    const uint8_t modes[] = { C4_MODE_HUMAN_FIRST, C4_MODE_AI_FIRST, C4_MODE_TWO_PLAYER };
+    const uint8_t modes[] = { C4_MODE_HUMAN_FIRST, C4_MODE_AI_FIRST, C4_MODE_TWO_PLAYER,
+                              C4_MODE_LINK };
 
     for (size_t m = 0; m < sizeof(modes) / sizeof(modes[0]); m++) {
         c4_settings_t s;
