@@ -3,8 +3,10 @@
 
 #include <stddef.h>
 
+// 前两项只差先后手:标签直接把“谁先下”写在名字里,避免歧义。
 static const char *const MODE_VALUES[C4_MODE_COUNT] = {
-    [C4_MODE_AI] = "HUMAN vs AI",
+    [C4_MODE_HUMAN_FIRST] = "HUMAN vs AI",
+    [C4_MODE_AI_FIRST] = "AI vs HUMAN",
     [C4_MODE_TWO_PLAYER] = "TWO PLAYERS",
 };
 
@@ -38,7 +40,7 @@ void c4_settings_init(c4_settings_t *settings)
 {
     if (!settings) return;
 
-    settings->mode = C4_MODE_AI;
+    settings->mode = C4_MODE_HUMAN_FIRST;
     settings->level = C4_LEVEL_MEDIUM;
     settings->preview = C4_PREVIEW_TOP;
     settings->row = C4_MENU_ROW_MODE;

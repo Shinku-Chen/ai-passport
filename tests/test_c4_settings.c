@@ -11,7 +11,7 @@ static void test_defaults(void)
     memset(&s, 0, sizeof(s));
     c4_settings_init(&s);
 
-    assert(s.mode == C4_MODE_AI);
+    assert(s.mode == C4_MODE_HUMAN_FIRST);
     assert(s.level == C4_LEVEL_MEDIUM);
     assert(s.preview == C4_PREVIEW_TOP);
     assert(s.row == C4_MENU_ROW_MODE);
@@ -57,11 +57,13 @@ static void test_cycle_values(void)
     c4_settings_t s;
     c4_settings_init(&s);
 
-    // MODE: 人机 -> 双人 -> 人机
+    // MODE: 人先手 -> 电脑先手 -> 双人 -> 人先手
+    c4_settings_cycle(&s);
+    assert(s.mode == C4_MODE_AI_FIRST);
     c4_settings_cycle(&s);
     assert(s.mode == C4_MODE_TWO_PLAYER);
     c4_settings_cycle(&s);
-    assert(s.mode == C4_MODE_AI);
+    assert(s.mode == C4_MODE_HUMAN_FIRST);
 
     // LEVEL: 中 -> 高 -> 低 -> 中
     s.row = C4_MENU_ROW_LEVEL;
@@ -91,6 +93,11 @@ static void test_two_player_skips_level(void)
 {
     c4_settings_t s;
     c4_settings_init(&s);
+
+    // 电脑先手模式仍需要难度,不能跟着双人模式一起被禁用。
+    s.mode = C4_MODE_AI_FIRST;
+    assert(c4_settings_row_enabled(&s, C4_MENU_ROW_LEVEL));
+
     s.mode = C4_MODE_TWO_PLAYER;
 
     assert(!c4_settings_row_enabled(&s, C4_MENU_ROW_LEVEL));
@@ -122,7 +129,7 @@ static void test_two_player_skips_level(void)
 static void test_rows_are_all_reachable(void)
 {
     // 从任意一条取值出发,上下各走一圈都能回到自己,且不会卡死。
-    const uint8_t modes[] = { C4_MODE_AI, C4_MODE_TWO_PLAYER };
+    const uint8_t modes[] = { C4_MODE_HUMAN_FIRST, C4_MODE_AI_FIRST, C4_MODE_TWO_PLAYER };
 
     for (size_t m = 0; m < sizeof(modes) / sizeof(modes[0]); m++) {
         c4_settings_t s;

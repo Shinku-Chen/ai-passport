@@ -199,13 +199,21 @@ static void render_board(void)
 
 static void start_match(void)
 {
-    c4_reset(&s_game, C4_P1);   // 先手固定:人机模式玩家先手,双人模式琥珀色先手
+    // 先手由模式决定:AI vs HUMAN 让电脑先下;其余模式琥珀色(玩家)先下。
+    const bool ai_first = (s_settings.mode == C4_MODE_AI_FIRST) && s_ai_ok;
+    c4_reset(&s_game, ai_first ? C4_P2 : C4_P1);
+
     s_cursor = C4_COLS / 2;
     s_thinking = false;
     s_generation++;
     s_state = C4_STATE_PLAY;
     c4_sound_play(C4_SOUND_START);
     c4_ui_show_board();
+
+    if (ai_first) {
+        s_thinking = true;      // 开局就点亮思考状态并请电脑走一步
+        s_ai_pending = true;
+    }
     render_board();
 }
 

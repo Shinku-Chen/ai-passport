@@ -7,8 +7,9 @@
 #include <stdint.h>
 
 typedef enum {
-    C4_MODE_AI = 0,        // 人机对战(玩家先手)
-    C4_MODE_TWO_PLAYER,    // 双人同机轮流
+    C4_MODE_HUMAN_FIRST = 0,   // 人先手(玩家执琥珀色先下)
+    C4_MODE_AI_FIRST,          // 电脑先手(电脑先下,玩家后手)
+    C4_MODE_TWO_PLAYER,        // 双人同机轮流(琥珀色先手)
     C4_MODE_COUNT,
 } c4_mode_t;
 
@@ -41,7 +42,7 @@ typedef struct {
     uint8_t row;       // 当前选中的 c4_menu_row_t
 } c4_settings_t;
 
-// 默认:人机对战 + 中等 + 落点预览,光标停在第一行。
+// 默认:人先手 + 中等 + 顶部行预览,光标停在第一行。
 void c4_settings_init(c4_settings_t *settings);
 
 // 双人模式下难度无意义,该行不参与选择也不可改。
