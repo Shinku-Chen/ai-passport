@@ -62,11 +62,12 @@
 First public release of the Connect Four application.
 
 - New application: **Connect Four** boots straight into a landscape (320 × 240)
-  game on a 10 × 7 board (70 positions). Two modes — human vs AI (EASY / MEDIUM /
-  HARD) and two players on one device — plus a selectable drop preview (the real
-  landing spot or only the top row), a settings screen for mode/difficulty/preview,
-  synthesized drop/win/draw/column sounds, and idle deep sleep after 60 s on the
-  settings screen or 180 s in a match (any key wakes the device).
+  game on a 10 × 7 board (70 positions). Three modes — human first, computer first
+  (both with EASY / MEDIUM / HARD difficulty) and two players on one device — plus
+  a selectable drop preview (the real landing spot or only the top row), a settings
+  screen for mode/difficulty/preview, synthesized drop/win/draw/column sounds, and
+  idle deep sleep after 60 s on the settings screen or 180 s in a match (any key
+  wakes the device).
 - AI opponent: iterative-deepening alpha-beta limited by a wall-clock search
   budget (about 0.5 s per move on this board), with a deliberate blunder rate at
   the lower difficulties and a periodic yield so the search never starves the idle

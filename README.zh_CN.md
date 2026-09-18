@@ -61,12 +61,12 @@ ESP32-C3、240×320 彩屏、三键操作、8 MB Flash、无 PSRAM）的开发�
 
 ### 四子棋（Connect Four）
 
-AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对战（低 / 中 / 高三档难度），也可双人同机轮下。最新版本：**v1.6.0-connect-four**。
+AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对战（低 / 中 / 高三档难度，先手可选玩家或电脑），也可双人同机轮下。最新版本：**v1.6.0-connect-four**。
 
 - 分支：[`feature/connect-four`](https://github.com/Shinku-Chen/ai-passport/tree/feature/connect-four)
 - 发布：[v1.6.0-connect-four](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.6.0-connect-four)
 
-**操作：** 上 / 下移动落子列（横屏持握时「上」在右手边），**确定**落子，**长按确定**回设置屏。设置屏上用上 / 下选行、确定切换取值（模式：`人机对战` / `双人对战`，难度：`低` / `中` / `高`，预览：`落点` / `顶部行`），选到 `START` 按确定开局。
+**操作：** 上 / 下移动落子列（横屏持握时「上」在右手边），**确定**落子，**长按确定**回设置屏。设置屏上用上 / 下选行、确定切换取值（模式：`HUMAN vs AI` / `AI vs HUMAN` / `TWO PLAYERS`，难度：`低` / `中` / `高`，预览：`落点` / `顶部行`），选到 `START` 按确定开局；两个电脑模式只差先后手。
 
 **亮点：**
 

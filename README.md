@@ -73,8 +73,8 @@ reveals the answer; learned marks persist to NVS. Latest: **v1.0.0**.
 ### Connect Four
 
 A landscape Connect Four for the AI Passport: a **10 × 7 board**, human versus
-computer with three difficulty levels, or two players on one device. Latest:
-**v1.6.0-connect-four**.
+computer with three difficulty levels (either side can move first), or two players
+on one device. Latest: **v1.6.0-connect-four**.
 
 - Branch: [`feature/connect-four`](https://github.com/Shinku-Chen/ai-passport/tree/feature/connect-four)
 - Release: [v1.6.0-connect-four](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.6.0-connect-four)
@@ -82,8 +82,9 @@ computer with three difficulty levels, or two players on one device. Latest:
 **Controls:** UP / DOWN move the column cursor (held in landscape, UP is the
 right-hand key), **OK** drops a disc, **OK (hold)** returns to the settings
 screen. On the settings screen UP / DOWN picks a row and OK changes it (mode:
-`HUMAN vs AI` / `TWO PLAYERS`, level: `EASY` / `MEDIUM` / `HARD`, preview:
-`LANDING` / `TOP ROW`); selecting `START` begins a match.
+`HUMAN vs AI` / `AI vs HUMAN` / `TWO PLAYERS`, level: `EASY` / `MEDIUM` / `HARD`,
+preview: `LANDING` / `TOP ROW`); selecting `START` begins a match. The two
+computer modes differ only in who moves first.
 
 **Highlights:**
 
