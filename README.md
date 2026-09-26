@@ -111,11 +111,11 @@ refactored port of [`liuyuze61/ATRI-miband`](https://github.com/liuyuze61/ATRI-m
 which adds the full-body `src/common/character/*` sprites the original port
 lacked. The originals are touch apps for Xiaomi's Vela OS; this branch
 re-implements the reading engine in C on LVGL and drives it with the three keys.
-Status: **released** — tag `v1.0.1-atri-reader`, submitted to the AI Passport community
-market as `my-dear-moments` (under review).
+Status: **released** — tag `v1.0.2-atri-reader`, submitted to the AI Passport community
+market as `my-dear-moments-2` (under review).
 
 - Branch: [`feature/atri-reader`](https://github.com/Shinku-Chen/ai-passport/tree/feature/atri-reader)
-- Release: [`v1.0.1-atri-reader`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.1-atri-reader) — merged image `FoloToy-AI-Passport-full.bin`, 5,134,544 bytes
+- Release: [`v1.0.2-atri-reader`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.2-atri-reader) — merged image `FoloToy-AI-Passport-full.bin`, 5,134,544 bytes
 - Upstream work: [`fywmjj/better-mb9p-ATRI`](https://github.com/fywmjj/better-mb9p-ATRI) and [`liuyuze61/ATRI-miband`](https://github.com/liuyuze61/ATRI-miband) — the fan ports this branch derives from. Neither repository declares a licence; their script, backgrounds and sprites are committed with the branch and packed into the firmware, with the upstream projects credited as the source.
 - Asset toolchain: [`tools/atri_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/atri-reader/tools/atri_pack.py) (script and images into `main/atri_data/atri_pack.bin`, 3.83 MB) and [`tools/atri_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/atri-reader/tools/atri_font.py) (16 px Chinese subset, 2,771 code points)
 
