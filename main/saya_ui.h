@@ -44,6 +44,7 @@ typedef struct {
     int selected;
     int row_h;
     int top;
+    const lv_font_t *font;   // 懒创建的行要用它,由 list_apply_font 维护
 } saya_list_t;
 
 typedef struct {

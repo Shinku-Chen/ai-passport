@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
-"""生成 AI Passport《沙耶之歌》阅读器的中文字体子集。
+"""生成 AI Passport《沙耶之歌》阅读器的中文字体子集(LVGL 9 位图字体)。
+
+为什么不用 lv_font_conv:这个工具最后一版是 1.5.3(2021),在 Node v24 下写出的
+字形位图是坏的 —— 同一个 OTF、同一套参数,`--no-compress` 与
+`--no-compress --no-prefilter` 产出的字节完全相同,按 LVGL 的 PLAIN 4bpp 读法解码
+全是噪点(LVGL 自带的 Montserrat 字体用同一解码器完全正常)。表现到设备上就是
+"文字全部乱码"。这里改成直接用 Pillow(FreeType)栅格化 + 自己写 LVGL 字体格式,
+不依赖 Node,并且生成后会把写出的 C 文件重新解析回来与栅格化结果逐像素比对。
 
 字符集来自两处,保证界面文字与剧本正文都不缺字:
   1. 资源包(main/saya_data/saya_pack.bin)里的全部剧本文字与名字;
   2. main/ 下所有 .c/.h 里出现的非 ASCII 字面量(界面文案)。
 
 用法:
-  # 生成(需要 lv_font_conv 与一个 OFL 中文字体)
   python tools/saya_font.py --font <NotoSansSC-Regular.otf> \\
-      --lv-font-conv <path/to/lv_font_conv.js> --pack main/saya_data/saya_pack.bin \\
-      --out-dir assets/fonts
-
-  # 自检(只用仓库内文件,无外部依赖;静态门禁会跑这一项)
+      --pack main/saya_data/saya_pack.bin --out-dir assets/fonts     # 生成 + 校验
   python tools/saya_font.py --check --pack main/saya_data/saya_pack.bin \\
-      --out-dir assets/fonts
+      --out-dir assets/fonts                                         # 只做覆盖/结构自检
 
-字体来源:Noto Sans SC(OFL-1.1),下载地址与版本记录在 assets/README.md。
-生成物(assets/fonts/saya_cjk_*.c 与 saya_cjk_symbols.txt)提交进仓库,
-源字体文件不上传(体积大),重新生成时自行准备。
+生成物(assets/fonts/saya_cjk_*.c 与 saya_cjk_symbols.txt)提交进仓库;源字体不上传。
 """
 
 from __future__ import annotations
@@ -27,10 +28,19 @@ import io
 import os
 import re
 import struct
-import subprocess
 import sys
 
-SIZES = ((16, 4), (20, 4))   # (像素, bpp)
+try:
+    from PIL import Image, ImageDraw, ImageFont
+except ImportError:  # pragma: no cover - tool dependency
+    sys.exit("需要 Pillow: python -m pip install pillow")
+
+SIZES = (16, 20)      # 生成的像素字号
+BPP = 4
+# 行高固定为 字号+4:界面按"16px 4 行 / 20px 3 行"排版(见 main/saya_app.c 的 layout_for),
+# 若用 Noto Sans SC 的自然行高(16px 字号约 24px),一屏就放不下 4 行。
+# 多出来的行距在自然行框里上下各裁一半,基线随之平移,字形本身不受影响。
+EXTRA_LEADING = 4
 ASCII_RANGES = ((0x20, 0x7E),)
 
 
@@ -50,29 +60,24 @@ def pack_chars(pack_path: str) -> set:
     for i in range(section_count):
         sec_type, off, count, size = struct.unpack_from("<IIII", blob, 20 + 16 * i)
         sections[sec_type] = (off, count, size)
-
     text_off, _, text_size = sections[0]
-    text = blob[text_off : text_off + text_size]
-    chars = set(text.decode("utf-8"))
-
-    # 名字表里的字符串也在 text 段里,已经被上面覆盖。
-    return {c for c in chars if c not in "\r\n\t"}
+    text = blob[text_off : text_off + text_size].decode("utf-8")
+    return {c for c in text if c not in "\r\n\t"}
 
 
 def source_chars(root: str) -> set:
     chars = set()
     for dirpath, _dirnames, filenames in os.walk(root):
-        if os.path.basename(dirpath) in { "managed_components", "build" }:
+        if os.path.basename(dirpath) in {"managed_components", "build"}:
             continue
         for name in filenames:
             if not name.endswith((".c", ".h", ".hpp", ".cpp")):
                 continue
-            path = os.path.join(dirpath, name)
             try:
-                data = open(path, "rb").read().decode("utf-8")
+                data = open(os.path.join(dirpath, name), "rb").read().decode("utf-8")
             except (OSError, UnicodeDecodeError):
                 continue
-            # 只取字符串/字符字面量里的非 ASCII 字符,避免把注释里的说明也算进去。
+            # 只取字符串字面量里的非 ASCII 字符,避免把注释里的说明也算进去。
             for literal in re.findall(r'"(?:[^"\\]|\\.)*"', data):
                 chars |= {c for c in literal if ord(c) > 0x7F}
     return chars
@@ -80,128 +85,349 @@ def source_chars(root: str) -> set:
 
 def required_chars(pack_path: str, source_root: str) -> set:
     chars = pack_chars(pack_path) | source_chars(source_root)
-    chars.discard("\u3000")   # 全角空格用不到,减少一个字形
+    chars.discard("\u3000")
     for start, end in ASCII_RANGES:
         chars |= {chr(c) for c in range(start, end + 1)}
     return {c for c in chars if c not in "\r\n\t"}
 
 
-# ---------------------------------------------------------------- 生成物解析
-def parse_font_cmap(path: str) -> set:
-    """解析 lv_font_conv 生成的 lvgl 字体 C 文件,取出它覆盖的码位集合。"""
+# ---------------------------------------------------------------- 字形栅格化
+def rasterize(otf_path: str, size: int, codepoints: list) -> dict:
+    """返回 {码位: (adv_w, box_w, box_h, ofs_x, ofs_y, 4bpp 像素列表)}。
+
+    ofs_y 的约定来自 LVGL 的绘制公式:
+      letter_y = line_top + (line_height - base_line) - box_h - ofs_y
+    即 ofs_y = baseline - 字形盒底(基线以下的部分为负)。
+    """
+    font = ImageFont.truetype(otf_path, size, layout_engine=ImageFont.Layout.BASIC)
+    ascent, descent = font.getmetrics()
+    pad = 4                       # 画布留白:原点固定在 (pad, pad) = 行顶(上文线)
+    span = size * 2 + pad * 2
+    glyphs = {}
+    for cp in codepoints:
+        ch = chr(cp)
+        adv_w = int(round(font.getlength(ch) * 16))
+        canvas = Image.new("L", (span, span), 0)
+        ImageDraw.Draw(canvas).text((pad, pad), ch, font=font, fill=255)
+        bbox = canvas.getbbox()
+        if bbox is None:
+            glyphs[cp] = (adv_w, 0, 0, 0, 0, [])
+            continue
+        x0, y0, x1, y1 = bbox
+        ink = canvas.crop(bbox)
+        bw, bh = ink.size
+        px = ink.load()
+        nibbles = []
+        for y in range(bh):
+            for x in range(bw):
+                v = px[x, y]
+                nibbles.append(min(15, (v * 15 + 127) // 255))
+        ofs_x = x0 - pad
+        ofs_y = ascent - (y1 - pad)
+        glyphs[cp] = (adv_w, bw, bh, ofs_x, ofs_y, nibbles)
+    return glyphs
+
+
+def pack_nibbles(nibbles: list) -> bytes:
+    """4bpp 连续打包:高半字节在前,字形之间按字节对齐(LVGL 的 PLAIN 读法)。"""
+    out = bytearray()
+    for i in range(0, len(nibbles), 2):
+        hi = nibbles[i]
+        lo = nibbles[i + 1] if i + 1 < len(nibbles) else 0
+        out.append(((hi & 0xF) << 4) | (lo & 0xF))
+    return bytes(out)
+
+
+# ---------------------------------------------------------------- 生成 C 文件
+def emit_font(name: str, size: int, codepoints: list, glyphs: dict, line_height: int,
+              base_line: int) -> str:
+    cmap_num = 1
+    out = io.StringIO()
+    w = out.write
+    w("/*******************************************************************************\n")
+    w(f" * Size: {size} px\n")
+    w(f" * Bpp: {BPP}\n")
+    w(" * 由 tools/saya_font.py 生成(自研生成器,不依赖 lv_font_conv);格式:\n")
+    w(" *   - 4bpp,连续 nibble 打包,每个字形按字节对齐\n")
+    w(" *   - cmap 用一条 FORMAT0_FULL 稀疏表覆盖全部码位\n")
+    w(" * 生成时会回读本文件并与 FreeType 栅格化结果逐像素比对。\n")
+    w(" *****************************************************************************/\n\n")
+    w('#include "lvgl.h"\n\n')
+    w(f"#ifndef {name.upper()}\n#define {name.upper()} 1\n\n")
+    w("/*-----------------\n *    BITMAPS\n *----------------*/\n\n")
+    w("static LV_ATTRIBUTE_LARGE_CONST const uint8_t glyph_bitmap[] = {\n")
+
+    index = 0
+    dsc_lines = []
+    for i, cp in enumerate(codepoints):
+        adv_w, bw, bh, ofs_x, ofs_y, nibbles = glyphs[cp]
+        gid = i + 1
+        if bw == 0 or bh == 0:
+            dsc_lines.append((gid, index, adv_w, 0, 0, ofs_x, ofs_y))
+            continue
+        data = pack_nibbles(nibbles)
+        dsc_lines.append((gid, index, adv_w, bw, bh, ofs_x, ofs_y))
+        w(f"    /* U+{cp:04X} */\n")
+        for j in range(0, len(data), 12):
+            chunk = data[j : j + 12]
+            w("    " + ", ".join(f"0x{b:02x}" for b in chunk) + ",\n")
+        index += len(data)
+    w("};\n\n")
+
+    w("/*-----------------\n *  GLYPH DESCRIPTION\n *----------------*/\n\n")
+    w("static const lv_font_fmt_txt_glyph_dsc_t glyph_dsc[] = {\n")
+    w("    {.bitmap_index = 0, .adv_w = 0, .box_w = 0, .box_h = 0, .ofs_x = 0, .ofs_y = 0}"
+      " /* id = 0 reserved */,\n")
+    for gid, bi, adv_w, bw, bh, ofs_x, ofs_y in dsc_lines:
+        w(f"    {{.bitmap_index = {bi}, .adv_w = {adv_w}, .box_w = {bw}, .box_h = {bh},"
+          f" .ofs_x = {ofs_x}, .ofs_y = {ofs_y}}},\n")
+    w("};\n\n")
+
+    range_start = codepoints[0]
+    range_end = codepoints[-1]
+    w("/*-----------------\n *  CHARACTER MAPPING\n *----------------*/\n\n")
+    w(f"static const uint16_t unicode_list_0[] = {{\n    ")
+    for i, cp in enumerate(codepoints):
+        w(f"0x{cp - range_start:x}, ")
+        if (i + 1) % 8 == 0 and i + 1 < len(codepoints):
+            w("\n    ")
+    w("\n};\n\n")
+    w("static const lv_font_fmt_txt_cmap_t cmaps[] = {\n")
+    w("    {\n")
+    w(f"        .range_start = {range_start}, .range_length = {range_end - range_start + 1},\n")
+    w(f"        .glyph_id_start = 1,\n")
+    w("        .unicode_list = unicode_list_0, .glyph_id_ofs_list = NULL,\n")
+    w(f"        .list_length = {len(codepoints)},"
+      " .type = LV_FONT_FMT_TXT_CMAP_FORMAT0_FULL\n")
+    w("    }\n};\n\n")
+
+    w("/*-----------------\n *  ALL CUSTOM DATA\n *----------------*/\n\n")
+    w("static const lv_font_fmt_txt_dsc_t font_dsc = {\n")
+    w("    .glyph_bitmap = glyph_bitmap,\n")
+    w("    .glyph_dsc = glyph_dsc,\n")
+    w("    .cmaps = cmaps,\n")
+    w("    .kern_dsc = NULL,\n")
+    w("    .kern_scale = 0,\n")
+    w(f"    .cmap_num = {cmap_num},\n")
+    w(f"    .bpp = {BPP},\n")
+    w("    .kern_classes = 0,\n")
+    w("    .bitmap_format = 0,   /* LV_FONT_FMT_TXT_PLAIN:位图未压缩、未做行 XOR */\n")
+    w("};\n\n")
+
+    w("/*-----------------\n *  PUBLIC FONT\n *----------------*/\n\n")
+    w("const lv_font_t " + name + " = {\n")
+    w("    .get_glyph_dsc = lv_font_get_glyph_dsc_fmt_txt,\n")
+    w("    .get_glyph_bitmap = lv_font_get_bitmap_fmt_txt,\n")
+    w(f"    .line_height = {line_height},\n")
+    w(f"    .base_line = {base_line},\n")
+    w("#if LV_VERSION_CHECK(9, 6, 0)\n")
+    w(f"    .cap_height = {size},\n")
+    w(f"    .x_height = {size * 9 // 16},\n")
+    w("#endif\n")
+    w("    .subpx = LV_FONT_SUBPX_NONE,\n")
+    w("    .underline_position = -1,\n")
+    w("    .underline_thickness = 1,\n")
+    w("#if LV_VERSION_CHECK(9, 3, 0)\n")
+    w("    .static_bitmap = 1,\n")
+    w("#endif\n")
+    w("    .dsc = &font_dsc,\n")
+    w("    .fallback = NULL,\n")
+    w("    .user_data = NULL,\n")
+    w("};\n\n")
+    w(f"#endif /* {name.upper()} */\n")
+    return out.getvalue()
+
+
+# ---------------------------------------------------------------- 回读校验
+def parse_font(path: str) -> dict:
+    """把写出的 C 文件解析回结构与位图,用于逐像素校验。"""
     text = open(path, "r", encoding="utf-8").read()
-    covered = set()
+    bitmap_text = re.search(r"const uint8_t glyph_bitmap\[\]\s*=\s*\{(.*?)\n\};", text, re.S)
+    if not bitmap_text:
+        raise SystemExit(f"{path}: 找不到 glyph_bitmap")
+    data = bytes(int(x, 16) for x in re.findall(r"0x([0-9a-fA-F]{2})", bitmap_text.group(1)))
+    dsc = [
+        tuple(int(x) for x in m)
+        for m in re.findall(
+            r"\{\s*\.bitmap_index\s*=\s*(\d+),\s*\.adv_w\s*=\s*(\d+),\s*\.box_w\s*=\s*(\d+),"
+            r"\s*\.box_h\s*=\s*(\d+),\s*\.ofs_x\s*=\s*(-?\d+),\s*\.ofs_y\s*=\s*(-?\d+)\s*\}",
+            text,
+        )
+    ]
+    cmap = {}
+    entry = re.search(
+        r"\{\s*\.range_start\s*=\s*(\d+),\s*\.range_length\s*=\s*(\d+),.*?"
+        r"\.list_length\s*=\s*(\d+),\s*\.type\s*=\s*(\w+)",
+        text,
+        re.S,
+    )
+    if not entry:
+        raise SystemExit(f"{path}: 找不到 cmap")
+    range_start, _range_length, list_length, cmap_type = (
+        int(entry.group(1)), int(entry.group(2)), int(entry.group(3)), entry.group(4))
+    if "FORMAT0_FULL" not in cmap_type:
+        raise SystemExit(f"{path}: 只支持 FORMAT0_FULL 的 cmap,实际 {cmap_type}")
+    ulist = [
+        int(x, 16)
+        for x in re.findall(r"0x[0-9a-fA-F]+", re.search(
+            r"const uint16_t unicode_list_0\[\]\s*=\s*\{(.*?)\};", text, re.S).group(1))
+    ]
+    if len(ulist) != list_length:
+        raise SystemExit(f"{path}: unicode_list 长度 {len(ulist)} != list_length {list_length}")
+    for i, off in enumerate(ulist):
+        cmap[range_start + off] = i + 1
+    line_height = int(re.search(r"\.line_height\s*=\s*(\d+)", text).group(1))
+    base_line = int(re.search(r"\.base_line\s*=\s*(\d+)", text).group(1))
+    return {
+        "bitmap": data,
+        "dsc": dsc,
+        "cmap": cmap,
+        "line_height": line_height,
+        "base_line": base_line,
+    }
 
-    # unicode_list_N:稀疏码位相对 range_start 的偏移
-    lists = {}
-    for name, body in re.findall(r"static const uint16_t (unicode_list_\d+)\[\][^{]*\{(.*?)\};",
-                                 text, re.S):
-        lists[name] = [int(x, 16) for x in re.findall(r"0x[0-9a-fA-F]+", body)]
 
-    for body in re.findall(r"static const lv_font_fmt_txt_cmap_t cmaps\[\][^{]*\{(.*?)\n\};",
-                           text, re.S):
-        for entry in re.findall(r"\{(.*?)\}", body, re.S):
-            start = re.search(r"\.range_start\s*=\s*(\d+)", entry)
-            length = re.search(r"\.range_length\s*=\s*(\d+)", entry)
-            unicode_list = re.search(r"\.unicode_list\s*=\s*(\w+)", entry)
-            if not start or not length:
-                continue
-            start_v = int(start.group(1))
-            length_v = int(length.group(1))
-            name = unicode_list.group(1) if unicode_list else "NULL"
-            if name == "NULL":
-                covered |= {start_v + i for i in range(length_v)}
-            else:
-                covered |= {start_v + off for off in lists.get(name, [])}
-    return covered
+def decode_glyph(font: dict, cp: int):
+    """按 LVGL 的 PLAIN 4bpp 读法取一个字形(连续 nibble,字形起点按字节对齐)。"""
+    gid = font["cmap"].get(cp)
+    if gid is None:
+        return None
+    bi, adv_w, bw, bh, ofs_x, ofs_y = font["dsc"][gid]
+    nibbles = []
+    for i in range(bw * bh):
+        bitpos = bi * 8 + i * 4
+        byte = font["bitmap"][bitpos // 8]
+        nibbles.append((byte >> 4) if bitpos % 8 == 0 else (byte & 0xF))
+    return (adv_w, bw, bh, ofs_x, ofs_y, nibbles)
 
 
-def font_path(out_dir: str, size: int) -> str:
-    return os.path.join(out_dir, f"saya_cjk_{size}.c")
+def verify(path: str, codepoints: list, glyphs: dict) -> int:
+    font = parse_font(path)
+    errors = []
+    missing = [cp for cp in codepoints if cp not in font["cmap"]]
+    if missing:
+        errors.append(f"{len(missing)} 个码位不在 cmap 里: "
+                      + " ".join(f"U+{cp:04X}" for cp in missing[:8]))
+    for cp in codepoints:
+        want = glyphs[cp]
+        got = decode_glyph(font, cp)
+        if got is None:
+            continue
+        if (want[1], want[2]) != (got[1], got[2]):
+            errors.append(f"U+{cp:04X} 盒尺寸不符: {got[1]}x{got[2]} != {want[1]}x{want[2]}")
+            continue
+        if (want[0], want[3], want[4]) != (got[0], got[3], got[4]):
+            errors.append(f"U+{cp:04X} 度量不符: adv/ofs {got[0]},{got[3]},{got[4]} != "
+                          f"{want[0]},{want[3]},{want[4]}")
+            continue
+        if want[5] != got[5]:
+            diff = sum(1 for a, b in zip(want[5], got[5]) if a != b)
+            errors.append(f"U+{cp:04X} 位图不一致({diff}/{len(want[5])} 像素不同)")
+    if errors:
+        for e in errors[:20]:
+            log(f"    ERROR: {e}")
+        log(f"  校验失败: {len(errors)} 项")
+        return 1
+    log(f"  校验通过: {len(codepoints)} 个字形逐像素与栅格化结果一致")
+    return 0
+
+
+# ---------------------------------------------------------------- 自检
+def check(out_dir: str, codepoints: list) -> int:
+    ok = True
+    for size in SIZES:
+        path = os.path.join(out_dir, f"saya_cjk_{size}.c")
+        if not os.path.exists(path):
+            log(f"缺少字体文件: {path}")
+            ok = False
+            continue
+        font = parse_font(path)
+        missing = [cp for cp in codepoints if cp not in font["cmap"]]
+        blank = [cp for cp in codepoints
+                 if cp > 0x20 and decode_glyph(font, cp) and
+                 not any(decode_glyph(font, cp)[5])]
+        log(f"  {size}px: cmap {len(font['cmap'])} 码位, 缺失 {len(missing)}, 空字形 {len(blank)}, "
+            f"行高 {font['line_height']}/基线 {font['base_line']}")
+        if missing:
+            log("    缺字: " + " ".join(f"U+{cp:04X}" for cp in missing[:10]))
+            ok = False
+        if blank:
+            log("    空字形: " + " ".join(f"U+{cp:04X}" for cp in blank[:10]))
+            ok = False
+    if not ok:
+        log("字体自检失败:重新运行生成命令(见本文件顶部说明)")
+        return 1
+    log("  字体覆盖/结构自检通过")
+    return 0
 
 
 # ---------------------------------------------------------------- 主流程
 def generate(args) -> int:
     chars = required_chars(args.pack, args.source_root)
-    symbols = "".join(sorted(chars))
+    codepoints = sorted(ord(c) for c in chars)
     os.makedirs(args.out_dir, exist_ok=True)
-
-    symbols_path = os.path.join(args.out_dir, "saya_cjk_symbols.txt")
-    with open(symbols_path, "w", encoding="utf-8", newline="\n") as fh:
+    symbols = "".join(chr(cp) for cp in codepoints)
+    with open(os.path.join(args.out_dir, "saya_cjk_symbols.txt"), "w",
+              encoding="utf-8", newline="\n") as fh:
         fh.write("# 由 tools/saya_font.py 生成:界面文案 + 剧本正文出现过的全部字符。\n")
-        fh.write("# 重新生成字体时必须与本文件一致(--symbols 传入下面这一行)。\n")
+        fh.write("# 重新生成字体时必须与本文件一致。\n")
         fh.write(symbols + "\n")
-    log(f"  字符清单 {len(chars)} 个 -> {symbols_path}")
+    log(f"  字符清单 {len(codepoints)} 个")
 
-    for size, bpp in SIZES:
-        out = font_path(args.out_dir, size)
-        cmd = [
-            args.node, args.lv_font_conv,
-            "--font", args.font,
-            "--size", str(size),
-            "--bpp", str(bpp),
-            "--format", "lvgl",
-            "--no-compress",
-            "--lv-font-name", f"saya_cjk_{size}",
-            "--lv-include", "lvgl.h",
-            "--symbols", symbols,
-            "--output", out,
-        ]
-        log(f"  生成 {size}px/{bpp}bpp ...")
-        proc = subprocess.run(cmd, capture_output=True, text=True)
-        if proc.returncode != 0:
-            log(proc.stdout)
-            log(proc.stderr)
-            raise SystemExit(f"lv_font_conv 失败(exit {proc.returncode})")
-        if proc.stdout.strip():
-            log("    " + proc.stdout.strip().splitlines()[-1])
-        log(f"    {out} ({os.path.getsize(out) / 1024:.0f} KB)")
+    # 缺字诊断(可选,依赖 fontTools)
+    try:
+        from fontTools.ttLib import TTFont  # type: ignore
 
-    return check(args)
-
-
-def check(args) -> int:
-    chars = required_chars(args.pack, args.source_root)
-    ok = True
-    for size, _bpp in SIZES:
-        path = font_path(args.out_dir, size)
-        if not os.path.exists(path):
-            log(f"缺少字体文件: {path}")
-            ok = False
-            continue
-        covered = parse_font_cmap(path)
-        required = {ord(c) for c in chars}
-        missing = sorted(required - covered)
-        log(f"  {size}px: 覆盖 {len(covered)} 码位,缺失 {len(missing)} 个")
+        covered = set()
+        tt = TTFont(args.font)
+        for table in tt["cmap"].tables:
+            if table.isUnicode():
+                covered |= set(table.cmap.keys())
+        missing = [cp for cp in codepoints if cp not in covered]
         if missing:
-            out = io.StringIO()
-            print("缺失字符: " + " ".join(f"U+{cp:04X}" for cp in missing), file=out)
-            for cp in missing:
-                print(f"  U+{cp:04X} {chr(cp)}", file=out)
-            log(out.getvalue())
-            ok = False
-    if not ok:
-        log("字体覆盖不完整:重新运行生成命令(见本文件顶部说明)")
-        return 1
-    log("  字体覆盖检查通过")
-    return 0
+            log(f"  警告: 源字体缺 {len(missing)} 个码位: "
+                + " ".join(f"U+{cp:04X}" for cp in missing[:10]))
+        else:
+            log("  源字体覆盖全部所需码位")
+    except ImportError:
+        log("  (未安装 fontTools,跳过源字体缺字诊断)")
+
+    rc = 0
+    for size in SIZES:
+        log(f"  生成 {size}px/{BPP}bpp ...")
+        glyphs = rasterize(args.font, size, codepoints)
+        font = ImageFont.truetype(args.font, size, layout_engine=ImageFont.Layout.BASIC)
+        ascent, descent = font.getmetrics()
+        natural = ascent + descent
+        line_height = size + EXTRA_LEADING
+        # 基线在行框内的位置:把自然行框居中裁到 line_height
+        baseline = ascent - (natural - line_height) // 2
+        base_line = line_height - baseline
+        name = f"saya_cjk_{size}"
+        text = emit_font(name, size, codepoints, glyphs, line_height, base_line)
+        path = os.path.join(args.out_dir, name + ".c")
+        with open(path, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(text)
+        log(f"    {path} ({os.path.getsize(path) / 1024:.0f} KB 源码)")
+        rc |= verify(path, codepoints, glyphs)
+    rc |= check(args.out_dir, codepoints)
+    return rc
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--font", help="源字体 TTF/OTF(生成时必填)")
-    ap.add_argument("--lv-font-conv", dest="lv_font_conv", help="lv_font_conv.js 路径")
-    ap.add_argument("--node", default="node", help="node 可执行文件")
     ap.add_argument("--pack", default="main/saya_data/saya_pack.bin")
     ap.add_argument("--source-root", default="main")
     ap.add_argument("--out-dir", default="assets/fonts")
-    ap.add_argument("--check", action="store_true", help="只做覆盖度自检,不生成")
+    ap.add_argument("--check", action="store_true", help="只做覆盖/结构自检,不生成")
     args = ap.parse_args()
 
+    codepoints = sorted(ord(c) for c in required_chars(args.pack, args.source_root))
     if args.check:
-        return check(args)
-    if not args.font or not args.lv_font_conv:
-        ap.error("生成模式需要 --font 与 --lv-font-conv")
+        return check(args.out_dir, codepoints)
+    if not args.font:
+        ap.error("生成模式需要 --font")
     return generate(args)
 
 

@@ -20,12 +20,42 @@ static const char *TAG = "saya_ui";
 
 static void list_set_values_font(saya_list_t *list, const lv_font_t *font);
 
+// 缺字/字体没生效的运行时点名:汉字缺字形会画成方块,字体整段没套上就是一片乱码,
+// 这两种情况在真机上都很难一眼判断,所以设置文本后就地检查实际生效的字体。
+static void check_glyph_coverage(lv_obj_t *label, const char *text, const char *what)
+{
+    if (!label || !text) return;
+    const lv_font_t *font = lv_obj_get_style_text_font(label, LV_PART_MAIN);
+    if (!font) return;
+    const uint8_t *p = (const uint8_t *)text;
+    int reported = 0;
+    while (*p && reported < 3) {
+        uint32_t cp = *p;
+        size_t step = 1;
+        if ((cp & 0xE0u) == 0xC0u) { cp &= 0x1Fu; step = 2; }
+        else if ((cp & 0xF0u) == 0xE0u) { cp &= 0x0Fu; step = 3; }
+        else if ((cp & 0xF8u) == 0xF0u) { cp &= 0x07u; step = 4; }
+        for (size_t k = 1; k < step; ++k) {
+            if ((p[k] & 0xC0u) != 0x80u) { step = 1; cp = 0xFFFD; break; }
+            cp = (cp << 6) | (p[k] & 0x3Fu);
+        }
+        p += step;
+        if (cp == '\n' || cp == ' ' || cp == 0) continue;
+        lv_font_glyph_dsc_t dsc = {0};
+        if (!lv_font_get_glyph_dsc(font, &dsc, cp, 0) || dsc.is_placeholder) {
+            ESP_LOGW(TAG, "%s 缺字形 U+%04X:字体未覆盖该码位", what, (unsigned)cp);
+            reported++;
+        }
+    }
+}
+
 static void list_create(saya_list_t *list, lv_obj_t *page, const char *title, int row_h, int top)
 {
     memset(list, 0, sizeof(*list));
     list->page = page;
     list->row_h = row_h;
     list->top = top;
+    list->font = NULL;
     list->title = lv_label_create(page);
     lv_label_set_text(list->title, title ? title : "");
     lv_obj_set_pos(list->title, 12, 6);
@@ -54,6 +84,12 @@ static lv_obj_t *list_ensure_row(saya_list_t *list, int index)
     lv_obj_set_style_text_color(value, lv_color_hex(COL_ACCENT), LV_PART_MAIN);
     lv_obj_align(value, LV_ALIGN_RIGHT_MID, -10, 0);
 
+    // 行是懒创建的:这里必须补一次字体,否则后建的行会用默认字体(没有汉字)。
+    if (list->font) {
+        lv_obj_set_style_text_font(label, list->font, LV_PART_MAIN);
+        lv_obj_set_style_text_font(value, list->font, LV_PART_MAIN);
+    }
+
     list->rows[index] = label;
     list->values[index] = value;
     return label;
@@ -72,6 +108,7 @@ static void list_set_rows(saya_list_t *list, const char *const *labels, const ch
         const lv_obj_t *label = list_ensure_row(list, i);
         lv_label_set_text((lv_obj_t *)label, labels && labels[i] ? labels[i] : "");
         lv_label_set_text(list->values[i], values && values[i] ? values[i] : "");
+        check_glyph_coverage((lv_obj_t *)label, labels && labels[i] ? labels[i] : "", "列表");
         lv_obj_set_flag(lv_obj_get_parent(list->rows[i]), LV_OBJ_FLAG_HIDDEN, false);
     }
 }
@@ -94,6 +131,7 @@ static void list_select(saya_list_t *list, int selected)
 
 static void list_apply_font(saya_list_t *list, const lv_font_t *font)
 {
+    list->font = font;   // 之后懒创建的行也要用这个字体
     for (int i = 0; i < SAYA_UI_MAX_ROWS; ++i) {
         if (!list->rows[i]) continue;
         lv_obj_set_style_text_font(list->rows[i], font, LV_PART_MAIN);
@@ -219,6 +257,9 @@ void saya_ui_set_font_size(saya_ui_t *ui, bool large)
                                LV_PART_MAIN);
     lv_obj_set_style_text_font(ui->slots_hint, font, LV_PART_MAIN);
     lv_obj_set_style_text_font(ui->ending_name, ui->font_large, LV_PART_MAIN);
+    for (int i = 0; i < 2; ++i) {
+        lv_obj_set_style_text_font(ui->choice_texts[i], font, LV_PART_MAIN);
+    }
 }
 
 // ---------------------------------------------------------------- 页面
@@ -299,12 +340,13 @@ int saya_ui_choice_selected(const saya_ui_t *ui)
 }
 
 // ---------------------------------------------------------------- 建界面
+// 文本框与选项框都填满父容器(page_game 自身已经定位在 y=SAYA_BOX_Y)。
 static lv_obj_t *make_box(lv_obj_t *parent)
 {
     lv_obj_t *box = lv_obj_create(parent);
     lv_obj_remove_style_all(box);
     lv_obj_set_size(box, SAYA_UI_W, SAYA_BOX_H);
-    lv_obj_set_pos(box, 0, SAYA_BOX_Y);
+    lv_obj_set_pos(box, 0, 0);
     lv_obj_set_style_bg_color(box, lv_color_hex(COL_BOX), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(box, LV_OPA_COVER, LV_PART_MAIN);
     lv_obj_set_style_border_side(box, LV_BORDER_SIDE_TOP, LV_PART_MAIN);

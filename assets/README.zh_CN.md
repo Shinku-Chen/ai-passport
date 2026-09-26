@@ -24,11 +24,13 @@
 | --- | --- |
 | 来源 | Noto Sans SC Regular（OFL-1.1），2026-09-26 经 jsDelivr 取自 `googlefonts/noto-cjk` 镜像；8.3 MB 源 OTF **不**提交 |
 | 字符范围 | 2,787 个码位 = `main/*.c` 的全部界面文案 + 资源包里的全部剧本字符 |
-| 转换工具 | `lv_font_conv` 1.5.3，`--bpp 4 --format lvgl --no-compress` |
-| 重新生成 | `python tools/saya_font.py --font <NotoSansSC-Regular.otf> --lv-font-conv <lv_font_conv.js> --pack main/saya_data/saya_pack.bin --out-dir assets/fonts` |
-| 校验 | `python tools/saya_font.py --check …`（由 `tools/validate.sh --static` 执行） |
+| 转换工具 | `tools/saya_font.py`（Pillow/FreeType 栅格化，直接输出 LVGL 9 位图字体格式）。生成后会回读自己写出的 C 文件，与栅格化结果逐像素比对，不合格就报错。 |
+| 重新生成 | `python tools/saya_font.py --font <NotoSansSC-Regular.otf> --pack main/saya_data/saya_pack.bin --out-dir assets/fonts` |
+| 校验 | `python tools/saya_font.py --check --pack … --out-dir …`（由 `tools/validate.sh --static` 执行） |
 | 集成方式 | 通过 `main/CMakeLists.txt` 的 `target_sources()` 编进 `main` 组件 |
 | 影响 | 约 0.94 MB Flash；不占静态 RAM（字形常驻 Flash） |
+
+**不用 `lv_font_conv` 的原因**：该工具最后一版是 1.5.3（2021），在当前 Node.js 下写出的字形位图是坏的 —— 同一个 OTF、同一套参数，`--no-compress` 与 `--no-compress --no-prefilter` 产出的字节完全相同，按 LVGL 的 PLAIN 4bpp 读法解码全是噪点；而 LVGL 自带的 Montserrat 字体用同一解码器完全正常。设备上的表现就是“文字全部乱码”。改用仓库内生成器后不再依赖 Node，且生成阶段就会失败报错，不会默默产出坏字形。
 
 ## 图片（images）
 

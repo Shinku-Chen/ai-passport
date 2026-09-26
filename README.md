@@ -56,8 +56,12 @@ The firmware `mmap`s the pack from the application partition, decodes one scene
 sprite actually changes, and composites the sprite with its mask.
 
 Regenerating requires a checkout of the source port and a licensed CJK font; see
-the header of each tool. Font provenance and license are recorded in
-[`assets/README.md`](assets/README.md).
+the header of each tool. Fonts are produced by a small in-repo generator instead of
+`lv_font_conv` — that tool's last release writes corrupt glyph bitmaps under current
+Node.js (same input, byte-identical output with and without `--no-prefilter`, none of
+it decodes under LVGL's plain 4bpp reader), and the generator verifies its own output
+by re-parsing the C file and comparing every glyph against the rasterization. Font
+provenance and license are recorded in [`assets/README.md`](assets/README.md).
 
 Flash budget (ESP-IDF 5.5, app partition 8,323,072 bytes): application 4.2 MB,
 49 % of the partition free.

@@ -27,11 +27,18 @@ must cover.
 | --- | --- |
 | Source | Noto Sans SC Regular (OFL-1.1), downloaded 2026-09-26 from the `googlefonts/noto-cjk` mirror through jsDelivr; the 8.3 MB source OTF is **not** committed |
 | Inventory | 2,787 code points = every UI string in `main/*.c` plus every character of the script pack |
-| Converter | `lv_font_conv` 1.5.3, `--bpp 4 --format lvgl --no-compress` |
-| Regenerate | `python tools/saya_font.py --font <NotoSansSC-Regular.otf> --lv-font-conv <lv_font_conv.js> --pack main/saya_data/saya_pack.bin --out-dir assets/fonts` |
-| Verify | `python tools/saya_font.py --check …` (runs in `tools/validate.sh --static`) |
+| Converter | `tools/saya_font.py` (Pillow/FreeType rasterization, emits the LVGL 9 bitmap format directly). It verifies itself by re-parsing the C file it just wrote and comparing every glyph against the rasterization pixel by pixel. |
+| Regenerate | `python tools/saya_font.py --font <NotoSansSC-Regular.otf> --pack main/saya_data/saya_pack.bin --out-dir assets/fonts` |
+| Verify | `python tools/saya_font.py --check --pack … --out-dir …` (runs in `tools/validate.sh --static`) |
 | Integration | compiled into the `main` component through `target_sources()` in `main/CMakeLists.txt` |
 | Impact | about 0.94 MB of Flash; no static RAM (glyphs stay in Flash) |
+
+Not generated with `lv_font_conv`: its last release (1.5.3, 2021) writes corrupt glyph
+bitmaps under current Node.js — with the same OTF and options, `--no-compress` and
+`--no-compress --no-prefilter` produce identical bytes that decode to noise under LVGL's
+plain 4bpp reader, while LVGL's own Montserrat fonts decode correctly with the same
+reader. On the device this showed up as completely garbled text. The in-repo generator
+avoids the Node dependency entirely and fails loudly instead of emitting bad glyphs.
 
 ## Images
 
