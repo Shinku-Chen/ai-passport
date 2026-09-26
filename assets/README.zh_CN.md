@@ -42,6 +42,7 @@
 | [`images/readme-hardware-specs.png`](images/readme-hardware-specs.png) | 2172 × 724，PNG RGBA | 保留为可选技术参考图，不再用于首页主视觉。于 2026-09-17 使用内置图像生成工具为本仓库生成；已根据文档中的硬件能力契约核对图中的六项标签与参数。 |
 | [`images/logo-wordmark.png`](images/logo-wordmark.png) | 1648 × 336，PNG RGBA | 从仓库原始 `images/logo.png` 中精确裁切并去除背景的黑色字标；用于中英文项目 README 的浅色主题。 |
 | [`images/logo-wordmark-dark.png`](images/logo-wordmark-dark.png) | 1648 × 336，PNG RGBA | 提取字标的白色版本；README 使用 `<picture>` 在 GitHub 深色主题下显示。 |
+| [`images/saya-no-uta-cover.png`](images/saya-no-uta-cover.png) | 1152 × 1536，PNG | 《沙耶之歌》阅读器（`feature/saya-no-uta`）的竖版 3:4 封面，用于社区市场列表封面与 Release 说明。原 Nitroplus 作品主视觉（第三方素材，作者指定使用）；应用档案见 [`../docs/reference/shinku-chen/saya-no-uta/`](../docs/reference/shinku-chen/saya-no-uta/README.zh_CN.md)。 |
 
 - 使用描述性命名，并记录尺寸、像素格式、转换步骤与目标路径。
 - 优先采用适合 240 × 320 RGB565 显示的格式，并纳入 Flash 与内部 RAM 考量。

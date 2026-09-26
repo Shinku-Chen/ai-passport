@@ -43,13 +43,17 @@ AI Passport 上的横屏视觉小说阅读器。把小米手环 10 上的《沙�
   > 本作含有大量血腥描写，请谨慎阅读；有能力请支持正版。
 
 - **分类**：games
-- **封面**：`saya-no-uta-cover.png`（PNG，1152 × 1536，3:4）—— 仅记录发布元数据，封面图不进本仓库。
+- **封面**：`saya-no-uta-cover.png`（PNG，1152 × 1536，3:4）—— 档案区仍只存元数据；
+  图片本体提交在 [`assets/images/saya-no-uta-cover.png`](../../../../assets/images/saya-no-uta-cover.png)，
+  供 Release 说明与社区列表引用。
 - **源码**：<https://github.com/Shinku-Chen/ai-passport>
 
 ## 封面
 
 `saya-no-uta-cover.png`（PNG，1152 × 1536）使用原作的封面主视觉：沙耶与标题字样。
-封面图只作为发布元数据记录在这里，不提交进仓库。
+本档案保持纯文本；图片本体提交在
+[`assets/images/saya-no-uta-cover.png`](../../../../assets/images/saya-no-uta-cover.png)，
+用于 Release 说明与社区市场列表。
 
 ## 功能
 

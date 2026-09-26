@@ -34,8 +34,9 @@ endings, fully offline, read with three keys.
   > This firmware is a personal study port built from a public Mi Band port and is meant for personal devices only. The story contains heavy gore; please read with care and support the official release if you can.
 
 - **Category**: games
-- **Cover**: `saya-no-uta-cover.png` (PNG, 1152 × 1536, 3:4) — publish metadata only;
-  the cover image is not committed here.
+- **Cover**: `saya-no-uta-cover.png` (PNG, 1152 × 1536, 3:4) — this archive stays text-only; the
+  image itself is committed at [`assets/images/saya-no-uta-cover.png`](../../../../assets/images/saya-no-uta-cover.png)
+  for the release notes and the community listing.
 - **Source**: <https://github.com/Shinku-Chen/ai-passport>
 
 ## Cover
