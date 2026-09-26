@@ -73,5 +73,5 @@ python -m pip install Pillow                                       # Linux/macOS
 ## 来源
 
 - **分支**：[`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame)
-- **上游作品**：[`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) —— 本次移植所依据的小米手环快应用版本。该仓库未声明许可，因此其美术与章节剧本不在本仓库中再分发。
+- **上游作品**：[`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) —— 本次移植所依据的小米手环快应用版本。该仓库未声明许可；美术与章节剧本已提交在 `assets/gal-source/`，并以上游项目作为来源标注。
 - 素材工具链：[`tools/gal/README.md`](tools/gal/README.md)

@@ -2,11 +2,11 @@
 """Pack the galgame source material into the read-only flash partition image.
 
 The source material (background art, character sprites and chapter scripts) is
-third-party content and is deliberately not tracked by this repository. Point
-`--source` at a local copy of the upstream project's `src/common` directory.
+third-party content, tracked at `assets/gal-source/common`; point `--source` at
+another copy of the upstream project's `src/common` directory to pack that one.
 
 When the source directory is absent the script emits a small placeholder pack so
-that CI and fresh clones can still configure and build the firmware.
+that a clone without the material can still configure and build the firmware.
 
 Outputs (into --out):
     gal_assets.bin      raw image for the `assets` flash partition

@@ -90,5 +90,5 @@ the advance rules and the pagination.
 ## Source
 
 - **Branch**: [`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame)
-- **Upstream work**: [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) — the Xiaomi Band quick-app release this port is based on. No license is declared there, which is why its artwork and chapter scripts are not redistributed in this repository.
+- **Upstream work**: [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) — the Xiaomi Band quick-app release this port is based on. No license is declared there; its artwork and chapter scripts are committed under `assets/gal-source/` with the upstream project credited as the source.
 - Asset pipeline: [`tools/gal/README.md`](tools/gal/README.md)
