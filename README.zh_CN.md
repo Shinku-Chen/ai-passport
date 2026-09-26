@@ -87,7 +87,7 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 本分支用 C + LVGL 重写了阅读引擎，改成三键操作。
 
 - 分支：[`feature/atri-reader`](https://github.com/Shinku-Chen/ai-passport/tree/feature/atri-reader)
-- 发布：[v1.0.0-atri-reader](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-atri-reader)
+- 发布：[v1.0.1-atri-reader](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.1-atri-reader)
 
 ```text
 ┌──────────────────────────────────┐  240 x 320,原生竖屏;画布铺满整屏
@@ -103,7 +103,8 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 ```
 
 **操作：** 列表页上 / 下移动光标，**确定**进入，**长按确定**返回上一层。正文里
-**上 / 下短按**是下一句，**长按上 / 下**是快进、松手即停（快进时整句直接显示），
+**上 / 下短按**是下一句，**长按上**是快进、松手即停（快进时整句直接显示），
+**长按下**开关自动阅读模式（打字完停 0.7 秒自动翻页，右下角显示「自动」，任意键停止），
 **确定**打开菜单：继续阅读、保存进度、读取存档、跳过章节、返回标题（跳过章节会一直推进到下一章，
 路上遇到选项或结局就停下）。选项页上 / 下选择、
 确定确认。文字速度可选 瞬间 / 慢 / 中 / 快，关于页用上 / 下滚动。画面区左上角显示当前章节，

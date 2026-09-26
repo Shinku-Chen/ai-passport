@@ -113,7 +113,7 @@ lacked. The originals are touch apps for Xiaomi's Vela OS; this branch
 re-implements the reading engine in C on LVGL and drives it with the three keys.
 
 - Branch: [`feature/atri-reader`](https://github.com/Shinku-Chen/ai-passport/tree/feature/atri-reader)
-- Release: [v1.0.0-atri-reader](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-atri-reader)
+- Release: [v1.0.1-atri-reader](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.1-atri-reader)
 
 ```text
 ┌──────────────────────────────────┐  240 x 320, native portrait; the canvas is
@@ -129,9 +129,11 @@ re-implements the reading engine in C on LVGL and drives it with the three keys.
 ```
 
 **Controls:** on lists UP / DOWN move the cursor, **OK** selects and **OK (hold)**
-goes back. While reading, **UP / DOWN** advance line by line and **UP (hold) /
-DOWN (hold)** fast-forwards through whole lines until you let go; **OK** opens the
-menu (continue, save, load, skip chapter, back to title). Skipping a chapter runs to
+goes back. While reading, **UP / DOWN** advance line by line and **UP (hold)**
+fast-forwards through whole lines until you let go; **DOWN (hold)** toggles
+auto-read (advances 0.7 s after each line finishes typing, shows a cyan auto marker
+bottom-right, any key stops it); **OK** opens the menu (continue, save,
+load, skip chapter, back to title). Skipping a chapter runs to
 the next chapter and stops at any choice or ending. Choices use UP / DOWN + OK.
 The text speed setting cycles through instant / slow / medium / fast, and the about
 page scrolls with UP / DOWN. The art area shows the current chapter in the top-left

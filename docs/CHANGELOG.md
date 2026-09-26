@@ -67,3 +67,11 @@
 - Saves: five manual slots plus one automatic slot written on every scene change (the title screen offers it as continue), the new v2 save format keeps the current sprite and still reads v1 saves; reaching both the happy and the bad ending unlocks the true-ending chapter on the title screen.
 - Idle behaviour: 45 s dim, 150 s screen off, 7 minutes deep sleep, any key wakes. Entering deep sleep now also puts the ES8311 codec into its low-power state, which removes the audible buzz from the speaker amplifier.
 - Verification aids for later iterations: the USB serial console accepts `ATRIJUMP <chapter> [scene]` (moves the live reading position) and `ATRISHOT <chapter> <scene>` (renders that scene into the canvas and streams the raw 240x320 frame back), and `idf.py -DATRI_BOOT_CHAPTER=<index> build` boots straight into a chapter.
+
+## v1.0.1-atri-reader - 2026-09-27
+
+- Full-body sprites now stand on the right side of the art area (6 px from the screen edge) instead of keeping the original artwork's centred position; vertical placement still runs from the sprite's own top to the bottom of the screen.
+- New auto-read mode: **hold DOWN** starts or stops it. The reader advances on its own 700 ms after a line finishes typing, survives chapter transitions, and stops at choices and endings. Any real key press (click or long press) hands control back immediately, and a cyan marker (the word for "auto") sits in the bottom-right corner while it is active. Long-pressing UP still fast-forwards, and the about page documents the new gesture.
+- Fixed auto-read turning itself off the moment it was enabled: the button driver's release event was treated as a user key press, so the switch was cancelled right after the long press.
+- The about page no longer exhausts the LVGL memory pool (raised to 56 KB and logged at boot), which previously left the whole UI garbled until reboot; entering deep sleep now also puts the ES8311 codec to sleep, removing the audible buzz from the always-on amplifier.
+- Serial-console capture: the screenshot helper validates the frame end marker and retries, so an interleaved log line can no longer produce a torn capture.
