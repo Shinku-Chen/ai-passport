@@ -112,7 +112,8 @@ which adds the full-body `src/common/character/*` sprites the original port
 lacked. The originals are touch apps for Xiaomi's Vela OS; this branch
 re-implements the reading engine in C on LVGL and drives it with the three keys.
 
-- Branch: this branch. Release not cut yet.
+- Branch: [`feature/atri-reader`](https://github.com/Shinku-Chen/ai-passport/tree/feature/atri-reader)
+- Release: [v1.0.0-atri-reader](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-atri-reader)
 
 ```text
 ┌──────────────────────────────────┐  240 x 320, native portrait; the canvas is

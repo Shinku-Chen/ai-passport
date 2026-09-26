@@ -86,7 +86,8 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 并补上了原版没有的 `src/common/character/*` 全身立绘）。原版是 Vela OS 的触屏应用，
 本分支用 C + LVGL 重写了阅读引擎，改成三键操作。
 
-- 分支：本分支，尚未发版。
+- 分支：[`feature/atri-reader`](https://github.com/Shinku-Chen/ai-passport/tree/feature/atri-reader)
+- 发布：[v1.0.0-atri-reader](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-atri-reader)
 
 ```text
 ┌──────────────────────────────────┐  240 x 320,原生竖屏;画布铺满整屏
