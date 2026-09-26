@@ -3,7 +3,7 @@
 // 版面(横屏 320x240):
 //   y 0..149    画面区: 一张 RGB565 画布(背景 + 立绘);标题页复用同一张画布
 //   y 126..149  说话人名字:画面区左下角、文本框正上方的半透明标签
-//   y 150..231  文本框: 正文(最后一行与屏幕底部留 SAYA_BOX_BOTTOM_MARGIN 的边距)
+//   y 150..239  文本框: 正文(面板铺到屏幕底边,不再留底部边距)
 // 全屏页面(菜单、警告、设置、存读档、结局、关于)盖住整个屏幕。
 //
 // 本模块只负责"把给定的内容画出来",不决定剧情走向 —— 状态机在 saya_app.c。
@@ -20,9 +20,9 @@
 
 #define SAYA_UI_W 320
 #define SAYA_UI_H 240
-// 文本框:底部留 SAYA_BOX_BOTTOM_MARGIN 的边距,最后一行不贴屏幕边缘。
-#define SAYA_BOX_BOTTOM_MARGIN 8
-#define SAYA_BOX_H 82
+// 文本框:直接铺到屏幕底边 —— 面板下方不再留白,底部那条不会被画面打断。
+#define SAYA_BOX_BOTTOM_MARGIN 0
+#define SAYA_BOX_H 90
 #define SAYA_BOX_Y (SAYA_UI_H - SAYA_BOX_BOTTOM_MARGIN - SAYA_BOX_H)
 // 说话人名字放在画面区左下角、文本框正上方(不再占用文本框内部空间)。
 #define SAYA_NAME_Y (SAYA_BOX_Y - 24)

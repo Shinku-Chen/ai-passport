@@ -68,6 +68,10 @@ committed to the repository.
 - **Offline resource pack**: script, backgrounds and sprites are read straight out of
   Flash with no runtime decompression; decoding happens only when the background or
   sprite actually changes, and sprites are composited through a 1bpp mask.
+- **Full-frame art behind the panel**: each background is stored as two 1:1 JPEGs
+  (rows 0–149 and 150–239 of one 320 × 240 frame) drawn on two stacked canvases, so the
+  whole scene stays visible and the translucent dialogue box (50 % opacity, flush with
+  the bottom edge) shows real art instead of a stretched or synthesized fallback.
 - **Chinese font subset**: a Noto Sans SC subset (4 bpp, uncompressed) built into the
   firmware, covering both the UI strings and every character in the script.
 - **Battery and power**: battery percentage in the top-right corner; idle 60 s dims,

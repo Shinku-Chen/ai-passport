@@ -16,11 +16,12 @@ reading engine in C on LVGL and drives it with the three keys.
 
 ```text
 ┌──────────────────────────────────┐  320 x 240, held in landscape
-│  art area 320 x 150              │  background JPEG + sprite (right-aligned)
-│                        [battery] │  battery chip in the top-right corner
+│                                  │  the background fills the whole screen:
+│                        [battery] │  upper 320 x 150 canvas + lower 320 x 90
+│                                  │  canvas, both drawn 1:1 (no crop/stretch)
 │  speaker name (bottom-left)      │  translucent chip above the dialogue box
 ├──────────────────────────────────┤
-│  up to 4 lines of body text      │  dialogue box 82 px, 8 px bottom margin
+│  up to 4 lines of body text      │  dialogue box 90 px, flush with the bottom
 └──────────────────────────────────┘  (16 px font: 19 full-width chars per line)
                                        (20 px font: 15 chars, 3 lines)
 ```
@@ -59,11 +60,12 @@ and their output is committed so a plain checkout builds:
 
 | Step | Tool | Output |
 | --- | --- | --- |
-| Script + images | `tools/saya_pack.py` | `main/saya_data/saya_pack.bin` (~2.8 MB): 44 chapters, 473 scenes, 3,828 dialogues, 193 backgrounds, 75 sprites, plus source metadata |
+| Script + images | `tools/saya_pack.py` | `main/saya_data/saya_pack.bin` (~3.9 MB): 44 chapters, 473 scenes, 3,828 dialogues, 193 backgrounds, 75 sprites, plus source metadata |
 | Font subsets | `tools/saya_font.py` | `assets/fonts/saya_cjk_16.c`, `saya_cjk_20.c` and the character inventory `assets/fonts/saya_cjk_symbols.txt` |
 
 The pack is read straight out of Flash — there is no runtime JSON parsing and no
-decompression. Backgrounds are pre-cropped to 320 × 150 JPEG; sprites are scaled to
+decompression. Each background is pre-scaled once to a full 320 × 240 frame and stored
+as two JPEGs (rows 0–149 and rows 150–239, both 1:1); sprites are scaled to
 screen height, pre-cropped to the visible band and stored as JPEG plus a 1bpp mask.
 The firmware `mmap`s the pack from the application partition, decodes one scene
 (background plus sprite) into a 320 × 150 RGB565 canvas only when the background or

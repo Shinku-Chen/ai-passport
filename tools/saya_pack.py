@@ -21,12 +21,14 @@ firmware (no decompression, no per-record parsing).  Layout:
                   jump u8, arg u16 }  fg=0xFFFF 表示本句未指定(沿用上一句)
     SEC_BG      { off u32, len u32, w u16, h u16 }
     SEC_FG      { jpeg_off u32, jpeg_len u32, mask_off u32, mask_len u32, w u16, h u16 }
+    SEC_STRIP   { off u32, len u32, w u16, h u16 }(与背景表同下标;文本框背后的半分辨率条带)
+    SEC_FG_LOW  { jpeg_off, jpeg_len, mask_off, mask_len(全 u32), w u16, h u16 }(与立绘表同下标;立绘下半段)
     SEC_META    UTF-8 key=value 文本(来源仓库 / commit / 转换参数)
 
 Image conversion (fixed screen layout 320x240, art area 320x150):
-  背景 283x212 调色板 PNG -> cover 裁切成 320x150 -> JPEG
+  背景 283x212 调色板 PNG -> cover 成 320x240 -> 上半 320x150 + 下半 320x90(均 1:1)-> JPEG
   标题画面(bg.png)       -> 同上,固定放在背景表 0 号(SAYA_BG_TITLE,脚本不引用它)
-  立绘 212xN RGBA      -> 按屏幕高度 240 缩放(宽度上限 180)-> 取顶部 150 行
+  立绘 212xN RGBA      -> 按屏幕高度 240 缩放(宽度上限 180)-> 上半 150 行 + 下半 90 行
                           -> JPEG + 1bpp 遮罩(按行打包)
 
 Usage:
@@ -76,12 +78,21 @@ VERSION = 1
 GEN_VERSION = "saya_pack/1"
 
 ART_W, ART_H = 320, 150          # 画面区(横屏 320x240;其下是 82px 文本框 + 8px 底边距)
+SCREEN_H = 240                   # 横屏屏幕高度(幅面/条带按它换算)
 SPRITE_SCREEN_H = 240            # 立绘按屏幕高度缩放
+# 整幅画面完整显示:上半 150 行进画面区画布,下半 90 行(第 150..239 行)1:1 存成
+# 下半块,设备端原尺寸铺在文本框背后。两块拼起来就是完整的 320x240,不裁切不缩放。
+STRIP_W, STRIP_H = 320, 90
+STRIP_QUALITY = 75
 SPRITE_MAX_W = 180               # 立绘宽度上限,限制设备端解码缓冲
 BG_QUALITY = 80
 FG_QUALITY = 80
 
 SEC_TEXT, SEC_NAME, SEC_CHAPTER, SEC_SCENE, SEC_DLG, SEC_BG, SEC_FG, SEC_META = range(8)
+# 8 = 文本框背后那条带:每张背景一份「主画面正下方」的小图,让半透明文本框透出真实画面。
+SEC_STRIP = 8
+# 9 = 立绘下半段(与立绘表同下标):全分辨率打包,设备端按 2:1 采样合成进条带画布。
+SEC_FG_LOW = 9
 
 DLG_END = 1 << 0        # arg = 结局名(SEC_NAME 下标)
 DLG_BRANCH = 1 << 1     # 选择分支(本移植数据里未使用,保留语义)
@@ -151,18 +162,19 @@ def chapter_sort_key(name: str) -> Tuple[int, str]:
     return (int(m.group(1)) if m else 1 << 30, name)
 
 
-def cover_crop(im: Image.Image, size: Tuple[int, int]) -> Image.Image:
+def cover_crop(im: Image.Image, size: Tuple[int, int], top: bool = False) -> Image.Image:
+    """按 cover 缩放后裁切。top=True 时纵向贴顶(画面取景用),否则居中。"""
     tw, th = size
     sw, sh = im.size
     scale = max(tw / sw, th / sh)
     resized = im.resize((max(1, round(sw * scale)), max(1, round(sh * scale))), Image.LANCZOS)
     x = (resized.width - tw) // 2
-    y = (resized.height - th) // 2
+    y = 0 if top else (resized.height - th) // 2
     return resized.crop((x, y, x + tw, y + th))
 
 
 def sprite_crop(im: Image.Image) -> Image.Image:
-    """立绘 -> 按屏幕高度缩放、限宽、取可见的顶部 ART_H 行。"""
+    """立绘 -> 按屏幕高度缩放、限宽,保留整高(上半段进画面区,下半段进条带)。"""
     w, h = im.size
     scale = SPRITE_SCREEN_H / h
     if round(w * scale) > SPRITE_MAX_W:
@@ -170,8 +182,8 @@ def sprite_crop(im: Image.Image) -> Image.Image:
     w2 = max(1, round(w * scale))
     h2 = max(1, round(h * scale))
     resized = im.resize((w2, h2), Image.LANCZOS)
-    if h2 > ART_H:
-        resized = resized.crop((0, 0, w2, ART_H))
+    if h2 > SCREEN_H:
+        resized = resized.crop((0, 0, w2, SCREEN_H))
     return resized
 
 
@@ -218,8 +230,11 @@ class PackBuilder:
         self.fg_files = self._scan(self.fg_dir)
         self.bg_list: List[str] = []
         self.bg_blobs: List[bytes] = []
+        self.bg_strips: List[bytes] = []
         self.fg_list: List[str] = []
-        self.fg_blobs: List[Tuple[bytes, bytes, int, int]] = []  # jpeg, mask, w, h
+        self.fg_blobs: List[Tuple[bytes, bytes, int, int]] = []  # jpeg, mask, w, h(上半段)
+        # 立绘下半段(进条带):(jpeg, mask, w, h) 或 None
+        self.fg_lowers: List[Optional[Tuple[bytes, bytes, int, int]]] = []
         self._bg_index: Dict[str, int] = {}
         self._fg_index: Dict[str, int] = {}
         self.counts: Dict[str, int] = {}
@@ -250,12 +265,20 @@ class PackBuilder:
         if got is not None:
             return got
         im = Image.open(self.bg_files[key]).convert("RGB")
-        art = cover_crop(im, (ART_W, ART_H))
+        # 先一次性 cover 成整幅 320x240(纵向贴顶),再从里面切上下两段 —— 两次分开
+        # cover 会因为取景锚点/缩放差异让两段对不上(竖构图的标题图尤其明显)。
+        full = cover_crop(im, (ART_W, SCREEN_H), top=True)
+        art = full.crop((0, 0, ART_W, ART_H))
         buf = io.BytesIO()
         art.save(buf, "JPEG", quality=BG_QUALITY, optimize=True, subsampling=2)
+        # 下半块:整幅画面的第 150..239 行,原尺寸(1:1)打包。
+        strip = full.crop((0, ART_H, ART_W, ART_H + STRIP_H))
+        sbuf = io.BytesIO()
+        strip.save(sbuf, "JPEG", quality=STRIP_QUALITY, optimize=True, subsampling=2)
         idx = len(self.bg_list)
         self.bg_list.append(key)
         self.bg_blobs.append(buf.getvalue())
+        self.bg_strips.append(sbuf.getvalue())
         self._bg_index[key] = idx
         return idx
 
@@ -267,13 +290,27 @@ class PackBuilder:
         if got is not None:
             return got
         im = Image.open(self.fg_files[key]).convert("RGBA")
-        crop = sprite_crop(im)
+        full = sprite_crop(im)
+        upper = full if full.height <= ART_H else full.crop((0, 0, full.width, ART_H))
+        lower = None
+        if full.height > ART_H:
+            # 下半段:全幅第 150..239 行,与上半段拼起来就是完整人物。
+            lower = full.crop((0, ART_H, full.width, min(full.height, ART_H + STRIP_H)))
         jpeg = io.BytesIO()
-        crop.convert("RGB").save(jpeg, "JPEG", quality=FG_QUALITY, optimize=True, subsampling=2)
-        mask = pack_mask(crop.getchannel("A"))
+        upper.convert("RGB").save(jpeg, "JPEG", quality=FG_QUALITY, optimize=True, subsampling=2)
+        mask = pack_mask(upper.getchannel("A"))
+        if lower is not None and lower.height > 0:
+            ljpeg = io.BytesIO()
+            lower.convert("RGB").save(ljpeg, "JPEG", quality=FG_QUALITY, optimize=True,
+                                      subsampling=2)
+            lower_blob = (ljpeg.getvalue(), pack_mask(lower.getchannel("A")),
+                          lower.width, lower.height)
+        else:
+            lower_blob = None
         idx = len(self.fg_list)
         self.fg_list.append(key)
-        self.fg_blobs.append((jpeg.getvalue(), mask, crop.width, crop.height))
+        self.fg_blobs.append((jpeg.getvalue(), mask, upper.width, upper.height))
+        self.fg_lowers.append(lower_blob)
         self._fg_index[key] = idx
         return idx
 
@@ -387,6 +424,22 @@ class PackBuilder:
         for jpeg in self.bg_blobs:
             bg_tab += struct.pack("<IIHH", len(bg_blob), len(jpeg), ART_W, ART_H)
             bg_blob += jpeg
+        flow_blob = bytearray()
+        flow_tab = bytearray()
+        for entry in self.fg_lowers:
+            if entry is None:
+                flow_tab += struct.pack("<IIIIHH", 0, 0, 0, 0, 0, 0)
+                continue
+            jpeg, mask, w, h = entry
+            flow_tab += struct.pack("<IIIIHH", len(flow_blob), len(jpeg),
+                                    len(flow_blob) + len(jpeg), len(mask), w, h)
+            flow_blob += jpeg
+            flow_blob += mask
+        strip_blob = bytearray()
+        strip_tab = bytearray()
+        for jpeg in self.bg_strips:
+            strip_tab += struct.pack("<IIHH", len(strip_blob), len(jpeg), STRIP_W, STRIP_H)
+            strip_blob += jpeg
         fg_blob = bytearray()
         fg_tab = bytearray()
         for jpeg, mask, w, h in self.fg_blobs:
@@ -404,6 +457,8 @@ class PackBuilder:
             (SEC_DLG, dlg_tab, len(dlg_recs)),
             (SEC_BG, bytes(bg_tab) + bytes(bg_blob), len(self.bg_list)),
             (SEC_FG, bytes(fg_tab) + bytes(fg_blob), len(self.fg_list)),
+            (SEC_STRIP, bytes(strip_tab) + bytes(strip_blob), len(self.bg_strips)),
+            (SEC_FG_LOW, bytes(flow_tab) + bytes(flow_blob), len(self.fg_lowers)),
             (SEC_META, meta_text, 0),
         ]
 
@@ -453,6 +508,7 @@ def main() -> int:
         "patch": os.path.basename(args.patch.rstrip("/\\")) if args.patch else "",
         "art": f"{ART_W}x{ART_H}",
         "bg_quality": str(BG_QUALITY),
+        "strip": f"{STRIP_W}x{STRIP_H}q{STRIP_QUALITY}",
         "fg_quality": str(FG_QUALITY),
         "sprite_max_w": str(SPRITE_MAX_W),
     }

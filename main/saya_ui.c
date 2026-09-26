@@ -355,10 +355,10 @@ static lv_obj_t *make_box(lv_obj_t *parent)
     lv_obj_set_pos(box, 0, 0);
     lv_obj_set_style_bg_color(box, lv_color_hex(COL_BOX), LV_PART_MAIN);
     // 文本框半透明(50%):画面明显透出来,正文用高对比度颜色保证可读。
+    // 不再画顶部描边:深色细线在半透明面板上方会被看成一条黑边。
+    // 整幅画面铺满屏幕(下半块就在这个面板背后),50% 就能直接透出真实画面,
+    // 不需要任何渐变或替代色。
     lv_obj_set_style_bg_opa(box, LV_OPA_50, LV_PART_MAIN);
-    lv_obj_set_style_border_side(box, LV_BORDER_SIDE_TOP, LV_PART_MAIN);
-    lv_obj_set_style_border_width(box, 2, LV_PART_MAIN);
-    lv_obj_set_style_border_color(box, lv_color_hex(COL_LINE), LV_PART_MAIN);
     lv_obj_set_flag(box, LV_OBJ_FLAG_SCROLLABLE, false);
     return box;
 }
@@ -387,7 +387,8 @@ bool saya_ui_create(saya_ui_t *ui, uint16_t *art_pixels, uint8_t *sprite_scratch
     // 画面区画布:标题页和正文页共用同一张缓冲,靠 z 序让全屏页面盖住它。
     lv_obj_t *art_holder = lv_obj_create(root);
     lv_obj_remove_style_all(art_holder);
-    lv_obj_set_size(art_holder, SAYA_ART_W, SAYA_ART_H);
+    // 容器要盖到文本框背后:上面是 320x150 画面区,下面是条带画布(320x90)。
+    lv_obj_set_size(art_holder, SAYA_ART_W, SAYA_UI_H);
     lv_obj_set_pos(art_holder, 0, 0);
     lv_obj_set_flag(art_holder, LV_OBJ_FLAG_SCROLLABLE, false);
     if (!saya_image_init(&ui->art, art_holder, art_pixels, sprite_scratch,
@@ -431,7 +432,7 @@ bool saya_ui_create(saya_ui_t *ui, uint16_t *art_pixels, uint8_t *sprite_scratch
     lv_obj_set_style_text_font(ui->text, font_small, LV_PART_MAIN);
     lv_obj_set_style_text_color(ui->text, lv_color_hex(COL_TEXT), LV_PART_MAIN);
     // 正文区:底部留出约 7px 边距,最后一行不再贴底(行高见 tools/saya_font.py)。
-    lv_obj_set_pos(ui->text, 10, 4);
+    lv_obj_set_pos(ui->text, 10, 7);   // 面板 90px 高、正文 76px:上下各留一点
     lv_obj_set_size(ui->text, SAYA_UI_W - 20, SAYA_TEXT_LINES * SAYA_LINE_H);
     lv_label_set_long_mode(ui->text, LV_LABEL_LONG_WRAP);
 
@@ -690,11 +691,6 @@ void saya_ui_set_warning(saya_ui_t *ui, const char *text, const char *hint)
     if (ui->warning_view) {
         lv_obj_scroll_to_y(ui->warning_view, 0, LV_ANIM_OFF);
         lv_obj_update_layout(ui->warning_view);
-        // 临时诊断:确认“读到底”判定用的滚动度量是否符合预期。
-        ESP_LOGI(TAG, "警告页度量: 内容高 %d, 视口高 %d, 未读距离 %d",
-                 (int)lv_obj_get_scroll_top(ui->warning_view) + (int)lv_obj_get_scroll_bottom(ui->warning_view),
-                 (int)lv_obj_get_content_height(ui->warning_view),
-                 (int)lv_obj_get_scroll_bottom(ui->warning_view));
     }
     warning_refresh_hint(ui);
 }
@@ -724,10 +720,6 @@ void saya_ui_warning_page(saya_ui_t *ui, int dir)
     // dir > 0 = 往下翻一屏,同样要取反交给 LVGL。
     lv_obj_scroll_by(ui->warning_view, 0, -dir * step, LV_ANIM_OFF);
     warning_refresh_hint(ui);
-    // 临时诊断:确认翻屏真的生效、以及距底部还剩多少。
-    ESP_LOGI(TAG, "警告页翻屏: scroll_y %d, 距底 %d",
-             (int)lv_obj_get_scroll_y(ui->warning_view),
-             (int)lv_obj_get_scroll_bottom(ui->warning_view));
 }
 
 bool saya_ui_warning_ready(saya_ui_t *ui)

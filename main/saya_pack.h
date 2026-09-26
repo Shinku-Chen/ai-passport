@@ -56,6 +56,16 @@ typedef struct {
     const uint8_t *fg_data;
     uint32_t fg_count;
     uint32_t fg_data_size;
+    // 下半块画面(整幅 320x240 的第 150..239 行,1:1,与背景表同下标;旧包里没有这段时为 0)。
+    const uint8_t *strips;
+    const uint8_t *strip_data;
+    uint32_t strip_count;
+    uint32_t strip_data_size;
+    // 立绘下半段(与立绘表同下标);旧包里没有这段时为 0。
+    const uint8_t *fg_lows;
+    const uint8_t *fg_low_data;
+    uint32_t fg_low_count;
+    uint32_t fg_low_data_size;
     const uint8_t *meta;
     uint32_t meta_size;
 } saya_pack_t;
@@ -119,6 +129,10 @@ size_t saya_pack_name(const saya_pack_t *pack, uint16_t id, char *out, size_t ca
 
 bool saya_pack_bg(const saya_pack_t *pack, uint16_t id, saya_bg_t *out);
 bool saya_pack_fg(const saya_pack_t *pack, uint16_t id, saya_fg_t *out);
+// 取背景 id 对应的条带(半分辨率小图)。包内没有条带段或下标越界时返回 false。
+bool saya_pack_strip(const saya_pack_t *pack, uint16_t id, saya_bg_t *out);
+// 取立绘 id 对应的下半段(全分辨率,设备端按 2:1 采样进条带画布)。
+bool saya_pack_fg_low(const saya_pack_t *pack, uint16_t id, saya_fg_t *out);
 
 // 按源脚本编号找章节下标;找不到返回 -1。
 int saya_pack_find_chapter(const saya_pack_t *pack, uint16_t id);

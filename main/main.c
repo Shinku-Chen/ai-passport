@@ -44,7 +44,7 @@ extern const uint8_t saya_pack_bin_end[] asm("_binary_saya_pack_bin_end");
 
 // 画面区 320x136 + 立绘解码缓冲(宽上限与 tools/saya_pack.py 的 SPRITE_MAX_W 一致)。
 static uint16_t s_art_pixels[SAYA_ART_W * SAYA_ART_H];
-static uint8_t s_sprite_scratch[SAYA_SPRITE_MAX_W * SAYA_ART_H * 2];
+static uint8_t s_sprite_scratch[SAYA_SPRITE_MAX_W * SAYA_STRIP_H * 2];
 static saya_app_t s_app;
 
 static QueueHandle_t s_input_queue;

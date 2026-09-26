@@ -87,6 +87,22 @@ bool saya_pack_open(saya_pack_t *pack, const uint8_t *data, uint32_t size)
             view.fg_count = count;
             break;
         case 7: view.meta = body; view.meta_size = sec_size; break;
+        case 8:
+            // 文本框背后的条带条目,与 SEC_BG 同结构 { off, len, w, h }
+            if (sec_size < count * SAYA_BG_ENTRY) return false;
+            view.strips = body;
+            view.strip_data = body + count * SAYA_BG_ENTRY;
+            view.strip_data_size = sec_size - count * SAYA_BG_ENTRY;
+            view.strip_count = count;
+            break;
+        case 9:
+            // 立绘下半段,与 SEC_FG 同结构
+            if (sec_size < count * SAYA_FG_ENTRY) return false;
+            view.fg_lows = body;
+            view.fg_low_data = body + count * SAYA_FG_ENTRY;
+            view.fg_low_data_size = sec_size - count * SAYA_FG_ENTRY;
+            view.fg_low_count = count;
+            break;
         default: break;   // 未知段:忽略,便于向后兼容
         }
     }
@@ -216,6 +232,43 @@ bool saya_pack_bg(const saya_pack_t *pack, uint16_t id, saya_bg_t *out)
     out->w = rd16(rec + 8);
     out->h = rd16(rec + 10);
     return true;
+}
+
+bool saya_pack_strip(const saya_pack_t *pack, uint16_t id, saya_bg_t *out)
+{
+    if (!pack || !out) return false;
+    memset(out, 0, sizeof(*out));
+    if (!pack->strips || !pack->strip_data || id >= pack->strip_count) return false;
+    const uint8_t *rec = pack->strips + (size_t)id * SAYA_BG_ENTRY;
+    const uint32_t off = rd32(rec);
+    const uint32_t len = rd32(rec + 4);
+    if (off > pack->strip_data_size || len > pack->strip_data_size - off) return false;
+    out->jpeg = pack->strip_data + off;
+    out->jpeg_len = len;
+    out->w = rd16(rec + 8);
+    out->h = rd16(rec + 10);
+    return true;
+}
+
+bool saya_pack_fg_low(const saya_pack_t *pack, uint16_t id, saya_fg_t *out)
+{
+    if (!pack || !out) return false;
+    memset(out, 0, sizeof(*out));
+    if (!pack->fg_lows || !pack->fg_low_data || id >= pack->fg_low_count) return false;
+    const uint8_t *rec = pack->fg_lows + (size_t)id * SAYA_FG_ENTRY;
+    const uint32_t jpeg_off = rd32(rec);
+    const uint32_t jpeg_len = rd32(rec + 4);
+    const uint32_t mask_off = rd32(rec + 8);
+    const uint32_t mask_len = rd32(rec + 12);
+    if (jpeg_off > pack->fg_low_data_size || jpeg_len > pack->fg_low_data_size - jpeg_off) return false;
+    if (mask_off > pack->fg_low_data_size || mask_len > pack->fg_low_data_size - mask_off) return false;
+    out->jpeg = pack->fg_low_data + jpeg_off;
+    out->jpeg_len = jpeg_len;
+    out->mask = pack->fg_low_data + mask_off;
+    out->mask_len = mask_len;
+    out->w = rd16(rec + 16);
+    out->h = rd16(rec + 18);
+    return out->w > 0 && out->h > 0;
 }
 
 bool saya_pack_fg(const saya_pack_t *pack, uint16_t id, saya_fg_t *out)
