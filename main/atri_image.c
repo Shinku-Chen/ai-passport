@@ -172,9 +172,9 @@ static bool show_char(atri_image_t *img, const atri_pack_t *pack, uint16_t chr)
 
 // 正文带:源工程 text_bg 的蓝底向上渐透明,这里按行线性插值直接混进画布。
 // (LVGL 画不了"逐行不同的透明度",而这条带又必须让立绘透出来,所以在像素层做。)
-// 绘制顺序是:背景 -> 蓝带 -> 立绘 -> 浅暗帘 -> (LVGL 文字)。
-// 源工程把立绘压在带子下面,人物会被蓝带洗掉大半;这里反过来让立绘压在带子上面,
-// 再只给文字所在的几行盖一层浅暗帘,兼顾"人物完整"和"文字看得清"。
+// 绘制顺序是:背景 -> 立绘 -> 叠加 -> 蓝带 -> 浅暗帘 -> (LVGL 文字)。
+// 与源工程一致:带背景色的文字区(.text-wrapper)排在 .character 之后,所以立绘会被
+// 半透明蓝带压住,这是原作的观感。浅暗帘只盖文字所在的几行,保证白字压在任何立绘上都读得清。
 static void draw_text_band(atri_image_t *img)
 {
     // text_bg.png 采样值:RGB 约 (73,138,217),alpha 从 65/255 渐到 219/255。
@@ -232,11 +232,13 @@ bool atri_image_show(atri_image_t *img, const atri_pack_t *pack, uint16_t bg, ui
     if (!show_bg(img, pack, bg)) return false;
     ESP_LOGI(TAG, "背景 #%u 解码 %u ms,立绘 #%u,叠加 #%u", (unsigned)bg,
              (unsigned)img->last_decode_ms, (unsigned)chr, (unsigned)ovl);
-    draw_text_band(img);
+    // 立绘与叠加先画:文字区的背景色盖在它们上面(源工程的层序是 .character 在前、
+    // 带背景色的 .text-wrapper 在后),所以人物下半身会落在半透明蓝带之下。
     (void)show_char(img, pack, chr);
     if (ovl != ATRI_NONE) {
         (void)show_ovl(img, pack, ovl, x, y);   // 叠加失败也要把背景显示出来
     }
+    draw_text_band(img);
     draw_text_scrim(img);
     lv_obj_invalidate(img->canvas);
     return true;

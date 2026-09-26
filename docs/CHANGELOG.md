@@ -68,6 +68,10 @@
 - Idle behaviour: 45 s dim, 150 s screen off, 7 minutes deep sleep, any key wakes. Entering deep sleep now also puts the ES8311 codec into its low-power state, which removes the audible buzz from the speaker amplifier.
 - Verification aids for later iterations: the USB serial console accepts `ATRIJUMP <chapter> [scene]` (moves the live reading position) and `ATRISHOT <chapter> <scene>` (renders that scene into the canvas and streams the raw 240x320 frame back), and `idf.py -DATRI_BOOT_CHAPTER=<index> build` boots straight into a chapter.
 
+## v1.0.2-atri-reader - 2026-09-27
+
+- Full-body sprites are drawn before the text band again, which is the layer order the source app uses (`<image class="character">` first, the background-carrying `.text-wrapper` after it): the translucent blue text area now covers the lower part of a sprite instead of the sprite covering the band. Sprite selection, placement and every other behaviour are unchanged, so the change is visible only where a character reaches into the text area.
+
 ## v1.0.1-atri-reader - 2026-09-27
 
 - Full-body sprites now stand on the right side of the art area (6 px from the screen edge) instead of keeping the original artwork's centred position; vertical placement still runs from the sprite's own top to the bottom of the screen.
