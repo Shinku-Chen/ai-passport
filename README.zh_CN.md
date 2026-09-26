@@ -110,8 +110,9 @@ python tools/saya_font.py --font <NotoSansSC-Regular.otf> \
   （tag 触发的 CI 构建，community 变体，sha256 `e90476a5…`）与
   `FoloToy-AI-Passport-full-patched-r18.bin`（同一 commit 的本地构建，含补丁，仅自用）。
 - **社区市场**：以「沙耶之歌（社区版） / Saya no Uta (Community)」重新提交（新建项目，
-  项目 669、修订 1410、slug `community-59555253`，待审核），上传的是不含补丁的 community
-  合并镜像；发布信息与简介原文记录在
+  项目 671、修订 1412、slug `community-e81ed1fb`，待审核），上传的是不含补丁的 community
+  合并镜像（含标题页菜单修复，已上机验证）；上一份提交已不在创作中心列表中，因此按新作品提交。
+  发布信息与简介原文记录在
   [`docs/reference/shinku-chen/saya-no-uta/`](docs/reference/shinku-chen/saya-no-uta/README.zh_CN.md)。
 - 发布流程与检查项见 [`docs/development/release/publish-to-community.md`](docs/development/release/publish-to-community.md)。
 
