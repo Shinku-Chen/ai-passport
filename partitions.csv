@@ -1,9 +1,9 @@
 # Name,   Type, SubType, Offset,   Size,     Flags
 # The application is built from this repository; the `assets` partition holds the
-# galgame artwork and chapter scripts. That material is third-party content and is
-# not tracked here -- tools/gal/README.md explains how to supply it locally. The
-# partition is built with a placeholder pack when the sources are absent, so a
-# fresh clone still configures, builds and boots.
+# galgame artwork and chapter scripts. That material is third-party content,
+# tracked under assets/gal-source/ -- tools/gal/README.md explains the pipeline.
+# The partition is built with a placeholder pack when that tree is absent, so a
+# clone without it still configures, builds and boots.
 #
 # assets is 4 MiB; the packer fails the build if a pack would not fit, so the two
 # values cannot drift apart silently.

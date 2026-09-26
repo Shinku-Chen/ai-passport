@@ -70,7 +70,13 @@ SOLID_RGB565 = {
 # styles its panel in code (see main/gal/gal_layout.h), because that artwork is a
 # near-white plate carrying a repeating ornament that reads as a busy grey band
 # over the scene art. Not packing it also drops 37 KiB from the partition.
-UI_IMAGES = (("bg", "index_bg.png"),)
+#
+# These are pack names, which are also the paths below the source root and -- this
+# is the part that matters -- the names the firmware looks up in
+# main/gal/gal_app.c. A lookup the pack does not answer is a black screen rather
+# than a missing asset, so the two sides are kept identical and compared by
+# tests/test_gal_asset_names.py.
+UI_IMAGES = ("bg/index_bg.png",)
 
 
 # --- Source discovery --------------------------------------------------------
@@ -197,10 +203,10 @@ def collect_assets(sources: Sources, chapters: list[list[Scene]]):
         add(f"bg/{stem}.png", sources.background(applied.get(stem, stem) + ".png"))
     for stem in sorted(sprites):
         add(f"fg/{stem}.png", sources.sprite(applied.get(stem, stem)))
-    for subdir, filename in UI_IMAGES:
-        path = sources.background(filename) if subdir else sources.loose(filename)
+    for name in UI_IMAGES:
+        path = sources.loose(name)
         if path is not None:
-            add(filename, path)
+            add(name, path)
     return images, aliases, applied
 
 
