@@ -121,12 +121,14 @@ not drop them.
 
 ## Releases
 
-- **GitHub Release**: [`v0.1.0-saya-no-uta`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-saya-no-uta)
+- **GitHub Release**: [`v0.1.1-saya-no-uta`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.1-saya-no-uta)
   carries two assets: `FoloToy-AI-Passport-full.bin` (the tag-triggered CI build of the
-  community variant) and `FoloToy-AI-Passport-full-patched-r18.bin` (a local build of the
-  same commit with the patch, for personal devices only).
-- **Community market**: submitted as "Saya no Uta (Community)" with the patch-free community
-  merged image. The submission text and publish metadata are archived in
+  community variant, sha256 `e90476a5…`) and `FoloToy-AI-Passport-full-patched-r18.bin`
+  (a local build of the same commit with the patch, for personal devices only).
+- **Community market**: submitted as "Saya no Uta (Community)" (the Simplified Chinese peer
+  records the exact localized title) with the patch-free community merged image; project 669, revision 1410, slug
+  `community-59555253`, awaiting review. The submission text and publish metadata are
+  archived in
   [`docs/reference/shinku-chen/saya-no-uta/`](docs/reference/shinku-chen/saya-no-uta/README.md),
   and the Simplified Chinese peer records the exact localized titles.
 - The publishing workflow and its checks are described in

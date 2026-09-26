@@ -101,12 +101,13 @@ python tools/saya_font.py --font <NotoSansSC-Regular.otf> \
 
 ## 发布
 
-- **GitHub Release**：[`v0.1.0-saya-no-uta`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-saya-no-uta)
-  （显示名「沙耶之歌 (Saya no Uta) v0.1.0」），挂两份附件：`FoloToy-AI-Passport-full.bin`
-  （tag 触发的 CI 构建，community 变体）与 `FoloToy-AI-Passport-full-patched-r18.bin`
-  （同一 commit 的本地构建，含补丁，仅自用）。
-- **社区市场**：以「沙耶之歌(社区版) / Saya no Uta (Community)」提交，上传的是不含补丁的
-  community 合并镜像；发布信息与简介原文记录在
+- **GitHub Release**：[`v0.1.1-saya-no-uta`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.1-saya-no-uta)
+  （显示名「沙耶之歌 (Saya no Uta) v0.1.1」），挂两份附件：`FoloToy-AI-Passport-full.bin`
+  （tag 触发的 CI 构建，community 变体，sha256 `e90476a5…`）与
+  `FoloToy-AI-Passport-full-patched-r18.bin`（同一 commit 的本地构建，含补丁，仅自用）。
+- **社区市场**：以「沙耶之歌（社区版） / Saya no Uta (Community)」重新提交（新建项目，
+  项目 669、修订 1410、slug `community-59555253`，待审核），上传的是不含补丁的 community
+  合并镜像；发布信息与简介原文记录在
   [`docs/reference/shinku-chen/saya-no-uta/`](docs/reference/shinku-chen/saya-no-uta/README.zh_CN.md)。
 - 发布流程与检查项见 [`docs/development/release/publish-to-community.md`](docs/development/release/publish-to-community.md)。
 

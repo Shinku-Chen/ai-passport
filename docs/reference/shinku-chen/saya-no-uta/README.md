@@ -11,28 +11,30 @@ endings, fully offline, read with three keys.
 ## Publish information
 
 - **Title**: Saya no Uta (Community)
-- **Description**: submitted as:
+- **Description** (submitted copy):
 
-  > Turn the AI Passport into a pocket copy of *Saya no Uta*: 44 chapters, 3,828 lines of dialogue and three endings, fully offline.
+  > Turn the AI Passport into a pocket visual-novel reader and revisit Saya no Uta: 44 chapters, 3,828 dialogue lines and three endings, fully offline and ready out of the box.
   >
-  > Story: medical student Fuminori Sakisaka survives a car crash that kills his parents, but the brain surgery that saves him leaves the world twisted - he sees organs and rotting flesh everywhere, people as moving lumps of meat, speech as animal noise, and even ordinary food as revolting. In his despair the only normal thing left is a mysterious girl, Saya, who came to the hospital looking for her father. Fuminori falls for her, decides she is the reason he can bear living in this diseased world, and invites her to live with him. That is only the door to the madness still to come.
+  > Three keys carry the whole story: UP advances, holding UP fast-forwards until you let go, DOWN steps back a page, and OK opens the menu. Jump straight to any chapter to re-read a favourite scene, or switch on auto-play and let the story read itself. The art fills the whole screen and the translucent dialogue panel shows the scene behind it, so you can finish the whole route without reaching for your phone.
   >
-  > Controls - three keys read the whole story:
-  > - OK: open the menu (save / load / skip chapter / back to title / close)
-  > - UP: tap for the next segment (one press finishes the typing first), hold for one second to fast-forward and release to stop
-  > - DOWN: step back through the pages of a long segment; UP and DOWN also move the cursor in menus and choices
-  > - Choices stop and wait for you, and the menu's skip-chapter also stops at a choice the chapter has not reached yet
-  >
-  > Also:
-  > - Saves: five manual slots plus one automatic slot written on every scene change; "Continue" on the title screen resumes from it.
-  > - Settings: text speed (slow / medium / fast / instant) and font size (16 px or 20 px); the about page scrolls.
-  > - Reading screen: art area with background and sprite on top, the speaker name in its lower-left corner, and the dialogue box below.
-  > - Fully offline: the script, 193 backgrounds and 75 sprites are packed into the firmware - no network and no decompression at runtime; the Chinese font subset is built in.
-  > - The first screen is a content warning: scroll to the end before OK continues.
-  > - Idle 60 s dims the backlight, 180 s turns it off and 420 s enters deep sleep; any key wakes it and resumes from the automatic save.
-  >
-  > This firmware is a personal study port built from a public Mi Band port and is meant for personal devices only. The story contains heavy gore; please read with care and support the official release if you can.
+  > This build contains the community-safe base assets only; no adult content is included.
 
+- **Instructions** (submitted separately; Chinese is required):
+
+  > First run: no network and no pairing needed. Power on and follow these steps to read the whole story.
+  >
+  > 1. The content warning screen comes up first. Scroll it with UP / DOWN; once you reach the end the hint turns into "press OK to continue" and OK enters the game. Before that, OK only pages the text down.
+  > 2. On the title screen pick New game / Continue / Saves / Settings / Endings / About with UP / DOWN and press OK. Start with New game; later choose Continue to resume the scene you stopped at.
+  > 3. While reading: UP advances a segment, holding UP fast-forwards until you release it, DOWN steps back a page, and OK opens the menu. Long lines are split into pages, so DOWN also lets you re-read the previous page.
+  > 4. Auto-play: hold DOWN for about a second on the reading screen (a notice appears), and a segment is read every 0.9 seconds; any key stops it, and choices or endings stop it automatically. The screen will not dim or sleep while auto-play runs.
+  > 5. Choices and endings: when choices appear, pick one with UP / DOWN and confirm with OK; the story branches and has three endings in total.
+  > 6. Skipping chapters: open the menu with OK and choose Skip chapter. If the chapter still has choices you have not seen, it stops at one of them first.
+  > 7. Saves: the Saves screen has five manual slots plus one automatic slot written on every scene change. Holding OK on a slot deletes that save.
+  > 8. Settings: the menu's Settings entry switches text speed (including instant) and font size, and opens a scrollable About page.
+  > 9. Battery and power: the battery percentage sits in the top-right corner. After about 60 seconds idle the screen dims, at 180 seconds it turns off, and at 420 seconds the device sleeps; any key wakes it.
+
+- **Submission record**: project 669, revision 1410, slug `community-59555253`, status
+  `pending` (submitted for review).
 - **Category**: games
 - **Cover**: `saya-no-uta-cover.png` (PNG, 1152 × 1536, 3:4) — this archive stays text-only; the
   image itself is committed at [`assets/images/saya-no-uta-cover.png`](../../../../assets/images/saya-no-uta-cover.png)
