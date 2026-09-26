@@ -94,6 +94,7 @@ bool saya_image_show_bg(saya_image_t *img, const saya_pack_t *pack, uint16_t bg_
         return false;
     }
     img->last_decode_ms = elapsed;
+    ESP_LOGI(TAG, "背景 %u 解码 %u ms", (unsigned)bg_id, (unsigned)elapsed);
     lv_obj_invalidate(img->canvas);
     return true;
 }
@@ -125,6 +126,8 @@ bool saya_image_show(saya_image_t *img, const saya_pack_t *pack, uint16_t bg_id,
         return true;
     }
     img->last_decode_ms += elapsed;
+    ESP_LOGI(TAG, "立绘 %u(%ux%u) 解码 + 合成 %u ms", (unsigned)fg_id, (unsigned)fg.w,
+             (unsigned)fg.h, (unsigned)elapsed);
 
     // 按 1bpp 遮罩把立绘拷进画布:遮罩位为 1 才覆盖,MSB 在左。
     const uint16_t *src = (const uint16_t *)img->sprite_scratch;
