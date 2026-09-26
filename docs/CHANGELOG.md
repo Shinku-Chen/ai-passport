@@ -56,3 +56,14 @@
 - Updated software-design and project README references for the new documentation structure.
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
+
+## v1.0.0-atri-reader - 2026-09-27
+
+- First release of the *ATRI -My Dear Moments-* portrait reader for AI Passport: 34 chapters, 1,069 scenes, 12,188 dialogue lines, five full-body character sprites and three endings, fully offline. The 3.8 MB resource pack and the 16 px Chinese font subset ship inside the firmware, so the release is playable as-is.
+- Story and art come from the refactored Mi Band fan port `fywmjj/better-mb9p-ATRI`, which adds the full-body `src/common/character/*` sprites the earlier port lacked; the script and backgrounds are identical to `liuyuze61/ATRI-miband`.
+- Portrait 240x320 layout: full-screen background JPEGs, the source's translucent blue text band alpha-blended into the canvas, a speaker name plate, the chapter number in the top-left corner and a page counter bottom-right. Sprites composite above the band with a light scrim over the text rows, so the character is never hidden behind the dialogue box.
+- Sprite cadence: a full-body sprite appears only on lines that carry a speaker name and hides as soon as that character stops speaking; event CGs, black screens and the viewpoint character (Natsuki) never show one. Alternate script spellings (robot girl, girl, a voice, three forms of Ririka's name, Ryuji, Catherine) all map to the same sprite.
+- Three-key controls: **UP / DOWN** advance one line, **UP / DOWN (hold)** fast-forward until released (whole lines, no typewriter), **OK** opens the menu (save, load, skip chapter, back to title). Lists use UP / DOWN + OK, and OK (hold) returns. Text speed offers instant / slow / medium / fast, and the about page scrolls with UP / DOWN.
+- Saves: five manual slots plus one automatic slot written on every scene change (the title screen offers it as continue), the new v2 save format keeps the current sprite and still reads v1 saves; reaching both the happy and the bad ending unlocks the true-ending chapter on the title screen.
+- Idle behaviour: 45 s dim, 150 s screen off, 7 minutes deep sleep, any key wakes. Entering deep sleep now also puts the ES8311 codec into its low-power state, which removes the audible buzz from the speaker amplifier.
+- Verification aids for later iterations: the USB serial console accepts `ATRIJUMP <chapter> [scene]` (moves the live reading position) and `ATRISHOT <chapter> <scene>` (renders that scene into the canvas and streams the raw 240x320 frame back), and `idf.py -DATRI_BOOT_CHAPTER=<index> build` boots straight into a chapter.
