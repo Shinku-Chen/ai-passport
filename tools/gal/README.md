@@ -4,13 +4,19 @@
 
 # Galgame Asset Pipeline
 
-These tools turn the upstream visual novel into the read-only `assets` flash
-partition consumed by `main/gal/*`.
+These tools turn the upstream visual novel
+[`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) into the
+read-only `assets` flash partition consumed by `main/gal/*`.
+
+That upstream repository declares no license, so its artwork and chapter scripts
+are never committed here. The pack format, the tools and the generated fonts are
+this repository's own work; the material they consume is not.
 
 ## Where the source material goes
 
 The artwork and chapter scripts are third-party content and are **not tracked by
-this repository**. Put a local copy at:
+this repository**. Put a local copy of the upstream project's `src/common`
+directory at:
 
 ```text
 assets/gal-source/common/

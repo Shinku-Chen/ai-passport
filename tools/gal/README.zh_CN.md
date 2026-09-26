@@ -4,11 +4,16 @@
 
 # Galgame 素材流水线
 
-这套工具把上游视觉小说转换成 `main/gal/*` 读取的只读 `assets` flash 分区。
+这套工具把上游视觉小说 [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband)
+转换成 `main/gal/*` 读取的只读 `assets` flash 分区。
+
+该上游仓库未声明任何许可，因此它的美术与章节剧本从未进入本仓库。
+包格式、工具与生成的字库属于本仓库自己的成果;它们所消费的素材则不是。
 
 ## 素材放在哪里
 
-美术与章节剧本属于第三方内容，**本仓库不跟踪**。把本地副本放到:
+美术与章节剧本属于第三方内容,**本仓库不跟踪**。把上游项目 `src/common`
+目录（即 [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband)）的本地副本放到:
 
 ```text
 assets/gal-source/common/

@@ -4,9 +4,10 @@
 
 # Asunabi
 
-A portrait visual novel ported to the AI Passport from a Xiaomi Band release:
-**30 chapters, 4,649 dialogue lines and about 94,000 characters**, read straight
-through to a single ending.
+A portrait visual novel ported to the AI Passport from
+[`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband), a Xiaomi
+Band release: **30 chapters, 4,649 dialogue lines and about 94,000 characters**,
+read straight through to a single ending.
 
 This is the application built on this `feature/asunabi-galgame` branch. The
 firmware boots straight into the title screen (no demo menu).
@@ -44,9 +45,14 @@ corner and degrades to `--%` when the gauge cannot be read.
 
 ## Assets
 
-The artwork and chapter scripts are **third-party content and are not tracked in
-this repository**. They live in a local, git-ignored `assets/gal-source/` tree;
-the build packs them into a dedicated 4 MiB `assets` data partition through
+The artwork and chapter scripts come from
+[`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) and are
+**third-party content**. That repository declares no license, so none of it is
+redistributed here — attribution is the whole of what this branch can offer in
+return, and it is why the material lives outside the repository.
+
+It is kept in a local, git-ignored `assets/gal-source/` tree; the build packs it
+into a dedicated 4 MiB `assets` data partition through
 [`tools/gal/`](tools/gal/README.md), which is the reusable part of this branch:
 a documented pack format, a packer with a visual preview, an inspector, and the
 CJK font subset generator.
@@ -86,4 +92,5 @@ the advance rules and the pagination.
 ## Source
 
 - **Branch**: [`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame)
+- **Upstream work**: [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) — the Xiaomi Band quick-app release this port is based on. No license is declared there, which is why its artwork and chapter scripts are not redistributed in this repository.
 - Asset pipeline: [`tools/gal/README.md`](tools/gal/README.md)

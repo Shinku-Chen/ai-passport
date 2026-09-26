@@ -4,8 +4,8 @@
 
 # 飞鸟会长不肯认输（Asunabi）
 
-从小米手环版本移植到 AI Passport 的竖屏视觉小说：**30 章、4649 句对白、约 9.4 万字**，
-从头读到唯一结局。
+从小米手环版本 [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband)
+移植到 AI Passport 的竖屏视觉小说：**30 章、4649 句对白、约 9.4 万字**，从头读到唯一结局。
 
 这是建立在 `feature/asunabi-galgame` 分支上的应用。固件开机直接进入标题画面（没有 demo 菜单）。
 
@@ -34,10 +34,13 @@
 
 ## 素材
 
-美术与章节剧本属于**第三方内容，本仓库不跟踪**。它们放在本地、已 git 忽略的
-`assets/gal-source/` 目录里，构建时通过 [`tools/gal/`](tools/gal/README.md) 打包进一个
-独立的 4 MiB `assets` 数据分区。那个工具链才是本分支可复用的部分：一套有文档的包格式、
-带可视预览的打包器、包检查器，以及 CJK 字体子集生成器。
+美术与章节剧本来自 [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband)，
+属于**第三方内容**。该仓库未声明任何许可，因此这里不再分发其中任何内容 —— 标注来源是本分支唯一能给的回报，
+这也是这些素材放在仓库之外的原因。
+
+它们放在本地、已 git 忽略的 `assets/gal-source/` 目录里，构建时通过
+[`tools/gal/`](tools/gal/README.md) 打包进一个独立的 4 MiB `assets` 数据分区。那个工具链才是
+本分支可复用的部分：一套有文档的包格式、带可视预览的打包器、包检查器，以及 CJK 字体子集生成器。
 
 构建或发版前有两点需要知道：
 
@@ -70,4 +73,5 @@ python -m pip install Pillow                                       # Linux/macOS
 ## 来源
 
 - **分支**：[`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame)
+- **上游作品**：[`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) —— 本次移植所依据的小米手环快应用版本。该仓库未声明许可，因此其美术与章节剧本不在本仓库中再分发。
 - 素材工具链：[`tools/gal/README.md`](tools/gal/README.md)
