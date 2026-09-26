@@ -23,6 +23,11 @@
 - [静态缓冲按面板算，并验证已发布的产物](shinku-chen/release-artifact-verification.zh_CN.md) — 一处 51KB 缓冲错误导致空闲堆只剩 8KB、读已发布合并镜像的启动日志，以及替换刚发布的版本而不是另发后续版本。
 - [无 PSRAM 的 AI Passport 双机 BLE 联机](shinku-chen/two-device-ble-link.zh_CN.md) — 用地址大小做对等发现、把角色选择从界面里去掉；无 PSRAM 上联机的实测堆开销及其与静态截图缓冲的冲突；两个只在真机暴露的 NimBLE GATT 陷阱（缺 `access_cb`、订阅成功后的 `EDONE`）；NVS 与射频校准；回合制对战的停等可靠层。
 
+- [LVGL 9 的中文位图字体子集](shinku-chen/lvgl-cjk-font-subsets.zh_CN.md) — 为固定屏幕定制中文字集：LVGL 的 cmap 查找语义、PLAIN 4bpp 打包、为何 `lv_font_conv` 在当前 Node.js 下写出坏位图、U+3000 这类空白字形，以及把生成的 C 文件逐像素自校验。
+- [把视觉小说打包成一块内存映射的数据块](shinku-chen/packed-visual-novel-data.md) — 从 Flash 直接读的一块小端数据、打包期剥离剧本引擎指令、背景预裁与 1bpp 遮罩立绘，以及可追溯的来源信息。
+- [验证移植视觉小说的剧情图](shinku-chen/visual-novel-story-graph-verification.zh_CN.md) — 证明每一章每一幕可达、枚举选项组合证明每个结局可达，以及压在图上的交互规则（快进在选项处停下；跳过章节停在未遇到的选项上）。
+- [AI Passport 上三按键的阅读器交互](shinku-chen/three-key-reader-interaction.zh_CN.md) — 按键驱动会把快速连按合并成双击、按住重复需要长按阈值加松开事件、列表要在两端夹紧而不是绕圈。
+
 **应用档案：**
 
 - [音效钥匙扣](shinku-chen/voice-keychain/README.zh_CN.md) — 把 AI Passport 变成口袋音频播放器的音效钥匙扣。

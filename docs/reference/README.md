@@ -30,6 +30,11 @@ The engineering rules themselves live under
 - [Size Static Buffers from the Panel, and Verify the Release Artifact](shinku-chen/release-artifact-verification.md) — a 51 KB buffer mistake that left 8 KB of free heap, reading the startup log of the published merged image, and replacing a just-published release instead of shipping a follow-up.
 - [Two-Device BLE Link Between AI Passport Boards (No PSRAM)](shinku-chen/two-device-ble-link.md) — symmetric peer discovery with an address tiebreak instead of host/join, measured link heap on a no-PSRAM part and its conflict with a static screenshot buffer, two hardware-only NimBLE GATT traps (missing `access_cb`, `EDONE` after a successful subscribe), NVS for RF calibration, and a stop-and-wait layer for turn-based play.
 
+- [CJK Bitmap Font Subsets for LVGL 9](shinku-chen/lvgl-cjk-font-subsets.md) — building a purpose-built Chinese subset for a fixed screen: LVGL's cmap lookup semantics, PLAIN 4bpp packing, why `lv_font_conv` wrote corrupt bitmaps under current Node.js, whitespace glyphs such as U+3000, and self-verifying the generated C file pixel by pixel.
+- [Packing a Visual Novel Into One Flash-Mapped Blob](shinku-chen/packed-visual-novel-data.md) — one little-endian pack read straight out of flash, stripping engine directives from the script at pack time, pre-cropped backgrounds and 1bpp-masked sprites, and traceable provenance.
+- [Verifying a Ported Visual Novel's Story Graph](shinku-chen/visual-novel-story-graph-verification.md) — proving every chapter and scene is reachable, enumerating choice combinations to prove each ending, and the interaction rules that sit on top (fast-forward stops at choices; skip-chapter stops at an unreached choice).
+- [Three-Key Reader Interaction on the AI Passport](shinku-chen/three-key-reader-interaction.md) — the button driver merges quick taps into a double click, hold-to-repeat needs a long-press threshold plus the release event, and lists must clamp at the ends instead of wrapping.
+
 **Application playbooks:**
 
 - [Voice Keychain](shinku-chen/voice-keychain/README.md) — a sound-effects keychain that turns the AI Passport into a pocket audio player.
