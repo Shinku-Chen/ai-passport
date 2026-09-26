@@ -79,10 +79,12 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 
 ### 飞鸟会长不肯认输（Asunabi）
 
-从小米手环版本移植到 AI Passport 的竖屏视觉小说：**30 章、4649 句对白、约 9.4 万字**，
-从头读到唯一结局。状态：**开发中** —— 已能构建并已烧录测试，尚未作为 release 发布。
+从小米手环版本 [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband)
+移植到 AI Passport 的竖屏视觉小说：**30 章、4649 句对白、约 9.4 万字**，从头读到唯一结局。
+状态：**开发中** —— 已能构建并已烧录测试，尚未作为 release 发布。
 
 - 分支：[`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame)
+- 上游作品：[`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) —— 本次移植所依据的小米手环快应用版本。该仓库未声明许可，因此其美术与章节剧本不在本仓库中再分发。
 - 素材工具链：[`tools/gal/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame/tools/gal)
 
 **操作方式（三键）：** **UP** 推进一句（打字中则立即全显）；**UP（长按）** 按住快进、松手即停；
@@ -96,8 +98,8 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 
 **亮点：**
 
-- **第三方美术不进仓库** —— 美术与剧本在构建时从本地未跟踪的源目录打包进独立的 4 MiB
-  `assets` 数据分区；没有源素材时打包器产出占位包，全新 clone 仍能配置、构建并启动 ——
+- **第三方美术不进仓库** —— 美术与剧本来自上游项目，而它未声明任何许可；这些内容在构建时从本地未跟踪的源目录
+  打包进独立的 4 MiB `assets` 数据分区；没有源素材时打包器产出占位包，全新 clone 仍能配置、构建并启动 ——
   这也意味着 **CI 构建出的 release 不含本作品**，发版请用本地构建的合并镜像。
 - **无 PSRAM 也能铺满全屏美术** —— 背景是内存映射分区里的 LVGL 索引图，直接从 flash 绘制、
   按行解码（约 960 字节），而不是 150 KB 的帧缓冲；占用芯片 128 个 flash-MMU 页中的 83 个。

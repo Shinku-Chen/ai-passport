@@ -102,12 +102,14 @@ computer modes differ only in who moves first.
 
 ### Asunabi
 
-A portrait visual novel ported from a Xiaomi Band release: **30 chapters, 4,649
-dialogue lines and about 94,000 characters**, read straight through to a single
-ending. Status: **in development** — it builds and has been flashed for testing,
-but is not published as a release yet.
+A portrait visual novel ported from
+[`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband), a Xiaomi
+Band release: **30 chapters, 4,649 dialogue lines and about 94,000 characters**,
+read straight through to a single ending. Status: **in development** — it builds
+and has been flashed for testing, but is not published as a release yet.
 
 - Branch: [`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame)
+- Upstream work: [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) — the Xiaomi Band quick-app release this port is based on. No license is declared there, which is why its artwork and chapter scripts are not redistributed in this repository.
 - Asset pipeline: [`tools/gal/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame/tools/gal)
 
 **Controls (three keys):** **UP** advances a line, or reveals the rest of one that
@@ -125,9 +127,10 @@ resume point.
 
 **Highlights:**
 
-- **Third-party art stays out of the repository** — the artwork and scripts are
-  packed at build time into a dedicated 4 MiB `assets` data partition, read from a
-  local and untracked source tree. Without it the packer emits a placeholder pack,
+- **Third-party art stays out of the repository** — the artwork and scripts come
+  from the upstream project, which declares no license; they are packed at build
+  time into a dedicated 4 MiB `assets` data partition, read from a local and
+  untracked source tree. Without it the packer emits a placeholder pack,
   so a fresh clone still configures, builds and boots — which also means a
   CI-built release does not contain the game; release this branch from a locally
   built merged image.
