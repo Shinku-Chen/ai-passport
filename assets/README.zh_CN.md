@@ -15,6 +15,20 @@
 - 添加字库前评估 Flash 与内部 RAM 影响；ESP32-C3 无 PSRAM。
 - 不提交许可不允许分发的字库。
 
+| 文件 | 格式 | 用途、来源与许可 |
+| --- | --- | --- |
+| [`fonts/gal_font_16.c`](fonts/gal_font_16.c)、[`fonts/gal_font_20.c`](fonts/gal_font_20.c) | 生成的 LVGL `lv_font_t` 源码，4 bpp | 供 [`main/gal/`](../main/gal/) 中 galgame 的正文与人名使用。由 **思源黑体 / Noto Sans SC**（`NotoSansSC-VF.ttf`，SIL Open Font License 1.1，允许再分发其派生的位图字体）生成。构建既不需要该可变字体也不需要转换器：生成的源码已提交。 |
+
+覆盖范围 = 已打包章节剧本中的全部码位 ∪ [`main/gal/gal_strings.h`](../main/gal/gal_strings.h)
+中的全部非 ASCII 字符 —— 2096 个码位加可打印 ASCII。改动任一输入后重新生成:
+
+```bash
+python tools/gal/gen_font.py
+```
+
+Flash 开销约为 87 KiB（16 px）加 120 KiB（20 px）的位图与字形描述表，位于只读数据段。
+运行时不复制到 RAM;完整流水线见 [`tools/gal/README.zh_CN.md`](../tools/gal/README.zh_CN.md)。
+
 ## 图片（images）
 
 可复用的源图与生成的显示资产放在 `images/`。

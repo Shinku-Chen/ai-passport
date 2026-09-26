@@ -1,4 +1,13 @@
 # Name,   Type, SubType, Offset,   Size,     Flags
+# The application is built from this repository; the `assets` partition holds the
+# galgame artwork and chapter scripts. That material is third-party content and is
+# not tracked here -- tools/gal/README.md explains how to supply it locally. The
+# partition is built with a placeholder pack when the sources are absent, so a
+# fresh clone still configures, builds and boots.
+#
+# assets is 4 MiB; the packer fails the build if a pack would not fit, so the two
+# values cannot drift apart silently.
 nvs,      data, nvs,     0x9000,   0x6000,
 phy_init, data, phy,     0xf000,   0x1000,
-factory,  app,  factory, 0x10000,  0x7f0000,
+factory,  app,  factory, 0x10000,  0x3F0000,
+assets,   data, 0x40,    0x400000, 0x400000,

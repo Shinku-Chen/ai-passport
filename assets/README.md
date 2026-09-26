@@ -17,6 +17,22 @@ Store reusable font files and generated font sources in `fonts/`.
 - Check Flash and internal-RAM impact before adding a font; the ESP32-C3 has no PSRAM.
 - Do not commit fonts whose license does not permit redistribution.
 
+| File | Format | Use, source and license |
+| --- | --- | --- |
+| [`fonts/gal_font_16.c`](fonts/gal_font_16.c), [`fonts/gal_font_20.c`](fonts/gal_font_20.c) | Generated LVGL `lv_font_t` sources, 4 bpp | Body and speaker text for the galgame in [`main/gal/`](../main/gal/). Generated from **Noto Sans SC** (`NotoSansSC-VF.ttf`, SIL Open Font License 1.1, which permits redistribution of the derived bitmap font). Neither the variable font nor the converter is needed to build: the generated sources are committed. |
+
+Coverage is the union of every codepoint in the packed chapter scripts and every
+non-ASCII character in [`main/gal/gal_strings.h`](../main/gal/gal_strings.h) --
+2096 codepoints plus printable ASCII. Regenerate after changing either input:
+
+```bash
+python tools/gal/gen_font.py
+```
+
+Flash cost is about 87 KiB (16 px) plus 120 KiB (20 px) of bitmaps and glyph
+descriptors, in read-only data. Nothing is copied to RAM at runtime; see
+[`tools/gal/README.md`](../tools/gal/README.md) for the whole pipeline.
+
 ## Images
 
 Store reusable source images and generated display assets in `images/`.
