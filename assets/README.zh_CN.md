@@ -15,6 +15,29 @@
 - 添加字库前评估 Flash 与内部 RAM 影响；ESP32-C3 无 PSRAM。
 - 不提交许可不允许分发的字库。
 
+### 星空列车与白的旅行阅读器 —— `fonts/starry_cjk_16.c`
+
+`feature/starry-sky-railroad` 阅读器使用的一个 LVGL 4bpp 位图字体(2708 个字形);
+`fonts/starry_cjk_symbols.txt` 是它必须覆盖的字符清单。
+
+| 项目 | 内容 |
+| --- | --- |
+| 来源 | Noto Sans SC Regular(OFL-1.1),2026-09-26 从 `notofonts/noto-cjk` 镜像经 jsDelivr 取得(`Sans/SubsetOTF/SC/NotoSansSC-Regular.otf`,8.3 MB);源 OTF **不**入库 |
+| 清单 | 2708 个码位 = `main/` 下全部界面文案 + 资源包里出现过的全部字符,含 U+3000(行首缩进全角空格,剧本里用了 410 处) |
+| 格式 | LVGL 9 位图字体:4bpp PLAIN 位图 + 每字形度量;ASCII 用 `LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY`,其余用 `SPARSE_TINY`;行高 20、基线 17 |
+| 生成器 | `tools/starry_lvgl_font.py`(Pillow/FreeType 栅格化)。生成后回读自己写出的 C 文件,与栅格化结果逐像素比对 |
+| 重新生成 | `python tools/starry_lvgl_font.py --font <NotoSansSC-Regular.otf> --pack main/starry_data/starry_pack.bin --out-dir assets/fonts` |
+| 校验 | `python tools/starry_lvgl_font.py --check --pack … --out-dir …`(在 `tools/validate.sh --static` 里跑) |
+| 集成方式 | 作为普通 C 源码通过 `main/CMakeLists.txt` 的 `target_sources()` 编进 `main` 组件 |
+| 影响 | 约 0.32 MB Flash(322 KB 位图);无静态 RAM —— 位图留在 Flash 里、LVGL 逐字形解码 |
+
+界面现在通过 LVGL 绘制文字,所以字体采用 LVGL 自己的布局。推进宽度取源字体的自然
+宽度:ASCII 的 "W" 比排版模型预算的半角格子宽,LVGL 标签会在自己的盒子里换行。
+
+`fonts/starry_font16.bin`、`starry_font20.bin` 与 `starry_symbols.txt` 是旧逐条带渲染器
+(已不参与构建)使用的自研 `SSRFONT1` 包;保留它们是为了旧渲染器仍能从 checkout 构建,
+应用不再引用。
+
 ## 图片（images）
 
 可复用的源图与生成的显示资产放在 `images/`。
