@@ -16,6 +16,8 @@ static const char *TAG = "atri_app";
 #define ATRI_TRANSITION_MS 1200u
 // 长按上/下开始快进时,每句话之间的间隔。
 #define ATRI_FASTFORWARD_MS 110u
+// 自动阅读:一句话打完之后再等这么久翻到下一句(给阅读留时间)。
+#define ATRI_AUTO_MS 1600u
 
 // 打字机速度(毫秒/字):0 = 瞬间显示整页。对应设置页的 瞬间/慢/中/快。
 static const uint32_t s_speed_ms[4] = { 0, 60, 35, 18 };
@@ -171,7 +173,8 @@ static void open_about(atri_app_t *app)
         "资源包直接映射自 Flash。\n\n"
         "操作:\n"
         "  上 / 下短按：下一句\n"
-        "  长按上 / 下：快进(松手即停)\n"
+        "  长按上：快进(松手即停)\n"
+        "  长按下：自动阅读开关(任意键停)\n"
         "  确定：打开菜单(存/读档、跳过章节、回标题)\n"
         "  选项页：上/下选择,确定确认\n"
         "  标题页 / 列表：上/下选择,长按确定返回\n\n"
@@ -338,6 +341,8 @@ static void advance_reading(atri_app_t *app, bool skip_typing)
     case ATRI_STEP_CHOICE:
         auto_save(app);
         app->fast_forward = false;   // 选项页停下,交回玩家
+        app->auto_play = false;
+        atri_ui_set_auto(&app->ui, false);
         render_scene(app);
         break;
     case ATRI_STEP_CHAPTER:
@@ -347,6 +352,8 @@ static void advance_reading(atri_app_t *app, bool skip_typing)
         break;
     case ATRI_STEP_ENDING:
         app->fast_forward = false;
+        app->auto_play = false;
+        atri_ui_set_auto(&app->ui, false);
         show_ending(app);
         break;
     case ATRI_STEP_STUCK:
@@ -590,8 +597,17 @@ static void key_game(atri_app_t *app, const atri_key_t *key)
         render_scene(app);
         return;
     }
-    // 长按上/下开始快进,抬起时停(BSP 的 RELEASE 事件)。
-    if (key->ev == BSP_BTN_LONG && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
+    // 长按下 = 自动阅读模式开关(按固定节奏自动翻页)。
+    if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_DOWN) {
+        app->auto_play = !app->auto_play;
+        app->auto_ms = ATRI_AUTO_MS;
+        app->fast_forward = false;
+        atri_ui_set_auto(&app->ui, app->auto_play);
+        notify(app, app->auto_play ? "自动阅读:开" : "自动阅读:关");
+        return;
+    }
+    // 长按上 = 快进(按住就一直推,松手停)。
+    if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_UP) {
         app->fast_forward = true;
         app->fast_forward_ms = ATRI_FASTFORWARD_MS;
         if (!app->player.at_choice) advance_reading(app, true);
@@ -686,6 +702,15 @@ void atri_app_key(atri_app_t *app, const atri_key_t *key)
     app->notice_ms = 0;
     atri_ui_notice(&app->ui, "");
 
+    // 自动阅读模式:除了“长按下”这个开关本身,任何按键都停下来(先把控制权还给玩家)。
+    const bool is_auto_toggle =
+        (key->btn == BSP_BTN_DOWN && key->ev == BSP_BTN_LONG && app->page == ATRI_PAGE_GAME);
+    if (app->auto_play && !is_auto_toggle) {
+        app->auto_play = false;
+        app->fast_forward = false;
+        atri_ui_set_auto(&app->ui, false);
+    }
+
     switch (app->page) {
     case ATRI_PAGE_WARNING: key_warning(app, key); break;
     case ATRI_PAGE_TITLE: key_title(app, key); break;
@@ -727,7 +752,20 @@ void atri_app_tick(atri_app_t *app, uint32_t elapsed_ms)
             render_scene(app);
         }
     }
-    // 快进:按住上/下时每 ATRI_FASTFORWARD_MS 推进一步。
+    // 自动阅读:打字机打完后再等 ATRI_AUTO_MS 才翻页;选项/过场/结局自动停。
+    if (app->auto_play && app->page == ATRI_PAGE_GAME && !app->transition_pending) {
+        if (atri_ui_typing(&app->ui) || app->player.at_choice || app->player.ended) {
+            app->auto_ms = ATRI_AUTO_MS;   // 还在打字 / 等玩家选择:计时不累计
+        } else {
+            app->auto_ms = app->auto_ms > elapsed_ms ? app->auto_ms - elapsed_ms : 0;
+            if (app->auto_ms == 0) {
+                app->auto_ms = ATRI_AUTO_MS;
+                advance_reading(app, false);
+            }
+        }
+    }
+
+    // 快进:长按上时每 ATRI_FASTFORWARD_MS 推进一步。
     if (app->fast_forward && app->page == ATRI_PAGE_GAME && !app->transition_pending) {
         app->fast_forward_ms += elapsed_ms;
         while (app->fast_forward_ms >= ATRI_FASTFORWARD_MS) {

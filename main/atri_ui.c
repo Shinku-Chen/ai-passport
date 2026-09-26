@@ -192,6 +192,13 @@ static void build_overlays(atri_ui_t *ui, lv_obj_t *screen)
     ui->battery = new_label(screen, ui->font_tiny, COL_DIM, "");
     lv_obj_align(ui->battery, LV_ALIGN_TOP_RIGHT, -8, 6);
     lv_obj_set_style_text_opa(ui->battery, LV_OPA_70, 0);
+    // 自动阅读指示:常驻在画面区左下角(用文字,不用图标,省得字体缺字形)。
+    ui->auto_hint = new_label(screen, ui->font_cjk, COL_ACCENT, "自动");
+    lv_obj_align(ui->auto_hint, LV_ALIGN_BOTTOM_LEFT, 8,
+                 -(ATRI_UI_H - ATRI_BOX_Y) - 6);
+    lv_obj_set_style_text_opa(ui->auto_hint, LV_OPA_80, 0);
+    set_hidden(ui->auto_hint, true);
+
     ui->page_hint = new_label(screen, ui->font_tiny, COL_DIM, "");
     lv_obj_align(ui->page_hint, LV_ALIGN_TOP_RIGHT, -8, ATRI_BOX_Y - 24);
     lv_obj_set_style_text_opa(ui->page_hint, LV_OPA_70, 0);
@@ -307,7 +314,9 @@ bool atri_ui_create(atri_ui_t *ui, uint16_t *art_pixels, const lv_font_t *font_c
 void atri_ui_show_page(atri_ui_t *ui, atri_page_t page)
 {
     if (!ui) return;
+    ui->page_current = page;
     set_hidden(ui->box, page != ATRI_PAGE_GAME);
+    set_hidden(ui->auto_hint, page != ATRI_PAGE_GAME || !ui->auto_on);
     set_hidden(ui->progress, page != ATRI_PAGE_GAME);
     // 电量在标题页也显示(同一位于画面区右上角)。
     set_hidden(ui->battery, page != ATRI_PAGE_GAME && page != ATRI_PAGE_TITLE);
@@ -425,6 +434,13 @@ void atri_ui_set_progress(atri_ui_t *ui, int chapter, int page, int pages)
     } else {
         set_hidden(ui->page_hint, true);
     }
+}
+
+void atri_ui_set_auto(atri_ui_t *ui, bool on)
+{
+    if (!ui) return;
+    ui->auto_on = on;
+    set_hidden(ui->auto_hint, !on || ui->page_current != ATRI_PAGE_GAME);
 }
 
 void atri_ui_set_battery(atri_ui_t *ui, int percent)

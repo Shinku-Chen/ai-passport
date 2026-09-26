@@ -44,8 +44,10 @@ typedef struct {
 
     bool transition_pending;   // 换章过场:显示标题画,计时结束或按键后进正文
     uint32_t transition_ms;
-    bool fast_forward;         // 长按上/下快进中(松手即停)
+    bool fast_forward;         // 长按上快进中(松手即停)
     uint32_t fast_forward_ms;
+    bool auto_play;            // 自动阅读模式(长按下开关;任意键停止)
+    uint32_t auto_ms;          // 自动模式:一句话读完后再等这么久就翻
     int about_scroll;          // 关于页滚动位置(像素)
 
     int battery_percent;

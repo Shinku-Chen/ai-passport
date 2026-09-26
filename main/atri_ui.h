@@ -90,6 +90,7 @@ typedef struct {
     struct _lv_obj_t *page_ending;
     struct _lv_obj_t *page_about;
 
+    struct _lv_obj_t *auto_hint;      // 自动阅读模式指示
     struct _lv_obj_t *notice;         // 瞬时提示(保存成功 / 无法跳过等)
 
     struct _lv_obj_t *warning_body;
@@ -104,6 +105,8 @@ typedef struct {
     const lv_font_t *font_tiny;       // Montserrat 14(浮层数字)
 
     char last_speaker[64];            // 只用于日志:说话人变化时打一行
+    bool auto_on;                     // 自动阅读模式
+    atri_page_t page_current;         // 显隐恢复时要知道当前页
 
     lv_timer_t *typewriter;
     char typing_target[ATRI_TEXT_BUFFER];   // 本页完整文本(稳定缓冲)
@@ -132,6 +135,9 @@ bool atri_ui_typing(const atri_ui_t *ui);
 
 // 画面区浮层:章节(1 起,0 = 不显示)与页码;电量 -- 用 -1 表示未知。
 void atri_ui_set_progress(atri_ui_t *ui, int chapter, int page, int pages);
+
+// 自动阅读模式的常驻指示("自动"两个字,画面区左下角)。
+void atri_ui_set_auto(atri_ui_t *ui, bool on);
 void atri_ui_set_battery(atri_ui_t *ui, int percent);
 
 // 选项
