@@ -1,0 +1,9 @@
+[
+  {
+    "background": "bc04no0",
+    "choices": [
+      {"text": "打给郁纪","href": 22},
+      {"text": "打给凉子","href": 40}
+    ]
+  }
+]

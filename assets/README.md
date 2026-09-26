@@ -40,6 +40,25 @@ plain 4bpp reader, while LVGL's own Montserrat fonts decode correctly with the s
 reader. On the device this showed up as completely garbled text. The in-repo generator
 avoids the Node dependency entirely and fails loudly instead of emitting bad glyphs.
 
+## Saya no Uta reader - `saya-source/`
+
+Base source material for the visual-novel reader on `feature/saya-no-uta`: the converted
+chapter scripts (`sy/`, 48 files) and the background (`cg/`, 237 PNG) and sprite (`fg/`,
+90 PNG) artwork from [`liuyuze61/Saya-miband10`](https://github.com/liuyuze61/Saya-miband10),
+committed verbatim (6.6 MB) so a clone can rebuild the resource pack without an external
+checkout. That upstream project declares no license; the material is kept as the single
+source of attribution, and the pack records the same provenance in its metadata section.
+
+The source port's patch directory (adult content) is **not** committed; the patch-free
+community variant is what the repository builds.
+
+```bash
+python tools/saya_pack.py --source assets/saya-source --commit 4d73ed0     --out main/saya_data/saya_pack.bin
+```
+
+Rebuilding with the same commit and defaults reproduces the committed
+`main/saya_data/saya_pack.bin` byte for byte.
+
 ## Images
 
 Store reusable source images and generated display assets in `images/`.

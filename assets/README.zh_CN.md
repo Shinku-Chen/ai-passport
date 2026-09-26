@@ -32,6 +32,21 @@
 
 **不用 `lv_font_conv` 的原因**：该工具最后一版是 1.5.3（2021），在当前 Node.js 下写出的字形位图是坏的 —— 同一个 OTF、同一套参数，`--no-compress` 与 `--no-compress --no-prefilter` 产出的字节完全相同，按 LVGL 的 PLAIN 4bpp 读法解码全是噪点；而 LVGL 自带的 Montserrat 字体用同一解码器完全正常。设备上的表现就是“文字全部乱码”。改用仓库内生成器后不再依赖 Node，且生成阶段就会失败报错，不会默默产出坏字形。
 
+## 《沙耶之歌》阅读器 —— `saya-source/`
+
+`feature/saya-no-uta` 分支视觉小说阅读器的基础源素材：转换后的章节剧本（`sy/`，48 个文件）
+与来自 [`liuyuze61/Saya-miband10`](https://github.com/liuyuze61/Saya-miband10) 的背景（`cg/`，237 张 PNG）、
+立绘（`fg/`，90 张 PNG）美术，原样提交（6.6 MB），因此 clone 之后不需要外部 checkout 就能重建资源包。
+上游项目未声明许可；这里把该目录作为唯一的来源标注，资源包元数据里记录同一来源。
+
+源移植仓库的 `补丁/` 目录（成人内容）**不提交**；仓库构建的是不含补丁的 community 变体。
+
+```bash
+python tools/saya_pack.py --source assets/saya-source --commit 4d73ed0     --out main/saya_data/saya_pack.bin
+```
+
+用同一 commit 与默认参数重建，可以逐字节复现仓库里提交的 `main/saya_data/saya_pack.bin`。
+
 ## 图片（images）
 
 可复用的源图与生成的显示资产放在 `images/`。

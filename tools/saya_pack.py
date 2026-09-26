@@ -30,8 +30,13 @@ Image conversion (fixed screen layout 320x240, art area 320x150):
                           -> JPEG + 1bpp 遮罩(按行打包)
 
 Usage:
-  python tools/saya_pack.py --source <Saya-miband10 checkout> \
+  python tools/saya_pack.py --source assets/saya-source \
       --out main/saya_data/saya_pack.bin
+  # 也可以指向上游 Saya-miband10 checkout(素材在 src/common/ 下)
+
+仓库内提交的 assets/saya-source/ 就是打包所需的全部基础素材(剧本 + 背景 + 立绘),
+所以 clone 之后不需要外部 checkout 就能重建 pack;只有含补丁的 release 变体还需要
+上游仓库的 补丁/ 目录(该目录不提交)。
 
 Variants (发布规则,必须分清):
   community(默认) 只读 src/common/{sy,cg,fg},不含源仓库 补丁/ 里的任何内容。
@@ -180,12 +185,27 @@ def pack_mask(alpha: Image.Image) -> bytes:
     return data[: stride * h]
 
 
+def source_dirs(source: str) -> Tuple[str, str, str]:
+    """定位剧本/背景/立绘目录。
+
+    两种布局都支持:
+      1. 仓库内提交的 assets/saya-source/(直接放 sy、cg、fg);
+      2. 上游 Saya-miband10 checkout(素材在 src/common/ 下)。
+    """
+    nested = os.path.join(source, "src", "common")
+    root = nested if os.path.isdir(os.path.join(nested, "sy")) else source
+    dirs = tuple(os.path.join(root, name) for name in ("sy", "cg", "fg"))
+    missing = [d for d in dirs if not os.path.isdir(d)]
+    if missing:
+        raise SystemExit("源素材目录缺失: " + ", ".join(missing)
+                         + "(用 --source 指向 assets/saya-source 或上游 checkout)")
+    return dirs  # type: ignore[return-value]
+
+
 class PackBuilder:
     def __init__(self, source: str, patch_dir: str = "") -> None:
         self.src = source
-        self.sy_dir = os.path.join(source, "src", "common", "sy")
-        self.cg_dir = os.path.join(source, "src", "common", "cg")
-        self.fg_dir = os.path.join(source, "src", "common", "fg")
+        self.sy_dir, self.cg_dir, self.fg_dir = source_dirs(source)
         # 补丁目录(R18 内容,只给 release 变体用):同名章节覆盖基础脚本,PNG 并入背景表。
         self.patch_dir = patch_dir
         self.patched_chapters: List[str] = []

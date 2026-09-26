@@ -16,7 +16,7 @@ reading engine in C on LVGL and drives it with the three keys.
 
 ```text
 ┌──────────────────────────────────┐  320 x 240, held in landscape
-│  art area 320 x 150              │  background JPEG + character sprite
+│  art area 320 x 150              │  background JPEG + sprite (right-aligned)
 │                        [battery] │  battery chip in the top-right corner
 │  speaker name (bottom-left)      │  translucent chip above the dialogue box
 ├──────────────────────────────────┤
@@ -69,8 +69,11 @@ The firmware `mmap`s the pack from the application partition, decodes one scene
 (background plus sprite) into a 320 × 150 RGB565 canvas only when the background or
 sprite actually changes, and composites the sprite with its mask.
 
-Regenerating requires a checkout of the source port and a licensed CJK font; see
-the header of each tool. Fonts are produced by a small in-repo generator instead of
+Regenerating only needs the committed `assets/saya-source/` material (scripts,
+backgrounds and sprites) plus a redistributable CJK font; the patched release variant
+also needs the source port's patch directory, which is not committed. Rebuilding with
+the same source commit reproduces the committed `main/saya_data/saya_pack.bin` byte for
+byte; see the header of each tool. Fonts are produced by a small in-repo generator instead of
 `lv_font_conv` — that tool's last release writes corrupt glyph bitmaps under current
 Node.js (same input, byte-identical output with and without `--no-prefilter`, none of
 it decodes under LVGL's plain 4bpp reader), and the generator verifies its own output
