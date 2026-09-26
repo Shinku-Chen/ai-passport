@@ -2,7 +2,7 @@
   <a href="README.zh_CN.md">简体中文</a> · <strong>English</strong>
 </p>
 
-# Saya no Uta
+# Saya no Uta (Community)
 
 A landscape visual-novel reader for the AI Passport. It ports the Mi Band 10 fan
 port of *Saya no Uta* to the device: 44 chapters, 3,828 dialogue lines and three
@@ -10,7 +10,7 @@ endings, fully offline, read with three keys.
 
 ## Publish information
 
-- **Title**: Saya no Uta
+- **Title**: Saya no Uta (Community)
 - **Description**: submitted as:
 
   > Turn the AI Passport into a pocket copy of *Saya no Uta*: 44 chapters, 3,828 lines of dialogue and three endings, fully offline.
