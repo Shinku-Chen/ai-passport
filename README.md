@@ -128,8 +128,8 @@ not drop them.
   community variant, sha256 `e90476a5…`) and `FoloToy-AI-Passport-full-patched-r18.bin`
   (a local build of the same commit with the patch, for personal devices only).
 - **Community market**: submitted as "Saya no Uta (Community)" (the Simplified Chinese peer
-  records the exact localized title) with the patch-free community merged image; project 671,
-  revision 1412, slug `community-e81ed1fb`, awaiting review. The earlier submission is no longer
+  records the exact localized title) with the patch-free community merged image; project 672,
+  revision 1413, slug `community-10803507`, awaiting review. The earlier submission is no longer
   listed in the creator centre, so this release was submitted as a new play. The submission text and publish metadata are
   archived in
   [`docs/reference/shinku-chen/saya-no-uta/`](docs/reference/shinku-chen/saya-no-uta/README.md),
