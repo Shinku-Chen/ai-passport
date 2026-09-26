@@ -1,12 +1,13 @@
 /*
  * Screen geometry and palette for the galgame reader.
  *
- * The dialogue panel follows the Saya reference port: a flat, fully opaque dark
- * plate spanning the full width, with a single 2 px accent line along its top
- * edge and no rounding. The upstream project's own panel artwork is not used at
- * all -- it is a near-white plate carrying a repeating ornament, and at any
- * usable opacity over scene art it reads as a busy grey band competing with the
- * picture.
+ * The dialogue panel follows the Saya reference port: a flat dark plate spanning
+ * the full width, with a single 2 px accent line along its top edge and no
+ * rounding. Unlike that port the plate is tinted rather than solid, so the scene
+ * stays visible behind the text (see GAL_PANEL_OPA). The upstream project's own
+ * panel artwork is not used at all -- it is a near-white plate carrying a
+ * repeating ornament, and at any usable opacity over scene art it reads as a busy
+ * grey band competing with the picture.
  *
  * The panel is 82 px tall, which is four 19 px lines. That is measured rather
  * than preferred: it leaves 206 px of artwork visible (64% of the screen) and
@@ -29,6 +30,15 @@
 #define GAL_COLOR_ROW    lv_color_hex(0x1B2026) /* list row */
 #define GAL_COLOR_ROW_SEL lv_color_hex(0x2B5F45) /* selected list row */
 
+/* The title screen draws its text straight onto the backdrop artwork, so a tint of
+ * the panel colour keeps the title and the status row readable over a bright scene
+ * while the artwork still shows through. */
+#define GAL_TITLE_SCRIM_OPA LV_OPA_30
+
+/* The option list sits on the artwork too; the plate is denser than the scrim so
+ * the rows stay readable, but the picture still comes through it. */
+#define GAL_TITLE_PANEL_OPA LV_OPA_50
+
 /* --- dialogue panel --------------------------------------------------------- */
 
 #define GAL_PANEL_MARGIN_X 0
@@ -39,6 +49,12 @@
 #define GAL_PANEL_WIDTH    (240 - 2 * GAL_PANEL_MARGIN_X)
 
 #define GAL_PANEL_RULE_WIDTH 2
+
+/* The panel is the reading surface and sits directly on the artwork, so it keeps a
+ * tint of its fill rather than being solid: the picture reads through it, and the
+ * plate stays dark enough for the near-white body text. Denser than the title
+ * screen's option panel because it carries four lines of text instead of labels. */
+#define GAL_PANEL_OPA   LV_OPA_70
 
 /* Inner text block: 10 px side inset, 4 px above the first line and 2 px below
  * the last. */

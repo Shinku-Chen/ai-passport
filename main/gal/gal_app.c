@@ -65,7 +65,6 @@ static lv_obj_t *s_text_label;
 static lv_obj_t *s_hint_label;
 static lv_obj_t *s_battery_label;
 static lv_obj_t *s_chapter_label;
-static bool s_textbox_visible = true;
 
 static lv_timer_t *s_type_timer;
 static lv_timer_t *s_auto_timer;
@@ -294,6 +293,18 @@ static void reveal_all(void)
     type_stop();
 }
 
+/* (Re)arm the auto-play delay for the line on screen. Auto-play is a delay after a
+ * line has finished revealing, so this is the one place that starts it: the typing
+ * timer finishing, an instant reveal, and switching auto-play on mid-line. */
+static void auto_arm(void)
+{
+    if (!s_save->auto_play || s_auto_timer == NULL) {
+        return;
+    }
+    lv_timer_reset(s_auto_timer);
+    lv_timer_resume(s_auto_timer);
+}
+
 static void begin_reveal(const char *text, lv_obj_t *target)
 {
     type_stop();
@@ -306,8 +317,10 @@ static void begin_reveal(const char *text, lv_obj_t *target)
         lv_label_set_text(target, "");
     }
     if (s_save->text_speed <= GAL_SPEED_INSTANT) {
-        /* 瞬间: reveal the whole page with no animation at all. */
+        /* 瞬间: reveal the whole page with no animation at all. Auto-play still has
+         * to be armed here: no typing timer will finish and arm it. */
         reveal_all();
+        auto_arm();
         return;
     }
     s_revealing = true;
@@ -319,16 +332,14 @@ static void begin_reveal(const char *text, lv_obj_t *target)
 }
 
 static void auto_tick(lv_timer_t *timer);
+static void reader_advance_action(void);
 
 static void type_tick(lv_timer_t *timer)
 {
     (void)timer;
     if (s_text == NULL || s_reveal_len >= s_text_len) {
         type_stop();
-        if (s_save->auto_play && s_auto_timer != NULL) {
-            lv_timer_reset(s_auto_timer);
-            lv_timer_resume(s_auto_timer);
-        }
+        auto_arm();
         return;
     }
     size_t step = utf8_length(s_text + s_reveal_len, s_text_len - s_reveal_len);
@@ -371,9 +382,41 @@ static void auto_tick(lv_timer_t *timer)
     if (s_view != GAL_VIEW_READER || s_panel != NULL) {
         return;
     }
-    /* Re-enter through the normal advance path so auto-play obeys the same rules
-     * as a key press. */
-    gal_app_key(BSP_BTN_OK, BSP_BTN_CLICK);
+    /* Same path as the UP key: auto-play reveals a half-typed line first, then
+     * moves on, and stops at the ending exactly like a key press would. It used to
+     * simulate an OK click, which opens the menu instead of advancing. */
+    reader_advance_action();
+}
+
+/* Any key takes the reader out of auto-play: the mode is entered deliberately and
+ * every press means the user is driving again. Panels are not special-cased -- the
+ * click that opens one cancels auto-play before the panel exists. */
+static void reader_cancel_auto(void)
+{
+    if (!s_save->auto_play) {
+        return;
+    }
+    s_save->auto_play = 0;
+    if (s_auto_timer != NULL) {
+        lv_timer_pause(s_auto_timer);
+    }
+}
+
+/* Auto-play is a reading mode rather than a setting to dig for, so it is bound to
+ * long-pressing DOWN and reports itself in the hint line. The settings panel calls
+ * the same function, which keeps both entry points in step. */
+static void reader_toggle_auto(void)
+{
+    if (s_save->auto_play) {
+        reader_cancel_auto();
+    } else {
+        s_save->auto_play = 1;
+        if (!s_revealing) {
+            /* A line that is still revealing arms itself when it finishes. */
+            auto_arm();
+        }
+    }
+    show_hint(s_save->auto_play ? GAL_STR_AUTO_ON : GAL_STR_AUTO_OFF);
 }
 
 /* --- reader ------------------------------------------------------------------ */
@@ -522,6 +565,8 @@ static void build_ending(const char *ending_text)
 {
     ff_stop();
     type_stop();
+    /* Auto-play belongs to the reader; the ending is the end of the mode too. */
+    reader_cancel_auto();
     s_reveal_target = NULL;
     lv_obj_t *screen = make_screen();
     make_status_bar(screen);
@@ -582,16 +627,18 @@ static void build_reader(void)
     lv_obj_set_style_pad_hor(s_name_label, GAL_NAME_PAD_X, LV_PART_MAIN);
     lv_obj_set_style_pad_ver(s_name_label, GAL_NAME_PAD_Y, LV_PART_MAIN);
 
-    /* Flat, fully opaque, full width, with a single accent rule along the top
-     * edge and no rounding -- the Saya reference port's panel. The upstream
-     * project's panel artwork is not used: it is a near-white plate carrying a
-     * repeating ornament that fights the picture at any usable opacity. */
+    /* Flat, full width, with a single accent rule along the top edge and no
+     * rounding -- the Saya reference port's panel. The upstream project's panel
+     * artwork is not used: it is a near-white plate carrying a repeating ornament
+     * that fights the picture at any usable opacity. The fill is tinted rather
+     * than solid so the scene shows through, but darker than the title screen's
+     * plates because four lines of near-white text have to stay readable. */
     s_textbox = lv_obj_create(screen);
     lv_obj_remove_style_all(s_textbox);
     lv_obj_set_size(s_textbox, GAL_PANEL_WIDTH, layout.panel_h);
     lv_obj_set_pos(s_textbox, GAL_PANEL_MARGIN_X, layout.panel_top);
     lv_obj_set_style_bg_color(s_textbox, GAL_COLOR_BOX, LV_PART_MAIN);
-    lv_obj_set_style_bg_opa(s_textbox, LV_OPA_COVER, LV_PART_MAIN);
+    lv_obj_set_style_bg_opa(s_textbox, GAL_PANEL_OPA, LV_PART_MAIN);
     lv_obj_set_style_border_side(s_textbox, LV_BORDER_SIDE_TOP, LV_PART_MAIN);
     lv_obj_set_style_border_width(s_textbox, GAL_PANEL_RULE_WIDTH, LV_PART_MAIN);
     lv_obj_set_style_border_color(s_textbox, GAL_COLOR_LINE, LV_PART_MAIN);
@@ -622,7 +669,6 @@ static void build_reader(void)
     s_screen = screen;
     s_view = GAL_VIEW_READER;
     s_panel = NULL;
-    s_textbox_visible = true;
 }
 
 /* --- list panels --------------------------------------------------------------- */
@@ -957,6 +1003,9 @@ static void build_title(void)
 {
     ff_stop();
     type_stop();
+    /* Leaving the reader ends auto-play, so it cannot follow the reader back to
+     * the title and keep advancing whatever a new chapter opens with. */
+    reader_cancel_auto();
     s_reveal_target = NULL;
     lv_obj_t *screen = make_screen();
     lv_obj_set_style_bg_color(screen, lv_color_black(), LV_PART_MAIN);
@@ -976,6 +1025,17 @@ static void build_title(void)
                                   LV_PART_MAIN);
     }
 
+    /* Nothing else covers the artwork on this screen: the title and the status row
+     * are aligned straight onto it, so a tint of the panel colour is what keeps
+     * them readable. Created before the labels so it is drawn behind them, and
+     * before the option list below, whose own plate is a separate tint. */
+    lv_obj_t *scrim = lv_obj_create(screen);
+    lv_obj_set_size(scrim, BSP_LCD_W, BSP_LCD_H);
+    lv_obj_set_pos(scrim, 0, 0);
+    make_opaque(scrim, GAL_COLOR_PANEL);
+    lv_obj_set_style_bg_opa(scrim, GAL_TITLE_SCRIM_OPA, LV_PART_MAIN);
+    lv_obj_remove_flag(scrim, LV_OBJ_FLAG_SCROLLABLE);
+
     make_status_bar(screen);
     lv_obj_add_flag(s_chapter_label, LV_OBJ_FLAG_HIDDEN);
 
@@ -983,20 +1043,11 @@ static void build_title(void)
     lv_label_set_text(title, GAL_STR_APP_NAME);
     lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 40);
 
-    /* Control legend, so the remapped keys are discoverable without a manual. */
-    lv_obj_t *help = make_label(screen, &gal_font_16, GAL_COLOR_DIM);
-    lv_obj_set_width(help, BSP_LCD_W - 24);
-    lv_obj_set_style_text_align(help, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
-    lv_label_set_long_mode(help, LV_LABEL_LONG_WRAP);
-    lv_obj_set_style_text_line_space(help, GAL_TEXT_LINE_SPACE, LV_PART_MAIN);
-    lv_label_set_text(help, GAL_STR_HELP_ADVANCE "\n" GAL_STR_HELP_HOLD "\n"
-                            GAL_STR_HELP_MENU);
-    lv_obj_align(help, LV_ALIGN_TOP_MID, 0, 72);
-
     lv_obj_t *panel = lv_obj_create(screen);
     lv_obj_set_size(panel, BSP_LCD_W - 40, 4 * 30 + 16);
     lv_obj_align(panel, LV_ALIGN_BOTTOM_MID, 0, -14);
     make_opaque(panel, GAL_COLOR_PANEL);
+    lv_obj_set_style_bg_opa(panel, GAL_TITLE_PANEL_OPA, LV_PART_MAIN);
     lv_obj_set_style_radius(panel, 6, LV_PART_MAIN);
     lv_obj_remove_flag(panel, LV_OBJ_FLAG_SCROLLABLE);
 
@@ -1102,10 +1153,7 @@ static void settings_adjust(uint16_t index)
             }
             break;
         case 2:
-            s_save->auto_play = !s_save->auto_play;
-            if (!s_save->auto_play && s_auto_timer != NULL) {
-                lv_timer_pause(s_auto_timer);
-            }
+            reader_toggle_auto();
             break;
         case 3: {
             gal_save_data_t keep = *s_save;
@@ -1217,6 +1265,16 @@ static void reader_scroll(int delta)
     lv_obj_scroll_by(area, 0, delta, LV_ANIM_OFF);
 }
 
+/* The advance action, shared by the UP key and auto-play. */
+static void reader_advance_action(void)
+{
+    if (s_revealing) {
+        reveal_all();
+    } else {
+        reader_advance();
+    }
+}
+
 void gal_app_key(bsp_btn_t btn, bsp_btn_ev_t ev)
 {
     if (!bsp_lvgl_lock(100)) {
@@ -1294,25 +1352,25 @@ void gal_app_key(bsp_btn_t btn, bsp_btn_ev_t ev)
         case GAL_VIEW_READER:
             if (ev == BSP_BTN_LONG) {
                 if (btn == BSP_BTN_UP) {
+                    reader_cancel_auto();
                     ff_start();
                 } else if (btn == BSP_BTN_DOWN) {
-                    s_textbox_visible = !s_textbox_visible;
-                    style_hidden(s_textbox, !s_textbox_visible);
-                    show_hint(s_textbox_visible ? GAL_STR_SHOW_TEXT : GAL_STR_HIDE_TEXT);
+                    reader_toggle_auto();
+                } else {
+                    reader_cancel_auto();
                 }
                 /* Confirm-long has no action here: the menu opens on a short press. */
             } else if (ev == BSP_BTN_CLICK) {
                 ff_stop();
+                reader_cancel_auto();
                 if (btn == BSP_BTN_OK) {
                     panel_open(GAL_PANEL_MENU, GAL_STR_MENU);
                 } else if (btn == BSP_BTN_DOWN) {
                     /* Safety valve for the rare line that even pagination leaves
                      * wider than the panel; every new page resets to the top. */
                     reader_scroll(-reader_layout().line_h);
-                } else if (s_revealing) {
-                    reveal_all();
                 } else {
-                    reader_advance();
+                    reader_advance_action();
                 }
             }
             break;

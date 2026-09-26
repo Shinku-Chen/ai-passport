@@ -118,8 +118,9 @@ it renders cannot drift from what the firmware draws. The only geometry it keeps
 its own copy of is the sprite origin, because that value is baked into the stored
 sprite offsets.
 
-The dialogue panel matches the Saya reference port: flat, fully opaque, full
-width, a single 2 px accent rule along its top edge, and no rounding. The
+The dialogue panel matches the Saya reference port: flat, full width, a single
+2 px accent rule along its top edge, and no rounding. Unlike that port its fill is
+tinted rather than solid, so the scene reads through behind the text. The
 upstream project's own panel artwork is not packed at all, because it is a
 near-white plate carrying a repeating ornament that competes with the picture at
 any usable opacity. Dropping it also saves 37 KiB.

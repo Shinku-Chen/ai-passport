@@ -68,7 +68,7 @@ static inline void gal_save_defaults(gal_save_data_t *data)
     data->text_speed = GAL_SPEED_DEFAULT;
     data->text_size = GAL_TEXT_SIZE_DEFAULT;
     data->auto_play = 0;
-    data->auto_delay = 12;
+    data->auto_delay = 9; /* 0.9 s after the line finishes revealing */
 }
 
 /*

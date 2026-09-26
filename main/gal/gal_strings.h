@@ -26,14 +26,6 @@
 #define GAL_STR_FAST_FORWARD   "快进"
 #define GAL_STR_AUTO_ON        "自动阅读开"
 #define GAL_STR_AUTO_OFF       "自动阅读关"
-#define GAL_STR_HIDE_TEXT      "隐藏文字"
-#define GAL_STR_SHOW_TEXT      "显示文字"
-
-/* Title screen control legend */
-#define GAL_STR_HELP_ADVANCE   "上键推进  下键滚动"
-#define GAL_STR_HELP_HOLD      "长按上键快进"
-#define GAL_STR_HELP_MENU      "确定键呼出菜单"
-
 /* Reader menu panel */
 #define GAL_STR_MENU           "菜单"
 #define GAL_STR_SAVE           "保存进度"
