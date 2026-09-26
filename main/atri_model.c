@@ -149,14 +149,22 @@ static int pages_of(const char *text, const atri_layout_t *layout)
 }
 
 static void refresh_pages(atri_player_t *player, const atri_pack_t *pack,
-                          const atri_layout_t *layout)
-{
+                          const atri_layout_t *layout){
     char text[ATRI_TEXT_BUFFER];
     atri_player_text(player, pack, text, sizeof(text));
     int pages = pages_of(text, layout);
     if (pages > ATRI_MAX_PAGES) pages = ATRI_MAX_PAGES;
     player->page_count = (uint16_t)pages;
     if (player->page >= player->page_count) player->page = (uint16_t)(player->page_count - 1);
+}
+
+// 角色立绘:记录里写 ATRI_CHAR_KEEP 就沿用当前这张(粘性)。
+static void apply_dialogue_char(atri_player_t *player, const atri_pack_t *pack,
+                                uint16_t dialogue_index)
+{
+    atri_dialogue_t dlg;
+    atri_pack_dialogue(pack, dialogue_index, &dlg);
+    if (dlg.chr != ATRI_CHAR_KEEP) player->chr = dlg.chr;
 }
 
 static bool load_scene(atri_player_t *player, const atri_pack_t *pack, uint16_t chapter,
@@ -178,6 +186,7 @@ static bool load_scene(atri_player_t *player, const atri_pack_t *pack, uint16_t 
     player->at_choice = 0;
     player->ended = 0;
     player->end_name = ATRI_NONE;
+    // 角色立绘是粘性的:换幕不自动清,由对白里的 chr 字段决定何时换人。
 
     if (sc.choice_count > 0) {
         player->at_choice = 1;
@@ -185,6 +194,7 @@ static bool load_scene(atri_player_t *player, const atri_pack_t *pack, uint16_t 
     }
     if (sc.dlg_count == 0) return false;
 
+    apply_dialogue_char(player, pack, sc.first_dlg);
     refresh_pages(player, pack, layout);
     return true;
 }
@@ -194,6 +204,7 @@ void atri_player_reset(atri_player_t *player)
     if (!player) return;
     memset(player, 0, sizeof(*player));
     player->end_name = ATRI_NONE;
+    player->chr = ATRI_CHAR_NONE;
     player->page_count = 1;
 }
 
@@ -240,6 +251,7 @@ atri_step_t atri_player_advance(atri_player_t *player, const atri_pack_t *pack,
     if (player->dialogue + 1 < sc.dlg_count) {
         player->dialogue++;
         player->page = 0;
+        apply_dialogue_char(player, pack, (uint16_t)(sc.first_dlg + player->dialogue));
         refresh_pages(player, pack, layout);
         return ATRI_STEP_TEXT;
     }
@@ -363,6 +375,8 @@ bool atri_player_load(atri_player_t *player, const atri_pack_t *pack, const atri
 
     player->dialogue = save->dialogue;
     player->page = 0;
+    // 粘性立绘以存档为准(存档早于 v2 时该字段为“沿用”)。
+    if (save->chr != ATRI_CHAR_KEEP) player->chr = save->chr;
     refresh_pages(player, pack, layout);
     return true;
 }
@@ -430,6 +444,11 @@ size_t atri_player_speaker(const atri_player_t *player, const atri_pack_t *pack,
     return atri_pack_name(pack, dlg.name, out, capacity);
 }
 
+uint16_t atri_player_char(const atri_player_t *player)
+{
+    return player ? player->chr : ATRI_CHAR_KEEP;
+}
+
 bool atri_player_scene_view(const atri_player_t *player, const atri_pack_t *pack,
                             atri_scene_t *out)
 {
@@ -451,8 +470,12 @@ uint8_t atri_player_chapter_flags(const atri_player_t *player, const atri_pack_t
 
 // ---------------------------------------------------------------- 存档
 #define ATRI_SAVE_MAGIC 0xA7u
-#define ATRI_SAVE_VERSION 1u
-#define ATRI_SAVE_SIZE (10u + ATRI_CHOICE_HISTORY)
+#define ATRI_SAVE_VERSION 2u
+// v1(旧固件写的存档,没有立绘字段):仍能读,立绘按“不换”处理。
+#define ATRI_SAVE_VERSION_LEGACY 1u
+#define ATRI_SAVE_SIZE_LEGACY (10u + ATRI_CHOICE_HISTORY)
+// v2: chapter, scene, dialogue, chr, choice_len, pad + 选择历史
+#define ATRI_SAVE_SIZE (12u + ATRI_CHOICE_HISTORY)
 
 size_t atri_save_encode(const atri_save_t *save, uint8_t *out, size_t capacity)
 {
@@ -465,25 +488,37 @@ size_t atri_save_encode(const atri_save_t *save, uint8_t *out, size_t capacity)
     out[5] = (uint8_t)(save->scene >> 8);
     out[6] = (uint8_t)(save->dialogue & 0xFFu);
     out[7] = (uint8_t)(save->dialogue >> 8);
-    out[8] = save->choice_len;
-    out[9] = 0;   // 保留
+    out[8] = (uint8_t)(save->chr & 0xFFu);
+    out[9] = (uint8_t)(save->chr >> 8);
+    out[10] = save->choice_len;
+    out[11] = 0;   // 保留
     for (size_t i = 0; i < ATRI_CHOICE_HISTORY; ++i) {
-        out[10 + i] = i < save->choice_len ? save->choice_pick[i] : 0;
+        out[12 + i] = i < save->choice_len ? save->choice_pick[i] : 0;
     }
     return ATRI_SAVE_SIZE;
 }
 
 bool atri_save_decode(atri_save_t *save, const uint8_t *data, size_t len)
 {
-    if (!save || !data || len < ATRI_SAVE_SIZE) return false;
-    if (data[0] != ATRI_SAVE_MAGIC || data[1] != ATRI_SAVE_VERSION) return false;
+    if (!save || !data || len < ATRI_SAVE_SIZE_LEGACY) return false;
+    if (data[0] != ATRI_SAVE_MAGIC) return false;
     memset(save, 0, sizeof(*save));
+    save->chr = ATRI_CHAR_KEEP;
+    if (data[1] == ATRI_SAVE_VERSION_LEGACY) {
+        if (len < ATRI_SAVE_SIZE_LEGACY) return false;
+        save->chapter = (uint16_t)(data[2] | ((uint16_t)data[3] << 8));
+        save->scene = (uint16_t)(data[4] | ((uint16_t)data[5] << 8));
+        save->dialogue = (uint16_t)(data[6] | ((uint16_t)data[7] << 8));
+        save->choice_len = data[8] > ATRI_CHOICE_HISTORY ? ATRI_CHOICE_HISTORY : data[8];
+        for (size_t i = 0; i < ATRI_CHOICE_HISTORY; ++i) save->choice_pick[i] = data[10 + i];
+        return true;
+    }
+    if (data[1] != ATRI_SAVE_VERSION || len < ATRI_SAVE_SIZE) return false;
     save->chapter = (uint16_t)(data[2] | ((uint16_t)data[3] << 8));
     save->scene = (uint16_t)(data[4] | ((uint16_t)data[5] << 8));
     save->dialogue = (uint16_t)(data[6] | ((uint16_t)data[7] << 8));
-    save->choice_len = data[8] > ATRI_CHOICE_HISTORY ? ATRI_CHOICE_HISTORY : data[8];
-    for (size_t i = 0; i < ATRI_CHOICE_HISTORY; ++i) {
-        save->choice_pick[i] = data[10 + i];
-    }
+    save->chr = (uint16_t)(data[8] | ((uint16_t)data[9] << 8));
+    save->choice_len = data[10] > ATRI_CHOICE_HISTORY ? ATRI_CHOICE_HISTORY : data[10];
+    for (size_t i = 0; i < ATRI_CHOICE_HISTORY; ++i) save->choice_pick[i] = data[12 + i];
     return true;
 }

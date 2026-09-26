@@ -8,9 +8,10 @@
 #define ATRI_NAME_ENTRY 8u            // { off u32, len u16, pad u16 }
 #define ATRI_CHAPTER_ENTRY 20u
 #define ATRI_SCENE_ENTRY 22u
-#define ATRI_DLG_ENTRY 12u
+#define ATRI_DLG_ENTRY 14u
 #define ATRI_BG_ENTRY 12u             // { off, len, w, h }
 #define ATRI_OVL_ENTRY 20u            // { jpeg_off, jpeg_len, mask_off, mask_len, w, h }
+#define ATRI_CHAR_ENTRY 24u           // { color_off, color_len, mask_off, mask_len, x, y, w, h }
 
 static uint16_t rd16(const uint8_t *p)
 {
@@ -90,6 +91,13 @@ bool atri_pack_open(atri_pack_t *pack, const uint8_t *data, uint32_t size)
             view.ovl_count = count;
             break;
         case 7: view.meta = body; view.meta_size = sec_size; break;
+        case 8:
+            if (sec_size < count * ATRI_CHAR_ENTRY) return false;
+            view.chars = body;
+            view.char_data = body + count * ATRI_CHAR_ENTRY;
+            view.char_data_size = sec_size - count * ATRI_CHAR_ENTRY;
+            view.char_count = count;
+            break;
         default: break;   // 未知段:忽略,便于向后兼容
         }
     }
@@ -97,7 +105,8 @@ bool atri_pack_open(atri_pack_t *pack, const uint8_t *data, uint32_t size)
     if (!view.text || !view.chapters || !view.scenes || !view.dialogues) return false;
     if (view.chapter_count > ATRI_NONE || view.scene_count > ATRI_NONE ||
         view.dialogue_count > ATRI_NONE || view.bg_count > ATRI_NONE ||
-        view.ovl_count > ATRI_NONE || view.name_count > ATRI_NONE) {
+        view.ovl_count > ATRI_NONE || view.name_count > ATRI_NONE ||
+        view.char_count > ATRI_NONE) {
         return false;   // 记录下标用 u16 表达,超了就是包不兼容
     }
 
@@ -155,14 +164,16 @@ void atri_pack_dialogue(const atri_pack_t *pack, uint16_t index, atri_dialogue_t
     if (!pack || !out) return;
     memset(out, 0, sizeof(*out));
     out->name = ATRI_NONE;
+    out->chr = ATRI_CHAR_KEEP;
     if (!pack->dialogues || index >= pack->dialogue_count) return;
     const uint8_t *p = pack->dialogues + (size_t)index * ATRI_DLG_ENTRY;
     out->text_off = rd32(p);
     out->text_len = rd16(p + 4);
     out->name = rd16(p + 6);
-    out->flags = p[8];
-    out->jump = p[9];
-    out->arg = rd16(p + 10);
+    out->chr = rd16(p + 8);
+    out->flags = p[10];
+    out->jump = p[11];
+    out->arg = rd16(p + 12);
 }
 
 // 按 UTF-8 字符边界截断:返回可放下的字节数(不拆多字节字符)。
@@ -253,6 +264,36 @@ bool atri_pack_ovl(const atri_pack_t *pack, uint16_t id, atri_ovl_t *out)
     // 颜色区必须是完整的 RGB565 图;遮罩要么没有,要么正好够每行 (w+1)/2 字节。
     if (color_len < (uint32_t)out->w * out->h * 2u) return false;
     if (mask_len != 0 && mask_len < (uint32_t)((out->w + 1) / 2) * out->h) return false;
+    return true;
+}
+
+bool atri_pack_char(const atri_pack_t *pack, uint16_t id, atri_char_t *out)
+{
+    if (!pack || !out) return false;
+    memset(out, 0, sizeof(*out));
+    if (!pack->chars || !pack->char_data || id >= pack->char_count) return false;
+    const uint8_t *rec = pack->chars + (size_t)id * ATRI_CHAR_ENTRY;
+    const uint32_t color_off = rd32(rec);
+    const uint32_t color_len = rd32(rec + 4);
+    const uint32_t mask_off = rd32(rec + 8);
+    const uint32_t mask_len = rd32(rec + 12);
+    if (color_off > pack->char_data_size || color_len > pack->char_data_size - color_off) {
+        return false;
+    }
+    if (mask_off > pack->char_data_size || mask_len > pack->char_data_size - mask_off) {
+        return false;
+    }
+    out->color = pack->char_data + color_off;
+    out->color_len = color_len;
+    out->mask = pack->char_data + mask_off;
+    out->mask_len = mask_len;
+    out->x = rd16(rec + 16);
+    out->y = rd16(rec + 18);
+    out->w = rd16(rec + 20);
+    out->h = rd16(rec + 22);
+    if (out->w == 0 || out->h == 0) return false;
+    if (color_len < (uint32_t)out->w * out->h * 2u) return false;
+    if (mask_len < (uint32_t)((out->w + 1) / 2) * out->h) return false;
     return true;
 }
 

@@ -119,9 +119,10 @@ bool atri_ui_create(atri_ui_t *ui, uint16_t *art_pixels, const lv_font_t *font_c
 
 void atri_ui_show_page(atri_ui_t *ui, atri_page_t page);
 
-// 画面区:把背景 + 叠加画进画布(标题页也用同一个函数)。
+// 画面区:把背景 + 角色立绘 + 叠加画进画布(标题页也用同一个函数)。
+// chr 为 ATRI_CHAR_KEEP 时不画立绘。
 bool atri_ui_set_art(atri_ui_t *ui, const atri_pack_t *pack, uint16_t bg, uint16_t ovl,
-                     int16_t x, int16_t y);
+                     int16_t x, int16_t y, uint16_t chr);
 
 // 正文页:设置说话人与本页文本,并按 ms_per_char 逐字显示。
 void atri_ui_set_text(atri_ui_t *ui, const char *speaker, const char *text,

@@ -28,6 +28,7 @@ typedef struct {
     uint16_t dialogue;   // 场景内对白下标
     uint16_t page;       // 当前页
     uint16_t page_count; // 当前对白页数
+    uint16_t chr;        // 当前角色立绘下标;ATRI_CHAR_KEEP = 没有/沿用
     uint8_t at_choice;   // 停在选项上,等玩家选择
     uint8_t ended;       // 已到结局
     uint16_t end_name;   // 结局名(name 表下标;ATRI_NONE = 未知)
@@ -48,6 +49,7 @@ typedef struct {
     uint16_t chapter;
     uint16_t scene;
     uint16_t dialogue;
+    uint16_t chr;        // 存档时的角色立绘(粘性状态,不存就可能在读档后变脸)
     uint8_t choice_len;
     uint8_t choice_pick[ATRI_CHOICE_HISTORY];
 } atri_save_t;
@@ -91,6 +93,9 @@ size_t atri_player_page_text(const atri_player_t *player, const atri_pack_t *pac
 // 当前说话人名字;返回写入字节数(旁白返回 0)。
 size_t atri_player_speaker(const atri_player_t *player, const atri_pack_t *pack, char *out,
                            size_t capacity);
+
+// 当前角色立绘下标;ATRI_CHAR_KEEP = 还没出现过立绘。
+uint16_t atri_player_char(const atri_player_t *player);
 
 // 当前场景的视图信息(背景/叠加/选项文案)。玩家状态非法时返回 false。
 bool atri_player_scene_view(const atri_player_t *player, const atri_pack_t *pack,

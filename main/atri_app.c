@@ -58,20 +58,24 @@ static const char *ending_label(const char *name)
 }
 
 // ---------------------------------------------------------------- 画面区
-static void render_art(atri_app_t *app, uint16_t bg, uint16_t ovl, int16_t x, int16_t y)
+// chr 传当前角色立绘下标(ATRI_CHAR_KEEP = 这一屏没有立绘)。
+static void render_art(atri_app_t *app, uint16_t bg, uint16_t ovl, int16_t x, int16_t y,
+                       uint16_t chr)
 {
-    if (app->rendered_bg == bg && app->rendered_ovl == ovl && app->rendered_x == x &&
-        app->rendered_y == y && bg != ATRI_NONE) {
+    if (app->rendered_bg == bg && app->rendered_ovl == ovl && app->rendered_chr == chr &&
+        app->rendered_x == x && app->rendered_y == y && bg != ATRI_NONE) {
         return;   // 同一张画面,不重复解码
     }
-    if (atri_ui_set_art(&app->ui, &app->pack, bg, ovl, x, y)) {
+    if (atri_ui_set_art(&app->ui, &app->pack, bg, ovl, x, y, chr)) {
         app->rendered_bg = bg;
         app->rendered_ovl = ovl;
+        app->rendered_chr = chr;
         app->rendered_x = x;
         app->rendered_y = y;
     } else {
         app->rendered_bg = ATRI_NONE;
         app->rendered_ovl = ATRI_NONE;
+        app->rendered_chr = ATRI_CHAR_KEEP;
     }
 }
 
@@ -80,7 +84,8 @@ static void render_scene(atri_app_t *app)
 {
     atri_scene_t scene;
     if (!atri_player_scene_view(&app->player, &app->pack, &scene)) return;
-    render_art(app, scene.bg, scene.ovl, scene.ovl_x, scene.ovl_y);
+    render_art(app, scene.bg, scene.ovl, scene.ovl_x, scene.ovl_y,
+               atri_player_char(&app->player));
 
     const int chapter_ordinal = (int)app->player.chapter + 1;
     atri_ui_set_progress(&app->ui, chapter_ordinal, app->player.page + 1,
@@ -110,7 +115,7 @@ static void start_transition(atri_app_t *app)
 {
     atri_ui_hide_choices(&app->ui);
     atri_ui_set_text(&app->ui, "", "", 0);
-    render_art(app, ATRI_BG_TITLE, ATRI_NONE, 0, 0);
+    render_art(app, ATRI_BG_TITLE, ATRI_NONE, 0, 0, ATRI_CHAR_KEEP);
     app->transition_pending = true;
     app->transition_ms = ATRI_TRANSITION_MS;
 }
@@ -271,7 +276,7 @@ static void show_title(atri_app_t *app)
 {
     atri_ui_hide_choices(&app->ui);
     const uint16_t ovl = true_end_unlocked(app) ? ATRI_OVL_TRUE_END : ATRI_NONE;
-    render_art(app, ATRI_BG_TITLE, ovl, 0, 0);
+    render_art(app, ATRI_BG_TITLE, ovl, 0, 0, ATRI_CHAR_KEEP);
     title_refresh(app);
     set_page(app, ATRI_PAGE_TITLE);
 }
@@ -629,6 +634,7 @@ bool atri_app_init(atri_app_t *app, const uint8_t *pack_data, uint32_t pack_size
     memset(app, 0, sizeof(*app));
     app->rendered_bg = ATRI_NONE;
     app->rendered_ovl = ATRI_NONE;
+    app->rendered_chr = ATRI_CHAR_KEEP;
     app->battery_percent = -1;
 
     if (!atri_pack_open(&app->pack, pack_data, pack_size)) {
@@ -770,7 +776,15 @@ bool atri_app_debug_render(atri_app_t *app, uint16_t chapter, uint16_t scene)
     atri_pack_scene(&app->pack, (uint16_t)(ch.first_scene + scene), &sc);
     app->rendered_bg = ATRI_NONE;   // 强制重画,不受"同画面不重复解码"缓存影响
     app->rendered_ovl = ATRI_NONE;
-    return atri_ui_set_art(&app->ui, &app->pack, sc.bg, sc.ovl, sc.ovl_x, sc.ovl_y);
+    app->rendered_chr = ATRI_CHAR_KEEP;
+    // 从本章开头逐句推出这一幕开始时的立绘(粘性),这样截图不依赖玩家当前进度。
+    uint16_t chr = ATRI_CHAR_KEEP;
+    for (uint32_t d = ch.first_dlg; d <= sc.first_dlg && d < app->pack.dialogue_count; ++d) {
+        atri_dialogue_t dlg;
+        atri_pack_dialogue(&app->pack, (uint16_t)d, &dlg);
+        if (dlg.chr != ATRI_CHAR_KEEP) chr = dlg.chr;
+    }
+    return atri_ui_set_art(&app->ui, &app->pack, sc.bg, sc.ovl, sc.ovl_x, sc.ovl_y, chr);
 }
 
 bool atri_app_take_sleep_request(atri_app_t *app)

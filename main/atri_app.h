@@ -36,8 +36,9 @@ typedef struct {
 
     atri_layout_t layout_hint;   // 分页参数(16px 字、13 单位 x 5 行)
 
-    uint16_t rendered_bg;   // 画面区当前显示的(背景, 叠加, 位置),用于避免重复解码
+    uint16_t rendered_bg;   // 画面区当前显示的(背景/叠加/立绘/位置),避免重复解码
     uint16_t rendered_ovl;
+    uint16_t rendered_chr;
     int16_t rendered_x;
     int16_t rendered_y;
 

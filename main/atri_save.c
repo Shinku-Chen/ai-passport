@@ -122,6 +122,7 @@ void atri_save_from_player(const atri_player_t *player, atri_save_t *out)
     out->chapter = player->chapter;
     out->scene = player->scene;
     out->dialogue = player->dialogue;
+    out->chr = player->chr;   // 粘性立绘一起存,读档后才能看到同一张脸
     out->choice_len = player->choice_len;
     memcpy(out->choice_pick, player->choice_pick, sizeof(out->choice_pick));
 }

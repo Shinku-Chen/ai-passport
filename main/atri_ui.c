@@ -344,10 +344,10 @@ void atri_ui_show_page(atri_ui_t *ui, atri_page_t page)
 }
 
 bool atri_ui_set_art(atri_ui_t *ui, const atri_pack_t *pack, uint16_t bg, uint16_t ovl,
-                     int16_t x, int16_t y)
+                     int16_t x, int16_t y, uint16_t chr)
 {
     if (!ui) return false;
-    return atri_image_show(&ui->art, pack, bg, ovl, x, y);
+    return atri_image_show(&ui->art, pack, bg, ovl, x, y, chr);
 }
 
 void atri_ui_set_text(atri_ui_t *ui, const char *speaker, const char *text, uint32_t ms_per_char)

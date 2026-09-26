@@ -12,11 +12,13 @@
 //                 branch_pick u16, pad u16 } = 20 字节
 //   SEC_SCENE   { bg u16, ovl u16, ovl_x i16, ovl_y i16, first_dlg u16, dlg_count u16,
 //                 choice_count u8, pad u8, choice_name[2] u16, choice_jump[2] u16 } = 22 字节
-//   SEC_DLG     { text_off u32, text_len u16, name u16, flags u8, jump u8, arg u16 } = 12 字节
+//   SEC_DLG     { text_off u32, text_len u16, name u16, chr u16, flags u8, jump u8,
+//                 arg u16 } = 14 字节 = 12 字节
 //   SEC_BG      { off u32, len u32, w u16, h u16 }(off 相对 SEC_BG 数据区)
 //   SEC_OVL     { color_off u32, color_len u32, mask_off u32, mask_len u32, w u16, h u16 }
-// 背景是 JPEG(解码目标就是画布本身,不需要额外缓冲);叠加是无损 RGB565 +
-// 4bpp 遮罩(设备端堆只有几十 KB,全屏叠加的 JPEG 解码缓冲拿不出来)。
+//   SEC_CHAR    { color_off, color_len, mask_off, mask_len(全 u32), x, y, w, h(u16) }
+// 背景是 JPEG(解码目标就是画布本身,不需要额外缓冲);叠加与角色立绘是无损 RGB565 +
+// 4bpp 遮罩(设备端堆只有几十 KB,全屏图的 JPEG 解码缓冲拿不出来)。
 #pragma once
 
 #include <stdbool.h>
@@ -34,6 +36,10 @@
 #define ATRI_BG_TITLE 0u
 // 叠加表 0 号固定是 TRUE END 标题叠加(两个结局都达成后标题页显示)。
 #define ATRI_OVL_TRUE_END 0u
+// 角色立绘是“粘性”的:记录里写 0xFFFF 表示沿用当前立绘,不换;
+// 0xFFFE 表示这一屏不画立绘(清空),其余值是立绘下标。
+#define ATRI_CHAR_KEEP 0xFFFFu
+#define ATRI_CHAR_NONE 0xFFFEu
 
 // chapter.flags
 #define ATRI_CH_HAS_BRANCH (1u << 0)   // 本章末按选择历史分流
@@ -67,6 +73,10 @@ typedef struct {
     const uint8_t *ovl_data;
     uint32_t ovl_count;
     uint32_t ovl_data_size;
+    const uint8_t *chars;
+    const uint8_t *char_data;
+    uint32_t char_count;
+    uint32_t char_data_size;
     const uint8_t *meta;
     uint32_t meta_size;
 } atri_pack_t;
@@ -100,6 +110,7 @@ typedef struct {
     uint32_t text_off;
     uint16_t text_len;
     uint16_t name;    // name 表下标;ATRI_NONE = 旁白
+    uint16_t chr;     // 角色立绘下标;ATRI_CHAR_KEEP = 沿用上一张
     uint8_t flags;
     uint8_t jump;
     uint16_t arg;
@@ -121,6 +132,18 @@ typedef struct {
     uint16_t h;
 } atri_ovl_t;
 
+// 角色立绘:全身、透明底,固定画在屏幕坐标 (x, y)。
+typedef struct {
+    const uint8_t *color;
+    uint32_t color_len;
+    const uint8_t *mask;
+    uint32_t mask_len;
+    uint16_t x;
+    uint16_t y;
+    uint16_t w;
+    uint16_t h;
+} atri_char_t;
+
 // 校验魔数/版本/尺寸并建立各段视图。失败返回 false(不改动 pack)。
 bool atri_pack_open(atri_pack_t *pack, const uint8_t *data, uint32_t size);
 
@@ -136,6 +159,7 @@ size_t atri_pack_name(const atri_pack_t *pack, uint16_t id, char *out, size_t ca
 
 bool atri_pack_bg(const atri_pack_t *pack, uint16_t id, atri_bg_t *out);
 bool atri_pack_ovl(const atri_pack_t *pack, uint16_t id, atri_ovl_t *out);
+bool atri_pack_char(const atri_pack_t *pack, uint16_t id, atri_char_t *out);
 
 // 按源脚本编号找章节下标;找不到返回 -1。
 int atri_pack_find_chapter(const atri_pack_t *pack, uint16_t id);

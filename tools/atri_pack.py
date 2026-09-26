@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """生成 AI Passport《ATRI -My Dear Moments-》阅读器的资源包。
 
-来源项目:https://github.com/liuyuze61/ATRI-miband
-  - 小米手环 9(Xiaomi Vela / aiot quick app)上的《ATRI -My Dear Moments-》同人移植。
+来源项目:https://github.com/fywmjj/better-mb9p-ATRI
+  - 小米手环 9 / 9 Pro(Xiaomi Vela / aiot quick app)上的《ATRI -My Dear Moments-》
+    同人移植;它基于 liuyuze61/ATRI-miband 重构,并补上了 6 张**全身立绘**
+    (src/common/character/img_*.png,750x920~1150 透明底)。
+  - 剧本(src/common/content/*.txt)与背景/特效(src/common/images/*.png)与旧版一致;
+    本工具也兼容旧版目录布局(common/*.txt + common/*.png,无角色目录)。
   - 素材与译文版权归原作品与移植者所有;本仓库只保存转换产物,不再分发源素材。
   - 源仓库自带免责声明:请支持正版。
 
@@ -19,27 +23,30 @@
     SEC_SCENE   { bg u16, ovl u16, ovl_x i16, ovl_y i16,
                   first_dlg u16, dlg_count u16, choice_count u8, pad u8,
                   choice_name[2] u16, choice_jump[2] u16 }
-    SEC_DLG     { text_off u32, text_len u16, name u16, flags u8, jump u8, arg u16 }
+    SEC_DLG     { text_off u32, text_len u16, name u16, chr u16, flags u8, jump u8,
+                  arg u16 } = 14 字节
     SEC_BG      { off u32, len u32, w u16, h u16 }(off 相对 SEC_BG 数据区)
     SEC_OVL     { color_off u32, color_len u32, mask_off u32, mask_len u32, w u16, h u16 }
+    SEC_CHAR    { color_off u32, color_len u32, mask_off u32, mask_len u32,
+                  x u16, y u16, w u16, h u16 }(角色立绘:全身、透明底、按说话人切换)
+                dialogue.chr 取值:0xFFFF = 沿用上一张,0xFFFE = 这一屏不画立绘,
+                其余 = SEC_CHAR 下标
 
-叠加图为什么存原始 RGB565 而不是 JPEG:设备端只有几十 KB 堆,全屏叠加的 JPEG 解码
-缓冲(最坏 100KB)根本拿不出来。背景解码成 240x210 画布是“解码到画布本身”,
-没有额外缓冲,所以背景继续用 JPEG;叠加改成无损 RGB565 + 4bpp 遮罩,合成时直接从
-Flash 逐行读进画布 —— 零解码、零缓冲、字面量无损,代价只是多占几百 KB Flash(本
-产品 8MB Flash、app 分区还有 5MB 空闲,划算)。
-    SEC_META    UTF-8 key=value 文本(来源仓库 / 转换参数)
+叠加图与立绘为什么存原始 RGB565 而不是 JPEG:设备端只有几十 KB 堆,全屏图的 JPEG
+解码缓冲根本拿不出来。背景解码是“解码到 240x320 画布本身”,没有额外缓冲,所以
+背景继续用 JPEG;叠加/立绘改成无损 RGB565 + 4bpp 遮罩,合成时直接从 Flash 逐行
+读进画布 —— 零解码、零缓冲、字面量无损,代价只是多占几百 KB Flash。
 
-画面换算(固定屏幕 240x320,画面区 240x210,下方 110px 是文本框):
-  源素材是手环的 336x480 全屏图 -> 整体等比缩放到 240x343,再取顶部 210 行。
-  源 App 的文本框盖住 315..480 行,换算过来正好是 210..320,所以画面区与源版一致。
-  背景 336x480    -> 上述裁剪 -> JPEG(q80);透明背景先合成到黑底
-  叠加 336x480 等  -> 同样的缩放与裁剪;带 alpha 的素材额外存 4bpp 遮罩,
+画面换算(固定 240x320 屏幕):
+  背景 336x480     -> 等比缩放到 240x343,取顶部 320 行 -> JPEG(q88);透明底先合成黑底
+  叠加 336x480 等  -> 同样的缩放与裁剪;带 alpha 的额外存 4bpp 遮罩,
                      绘制位置 = (ImgLeft, ImgTop) * 240/336
+  立绘 750xN      -> 直接缩放到 240x320(与新版引擎 width/height:100% 一致)
+                     -> 按 alpha 包围盒裁剪 -> RGB565 + 4bpp 遮罩
   标题画面(bg.png)固定放在背景表 0 号;TRUE END 标题叠加固定放在叠加表 0 号。
 
 用法:
-  python tools/atri_pack.py --source <ATRI-miband checkout> \\
+  python tools/atri_pack.py --source <better-mb9p-ATRI checkout> \\
       --out main/atri_data/atri_pack.bin
 
 生成物提交进仓库,普通 checkout 就能编译;只有需要重新生成时才要源素材 checkout。
@@ -65,7 +72,7 @@ except ImportError:  # pragma: no cover - tool dependency
 
 MAGIC = b"ATRIPK01"
 VERSION = 1
-GEN_VERSION = "atri_pack/2"
+GEN_VERSION = "atri_pack/3"
 
 # 屏幕换算:源素材是 336x480,画面区是 240x210(见文件头说明)。
 SRC_W, SRC_H = 336, 480
@@ -76,6 +83,7 @@ BG_QUALITY = 88
 OVL_QUALITY = 82
 
 SEC_TEXT, SEC_NAME, SEC_CHAPTER, SEC_SCENE, SEC_DLG, SEC_BG, SEC_OVL, SEC_META = range(8)
+SEC_CHAR = 8        # 角色立绘(旧版资源包里没有这一段)
 
 CH_HAS_BRANCH = 1 << 0
 CH_IS_BAD_END = 1 << 1
@@ -101,6 +109,32 @@ BG_ALIASES = {
     "bg002n": "bg002n2",    # b406 场景 8:夜版 bg002 只有 bg002n2
     "ev102b": "ev102a",     # b206 场景 10:紧邻的上下两幕都是 ev102a
     "ev012a": "ev012c",     # b304 场景 7:ev012 家族只有 c
+}
+
+# 说话人 -> 全身立绘(新源 src/common/character/img_*.png)。
+# 只给“会出镜”的 5 位配立绘;**男主夏生不配** —— 视觉小说里主角是视角,
+# 不该在自己的台词时把立绘切上来(img_natsuki 因此不在表里)。
+# 显示规则(用户口径):只有“这句有说话人名字且该角色有立绘”时才显示,
+# 说完就收起 —— 旁白、主角、配角(校长/小西/野岛/路人……)的句子都不挂立绘。
+CHAR_NAMES = {
+    "亚托莉": "img_atri",
+    "水菜萌": "img_minamo",
+    "龙司": "img_ryuji",
+    "凯瑟琳": "img_catherine",
+    # 剧本里同一个人有两种写法(后者是数据里的错字),都指到同一张立绘。
+    "\u51dc\u51dc\u82b1": "img_ririka",   # 凛凛花
+    "\u51dc\u51db\u82b1": "img_ririka",   # 凛凛花
+}
+# 这几类背景(事件 CG、黑屏/闪光)里不叠立绘:CG 本身已经画了角色。
+NO_CHAR_BG_PREFIX = ("ev", "none", "mask", "hurt")
+# 记录里的特殊值:0xFFFF = 沿用上一张,0xFFFE = 这一屏不画立绘。
+CHAR_KEEP = 0xFFFF
+CHAR_CLEAR = 0xFFFE
+# 旧数据把角色画在场景叠加层里(ATd1p1f1 = 夏生、itemATRI = 亚托莉);
+# 这两张现在由角色层接管,不再当效果叠加重复画一遍。
+CHAR_OVERLAY_ALIAS = {
+    "atd1p1f1": "img_natsuki",
+    "itematri": "img_atri",
 }
 
 # 章节顺序 = 源 App detail.ux 里 chapterList 的顺序(b999 是序章)。
@@ -202,7 +236,8 @@ def pack_alpha_4bpp(alpha: Image.Image) -> bytes:
 class PackBuilder:
     def __init__(self, source: str) -> None:
         self.src = source
-        self.common = self._find_common(source)
+        self.content_dir, self.image_dir, self.char_dir = self._find_layout(source)
+        self.common = self.image_dir
         self.strings = Strings()
         self.names: List[Tuple[int, int]] = []
         self._name_index: Dict[str, int] = {}
@@ -212,19 +247,36 @@ class PackBuilder:
         self.ovl_list: List[str] = []
         self.ovl_blobs: List[Tuple[bytes, bytes, int, int]] = []
         self._ovl_index: Dict[str, Tuple[int, int, int]] = {}
+        self.char_list: List[str] = []
+        self.char_blobs: List[Tuple[bytes, bytes, int, int, int, int]] = []
+        self._char_index: Dict[str, int] = {}
         self.counts: Dict[str, int] = {}
         self.warnings: List[str] = []
 
     @staticmethod
-    def _find_common(source: str) -> str:
+    def _find_layout(source: str):
+        """返回 (剧本目录, 图像目录, 立绘目录);立绘目录可能不存在(旧版布局)。"""
         for rel in (os.path.join("src", "common"), os.path.join("mb9", "common"), "common"):
-            path = os.path.join(source, rel)
-            if os.path.isdir(path):
-                return path
-        raise SystemExit(f"在 {source} 下找不到 common/ 素材目录")
+            base = os.path.join(source, rel)
+            if not os.path.isdir(base):
+                continue
+            content = os.path.join(base, "content")
+            images = os.path.join(base, "images")
+            chars = os.path.join(base, "character")
+            if os.path.isdir(content) and os.path.isdir(images):
+                return content, images, (chars if os.path.isdir(chars) else None)
+            if any(name.endswith(".txt") for name in os.listdir(base)):
+                return base, base, None
+        raise SystemExit(f"在 {source} 下找不到剧本目录(content/ 或 common/*.txt)")
 
     def asset(self, stem: str, suffix: str = ".png") -> Optional[str]:
-        path = os.path.join(self.common, stem + suffix)
+        path = os.path.join(self.image_dir, stem + suffix)
+        return path if os.path.exists(path) else None
+
+    def char_asset(self, stem: str) -> Optional[str]:
+        if not self.char_dir:
+            return None
+        path = os.path.join(self.char_dir, stem + ".png")
         return path if os.path.exists(path) else None
 
     def name_id(self, text: str) -> int:
@@ -329,11 +381,54 @@ class PackBuilder:
             f"color {len(color) / 1024:.1f} KB mask {len(mask) / 1024:.1f} KB")
         return idx, dx, dy
 
+    # ---------------------------------------------------------------- 角色立绘
+    def char_id(self, stem: str) -> int:
+        """把全身立绘缩成 240x320 的 RGB565 + 4bpp 遮罩(按 alpha 包围盒裁剪)。
+
+        新版引擎把立绘当成 width/height:100% 的元素铺满屏幕,所以这里也是直接把
+        整张画布缩放到 240x320;裁剪包围盒只是省 Flash,绘制位置随包围盒偏移。
+        """
+        path = self.char_asset(stem)
+        if path is None:
+            self.warnings.append(f"立绘 {stem} 缺失,该角色不显示")
+            return NONE
+        got = self._char_index.get(stem)
+        if got is not None:
+            return got
+
+        im = Image.open(path).convert("RGBA")
+        art = im.resize((ART_W, ART_H), Image.LANCZOS)
+        bbox = art.getchannel("A").getbbox()
+        if bbox is None:
+            self.warnings.append(f"立绘 {stem} 全透明,跳过")
+            return NONE
+        art = art.crop(bbox)
+
+        rgb = art.convert("RGB")
+        px = rgb.load()
+        color = bytearray(art.width * art.height * 2)
+        for y in range(art.height):
+            for x in range(art.width):
+                r, g, b = px[x, y]
+                value = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3)
+                off = (y * art.width + x) * 2
+                color[off] = value & 0xFF
+                color[off + 1] = (value >> 8) & 0xFF
+        mask = pack_alpha_4bpp(art.getchannel("A"))
+
+        idx = len(self.char_list)
+        self.char_list.append(stem)
+        self.char_blobs.append((bytes(color), mask, bbox[0], bbox[1], art.width, art.height))
+        self._char_index[stem] = idx
+        log(f"  立绘 #{idx} {stem} {art.width}x{art.height} @({bbox[0]},{bbox[1]}) "
+            f"color {len(color) / 1024:.1f} KB mask {len(mask) / 1024:.1f} KB")
+        return idx
+
     # ---------------------------------------------------------------- 剧本
     def load_chapters(self) -> List[dict]:
         chapters = []
         for stem in CHAPTER_ORDER:
-            path = os.path.join(self.common, stem + ".txt")
+            path = os.path.join(self.content_dir, stem + ".txt")
             if not os.path.exists(path):
                 raise SystemExit(f"缺少章节脚本: {path}")
             data = json.loads(open(path, "rb").read().decode("utf-8"))
@@ -353,7 +448,8 @@ class PackBuilder:
         scene_recs: List[tuple] = []
         dlg_recs: List[tuple] = []
         chapter_recs: List[tuple] = []
-        stats = {"scenes": 0, "dlg": 0, "choices": 0, "ovl": 0, "chars": 0}
+        stats = {"scenes": 0, "dlg": 0, "choices": 0, "ovl": 0, "chars": 0, "char": 0}
+        last_char = NONE      # 角色层是粘性的:只在变化时写新的立绘
         branch = None
 
         for ci, chapter in enumerate(chapters):
@@ -369,9 +465,22 @@ class PackBuilder:
             for si, scene in enumerate(scenes):
                 scene_first_dlg = len(dlg_recs)
                 bg = self.bg_id(scene.get("background", "") or "")
+                # 事件 CG / 黑屏整幕都不叠立绘(CG 里本来就把角色画好了)。
+                bg_stem = os.path.splitext(os.path.basename(str(scene.get("background") or "")))[0].lower()
+                scene_no_char = bg_stem.startswith(NO_CHAR_BG_PREFIX)
                 ovl = NONE
                 ovl_x = ovl_y = 0
+                # 旧数据的 ATd1p1f1 / itemATRI 是被当成场景叠加画的角色图:
+                # 新版把角色拆成独立图层,这两张转成"这一幕的角色",不再重复叠加。
+                scene_char = NONE
                 ovl_name = scene.get("Img")
+                if ovl_name:
+                    probe = os.path.splitext(os.path.basename(str(ovl_name)))[0].lower()
+                    if probe in CHAR_OVERLAY_ALIAS:
+                        alias = CHAR_OVERLAY_ALIAS[probe]
+                        if alias in CHAR_NAMES.values():
+                            scene_char = self.char_id(alias)
+                        ovl_name = None
                 if ovl_name:
                     ovl, ovl_dx, ovl_dy = self.ovl_id(str(ovl_name))
                     if ovl != NONE:
@@ -391,7 +500,19 @@ class PackBuilder:
                     text = clean_text(str(dlg.get("text", "") or ""))
                     text_off, text_len = self.strings.add(text)
                     stats["chars"] += len(text)
-                    name = self.name_id(clean_text(str(dlg.get("character", "") or "")))
+                    speaker = clean_text(str(dlg.get("character", "") or ""))
+                    name = self.name_id(speaker)
+                    # 角色层:只有"这句的说话人有立绘"时才显示,其他句子一律收起。
+                    if not scene_no_char and speaker in CHAR_NAMES:
+                        want_char = self.char_id(CHAR_NAMES[speaker])
+                    else:
+                        want_char = CHAR_CLEAR
+                    if want_char != last_char:
+                        dlg_char = want_char
+                        last_char = want_char
+                        stats["char"] += 1
+                    else:
+                        dlg_char = CHAR_KEEP
                     dflags = 0
                     jump = 0
                     arg = 0
@@ -418,7 +539,7 @@ class PackBuilder:
                         if bad is None:
                             raise SystemExit("分支缺少 BE 章节")
                         branch_bad = bad
-                    dlg_recs.append((text_off, text_len, name, dflags, jump, arg))
+                    dlg_recs.append((text_off, text_len, name, dlg_char, dflags, jump, arg))
                 stats["scenes"] += 1
 
                 choice_names = [self.name_id(clean_text(str(c.get("text", "")))) for c in choices]
@@ -458,6 +579,7 @@ class PackBuilder:
             "dlg": len(dlg_recs),
             "bg": len(self.bg_list),
             "ovl": len(self.ovl_list),
+            "char": len(self.char_list),
         }
         stats["dlg"] = len(dlg_recs)
 
@@ -465,7 +587,7 @@ class PackBuilder:
         name_tab = b"".join(struct.pack("<IHH", off, ln, 0) for off, ln in self.names)
         chapter_tab = b"".join(struct.pack("<HBBHHHHHHHH", *rec) for rec in chapter_recs)
         scene_tab = b"".join(struct.pack("<HHhhHHBBHHHH", *rec) for rec in scene_recs)
-        dlg_tab = b"".join(struct.pack("<IHHBBH", *rec) for rec in dlg_recs)
+        dlg_tab = b"".join(struct.pack("<IHHHBBH", *rec) for rec in dlg_recs)
 
         bg_tab = bytearray()
         bg_blob = bytearray()
@@ -482,9 +604,20 @@ class PackBuilder:
             ovl_blob += color
             ovl_blob += mask
 
+        char_tab = bytearray()
+        char_blob = bytearray()
+        for color, mask, x, y, w, h in self.char_blobs:
+            while len(char_blob) % 4:
+                char_blob += b"\x00"
+            char_tab += struct.pack("<IIIIHHHH", len(char_blob), len(color),
+                                    len(char_blob) + len(color), len(mask), x, y, w, h)
+            char_blob += color
+            char_blob += mask
+
         meta_with_tables = dict(meta)
         meta_with_tables["bg_list"] = ",".join(self.bg_list)
         meta_with_tables["ovl_list"] = ",".join(self.ovl_list)
+        meta_with_tables["char_list"] = ",".join(self.char_list)
         meta_text = "\n".join(f"{k}={v}" for k, v in meta_with_tables.items()).encode("utf-8")
         sections = [
             (SEC_TEXT, text, 0),
@@ -494,6 +627,7 @@ class PackBuilder:
             (SEC_DLG, dlg_tab, len(dlg_recs)),
             (SEC_BG, bytes(bg_tab) + bytes(bg_blob), len(self.bg_list)),
             (SEC_OVL, bytes(ovl_tab) + bytes(ovl_blob), len(self.ovl_list)),
+            (SEC_CHAR, bytes(char_tab) + bytes(char_blob), len(self.char_list)),
             (SEC_META, meta_text, 0),
         ]
 
@@ -521,7 +655,8 @@ class PackBuilder:
         log(f"  章节 {stats and len(chapter_recs)} / 场景 {stats['scenes']} / 对白 {stats['dlg']}"
             f" / 带叠加场景 {stats['ovl']} / 选项场景 {stats['choices']}")
         log(f"  背景 {len(self.bg_list)} 张、叠加 {len(self.ovl_list)} 张、"
-            f"正文 {stats['chars']} 字")
+            f"立绘 {len(self.char_list)} 张、正文 {stats['chars']} 字")
+        log(f"  其中 {stats['char']} 句立绘状态有变化(含切人与清空)")
         log(f"  文本 {len(text) / 1024:.0f} KB, 背景 {len(bg_blob) / 1024:.0f} KB, "
             f"叠加 {len(ovl_blob) / 1024:.0f} KB, 合计 {len(out) / 1024 / 1024:.2f} MB")
         return bytes(out)
@@ -553,6 +688,8 @@ def main() -> int:
         "scale": f"{SRC_W}x{SRC_H}->{ART_W}x{round(SRC_H * SCALE)}",
         "bg_quality": str(BG_QUALITY),
         "ovl_format": "rgb565+4bpp-mask",
+        "char_format": "rgb565+4bpp-mask 240x320-stretched",
+        "char_rule": "per-scene first cast speaker;主角不出镜;ev*/none*/mask*/hurt* 不叠",
     }
     data = PackBuilder(args.source).build(meta)
 

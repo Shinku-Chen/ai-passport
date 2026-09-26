@@ -100,6 +100,19 @@ static void test_pack_structure(const atri_pack_t *pack)
         if (dlg.flags & ATRI_DLG_END) assert(dlg.arg != ATRI_NONE);
     }
 
+    // 角色立绘:5 张会出镜的全身立绘(主角不出镜),尺寸必须落在画面区内、
+    // 颜色/遮罩完整。
+    assert(pack->char_count >= 5);
+    for (uint16_t i = 0; i < pack->char_count; ++i) {
+        atri_char_t ch;
+        assert(atri_pack_char(pack, i, &ch));
+        assert(ch.w > 0 && ch.h > 0);
+        assert((uint32_t)ch.x + ch.w <= 240 && (uint32_t)ch.y + ch.h <= 320);
+        assert(ch.color_len >= (uint32_t)ch.w * ch.h * 2u);
+        assert(ch.mask_len >= (uint32_t)((ch.w + 1) / 2) * ch.h);
+        assert(((uintptr_t)ch.color % 2u) == 0);
+    }
+
     // 标题画面固定在背景表 0 号,TRUE END 叠加固定在叠加表 0 号。
     atri_bg_t title;
     assert(atri_pack_bg(pack, ATRI_BG_TITLE, &title));
@@ -187,6 +200,30 @@ static void test_story_graph(const atri_pack_t *pack)
     const walk_result_t true_end = walk_story(pack, (uint16_t)te, NULL, 0);
     atri_pack_name(pack, true_end.end_name, name, sizeof(name));
     assert(strncmp(name, "True Ending", 11) == 0);
+
+    // 立绘切换:多数对白应该已经带着"换立绘"的标记(角色层是粘性的,
+    // 只有变化时才写值),而且不能出现越界的下标。
+    int char_marks = 0;
+    int char_shown = 0;
+    int char_cleared = 0;
+    int last_char = -1;
+    for (uint16_t i = 0; i < pack->dialogue_count; ++i) {
+        atri_dialogue_t dlg;
+        atri_pack_dialogue(pack, i, &dlg);
+        if (dlg.chr != ATRI_CHAR_KEEP) {
+            assert(dlg.chr == ATRI_CHAR_NONE || dlg.chr < pack->char_count);
+            assert(dlg.chr != last_char);   // 连续两次写同一个状态 = 打包器没做去重
+            last_char = dlg.chr;
+            ++char_marks;
+            if (dlg.chr != ATRI_CHAR_NONE) ++char_shown;
+            else ++char_cleared;
+        }
+    }
+    // 节奏:规则是“只有带说话人名字的句子才显示立绘,说完就收起”,所以切换
+    // 应该非常频繁,而且“清空”次数应该和“显示”次数同一量级。
+    assert(char_marks >= 3000);
+    assert(char_shown >= 1000);
+    assert(char_cleared >= 1000);
 
     // 三个结局章的标志位必须与章节对应。
     atri_chapter_t ch;
@@ -319,6 +356,7 @@ static void test_save_roundtrip(const atri_pack_t *pack)
     save.chapter = player.chapter;
     save.scene = player.scene;
     save.dialogue = player.dialogue;
+    save.chr = player.chr;
     save.choice_len = player.choice_len;
     memcpy(save.choice_pick, player.choice_pick, sizeof(save.choice_pick));
 
@@ -329,7 +367,23 @@ static void test_save_roundtrip(const atri_pack_t *pack)
     assert(atri_save_decode(&back, blob, len));
     assert(back.chapter == save.chapter && back.scene == save.scene);
     assert(back.dialogue == save.dialogue && back.choice_len == save.choice_len);
+    assert(back.chr == save.chr);   // 立绘随存档一起往返
     assert(memcmp(back.choice_pick, save.choice_pick, sizeof(save.choice_pick)) == 0);
+
+    // 旧固件(v1)的存档仍然要能读出来:立绘字段取"沿用"。
+    uint8_t legacy[32];
+    legacy[0] = 0xA7;
+    legacy[1] = 1;
+    legacy[2] = 3; legacy[3] = 0;
+    legacy[4] = 2; legacy[5] = 0;
+    legacy[6] = 5; legacy[7] = 0;
+    legacy[8] = 1;
+    legacy[9] = 0;
+    for (int i = 0; i < ATRI_CHOICE_HISTORY; ++i) legacy[10 + i] = 0;
+    atri_save_t old_save;
+    assert(atri_save_decode(&old_save, legacy, 18));
+    assert(old_save.chapter == 3 && old_save.scene == 2 && old_save.dialogue == 5);
+    assert(old_save.chr == ATRI_CHAR_KEEP && old_save.choice_len == 1);
 
     // 坏数据必须被拒绝,而不是产生野状态。
     assert(!atri_save_decode(&back, blob, 4));
@@ -338,11 +392,12 @@ static void test_save_roundtrip(const atri_pack_t *pack)
     broken[0] ^= 0xFF;
     assert(!atri_save_decode(&back, broken, len));
 
-    // 恢复到存档点:章节/场景/对白必须一致。
+    // 恢复到存档点:章节/场景/对白/立绘必须一致。
     atri_player_t loaded;
     assert(atri_player_load(&loaded, pack, &save, &LAYOUT));
     assert(loaded.chapter == save.chapter && loaded.scene == save.scene);
     assert(loaded.choice_len == save.choice_len);
+    if (save.chr != ATRI_CHAR_KEEP) assert(loaded.chr == save.chr);
 
     // 越界存档要被夹住而不是崩掉。
     atri_save_t bogus = { .chapter = 0xFFFF, .scene = 0xFFFF, .dialogue = 0xFFFF };

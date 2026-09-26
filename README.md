@@ -102,12 +102,15 @@ computer modes differ only in who moves first.
 
 ### ATRI Reader
 
-A portrait visual-novel reader that ports the Mi Band 9 fan port of
-*ATRI -My Dear Moments-* ([`liuyuze61/ATRI-miband`](https://github.com/liuyuze61/ATRI-miband))
-to the AI Passport: **34 chapters, 1,069 scenes, 12,188 lines of dialogue and
-three endings**, fully offline. The original is a touch app for Xiaomi's Vela OS;
-this branch re-implements the reading engine in C on LVGL and drives it with the
-three keys.
+A portrait visual-novel reader that ports the Mi Band fan port of
+*ATRI -My Dear Moments-* to the AI Passport: **34 chapters, 1,069 scenes,
+12,188 lines of dialogue, five full-body character sprites and three endings**,
+fully offline. The story and art come from
+[`fywmjj/better-mb9p-ATRI`](https://github.com/fywmjj/better-mb9p-ATRI) (the
+refactored port of [`liuyuze61/ATRI-miband`](https://github.com/liuyuze61/ATRI-miband)),
+which adds the full-body `src/common/character/*` sprites the original port
+lacked. The originals are touch apps for Xiaomi's Vela OS; this branch
+re-implements the reading engine in C on LVGL and drives it with the three keys.
 
 - Branch: this branch. Release not cut yet.
 
@@ -117,11 +120,11 @@ three keys.
 │  [ch. 3]                  [batt] │  chapter label / battery
 │                                  │
 │ ┌────────┐                       │  speaker name plate
-│ │ Atri   │                       │
-│ └────────┴───────────────────────┤  the source's translucent text band
-│  body text, 5 lines x 13 CJK     │  is painted into the canvas, so sprites
-│                                  │  show through it
-└──────────────────────────────────┘
+│ │ Atri   │                       │  full-body sprite, shown only while a
+│ └────────┴───────────────────────┤  named cast member is speaking
+│  body text, 5 lines x 13 CJK     │  the source's translucent text band is
+│                                  │  painted into the canvas, the sprite sits
+└──────────────────────────────────┘  above it, a light scrim keeps text readable
 ```
 
 **Controls:** on lists UP / DOWN move the cursor, **OK** selects and **OK (hold)**
@@ -148,7 +151,7 @@ builds:
 
 | Step | Tool | Output |
 | --- | --- | --- |
-| Script + images | `tools/atri_pack.py` | `main/atri_data/atri_pack.bin` (3.59 MB): 34 chapters, 1,069 scenes, 12,188 dialogues, 73 full-screen backgrounds, 16 overlays, plus source metadata |
+| Script + images | `tools/atri_pack.py` | `main/atri_data/atri_pack.bin` (3.83 MB): 34 chapters, 1,069 scenes, 12,188 dialogues, 73 full-screen backgrounds, 14 effect overlays, 5 character sprites, plus source metadata |
 | Font subset | `tools/atri_font.py` | `assets/fonts/atri_cjk_16.c` + `assets/fonts/atri_cjk_symbols.txt` (2,771 code points) |
 
 **Highlights:**
@@ -162,7 +165,14 @@ builds:
 - **~19 KB backgrounds** — backgrounds are cover-scaled, cropped and re-encoded as
   JPEG (q88) at build time; the 72 scene backgrounds plus the title art cost
   1.36 MB, against 4.7 MB of source PNGs.
-- **Overlays that cost no RAM** — the 16 character/effect overlays are stored
+- **Full-body sprites, speaker-driven** — the five cast sprites (750 x 920 …
+  1150 PNGs) are squashed to 240 x 320 exactly like the reference engine's
+  `width/height:100%` element, cropped to their alpha box and stored as RGB565 +
+  4bpp mask. A sprite is shown **only on lines that carry a speaker name**; the
+  viewpoint character (Natsuki) never shows one, and event CGs / black screens stay
+  sprite-free because they already draw the cast. Everything else — narration,
+  minor characters, scene changes — hides the sprite again.
+- **Overlays that cost no RAM** — the 14 effect overlays are stored
   losslessly as RGB565 plus a 4 bpp alpha mask, cropped to their alpha bounding
   box, and composited row by row straight from flash into the canvas. The board
   has no PSRAM and only a few tens of KB of heap left once the canvas and LVGL
@@ -188,10 +198,10 @@ path and streams the raw 240 x 320 RGB565 frame back (`ATRISHOT <w> <h> <bytes>`
 then the pixels, then `ATRISHOT-END`). It is how the drawing pipeline was verified
 without a camera; it costs one idle task and does nothing until a command arrives.
 
-**Credits and rights:** the script, images and translation come from the fan port
-`liuyuze61/ATRI-miband` and from *ATRI -My Dear Moments-*
-(ANIPLEX.EXE / Frontwing / Makura). This firmware is a personal, non-commercial
-port; support the original release.
+**Credits and rights:** the script, images and translation come from the fan ports
+`fywmjj/better-mb9p-ATRI` and `liuyuze61/ATRI-miband`, and from
+*ATRI -My Dear Moments-* (ANIPLEX.EXE / Frontwing / Makura). This firmware is a
+personal, non-commercial port; support the original release.
 
 ## Notes
 
