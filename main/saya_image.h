@@ -1,7 +1,7 @@
 // main/saya_image.h —— 画面区合成:背景 JPEG + 立绘(JPEG + 1bpp 遮罩)-> 一张 RGB565 画布。
 //
-// 版面固定:横屏 320x240,上方 320x136 是画面区,下方 104px 是文本框。背景在打包
-// 时就裁成 320x136,立绘只保留落在画面区里的那部分,所以设备端不做任何缩放/裁剪,
+// 版面固定:横屏 320x240,上方 320x150 是画面区(左下角叠说话人名字),下方 82px 文本框。背景在打包
+// 时就裁成 320x150,立绘只保留落在画面区里的那部分,所以设备端不做任何缩放/裁剪,
 // 只需要"解码 + 按遮罩拷贝"。
 #pragma once
 
@@ -13,7 +13,7 @@
 struct _lv_obj_t;
 
 #define SAYA_ART_W 320
-#define SAYA_ART_H 136
+#define SAYA_ART_H 150
 // 立绘宽度上限:必须与 tools/saya_pack.py 的 SPRITE_MAX_W 一致(打包时已限宽)。
 #define SAYA_SPRITE_MAX_W 180
 

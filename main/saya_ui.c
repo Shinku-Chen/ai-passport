@@ -4,6 +4,7 @@
 #include "esp_log.h"
 #include "lvgl.h"
 
+#include <stdio.h>
 #include <string.h>
 
 static const char *TAG = "saya_ui";
@@ -19,6 +20,8 @@ static const char *TAG = "saya_ui";
 #define COL_PANEL 0x0A0C0F
 
 static void list_set_values_font(saya_list_t *list, const lv_font_t *font);
+static void about_update_hint(saya_ui_t *ui);
+static void warning_refresh_hint(saya_ui_t *ui);
 
 // 缺字/字体没生效的运行时点名:汉字缺字形会画成方块,字体整段没套上就是一片乱码,
 // 这两种情况在真机上都很难一眼判断,所以设置文本后就地检查实际生效的字体。
@@ -243,6 +246,8 @@ void saya_ui_set_font_size(saya_ui_t *ui, bool large)
     const lv_font_t *font = large ? ui->font_large : ui->font_small;
     lv_obj_set_style_text_font(ui->text, font, LV_PART_MAIN);
     lv_obj_set_style_text_font(ui->name, font, LV_PART_MAIN);
+    lv_obj_set_style_text_font(ui->about_text, font, LV_PART_MAIN);
+    about_update_hint(ui);   // 字号变了,关于正文可能才刚超出/刚好放得下
     list_apply_font(&ui->title_menu, font);
     list_apply_font(&ui->menu, font);
     list_apply_font(&ui->settings_menu, font);
@@ -252,6 +257,7 @@ void saya_ui_set_font_size(saya_ui_t *ui, bool large)
     lv_obj_set_style_text_font(ui->ending_hint, font, LV_PART_MAIN);
     lv_obj_set_style_text_font(ui->warning_text, font, LV_PART_MAIN);
     lv_obj_set_style_text_font(ui->warning_hint, font, LV_PART_MAIN);
+    warning_refresh_hint(ui);   // 字号变了,警告正文可能要重新滚动
     lv_obj_set_style_text_font(ui->about_text, font, LV_PART_MAIN);
     lv_obj_set_style_text_font(ui->slots_title, large ? ui->font_large : ui->font_small,
                                LV_PART_MAIN);
@@ -417,16 +423,23 @@ bool saya_ui_create(saya_ui_t *ui, uint16_t *art_pixels, uint8_t *sprite_scratch
     lv_obj_set_flag(ui->page_game, LV_OBJ_FLAG_SCROLLABLE, false);
     ui->box = make_box(ui->page_game);
 
-    ui->name = lv_label_create(ui->box);
+    // 说话人名字不再放在文本框内部,而是贴在画面区左下角、文本框正上方。
+    ui->name = lv_label_create(root);
     lv_obj_set_style_text_font(ui->name, font_small, LV_PART_MAIN);
     lv_obj_set_style_text_color(ui->name, lv_color_hex(COL_NAME), LV_PART_MAIN);
-    lv_obj_set_pos(ui->name, 10, 2);
+    lv_obj_set_pos(ui->name, 8, SAYA_NAME_Y);
+    lv_obj_set_style_bg_color(ui->name, lv_color_hex(0x000000), LV_PART_MAIN);
+    lv_obj_set_style_bg_opa(ui->name, LV_OPA_50, LV_PART_MAIN);
+    lv_obj_set_style_pad_hor(ui->name, 6, LV_PART_MAIN);
+    lv_obj_set_style_pad_ver(ui->name, 1, LV_PART_MAIN);
+    lv_obj_set_style_radius(ui->name, 6, LV_PART_MAIN);
 
     ui->text = lv_label_create(ui->box);
     lv_obj_set_style_text_font(ui->text, font_small, LV_PART_MAIN);
     lv_obj_set_style_text_color(ui->text, lv_color_hex(COL_TEXT), LV_PART_MAIN);
-    lv_obj_set_pos(ui->text, 10, 22);
-    lv_obj_set_size(ui->text, SAYA_UI_W - 20, 80);
+    // 正文区:底部留出约 7px 边距,最后一行不再贴底(行高见 tools/saya_font.py)。
+    lv_obj_set_pos(ui->text, 10, 4);
+    lv_obj_set_size(ui->text, SAYA_UI_W - 20, SAYA_TEXT_LINES * SAYA_LINE_H);
     lv_label_set_long_mode(ui->text, LV_LABEL_LONG_WRAP);
 
     // 选项页(同一区域,盖住文本框)
@@ -434,8 +447,8 @@ bool saya_ui_create(saya_ui_t *ui, uint16_t *art_pixels, uint8_t *sprite_scratch
     for (int i = 0; i < 2; ++i) {
         lv_obj_t *row = lv_obj_create(ui->choice_box);
         lv_obj_remove_style_all(row);
-        lv_obj_set_size(row, SAYA_UI_W - 24, 36);
-        lv_obj_set_pos(row, 12, 12 + i * 44);
+        lv_obj_set_size(row, SAYA_UI_W - 24, 34);
+        lv_obj_set_pos(row, 12, 6 + i * 38);
         lv_obj_set_style_radius(row, 6, LV_PART_MAIN);
         lv_obj_set_style_bg_color(row, lv_color_hex(COL_ROW), LV_PART_MAIN);
         lv_obj_set_style_bg_opa(row, LV_OPA_COVER, LV_PART_MAIN);
@@ -519,14 +532,32 @@ bool saya_ui_create(saya_ui_t *ui, uint16_t *art_pixels, uint8_t *sprite_scratch
     lv_obj_set_style_bg_color(ui->page_about, lv_color_hex(COL_PANEL), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(ui->page_about, LV_OPA_COVER, LV_PART_MAIN);
     lv_obj_set_flag(ui->page_about, LV_OBJ_FLAG_SCROLLABLE, false);
-    list_create(&ui->about_menu, ui->page_about, "关于", 36, 168);
+    list_create(&ui->about_menu, ui->page_about, "关于", 36, 176);
     lv_obj_set_style_text_font(ui->about_menu.title, font_large, LV_PART_MAIN);
-    ui->about_text = lv_label_create(ui->page_about);
+    // 正文放在可滚动容器里:关于文案比一屏长时,用上/下键滚动查看。
+    ui->about_view = lv_obj_create(ui->page_about);
+    lv_obj_remove_style_all(ui->about_view);
+    lv_obj_set_pos(ui->about_view, 12, 40);
+    lv_obj_set_size(ui->about_view, SAYA_UI_W - 24, 128);
+    lv_obj_set_style_bg_opa(ui->about_view, LV_OPA_TRANSP, LV_PART_MAIN);
+    lv_obj_set_style_border_width(ui->about_view, 0, LV_PART_MAIN);
+    lv_obj_set_style_pad_all(ui->about_view, 0, LV_PART_MAIN);
+    lv_obj_set_scrollbar_mode(ui->about_view, LV_SCROLLBAR_MODE_AUTO);
+    lv_obj_set_style_width(ui->about_view, 3, LV_PART_SCROLLBAR);
+    lv_obj_set_style_bg_color(ui->about_view, lv_color_hex(COL_ACCENT), LV_PART_SCROLLBAR);
+    lv_obj_set_style_bg_opa(ui->about_view, LV_OPA_70, LV_PART_SCROLLBAR);
+    ui->about_text = lv_label_create(ui->about_view);
     lv_obj_set_style_text_font(ui->about_text, font_small, LV_PART_MAIN);
     lv_obj_set_style_text_color(ui->about_text, lv_color_hex(COL_TEXT), LV_PART_MAIN);
-    lv_obj_set_pos(ui->about_text, 12, 40);
-    lv_obj_set_size(ui->about_text, SAYA_UI_W - 24, 120);
+    lv_obj_set_pos(ui->about_text, 0, 0);
+    lv_obj_set_width(ui->about_text, SAYA_UI_W - 24 - 8);
     lv_label_set_long_mode(ui->about_text, LV_LABEL_LONG_WRAP);
+    ui->about_hint = lv_label_create(ui->page_about);
+    lv_obj_set_style_text_font(ui->about_hint, font_small, LV_PART_MAIN);
+    lv_obj_set_style_text_color(ui->about_hint, lv_color_hex(COL_DIM), LV_PART_MAIN);
+    lv_label_set_text(ui->about_hint, "上/下 滚动");
+    lv_obj_set_pos(ui->about_hint, 12, 212);
+    lv_obj_add_flag(ui->about_hint, LV_OBJ_FLAG_HIDDEN);
 
     ui->page_warning = lv_obj_create(root);
     lv_obj_remove_style_all(ui->page_warning);
@@ -534,11 +565,23 @@ bool saya_ui_create(saya_ui_t *ui, uint16_t *art_pixels, uint8_t *sprite_scratch
     lv_obj_set_style_bg_color(ui->page_warning, lv_color_hex(0x1A0A0A), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(ui->page_warning, LV_OPA_COVER, LV_PART_MAIN);
     lv_obj_set_flag(ui->page_warning, LV_OBJ_FLAG_SCROLLABLE, false);
-    ui->warning_text = lv_label_create(ui->page_warning);
+    // 警告正文放进可滚动容器:开机页必须能读完再进游戏(未读完按确定只往下翻一屏)。
+    ui->warning_view = lv_obj_create(ui->page_warning);
+    lv_obj_remove_style_all(ui->warning_view);
+    lv_obj_set_pos(ui->warning_view, 12, 12);
+    lv_obj_set_size(ui->warning_view, SAYA_UI_W - 24, SAYA_UI_H - 52);
+    lv_obj_set_style_bg_opa(ui->warning_view, LV_OPA_TRANSP, LV_PART_MAIN);
+    lv_obj_set_style_border_width(ui->warning_view, 0, LV_PART_MAIN);
+    lv_obj_set_style_pad_all(ui->warning_view, 0, LV_PART_MAIN);
+    lv_obj_set_scrollbar_mode(ui->warning_view, LV_SCROLLBAR_MODE_AUTO);
+    lv_obj_set_style_width(ui->warning_view, 3, LV_PART_SCROLLBAR);
+    lv_obj_set_style_bg_color(ui->warning_view, lv_color_hex(COL_ACCENT), LV_PART_SCROLLBAR);
+    lv_obj_set_style_bg_opa(ui->warning_view, LV_OPA_70, LV_PART_SCROLLBAR);
+    ui->warning_text = lv_label_create(ui->warning_view);
     lv_obj_set_style_text_font(ui->warning_text, font_small, LV_PART_MAIN);
     lv_obj_set_style_text_color(ui->warning_text, lv_color_hex(0xFFD9D9), LV_PART_MAIN);
-    lv_obj_set_pos(ui->warning_text, 12, 12);
-    lv_obj_set_size(ui->warning_text, SAYA_UI_W - 24, SAYA_UI_H - 60);
+    lv_obj_set_pos(ui->warning_text, 0, 0);
+    lv_obj_set_width(ui->warning_text, SAYA_UI_W - 24 - 8);
     lv_label_set_long_mode(ui->warning_text, LV_LABEL_LONG_WRAP);
     ui->warning_hint = lv_label_create(ui->page_warning);
     lv_obj_set_style_text_font(ui->warning_hint, font_small, LV_PART_MAIN);
@@ -612,6 +655,13 @@ void saya_ui_set_settings_selected(saya_ui_t *ui, int index)
     list_select(&ui->settings_menu, index);
 }
 
+void saya_ui_about_scroll(saya_ui_t *ui, int dy)
+{
+    if (!ui || !ui->about_view || dy == 0) return;
+    // 内容不满一屏时 LVGL 自己把滚动位置夹在 0,这里是"滚不动"而不是出错。
+    lv_obj_scroll_by(ui->about_view, 0, dy, LV_ANIM_OFF);
+}
+
 void saya_ui_slots_setup(saya_ui_t *ui, const char *title, const char *hint,
                          const char *const *labels, const char *const *values, int count)
 {
@@ -640,11 +690,59 @@ void saya_ui_set_warning(saya_ui_t *ui, const char *text, const char *hint)
 {
     if (!ui) return;
     lv_label_set_text(ui->warning_text, text ? text : "");
-    lv_label_set_text(ui->warning_hint, hint ? hint : "");
+    snprintf(ui->warning_tail, sizeof(ui->warning_tail), "%s", hint ? hint : "");
+    // 每次进页从顶部开始:没读完就不放行。
+    if (ui->warning_view) lv_obj_scroll_to_y(ui->warning_view, 0, LV_ANIM_OFF);
+    warning_refresh_hint(ui);
+}
+
+// 未读完时提示"继续滚动",读到底才把提示换成"按确定继续阅读"。
+static void warning_refresh_hint(saya_ui_t *ui)
+{
+    if (!ui || !ui->warning_view || !ui->warning_hint) return;
+    lv_obj_update_layout(ui->warning_view);
+    const bool done = lv_obj_get_scroll_bottom(ui->warning_view) <= 0;
+    lv_label_set_text(ui->warning_hint,
+                      done ? ui->warning_tail : "上/下 滚动阅读,读到最后才能继续");
+}
+
+void saya_ui_warning_scroll(saya_ui_t *ui, int dy)
+{
+    if (!ui || !ui->warning_view || dy == 0) return;
+    lv_obj_scroll_by(ui->warning_view, 0, dy, LV_ANIM_OFF);
+    warning_refresh_hint(ui);
+}
+
+void saya_ui_warning_page(saya_ui_t *ui, int dir)
+{
+    if (!ui || !ui->warning_view || dir == 0) return;
+    const int step = (int)lv_obj_get_content_height(ui->warning_view);
+    lv_obj_scroll_by(ui->warning_view, 0, dir * step, LV_ANIM_OFF);
+    warning_refresh_hint(ui);
+}
+
+bool saya_ui_warning_ready(saya_ui_t *ui)
+{
+    if (!ui || !ui->warning_view) return true;
+    lv_obj_update_layout(ui->warning_view);
+    return lv_obj_get_scroll_bottom(ui->warning_view) <= 0;
 }
 
 void saya_ui_set_about_text(saya_ui_t *ui, const char *text)
 {
     if (!ui) return;
     lv_label_set_text(ui->about_text, text ? text : "");
+    // 每次进页从顶部开始,不沿用上次滚到的位置。
+    if (ui->about_view) lv_obj_scroll_to_y(ui->about_view, 0, LV_ANIM_OFF);
+    about_update_hint(ui);
+}
+
+// 只有正文超出容器高度时才显示"上/下 滚动"提示;刚好放得下就隐藏。
+static void about_update_hint(saya_ui_t *ui)
+{
+    if (!ui || !ui->about_view || !ui->about_hint) return;
+    lv_obj_update_layout(ui->about_view);
+    const bool overflow = lv_obj_get_scroll_bottom(ui->about_view) > 0;
+    if (overflow) lv_obj_remove_flag(ui->about_hint, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_add_flag(ui->about_hint, LV_OBJ_FLAG_HIDDEN);
 }

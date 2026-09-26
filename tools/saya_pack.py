@@ -23,18 +23,29 @@ firmware (no decompression, no per-record parsing).  Layout:
     SEC_FG      { jpeg_off u32, jpeg_len u32, mask_off u32, mask_len u32, w u16, h u16 }
     SEC_META    UTF-8 key=value 文本(来源仓库 / commit / 转换参数)
 
-Image conversion (fixed screen layout 320x240, art area 320x136):
-  背景 283x212 调色板 PNG -> cover 裁切成 320x136 -> JPEG
+Image conversion (fixed screen layout 320x240, art area 320x150):
+  背景 283x212 调色板 PNG -> cover 裁切成 320x150 -> JPEG
   标题画面(bg.png)       -> 同上,固定放在背景表 0 号(SAYA_BG_TITLE,脚本不引用它)
-  立绘 212xN RGBA      -> 按屏幕高度 240 缩放(宽度上限 180)-> 取顶部 136 行
+  立绘 212xN RGBA      -> 按屏幕高度 240 缩放(宽度上限 180)-> 取顶部 150 行
                           -> JPEG + 1bpp 遮罩(按行打包)
 
 Usage:
   python tools/saya_pack.py --source <Saya-miband10 checkout> \
       --out main/saya_data/saya_pack.bin
 
+Variants (发布规则,必须分清):
+  community(默认) 只读 src/common/{sy,cg,fg},不含源仓库 补丁/ 里的任何内容。
+                  仓库里提交的 main/saya_data/saya_pack.bin 就是这个版本 ——
+                  可以随固件一起发布到 AI Passport 社区市场。
+  release(--patch)  用 补丁/ 里的同名章节替换基础脚本,并把 补丁/*.png(R18 CG)
+                  并入背景表。**只允许自用**:生成的 pack 不要提交、不要上传,
+                  也不要用它构建面/发布给社区的固件。
+                  补丁可能引入新汉字:重建后用两个 pack 一起重生成字体
+                  (见 tools/saya_font.py --pack 可给多次),否则会缺字。
+
 The generated pack is committed so a plain checkout can build the firmware;
-only regenerating it needs the source checkout.
+only regenerating it needs the source checkout.  The committed one is always
+the community variant.
 """
 
 from __future__ import annotations
@@ -59,7 +70,7 @@ MAGIC = b"SAYAPK01"
 VERSION = 1
 GEN_VERSION = "saya_pack/1"
 
-ART_W, ART_H = 320, 136          # 画面区(横屏 320x240 的可见部分)
+ART_W, ART_H = 320, 150          # 画面区(横屏 320x240;其下是 82px 文本框 + 8px 底边距)
 SPRITE_SCREEN_H = 240            # 立绘按屏幕高度缩放
 SPRITE_MAX_W = 180               # 立绘宽度上限,限制设备端解码缓冲
 BG_QUALITY = 80
@@ -75,6 +86,10 @@ NONE = 0xFFFF
 FG_KEEP = 0xFFFF
 # 背景表 0 号固定是标题画面(与 main/saya_pack.h 的 SAYA_BG_TITLE 对应)。
 TITLE_SOURCE = "bg"   # cg/bg.png,脚本里没有引用
+# 源剧本里的音效指令:本移植没有音效资源,打包时剥掉,不要当正文显示。
+SE_TAG_RE = re.compile(r"<se\b[^<>]*>", re.IGNORECASE)
+# 打包期间的清理统计(结束时打日志)。
+STRIPPED = {"se": 0}
 
 
 def log(msg: str) -> None:
@@ -105,12 +120,17 @@ class Strings:
 
 
 def clean_text(text: str) -> str:
-    """源数据里混了不可显示的控制字符与 CJK 兼容汉字,转换时清理掉。
+    """源数据里混了不可显示的控制字符、音效指令与 CJK 兼容汉字,转换时清理掉。
 
     - C0 控制字符(如 U+001F)直接删除,它们不是可排版字符;
+    - 音效指令(如 <se id="1" src="門開け" mode="normal" loop="off">)剔除:
+      本移植没有音效资源,留在正文里会在对话框里当文字显示出来;
     - CJK 兼容汉字区(U+F900-U+FAFF)按 NFKC 归一到标准汉字(如 U+FA12 -> 晴),
       字形完全等价,只是换成了字体一定覆盖的码位。
     """
+    text, removed = SE_TAG_RE.subn("", text)
+    if removed:
+        STRIPPED["se"] += removed
     out = []
     for ch in text:
         if ord(ch) < 0x20:
@@ -161,15 +181,20 @@ def pack_mask(alpha: Image.Image) -> bytes:
 
 
 class PackBuilder:
-    def __init__(self, source: str) -> None:
+    def __init__(self, source: str, patch_dir: str = "") -> None:
         self.src = source
         self.sy_dir = os.path.join(source, "src", "common", "sy")
         self.cg_dir = os.path.join(source, "src", "common", "cg")
         self.fg_dir = os.path.join(source, "src", "common", "fg")
+        # 补丁目录(R18 内容,只给 release 变体用):同名章节覆盖基础脚本,PNG 并入背景表。
+        self.patch_dir = patch_dir
+        self.patched_chapters: List[str] = []
         self.strings = Strings()
         self.names: List[Tuple[int, int]] = []
         self._name_index: Dict[str, int] = {}
         self.bg_files = self._scan(self.cg_dir)
+        if patch_dir:
+            self.bg_files.update(self._scan(patch_dir))
         self.fg_files = self._scan(self.fg_dir)
         self.bg_list: List[str] = []
         self.bg_blobs: List[bytes] = []
@@ -233,12 +258,21 @@ class PackBuilder:
         return idx
 
     # ---------------------------------------------------------------- scripts
+    def script_path(self, fn: str) -> str:
+        """release 变体里同名补丁章节优先;没有对应补丁就用基础脚本。"""
+        if self.patch_dir:
+            patched = os.path.join(self.patch_dir, fn)
+            if os.path.exists(patched):
+                return patched
+        return os.path.join(self.sy_dir, fn)
+
     def load_chapters(self) -> List[dict]:
         chapters = []
         for fn in sorted(os.listdir(self.sy_dir), key=chapter_sort_key):
             if not fn.endswith(".txt"):
                 continue
-            raw = open(os.path.join(self.sy_dir, fn), "rb").read()
+            path = self.script_path(fn)
+            raw = open(path, "rb").read()
             if not raw.strip():
                 log(f"  跳过空脚本 {fn}")
                 continue
@@ -247,6 +281,8 @@ class PackBuilder:
             except Exception as exc:  # pragma: no cover - source data issue
                 log(f"  跳过无法解析的脚本 {fn}: {exc}")
                 continue
+            if path != os.path.join(self.sy_dir, fn):
+                self.patched_chapters.append(fn)
             chapters.append({"file": os.path.splitext(fn)[0], "scenes": data})
         chapters.sort(key=lambda c: chapter_sort_key(c["file"]))
         return chapters
@@ -378,19 +414,36 @@ def main() -> int:
     ap.add_argument("--source", required=True, help="Saya-miband10 checkout 路径")
     ap.add_argument("--out", required=True, help="输出 pack 路径")
     ap.add_argument("--commit", default="", help="源仓库 commit(记录到元数据)")
+    ap.add_argument("--patch", default="",
+                    help="release 变体:源仓库 补丁/ 目录(R18)。生成的 pack 禁提交/禁发布")
     args = ap.parse_args()
 
-    builder = PackBuilder(args.source)
+    if args.patch:
+        if not os.path.isdir(args.patch):
+            raise SystemExit(f"补丁目录不存在: {args.patch}")
+        log("  ⚠ release 变体:含补丁(R18)。不要把生成的 pack 提交进仓库,")
+        log("    也不要用它构建发布到 AI Passport 社区市场的固件。")
+
+    builder = PackBuilder(args.source, args.patch)
     meta = {
         "source": "https://github.com/liuyuze61/Saya-miband10",
         "commit": args.commit or "unknown",
         "generator": GEN_VERSION,
+        "variant": "release" if args.patch else "community",
+        "patch": os.path.basename(args.patch.rstrip("/\\")) if args.patch else "",
         "art": f"{ART_W}x{ART_H}",
         "bg_quality": str(BG_QUALITY),
         "fg_quality": str(FG_QUALITY),
         "sprite_max_w": str(SPRITE_MAX_W),
     }
     data = builder.build(meta)
+
+    if STRIPPED["se"]:
+        log(f"  剥掉音效标签 <se …> {STRIPPED['se']} 个(本移植无音效资源,不显示)")
+
+    if builder.patched_chapters:
+        log(f"  补丁章节 {len(builder.patched_chapters)} 个: "
+            + " ".join(builder.patched_chapters))
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     with open(args.out, "wb") as fh:

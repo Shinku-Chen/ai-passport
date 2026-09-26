@@ -16,15 +16,24 @@ managed_components/lvgl__lvgl/src/font/fmt_txt/lv_font_fmt_txt.c):
   FORMAT0_FULL  用 glyph_id_ofs_list(uint8 逐码位表),稀疏大字集不可用(且给 NULL 会崩)
 所以这里跟 LVGL 自带的 Montserrat 一样:ASCII 一段 TINY + 其余一段 SPARSE_TINY。
 
-字符集来自两处,保证界面文字与剧本正文都不缺字:
+字符集来自三处,保证界面文字与剧本正文都不缺字:
   1. 资源包(main/saya_data/saya_pack.bin)里的全部剧本文字与名字;
-  2. main/ 下所有 .c/.h 里出现的非 ASCII 字面量(界面文案)。
+  2. main/ 下所有 .c/.h 里出现的非 ASCII 字面量(界面文案);
+  3. out-dir 里上一版清单 saya_cjk_symbols.txt(如果存在)。
+第 3 条是为了让两个变体共用同一份字体:一旦用含补丁的 pack 生成过,补丁正文用到
+的字形就被清单记住;之后只用社区 pack 重生成也不会丢掉它们。
+用法上可以一次给多个 --pack(例如社区 + release),字符集取并集。
+
+空白字符同样要进子集:剧本用全角空格 U+3000 做中文首行缩进(179 处),它必须
+有一个"空位图 + 全角推进宽度"的字形,否则 LVGL 查不到字形会画一个缺字方块。
+只有 \r \n \t 交给 LVGL 的行/对齐逻辑处理,不进字形表。
 
 用法:
   python tools/saya_font.py --font <NotoSansSC-Regular.otf> \
-      --pack main/saya_data/saya_pack.bin --out-dir assets/fonts     # 生成 + 校验
+      --pack main/saya_data/saya_pack.bin --pack build/release/saya_pack.bin \
+      --out-dir assets/fonts          # 生成 + 校验(两个变体取并集)
   python tools/saya_font.py --check --pack main/saya_data/saya_pack.bin \
-      --out-dir assets/fonts                                         # 只做覆盖/结构自检
+      --out-dir assets/fonts          # 只做覆盖/结构自检(会并入清单里记录的字符)
 
 生成物(assets/fonts/saya_cjk_*.c 与 saya_cjk_symbols.txt)提交进仓库;源字体不上传。
 """
@@ -37,18 +46,31 @@ import os
 import re
 import struct
 import sys
+import unicodedata
 
-try:
-    from PIL import Image, ImageDraw, ImageFont
-except ImportError:  # pragma: no cover - tool dependency
-    sys.exit("需要 Pillow: python -m pip install pillow")
+# Pillow 只在生成时用到(栅格化)。--check 模式必须能在只有 python3 的环境里跑
+# (CI 的静态门禁就是这种环境),所以这里不做顶层导入。
+Image = ImageDraw = ImageFont = None
+
+
+def _require_pillow() -> None:
+    global Image, ImageDraw, ImageFont
+    if Image is not None:
+        return
+    try:
+        from PIL import Image as _Image, ImageDraw as _ImageDraw, ImageFont as _ImageFont
+    except ImportError:  # pragma: no cover - tool dependency
+        sys.exit("生成字体需要 Pillow: python -m pip install pillow")
+    Image, ImageDraw, ImageFont = _Image, _ImageDraw, _ImageFont
 
 SIZES = (16, 20)      # 生成的像素字号
 BPP = 4
+# 字符清单文件名:既是生成产物,也是下次生成的输入(见 required_chars)。
+INVENTORY_FILE = "saya_cjk_symbols.txt"
 # 行高固定为 字号+4:界面按"16px 4 行 / 20px 3 行"排版(见 main/saya_app.c 的 layout_for),
 # 若用 Noto Sans SC 的自然行高(16px 字号约 24px),一屏就放不下 4 行。
 # 多出来的行距在自然行框里上下各裁一半,基线随之平移,字形本身不受影响。
-EXTRA_LEADING = 4
+EXTRA_LEADING = 3   # 16px 字号 -> 行高 19;界面按 4 行排版(见 SAYA_LINE_H)
 
 CMAP_TINY = "LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY"
 CMAP_SPARSE = "LV_FONT_FMT_TXT_CMAP_SPARSE_TINY"
@@ -93,12 +115,30 @@ def source_chars(root: str) -> set:
     return chars
 
 
-def required_chars(pack_path: str, source_root: str) -> set:
-    chars = pack_chars(pack_path) | source_chars(source_root)
-    chars.discard("\u3000")
+def required_chars(pack_paths: list, source_root: str, inventory_dir: str = "") -> set:
+    chars = source_chars(source_root)
+    for path in pack_paths:
+        chars |= pack_chars(path)
+    chars |= inventory_chars(inventory_dir)
     for start, end in ((0x20, 0x7E),):
         chars |= {chr(c) for c in range(start, end + 1)}
     return {c for c in chars if c not in "\r\n\t"}
+
+
+def inventory_chars(out_dir: str) -> set:
+    """上一版清单里的字符(含 release 变体用过的字形),重生成时并进来。"""
+    if not out_dir:
+        return set()
+    path = os.path.join(out_dir, INVENTORY_FILE)
+    if not os.path.exists(path):
+        return set()
+    chars = set()
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            if line.startswith("#"):
+                continue
+            chars |= {c for c in line.rstrip("\n") if c not in "\r\n\t"}
+    return chars
 
 
 # ---------------------------------------------------------------- 字形栅格化
@@ -109,6 +149,7 @@ def rasterize(otf_path: str, size: int, codepoints: list) -> dict:
       letter_y = line_top + (line_height - base_line) - box_h - ofs_y
     即 ofs_y = baseline - 字形盒底(基线以下的部分为负)。
     """
+    _require_pillow()
     font = ImageFont.truetype(otf_path, size, layout_engine=ImageFont.Layout.BASIC)
     ascent, descent = font.getmetrics()
     pad = 4                       # 画布留白:原点固定在 (pad, pad) = 行顶(上文线)
@@ -393,7 +434,9 @@ def check(out_dir: str, codepoints: list) -> int:
         missing = [cp for cp in codepoints if not lookup_glyph_id(font, cp)]
         blank = []
         for cp in codepoints:
-            if cp <= 0x20:
+            # 空白类字符(半角空格、全角空格)的正常字形就是空的,只靠推进宽度占位;
+            # 报成"空字形"会把它们从子集里挤出去,反而变成缺字方块。
+            if cp <= 0x20 or unicodedata.category(chr(cp)).startswith("Z"):
                 continue
             got = decode_glyph(font, cp)
             if got and not any(got[5]):
@@ -416,12 +459,12 @@ def check(out_dir: str, codepoints: list) -> int:
 
 # ---------------------------------------------------------------- 主流程
 def generate(args) -> int:
-    chars = required_chars(args.pack, args.source_root)
+    chars = required_chars(args.pack, args.source_root, args.out_dir)
     codepoints = sorted(ord(c) for c in chars)
     os.makedirs(args.out_dir, exist_ok=True)
-    with open(os.path.join(args.out_dir, "saya_cjk_symbols.txt"), "w",
+    with open(os.path.join(args.out_dir, INVENTORY_FILE), "w",
               encoding="utf-8", newline="\n") as fh:
-        fh.write("# 由 tools/saya_font.py 生成:界面文案 + 剧本正文出现过的全部字符。\n")
+        fh.write("# 由 tools/saya_font.py 生成:界面文案 + 全部剧本字符(含 release 变体的补丁正文)。\n")
         fh.write("# 重新生成字体时必须与本文件一致。\n")
         fh.write("".join(chr(cp) for cp in codepoints) + "\n")
     log(f"  字符清单 {len(codepoints)} 个")
@@ -446,6 +489,7 @@ def generate(args) -> int:
     for size in SIZES:
         log(f"  生成 {size}px/{BPP}bpp ...")
         glyphs = rasterize(args.font, size, codepoints)
+        _require_pillow()
         font = ImageFont.truetype(args.font, size, layout_engine=ImageFont.Layout.BASIC)
         ascent, descent = font.getmetrics()
         natural = ascent + descent
@@ -466,13 +510,16 @@ def generate(args) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--font", help="源字体 TTF/OTF(生成时必填)")
-    ap.add_argument("--pack", default="main/saya_data/saya_pack.bin")
+    ap.add_argument("--pack", action="append",
+                    default=["main/saya_data/saya_pack.bin"],
+                    help="资源包路径,可给多次(字符集取并集)")
     ap.add_argument("--source-root", default="main")
     ap.add_argument("--out-dir", default="assets/fonts")
     ap.add_argument("--check", action="store_true", help="只做覆盖/结构自检,不生成")
     args = ap.parse_args()
 
-    codepoints = sorted(ord(c) for c in required_chars(args.pack, args.source_root))
+    codepoints = sorted(ord(c) for c in
+                        required_chars(args.pack, args.source_root, args.out_dir))
     if args.check:
         return check(args.out_dir, codepoints)
     if not args.font:

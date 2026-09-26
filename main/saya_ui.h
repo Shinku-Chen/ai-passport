@@ -1,8 +1,9 @@
 // main/saya_ui.h —— 《沙耶之歌》的 LVGL 界面层。
 //
 // 版面(横屏 320x240):
-//   y 0..135   画面区: 一张 RGB565 画布(背景 + 立绘);标题页复用同一张画布
-//   y 136..239 文本框: 说话人 / 正文;标题页与选项页在这一区域放行列表
+//   y 0..149    画面区: 一张 RGB565 画布(背景 + 立绘);标题页复用同一张画布
+//   y 126..149  说话人名字:画面区左下角、文本框正上方的半透明标签
+//   y 150..231  文本框: 正文(最后一行与屏幕底部留 SAYA_BOX_BOTTOM_MARGIN 的边距)
 // 全屏页面(菜单、警告、设置、存读档、结局、关于)盖住整个屏幕。
 //
 // 本模块只负责"把给定的内容画出来",不决定剧情走向 —— 状态机在 saya_app.c。
@@ -19,9 +20,17 @@
 
 #define SAYA_UI_W 320
 #define SAYA_UI_H 240
-#define SAYA_BOX_Y 136
-#define SAYA_BOX_H (SAYA_UI_H - SAYA_BOX_Y)
+// 文本框:底部留 SAYA_BOX_BOTTOM_MARGIN 的边距,最后一行不贴屏幕边缘。
+#define SAYA_BOX_BOTTOM_MARGIN 8
+#define SAYA_BOX_H 82
+#define SAYA_BOX_Y (SAYA_UI_H - SAYA_BOX_BOTTOM_MARGIN - SAYA_BOX_H)
+// 说话人名字放在画面区左下角、文本框正上方(不再占用文本框内部空间)。
+#define SAYA_NAME_Y (SAYA_BOX_Y - 24)
 #define SAYA_UI_MAX_ROWS 6
+// 正文行高/行数:必须与 tools/saya_font.py 的 EXTRA_LEADING(字号+3)和
+// main/saya_app.c 的 layout_for() 一致,否则最后一行会被裁掉或留下大片空白。
+#define SAYA_LINE_H 19
+#define SAYA_TEXT_LINES 4
 
 typedef enum {
     SAYA_PAGE_WARNING = 0,
@@ -79,9 +88,13 @@ typedef struct {
     struct _lv_obj_t *ending_title;
     struct _lv_obj_t *ending_name;
     struct _lv_obj_t *ending_hint;
+    struct _lv_obj_t *warning_view;    // 警告正文的可滚动容器(读到底才能继续)
     struct _lv_obj_t *warning_text;
     struct _lv_obj_t *warning_hint;
+    char warning_tail[64];            // 读完后的提示文案(由 set_warning 传入)
+    struct _lv_obj_t *about_view;     // 关于正文的可滚动容器(没地方显示时用上/下滚)
     struct _lv_obj_t *about_text;
+    struct _lv_obj_t *about_hint;     // 内容超出时显示的“上/下 滚动”提示
     struct _lv_obj_t *slots_title;
     struct _lv_obj_t *slots_hint;
 
@@ -137,5 +150,13 @@ void saya_ui_slots_setup(saya_ui_t *ui, const char *title, const char *hint,
 void saya_ui_set_slots_selected(saya_ui_t *ui, int index);
 void saya_ui_set_ending(saya_ui_t *ui, const char *name, const char *hint);
 void saya_ui_set_warning(saya_ui_t *ui, const char *text, const char *hint);
+// 警告页正文滚动(短按一行、长按四行由调用方决定步长);滚到底后提示才会变成"可继续"。
+void saya_ui_warning_scroll(saya_ui_t *ui, int dy);
+// 正文是否已读到底(已滚到底返回 true,未读完会保持"滚动阅读"提示)。
+bool saya_ui_warning_ready(saya_ui_t *ui);
+// 未读完时按确定 / 长按上、下:整屏翻页;dir<0 往上,dir>0 往下。
+void saya_ui_warning_page(saya_ui_t *ui, int dir);
 void saya_ui_set_about_text(saya_ui_t *ui, const char *text);
+// 滚动关于正文:dy > 0 看后面的内容(按“下”),dy < 0 回看(按“上”)。越界自动夹紧。
+void saya_ui_about_scroll(saya_ui_t *ui, int dy);
 void saya_ui_set_battery(saya_ui_t *ui, int percent);
