@@ -56,3 +56,9 @@
 - Updated software-design and project README references for the new documentation structure.
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
+
+## v0.1.0-asunabi - 2026-09-27
+
+- Added the Asunabi portrait visual-novel reader on `feature/asunabi-galgame`. The firmware boots into the title screen and provides line advance, pagination, chapter skip, six save slots, text speed and size, auto-play, and a single ending screen.
+- Added a 4 MiB `assets` data partition and the `tools/gal/` pack pipeline. Third-party artwork and chapter scripts stay in the git-ignored `assets/gal-source/` tree and are not part of this release. A build without that tree, including the tag-triggered CI artifact, ships a placeholder pack with no artwork and no chapter script.
+- Added committed Noto Sans SC subset fonts for the reader UI.

@@ -53,3 +53,9 @@
 - 同步更新索引：`docs/software-design/README.md`、`README.en_US.md` / `README.zh_CN.md` 的 `docs/` 目录说明。
 - 参考 cindy 仓库文档组织完善索引：新增 `docs/README.md` 根总索引；AGENTS.md 规则索引按触发场景改写（附触发条件）；`docs/contribution/` 与 `docs/development/` 的 README 补充收录标准。
 - 引入社区治理文档（参照 cindy 改写，放仓库根目录）：新增 `CONTRIBUTING.md` / `.zh_CN.md`（贡献指南，针对 ESP-IDF/AI agent/fork 场景改写）、`CODE_OF_CONDUCT.md` / `.zh_CN.md`（贡献者公约）、`SECURITY.md` / `.zh_CN.md`（安全报告流程）、`SUPPORT.md` / `.zh_CN.md`（支持渠道）；AGENTS.md 与 docs/README.md 同步引用。
+
+## v0.1.0-asunabi - 2026-09-27
+
+- 在 `feature/asunabi-galgame` 加入飞鸟会长不肯认输（Asunabi）竖屏视觉小说阅读器。固件直接进入标题画面，支持逐行推进、分页、跳章、六个存档位、文字速度与字号、自动播放，以及单一结局画面。
+- 增加 4 MiB 的 `assets` 数据分区和 `tools/gal/` 打包流程。第三方美术与章节剧本放在已 git 忽略的 `assets/gal-source/`，不属于本次发布。没有该目录的构建（包括 tag 触发的 CI 产物）只会生成占位包，没有美术也没有章节剧本。
+- 提交了阅读器界面使用的思源黑体子集字库。
