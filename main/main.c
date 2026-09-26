@@ -15,6 +15,7 @@
 #include "bsp_i2c.h"
 #include "bsp_pins.h"
 
+#include "driver/usb_serial_jtag_vfs.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_sleep.h"
@@ -137,6 +138,53 @@ static void handle_tick(uint32_t elapsed_ms)
     if (want_sleep) enter_sleep();
 }
 
+// 串口截图通道(调试用):在 USB-Serial-JTAG 控制台输入
+//   ATRISHOT <章下标> <幕下标>
+// 就把该幕渲染进画面区,并以 RGB565 原始字节回传:
+//   ATRISHOT <w> <h> <字节数> + 原始像素 + ATRISHOT-END
+
+// 平时它只是阻塞在一行输入上,不占 CPU;发行固件保留它便于远程验收画面。
+static void debug_task(void *arg)
+{
+    (void)arg;
+    char line[64];
+    for (;;) {
+        if (!fgets(line, sizeof(line), stdin)) {
+            vTaskDelay(pdMS_TO_TICKS(200));
+            continue;
+        }
+        int chapter = -1;
+        int scene = -1;
+        if (sscanf(line, "ATRISHOT %d %d", &chapter, &scene) != 2) continue;
+
+        bool ok = false;
+        if (bsp_lvgl_lock(1000)) {
+            ok = atri_app_debug_render(&s_app, (uint16_t)chapter, (uint16_t)scene);
+            bsp_lvgl_unlock();
+        }
+        if (!ok) {
+            printf("ATRISHOT-ERR %d %d\n", chapter, scene);
+            fflush(stdout);
+            continue;
+        }
+        const uint32_t total = sizeof(s_art_pixels);
+        printf("ATRISHOT %d %d %u\n", ATRI_ART_W, ATRI_ART_H, (unsigned)total);
+        fflush(stdout);
+        // 控制台默认把输出里的 LF 翻成 CRLF,那会往原始像素里插字节、把画面打花;
+        // 发像素期间关掉翻译,发完再恢复。
+        usb_serial_jtag_vfs_set_tx_line_endings(ESP_LINE_ENDINGS_LF);
+        const uint8_t *bytes = (const uint8_t *)s_art_pixels;
+        for (uint32_t off = 0; off < total; off += 2048) {
+            const uint32_t chunk = (total - off) < 2048u ? (total - off) : 2048u;
+            fwrite(bytes + off, 1, chunk, stdout);
+        }
+        fflush(stdout);
+        usb_serial_jtag_vfs_set_tx_line_endings(ESP_LINE_ENDINGS_CRLF);
+        printf("\nATRISHOT-END\n");
+        fflush(stdout);
+    }
+}
+
 static void input_task(void *arg)
 {
     (void)arg;
@@ -227,6 +275,10 @@ void app_main(void)
         return;
     }
     s_input_ready = true;
+
+    if (xTaskCreate(debug_task, "atri_debug", 4096, NULL, 4, NULL) != pdPASS) {
+        ESP_LOGW(TAG, "串口截图任务创建失败(不影响阅读)");
+    }
 
     ESP_LOGI(TAG, "空闲堆 %u 字节,最大连续块 %u 字节", (unsigned)esp_get_free_heap_size(),
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));

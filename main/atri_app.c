@@ -760,6 +760,19 @@ void atri_app_show_sleeping(atri_app_t *app)
     set_page(app, ATRI_PAGE_ENDING);
 }
 
+bool atri_app_debug_render(atri_app_t *app, uint16_t chapter, uint16_t scene)
+{
+    if (!app || chapter >= app->pack.chapter_count) return false;
+    atri_chapter_t ch;
+    atri_pack_chapter(&app->pack, chapter, &ch);
+    if (scene >= ch.scene_count) return false;
+    atri_scene_t sc;
+    atri_pack_scene(&app->pack, (uint16_t)(ch.first_scene + scene), &sc);
+    app->rendered_bg = ATRI_NONE;   // 强制重画,不受"同画面不重复解码"缓存影响
+    app->rendered_ovl = ATRI_NONE;
+    return atri_ui_set_art(&app->ui, &app->pack, sc.bg, sc.ovl, sc.ovl_x, sc.ovl_y);
+}
+
 bool atri_app_take_sleep_request(atri_app_t *app)
 {
     if (!app || !app->sleep_requested) return false;

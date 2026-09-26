@@ -142,6 +142,10 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
   圆满 / 悲剧 / 真正的结局、选择分流、分页规则、存档往返，都在
   `tools/validate.sh --static` 里执行。
 
+**调试通道：** 串口（USB-Serial-JTAG）接受 `ATRISHOT <章下标> <幕下标>`：固件用正常渲染路径把该幕
+画进画面区，再把 240 x 320 的 RGB565 原始帧回传（先 `ATRISHOT <w> <h> <字节数>`，随后像素，
+最后 `ATRISHOT-END`）。本项目的画面验证就是靠它（不用拍照）；平时它只挂在一个空闲任务上等输入。
+
 **版权：** 剧本、图像与译文来自同人移植工程 `liuyuze61/ATRI-miband` 与原作
 《ATRI -My Dear Moments-》（ANIPLEX.EXE / Frontwing / 枕）。本固件是个人非商业移植，
 请支持正版。

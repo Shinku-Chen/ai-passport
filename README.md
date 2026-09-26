@@ -182,6 +182,12 @@ builds:
   pack integrity, the happy / bad / true endings, the choice branch, paging rules
   and save round-trips all run on the host in `tools/validate.sh --static`.
 
+**Debug aid:** the console (USB-Serial-JTAG) accepts `ATRISHOT <chapter> <scene>`:
+the firmware renders that chapter/scene into the art canvas with the normal render
+path and streams the raw 240 x 320 RGB565 frame back (`ATRISHOT <w> <h> <bytes>`,
+then the pixels, then `ATRISHOT-END`). It is how the drawing pipeline was verified
+without a camera; it costs one idle task and does nothing until a command arrives.
+
 **Credits and rights:** the script, images and translation come from the fan port
 `liuyuze61/ATRI-miband` and from *ATRI -My Dear Moments-*
 (ANIPLEX.EXE / Frontwing / Makura). This firmware is a personal, non-commercial

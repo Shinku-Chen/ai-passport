@@ -80,3 +80,7 @@ void atri_app_show_sleeping(atri_app_t *app);
 
 // 取走一次"立即休眠"请求(标题页长按确定 / 设置页"关机")。
 bool atri_app_take_sleep_request(atri_app_t *app);
+
+// 调试用:把指定章节/场景直接画进画面区(不改动玩家状态、不落盘),
+// 供串口截图命令 ATRISHOT 使用(见 main.c)。调用时需持有 LVGL 锁。
+bool atri_app_debug_render(atri_app_t *app, uint16_t chapter, uint16_t scene);

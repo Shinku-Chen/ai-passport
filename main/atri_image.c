@@ -86,8 +86,9 @@ static bool show_bg(atri_image_t *img, const atri_pack_t *pack, uint16_t bg)
 
 // 叠加:无损 RGB565 + 4bpp 遮罩,逐行直接从 Flash 合成进画布。
 // 带遮罩的行按 alpha 做 15 级混合,不带遮罩的整行直接覆写。越界部分按画布裁剪。
-static void blit_ovl(atri_image_t *img, const atri_ovl_t *ovl, int x0, int y0)
+static uint32_t blit_ovl(atri_image_t *img, const atri_ovl_t *ovl, int x0, int y0)
 {
+    uint32_t written = 0;
     const bool masked = ovl->mask_len > 0;
     const uint32_t stride = (uint32_t)((ovl->w + 1) / 2);
     const uint16_t *color = (const uint16_t *)ovl->color;
@@ -112,6 +113,7 @@ static void blit_ovl(atri_image_t *img, const atri_ovl_t *ovl, int x0, int y0)
                 if (alpha == 0) continue;
             }
             const uint16_t src = src_row[x];
+            ++written;
             if (alpha == 15) {
                 dst_row[dst_x] = src;
                 continue;
@@ -125,6 +127,7 @@ static void blit_ovl(atri_image_t *img, const atri_ovl_t *ovl, int x0, int y0)
             dst_row[dst_x] = (uint16_t)((r << 11) | (g << 5) | b);
         }
     }
+    return written;
 }
 
 static bool show_ovl(atri_image_t *img, const atri_pack_t *pack, uint16_t ovl, int16_t x,
@@ -135,7 +138,11 @@ static bool show_ovl(atri_image_t *img, const atri_pack_t *pack, uint16_t ovl, i
         ESP_LOGW(TAG, "叠加下标越界: %u", (unsigned)ovl);
         return false;
     }
-    blit_ovl(img, &info, x, y);
+    const uint32_t written = blit_ovl(img, &info, x, y);
+    // 渲染日志:用来核对"这一屏到底有没有立绘、画了多少像素"。
+    ESP_LOGI(TAG, "叠加 #%u %ux%u @(%d,%d) 遮罩 %s -> 合成 %u 像素", (unsigned)ovl,
+             (unsigned)info.w, (unsigned)info.h, (int)x, (int)y,
+             info.mask_len ? "有" : "无", (unsigned)written);
     return true;
 }
 
@@ -199,6 +206,8 @@ bool atri_image_show(atri_image_t *img, const atri_pack_t *pack, uint16_t bg, ui
 {
     if (!img || !img->canvas || !pack) return false;
     if (!show_bg(img, pack, bg)) return false;
+    ESP_LOGI(TAG, "背景 #%u 解码 %u ms,叠加 #%u", (unsigned)bg,
+             (unsigned)img->last_decode_ms, (unsigned)ovl);
     draw_text_band(img);
     if (ovl != ATRI_NONE) {
         (void)show_ovl(img, pack, ovl, x, y);   // 叠加失败也要把背景显示出来
