@@ -741,7 +741,13 @@ void atri_app_key(atri_app_t *app, const atri_key_t *key)
 void atri_app_tick(atri_app_t *app, uint32_t elapsed_ms)
 {
     if (!app) return;
-    app->idle_ms += elapsed_ms;
+    // 自动阅读时玩家不需要碰机器,这段时间不能算空闲 —— 否则会读到一半自己
+    // 变暗、熄屏甚至休眠。停在选项或结局上时自动翻页已经停下,照旧按时限熄灭。
+    if (atri_app_auto_reading(app)) {
+        app->idle_ms = 0;
+    } else {
+        app->idle_ms += elapsed_ms;
+    }
 
     if (app->notice_ms > 0) {
         app->notice_ms = app->notice_ms > elapsed_ms ? app->notice_ms - elapsed_ms : 0;
@@ -785,6 +791,13 @@ void atri_app_tick(atri_app_t *app, uint32_t elapsed_ms)
             atri_ui_set_battery(&app->ui, soc);
         }
     }
+}
+
+bool atri_app_auto_reading(const atri_app_t *app)
+{
+    if (!app) return false;
+    return app->auto_play && app->page == ATRI_PAGE_GAME &&
+           !app->player.at_choice && !app->player.ended;
 }
 
 uint32_t atri_app_idle_ms(const atri_app_t *app)

@@ -72,6 +72,9 @@ void atri_app_key(atri_app_t *app, const atri_key_t *key);
 // 周期性 tick(累计空闲时间、电量刷新间隔、过场计时)。调用时需持有 LVGL 锁。
 void atri_app_tick(atri_app_t *app, uint32_t elapsed_ms);
 
+// 自动阅读是否正在自行翻页(停在选项或结局上时不算),供空闲熄灭豁免使用。
+bool atri_app_auto_reading(const atri_app_t *app);
+
 // 空闲时长(毫秒),供 main 决定变暗/熄屏/深睡。
 uint32_t atri_app_idle_ms(const atri_app_t *app);
 

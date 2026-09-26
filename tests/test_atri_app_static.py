@@ -9,7 +9,8 @@
   1. main/ 下不允许把字符数组强转成字符串指针数组(`(const char *const *)` 等);
   2. 交付的界面文案里的非 ASCII 字符必须在字体子集清单里(缺字会显示成方块),
      最外层由 tools/atri_font.py --check 兜底,这里只做"清单与源文件同步"的快速核对;
-  3. 源文件里不允许出现替换字符 U+FFFD(编码损坏)。
+  3. 源文件里不允许出现替换字符 U+FFFD(编码损坏);
+  4. 自动阅读期间必须豁免空闲累计 —— 否则读到一半会自己变暗/熄屏/休眠。
 """
 
 from __future__ import annotations
@@ -78,11 +79,27 @@ def check_symbols_coverage(errors: list) -> None:
     return
 
 
+def check_auto_read_keeps_screen_awake(errors: list) -> None:
+    """自动阅读时不能累计空闲时间,否则读到一半会自己变暗、熄屏、休眠。"""
+    path = os.path.join("main", "atri_app.c")
+    with open(path, "r", encoding="utf-8") as fh:
+        text = fh.read()
+    if not re.search(r"atri_app_auto_reading\(app\)\s*\)\s*\{\s*\n\s*app->idle_ms\s*=\s*0;",
+                     text):
+        errors.append(
+            f"{path}: atri_app_tick 缺少自动阅读的空闲豁免,自动阅读中会自己熄屏/休眠;"
+            f"应当用 atri_app_auto_reading() 把 idle_ms 清零"
+        )
+    if "bool atri_app_auto_reading(const atri_app_t *app)" not in text:
+        errors.append(f"{path}: 缺少 atri_app_auto_reading() 的实现")
+
+
 def main() -> int:
     os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     errors: list = []
     check_no_pointer_array_cast(errors)
     check_symbols_coverage(errors)
+    check_auto_read_keeps_screen_awake(errors)
     if errors:
         for e in errors[:40]:
             print(f"ERROR: {e}", file=sys.stderr)
