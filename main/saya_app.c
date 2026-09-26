@@ -158,7 +158,8 @@ static void render_current_page(saya_app_t *app)
 {
     switch (app->page) {
     case SAYA_PAGE_TITLE: {
-        // 标题菜单最多 4 行(画面上方是标题图,菜单只有 104px 可用);"关于"在设置页里。
+        // 标题菜单最多 4 行(标题图下方是 90px 的菜单区,按 22px 行高正好放得下);
+        // "关于"在设置页里。
         static const char *rows_continue[4] = { "继续", "从第 1 章开始", "读取存档", "设置" };
         static const char *rows_default[3] = { "从第 1 章开始", "读取存档", "设置" };
         const char *const *rows = app->have_auto ? rows_continue : rows_default;

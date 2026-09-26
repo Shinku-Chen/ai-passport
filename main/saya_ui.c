@@ -59,6 +59,10 @@ static void list_create(saya_list_t *list, lv_obj_t *page, const char *title, in
     list->row_h = row_h;
     list->top = top;
     list->font = NULL;
+    // 兜底:版面装不下所有行时(list_select 会自动把选中项滚进可视区)也不至于
+    // 把后面的行直接丢到屏幕外。行数没超出时滚动范围是 0,不会有任何位移。
+    lv_obj_set_flag(page, LV_OBJ_FLAG_SCROLLABLE, true);
+    lv_obj_set_scrollbar_mode(page, LV_SCROLLBAR_MODE_OFF);
     list->title = lv_label_create(page);
     lv_label_set_text(list->title, title ? title : "");
     lv_obj_set_pos(list->title, 12, 6);
@@ -130,6 +134,9 @@ static void list_select(saya_list_t *list, int selected)
         lv_obj_set_style_border_color(row, lv_color_hex(COL_ACCENT), LV_PART_MAIN);
         lv_obj_set_style_text_color(list->rows[i], lv_color_hex(COL_TEXT), LV_PART_MAIN);
     }
+    // 光标移出可视区时把列表带过去(up/down 只是移动光标,滚动交给这里)。
+    lv_obj_t *sel_row = list->rows[selected] ? lv_obj_get_parent(list->rows[selected]) : NULL;
+    if (sel_row) lv_obj_scroll_to_view(sel_row, LV_ANIM_OFF);
 }
 
 static void list_apply_font(saya_list_t *list, const lv_font_t *font)
@@ -465,7 +472,9 @@ bool saya_ui_create(saya_ui_t *ui, uint16_t *art_pixels, uint8_t *sprite_scratch
     lv_obj_set_pos(ui->page_title, 0, SAYA_BOX_Y);
     lv_obj_set_flag(ui->page_title, LV_OBJ_FLAG_SCROLLABLE, false);
     // 标题页的菜单只有 40..100 的可用高度(上面是画面区),4 行以内能排下。
-    list_create(&ui->title_menu, ui->page_title, "", 24, 4);
+    // 标题页的菜单区就是文本框那块(SAYA_BOX_H = 90px),最多 4 行:
+    // 2 + 3*22 + 18 = 86,留 4px 余量,第 4 行不会被切到屏幕外。
+    list_create(&ui->title_menu, ui->page_title, "", 22, 2);
 
     // 全屏页面
     ui->page_menu = lv_obj_create(root);
