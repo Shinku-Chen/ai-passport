@@ -53,3 +53,11 @@
 - 同步更新索引：`docs/software-design/README.md`、`README.en_US.md` / `README.zh_CN.md` 的 `docs/` 目录说明。
 - 参考 cindy 仓库文档组织完善索引：新增 `docs/README.md` 根总索引；AGENTS.md 规则索引按触发场景改写（附触发条件）；`docs/contribution/` 与 `docs/development/` 的 README 补充收录标准。
 - 引入社区治理文档（参照 cindy 改写，放仓库根目录）：新增 `CONTRIBUTING.md` / `.zh_CN.md`（贡献指南，针对 ESP-IDF/AI agent/fork 场景改写）、`CODE_OF_CONDUCT.md` / `.zh_CN.md`（贡献者公约）、`SECURITY.md` / `.zh_CN.md`（安全报告流程）、`SUPPORT.md` / `.zh_CN.md`（支持渠道）；AGENTS.md 与 docs/README.md 同步引用。
+
+## v0.1.0-starry-sky-railroad - 2026-09-27
+
+- 新增《星空列车与白的旅行》竖屏视觉小说阅读器（分支 `feature/starry-sky-railroad`）。整条剧情（39 章 / 1260 场景 / 13787 句对白 / 一处选项 / 一个结局）全部离线跑在 Flash 的资源包里：标题页、正文页、选项、菜单、设置、5 个手动存档位 + 1 个自动存档位、结局页与关于页，界面与页面流程来自 ATRI 阅读器的 LVGL 页面系统。
+- 新增资源包流水线与随仓库提交的资源包（`main/starry_data/starry_pack.bin`，约 3.4 MB）：背景仍是 JPEG（直接解码进整屏画布），立绘改为无损 RGB565 + 4bpp 遮罩、逐行直接从 Flash blit —— 不再需要立绘解码缓冲。资源包是该商业作品公开手环移植版的素材转换产物，来源已在分支 README 中注明。
+- 新增生成的 Noto Sans SC 子集字体（2708 字形，OFL-1.1，位于 `assets/fonts/`）及重新生成 / 逐字节校验的工具；静态门禁会在任一运行时会显示的字缺字形时失败。
+- 扩展 BSP：新增抬起（release）事件、显式按键时序（短按 180ms / 长按 500ms），以及让 deep sleep 低电平唤醒可用的按键交还流程。阅读器用它们实现“松手停快进”、自动阅读与休眠唤醒。
+- 上一版手绘逐条带渲染器及其测试仍保留在 `main/` 作为参考，但不再编入本应用。

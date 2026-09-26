@@ -56,3 +56,11 @@
 - Updated software-design and project README references for the new documentation structure.
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
+
+## v0.1.0-starry-sky-railroad - 2026-09-27
+
+- Added the *Starry Sky Railroad and Shiro's Journey* portrait visual-novel reader on `feature/starry-sky-railroad`. The whole story — 39 chapters, 1,260 scenes, 13,787 lines of dialogue, one choice and one ending — runs offline from the pack in Flash, with title, body, choices, menu, settings, five save slots plus one automatic slot, ending and about pages driven by the ATRI reader's LVGL page system.
+- Added the pack pipeline and the committed pack (`main/starry_data/starry_pack.bin`, ~3.4 MB): backgrounds stay JPEG and are decoded straight into the full-screen canvas, while sprites are stored as lossless RGB565 plus a 4 bpp mask that the reader blits from Flash — no sprite decode buffer is required. The pack is a conversion of the public Mi Band fan port of this commercial title, credited in the branch README.
+- Added a generated Noto Sans SC subset font (2,708 glyphs, OFL-1.1) under `assets/fonts/` together with the tool that regenerates and byte-verifies it; the static gate fails if any runtime character has no glyph.
+- Extended the BSP with a button-release event, explicit press timing (180 ms short / 500 ms long), and the button hand-off that makes low-level wake-up work after deep sleep. The reader uses them for release-to-stop fast-forward, auto-reading, and sleep/wake.
+- Kept the previous hand-rolled strip renderer and its tests in `main/` for reference; they are no longer compiled into this application.
