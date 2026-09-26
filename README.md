@@ -37,7 +37,7 @@ reading engine in C on LVGL and drives it with the three keys.
   (finishing the typewriter first), UP (hold 1 s or more) fast-forwards at 180 ms per
   line until released, DOWN (short) steps back one page.
 - **Auto-play** — hold DOWN for one second to start; it advances one segment every
-  900 ms (finishing the current one first). **Any key stops it**, choices and endings
+  900 ms once the current segment has finished typing. **Any key stops it**, choices and endings
   stop it automatically, and the screen never dims, blanks or sleeps while it runs.
 - **Choices** — UP / DOWN select, **OK** confirms.
 - **Menu** — save, load, skip chapter, back to title, close. Skipping a chapter stops at
