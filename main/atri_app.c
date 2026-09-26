@@ -16,9 +16,8 @@ static const char *TAG = "atri_app";
 #define ATRI_TRANSITION_MS 1200u
 // 长按上/下开始快进时,每句话之间的间隔。
 #define ATRI_FASTFORWARD_MS 110u
-// 自动阅读:打字机一结束就翻到下一句;这里只是两次翻页之间的最小间隔,
-// 防止把文字速度设成“瞬间”时连翻到看不清。
-#define ATRI_AUTO_MS 250u
+// 自动阅读:打字机打完之后再等这么久翻到下一句(固定阅读停顿,也是两次翻页的最小间隔)。
+#define ATRI_AUTO_MS 700u
 
 // 打字机速度(毫秒/字):0 = 瞬间显示整页。对应设置页的 瞬间/慢/中/快。
 static const uint32_t s_speed_ms[4] = { 0, 60, 35, 18 };
@@ -756,10 +755,10 @@ void atri_app_tick(atri_app_t *app, uint32_t elapsed_ms)
             render_scene(app);
         }
     }
-    // 自动阅读:打字机一结束就翻到下一句(两次翻页之间至少隔 ATRI_AUTO_MS)。
+    // 自动阅读:打字机打完后固定等 ATRI_AUTO_MS 再翻到下一句。
     if (app->auto_play && app->page == ATRI_PAGE_GAME && !app->transition_pending) {
         if (atri_ui_typing(&app->ui) || app->player.at_choice || app->player.ended) {
-            app->auto_ms = 0;   // 还在打字 / 等玩家选择:不累计,也不需要最小间隔
+            app->auto_ms = ATRI_AUTO_MS;   // 还在打字 / 等玩家选择:倒计时保持在满格
         } else if (app->auto_ms > elapsed_ms) {
             app->auto_ms -= elapsed_ms;
         } else {

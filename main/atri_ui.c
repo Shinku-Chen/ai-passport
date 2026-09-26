@@ -192,15 +192,16 @@ static void build_overlays(atri_ui_t *ui, lv_obj_t *screen)
     ui->battery = new_label(screen, ui->font_tiny, COL_DIM, "");
     lv_obj_align(ui->battery, LV_ALIGN_TOP_RIGHT, -8, 6);
     lv_obj_set_style_text_opa(ui->battery, LV_OPA_70, 0);
-    // 自动阅读指示:常驻在画面区左下角(用文字,不用图标,省得字体缺字形)。
+    // 自动阅读指示:常驻在画面区右下角(用文字,不用图标,省得字体缺字形)。
     ui->auto_hint = new_label(screen, ui->font_cjk, COL_ACCENT, "自动");
-    lv_obj_align(ui->auto_hint, LV_ALIGN_BOTTOM_LEFT, 8,
+    lv_obj_align(ui->auto_hint, LV_ALIGN_BOTTOM_RIGHT, -8,
                  -(ATRI_UI_H - ATRI_BOX_Y) - 6);
     lv_obj_set_style_text_opa(ui->auto_hint, LV_OPA_80, 0);
     set_hidden(ui->auto_hint, true);
 
     ui->page_hint = new_label(screen, ui->font_tiny, COL_DIM, "");
-    lv_obj_align(ui->page_hint, LV_ALIGN_TOP_RIGHT, -8, ATRI_BOX_Y - 24);
+    // 页码提示:右下角"自动"指示上方一行,避免两个标签重叠。
+    lv_obj_align(ui->page_hint, LV_ALIGN_BOTTOM_RIGHT, -8, -(ATRI_UI_H - ATRI_BOX_Y) - 28);
     lv_obj_set_style_text_opa(ui->page_hint, LV_OPA_70, 0);
 
     // 选项:盖在画面区上的两行按钮(源工程是两个 250x61 的按钮)。
