@@ -46,7 +46,8 @@ CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
 CONFIG_BT_NIMBLE_HOST_BASED_PRIVACY=n
 CONFIG_BT_NIMBLE_NVS_PERSIST=n
 
-# --- 《沙耶之歌》阅读器:全程离线,不需要联网与蓝牙 ---
-# 关掉 Wi-Fi / BT 可省下一批静态 RAM(给画面缓冲)与功耗;BSP 不依赖它们。
+# --- 《沙耶之歌》阅读器:全程离线,不需要蓝牙 ---
+# 关掉 BT/NimBLE 可省下约 260 KB Flash(实测);阅读器从不初始化它,也没有运行期开销。
+# Wi-Fi 仍会随组件依赖图被编进来(BT 组件依赖 esp_wifi),但同样从不初始化;
+# CONFIG_ESP_WIFI_ENABLED 在 IDF 5.5 里恒为 y,写 =n 无效,故不写。
 CONFIG_BT_ENABLED=n
-CONFIG_ESP_WIFI_ENABLED=n
