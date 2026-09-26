@@ -16,8 +16,9 @@ static const char *TAG = "atri_app";
 #define ATRI_TRANSITION_MS 1200u
 // 长按上/下开始快进时,每句话之间的间隔。
 #define ATRI_FASTFORWARD_MS 110u
-// 自动阅读:一句话打完之后再等这么久翻到下一句(给阅读留时间)。
-#define ATRI_AUTO_MS 1600u
+// 自动阅读:打字机一结束就翻到下一句;这里只是两次翻页之间的最小间隔,
+// 防止把文字速度设成“瞬间”时连翻到看不清。
+#define ATRI_AUTO_MS 250u
 
 // 打字机速度(毫秒/字):0 = 瞬间显示整页。对应设置页的 瞬间/慢/中/快。
 static const uint32_t s_speed_ms[4] = { 0, 60, 35, 18 };
@@ -347,7 +348,7 @@ static void advance_reading(atri_app_t *app, bool skip_typing)
         break;
     case ATRI_STEP_CHAPTER:
         auto_save(app);
-        app->fast_forward = false;   // 过场停下,让玩家看到换章
+        // 换章过场不关自动模式:过场计时结束后自动接着读下一章。
         start_transition(app);
         break;
     case ATRI_STEP_ENDING:
@@ -600,7 +601,7 @@ static void key_game(atri_app_t *app, const atri_key_t *key)
     // 长按下 = 自动阅读模式开关(按固定节奏自动翻页)。
     if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_DOWN) {
         app->auto_play = !app->auto_play;
-        app->auto_ms = ATRI_AUTO_MS;
+        app->auto_ms = 0;
         app->fast_forward = false;
         atri_ui_set_auto(&app->ui, app->auto_play);
         notify(app, app->auto_play ? "自动阅读:开" : "自动阅读:关");
@@ -702,10 +703,13 @@ void atri_app_key(atri_app_t *app, const atri_key_t *key)
     app->notice_ms = 0;
     atri_ui_notice(&app->ui, "");
 
-    // 自动阅读模式:除了“长按下”这个开关本身,任何按键都停下来(先把控制权还给玩家)。
+    // 自动阅读模式:真实的“按键”(单击/长按)才停下来,把控制权交回玩家。
+    // 注意不能把 PRESS/RELEASE 也算进去 —— 长按下的抬起事件会在刚开完开关后
+    // 立刻把自动模式关掉,表现就是“开了不自动”。
     const bool is_auto_toggle =
         (key->btn == BSP_BTN_DOWN && key->ev == BSP_BTN_LONG && app->page == ATRI_PAGE_GAME);
-    if (app->auto_play && !is_auto_toggle) {
+    const bool is_real_press = (key->ev == BSP_BTN_CLICK || key->ev == BSP_BTN_LONG);
+    if (app->auto_play && is_real_press && !is_auto_toggle) {
         app->auto_play = false;
         app->fast_forward = false;
         atri_ui_set_auto(&app->ui, false);
@@ -752,16 +756,15 @@ void atri_app_tick(atri_app_t *app, uint32_t elapsed_ms)
             render_scene(app);
         }
     }
-    // 自动阅读:打字机打完后再等 ATRI_AUTO_MS 才翻页;选项/过场/结局自动停。
+    // 自动阅读:打字机一结束就翻到下一句(两次翻页之间至少隔 ATRI_AUTO_MS)。
     if (app->auto_play && app->page == ATRI_PAGE_GAME && !app->transition_pending) {
         if (atri_ui_typing(&app->ui) || app->player.at_choice || app->player.ended) {
-            app->auto_ms = ATRI_AUTO_MS;   // 还在打字 / 等玩家选择:计时不累计
+            app->auto_ms = 0;   // 还在打字 / 等玩家选择:不累计,也不需要最小间隔
+        } else if (app->auto_ms > elapsed_ms) {
+            app->auto_ms -= elapsed_ms;
         } else {
-            app->auto_ms = app->auto_ms > elapsed_ms ? app->auto_ms - elapsed_ms : 0;
-            if (app->auto_ms == 0) {
-                app->auto_ms = ATRI_AUTO_MS;
-                advance_reading(app, false);
-            }
+            app->auto_ms = ATRI_AUTO_MS;
+            advance_reading(app, false);
         }
     }
 
