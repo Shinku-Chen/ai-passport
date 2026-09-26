@@ -73,6 +73,9 @@ key-driven UI), a rewired `main/main.c`, a dedicated `assets` data partition
 (4 MiB, data subtype `0x40`), and two committed CJK font subsets under
 `assets/fonts/`.
 
+The firmware also answers `FAP_SCREENSHOT_V1` on the console with the current frame
+as RGB565LE, which the community publisher requires before it accepts a submission.
+
 Packing the real artwork needs Pillow in the interpreter ESP-IDF builds with:
 
 ```bash
@@ -92,5 +95,6 @@ the advance rules and the pagination.
 ## Source
 
 - **Branch**: [`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame)
+- **Release**: [`v0.1.0-asunabi`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-asunabi) — merged image `FoloToy-AI-Passport-full.bin`, 7,917,142 bytes; also submitted to the AI Passport community market.
 - **Upstream work**: [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) — the Xiaomi Band quick-app release this port is based on. No license is declared there; its artwork and chapter scripts are committed under `assets/gal-source/` with the upstream project credited as the source.
 - Asset pipeline: [`tools/gal/README.md`](tools/gal/README.md)

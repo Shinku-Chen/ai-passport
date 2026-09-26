@@ -57,6 +57,8 @@
 NVS 存档、按键驱动的界面）、改写过的 `main/main.c`、一个独立的 `assets` 数据分区
 （4 MiB，data 子类型 `0x40`），以及提交在 `assets/fonts/` 下的两个 CJK 字体子集。
 
+固件还会在控制台上响应 `FAP_SCREENSHOT_V1`，回一帧当前画面（RGB565LE）—— 这是社区发布接受投稿前的硬性要求。
+
 打包真实美术需要 ESP-IDF 构建所用的解释器里装有 Pillow：
 
 ```bash
@@ -75,5 +77,6 @@ python -m pip install Pillow                                       # Linux/macOS
 ## 来源
 
 - **分支**：[`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame)
+- **发布**：[`v0.1.0-asunabi`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-asunabi) —— 合并镜像 `FoloToy-AI-Passport-full.bin`，7,917,142 字节；并已投稿到 AI Passport 社区市场。
 - **上游作品**：[`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) —— 本次移植所依据的小米手环快应用版本。该仓库未声明许可；美术与章节剧本已提交在 `assets/gal-source/`，并以上游项目作为来源标注。
 - 素材工具链：[`tools/gal/README.md`](tools/gal/README.md)
