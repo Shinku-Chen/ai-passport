@@ -141,6 +141,9 @@ static bool show_ovl(atri_image_t *img, const atri_pack_t *pack, uint16_t ovl, i
 
 // 正文带:源工程 text_bg 的蓝底向上渐透明,这里按行线性插值直接混进画布。
 // (LVGL 画不了"逐行不同的透明度",而这条带又必须让立绘透出来,所以在像素层做。)
+// 绘制顺序是:背景 -> 蓝带 -> 立绘 -> 浅暗帘 -> (LVGL 文字)。
+// 源工程把立绘压在带子下面,人物会被蓝带洗掉大半;这里反过来让立绘压在带子上面,
+// 再只给文字所在的几行盖一层浅暗帘,兼顾"人物完整"和"文字看得清"。
 static void draw_text_band(atri_image_t *img)
 {
     // text_bg.png 采样值:RGB 约 (73,138,217),alpha 从 65/255 渐到 219/255。
@@ -167,15 +170,40 @@ static void draw_text_band(atri_image_t *img)
     }
 }
 
+// 文字区浅暗帘:盖在立绘之上、文字之下,只为了让白字在任何立绘上都能读。
+static void draw_text_scrim(atri_image_t *img)
+{
+    const unsigned scrim_r = 6, scrim_g = 16, scrim_b = 25;
+    const unsigned alpha_top = 30, alpha_bottom = 110;
+    const unsigned span = (unsigned)(ATRI_ART_H - ATRI_BAND_Y - 1);
+    for (int y = ATRI_BAND_Y; y < ATRI_ART_H; ++y) {
+        const unsigned t = span ? (unsigned)(y - ATRI_BAND_Y) * 255u / span : 255u;
+        const unsigned a = alpha_top + (alpha_bottom - alpha_top) * t / 255u;
+        const unsigned ia = 255u - a;
+        uint16_t *row = img->pixels + (size_t)y * ATRI_ART_W;
+        for (int x = 0; x < ATRI_ART_W; ++x) {
+            const uint16_t dst = row[x];
+            const unsigned dr = ((dst >> 11) & 0x1Fu) << 3;
+            const unsigned dg = ((dst >> 5) & 0x3Fu) << 2;
+            const unsigned db = (dst & 0x1Fu) << 3;
+            const unsigned r = (scrim_r * a + dr * ia) / 255u;
+            const unsigned g = (scrim_g * a + dg * ia) / 255u;
+            const unsigned b = (scrim_b * a + db * ia) / 255u;
+            row[x] = (uint16_t)(((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3));
+        }
+    }
+}
+
 bool atri_image_show(atri_image_t *img, const atri_pack_t *pack, uint16_t bg, uint16_t ovl,
                      int16_t x, int16_t y)
 {
     if (!img || !img->canvas || !pack) return false;
     if (!show_bg(img, pack, bg)) return false;
+    draw_text_band(img);
     if (ovl != ATRI_NONE) {
         (void)show_ovl(img, pack, ovl, x, y);   // 叠加失败也要把背景显示出来
     }
-    draw_text_band(img);
+    draw_text_scrim(img);
     lv_obj_invalidate(img->canvas);
     return true;
 }

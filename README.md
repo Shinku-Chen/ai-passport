@@ -169,10 +169,11 @@ builds:
   are up, so a JPEG decode buffer for a 240 x 320 overlay would simply not fit;
   this path never allocates.
 - **Text band painted in the canvas** — the source draws a translucent blue
-  `text_bg` over its full-screen art; here the same band is alpha-blended into the
-  canvas rows (with its top-to-bottom ramp and the source's colour), so a sprite
-  that reaches the bottom of the screen stays visible through it instead of being
-  cut off by an opaque box.
+  `text_bg` over its full-screen art. Here the same band is alpha-blended into the
+  canvas rows (source colour, top-to-bottom ramp) but the sprite is composited
+  *above* it, with a light dark scrim over the text rows only: the character stays
+  complete instead of being washed out behind the band, and white text keeps its
+  contrast.
 - **Own font generator** — `lv_font_conv` writes corrupt glyph bitmaps under
   current Node.js (the device showed a screen of noise); the in-repo generator
   rasterises with FreeType, emits the LVGL 9 plain 4 bpp format and re-parses its

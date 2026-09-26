@@ -30,8 +30,9 @@ typedef struct {
 // 建画布(需持有 LVGL 锁)。pixels 必须是 ATRI_ART_W * ATRI_ART_H 个像素的缓冲。
 bool atri_image_init(atri_image_t *img, struct _lv_obj_t *parent, uint16_t *pixels);
 
-// 画一整屏:先铺背景(ATRI_NONE = 黑屏),再把叠加按 (x, y) 合成上去,
-// 最后把正文带(半透明蓝底,自上而下渐深)画进画布 —— 它就是源工程的 text_bg。
+// 画一整屏:背景(ATRI_NONE = 黑屏)-> 正文带(半透明蓝底,源工程的 text_bg)
+// -> 叠加(x, y) -> 文字区浅暗帘。立绘压在带子之上,所以不会被"对话框挡住";
+// 浅暗帘只盖在文字那几行上,保证白字清晰。
 // 背景解码失败时画布内容保持上一次的画面。
 bool atri_image_show(atri_image_t *img, const atri_pack_t *pack, uint16_t bg, uint16_t ovl,
                      int16_t x, int16_t y);
