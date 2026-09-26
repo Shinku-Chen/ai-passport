@@ -130,8 +130,9 @@ bool saya_image_show(saya_image_t *img, const saya_pack_t *pack, uint16_t bg_id,
              (unsigned)fg.h, (unsigned)elapsed);
 
     // 按 1bpp 遮罩把立绘拷进画布:遮罩位为 1 才覆盖,MSB 在左。
+    // 立绘贴画面区右侧(不再居中),像视觉小说里站在镜头右边的角色。
     const uint16_t *src = (const uint16_t *)img->sprite_scratch;
-    const int x_off = (SAYA_ART_W - (int)fg.w) / 2;
+    const int x_off = SAYA_ART_W - (int)fg.w;
     const uint32_t row_bytes = ((uint32_t)fg.w + 7u) / 8u;
     for (uint16_t y = 0; y < fg.h; ++y) {
         uint16_t *dst_row = img->pixels + (size_t)y * SAYA_ART_W + (size_t)x_off;

@@ -354,7 +354,8 @@ static lv_obj_t *make_box(lv_obj_t *parent)
     lv_obj_set_size(box, SAYA_UI_W, SAYA_BOX_H);
     lv_obj_set_pos(box, 0, 0);
     lv_obj_set_style_bg_color(box, lv_color_hex(COL_BOX), LV_PART_MAIN);
-    lv_obj_set_style_bg_opa(box, LV_OPA_COVER, LV_PART_MAIN);
+    // 文本框半透明(50%):画面明显透出来,正文用高对比度颜色保证可读。
+    lv_obj_set_style_bg_opa(box, LV_OPA_50, LV_PART_MAIN);
     lv_obj_set_style_border_side(box, LV_BORDER_SIDE_TOP, LV_PART_MAIN);
     lv_obj_set_style_border_width(box, 2, LV_PART_MAIN);
     lv_obj_set_style_border_color(box, lv_color_hex(COL_LINE), LV_PART_MAIN);
@@ -394,26 +395,18 @@ bool saya_ui_create(saya_ui_t *ui, uint16_t *art_pixels, uint8_t *sprite_scratch
         return false;
     }
 
-    // 画面区左上角章节提示 + 右上角电量(避开圆角遮罩)
+    // 画面区左上角章节提示 + 右上角电量(避开圆角遮罩);两者都尽量贴边。
     ui->chapter = lv_label_create(root);
     lv_obj_set_style_text_font(ui->chapter, font_small, LV_PART_MAIN);
     lv_obj_set_style_text_color(ui->chapter, lv_color_hex(0xE7EDE9), LV_PART_MAIN);
-    lv_obj_set_pos(ui->chapter, 10, 8);
-    lv_obj_set_style_bg_color(ui->chapter, lv_color_hex(0x000000), LV_PART_MAIN);
-    lv_obj_set_style_bg_opa(ui->chapter, LV_OPA_50, LV_PART_MAIN);
-    lv_obj_set_style_pad_hor(ui->chapter, 6, LV_PART_MAIN);
-    lv_obj_set_style_pad_ver(ui->chapter, 2, LV_PART_MAIN);
-    lv_obj_set_style_radius(ui->chapter, 6, LV_PART_MAIN);
+    lv_obj_set_pos(ui->chapter, 4, 2);
+    // 章节提示不加底色:直接叠在画面上。
 
     ui->battery = lv_label_create(root);
     lv_obj_set_style_text_font(ui->battery, font_small, LV_PART_MAIN);
     lv_obj_set_style_text_color(ui->battery, lv_color_hex(COL_DIM), LV_PART_MAIN);
-    lv_obj_align(ui->battery, LV_ALIGN_TOP_RIGHT, -12, 8);
-    lv_obj_set_style_bg_color(ui->battery, lv_color_hex(0x000000), LV_PART_MAIN);
-    lv_obj_set_style_bg_opa(ui->battery, LV_OPA_50, LV_PART_MAIN);
-    lv_obj_set_style_pad_hor(ui->battery, 6, LV_PART_MAIN);
-    lv_obj_set_style_pad_ver(ui->battery, 2, LV_PART_MAIN);
-    lv_obj_set_style_radius(ui->battery, 6, LV_PART_MAIN);
+    lv_obj_align(ui->battery, LV_ALIGN_TOP_RIGHT, -4, 2);
+    // 电量也不加底色,与章节提示保持一致。
 
     // 正文页
     ui->page_game = lv_obj_create(root);
@@ -658,8 +651,10 @@ void saya_ui_set_settings_selected(saya_ui_t *ui, int index)
 void saya_ui_about_scroll(saya_ui_t *ui, int dy)
 {
     if (!ui || !ui->about_view || dy == 0) return;
-    // 内容不满一屏时 LVGL 自己把滚动位置夹在 0,这里是"滚不动"而不是出错。
-    lv_obj_scroll_by(ui->about_view, 0, dy, LV_ANIM_OFF);
+    // LVGL 的 scroll_by 约定:内部 scroll 值为负,所以"看后面的内容"(dy > 0)
+    // 必须传负值;传正值在顶部会被夹成 0(表现为完全滚不动)。
+    // 内容不满一屏时 LVGL 会把滚动位置夹住,所以这里"滚不动"是正常情况。
+    lv_obj_scroll_by(ui->about_view, 0, -dy, LV_ANIM_OFF);
 }
 
 void saya_ui_slots_setup(saya_ui_t *ui, const char *title, const char *hint,
@@ -692,7 +687,15 @@ void saya_ui_set_warning(saya_ui_t *ui, const char *text, const char *hint)
     lv_label_set_text(ui->warning_text, text ? text : "");
     snprintf(ui->warning_tail, sizeof(ui->warning_tail), "%s", hint ? hint : "");
     // 每次进页从顶部开始:没读完就不放行。
-    if (ui->warning_view) lv_obj_scroll_to_y(ui->warning_view, 0, LV_ANIM_OFF);
+    if (ui->warning_view) {
+        lv_obj_scroll_to_y(ui->warning_view, 0, LV_ANIM_OFF);
+        lv_obj_update_layout(ui->warning_view);
+        // 临时诊断:确认“读到底”判定用的滚动度量是否符合预期。
+        ESP_LOGI(TAG, "警告页度量: 内容高 %d, 视口高 %d, 未读距离 %d",
+                 (int)lv_obj_get_scroll_top(ui->warning_view) + (int)lv_obj_get_scroll_bottom(ui->warning_view),
+                 (int)lv_obj_get_content_height(ui->warning_view),
+                 (int)lv_obj_get_scroll_bottom(ui->warning_view));
+    }
     warning_refresh_hint(ui);
 }
 
@@ -709,7 +712,8 @@ static void warning_refresh_hint(saya_ui_t *ui)
 void saya_ui_warning_scroll(saya_ui_t *ui, int dy)
 {
     if (!ui || !ui->warning_view || dy == 0) return;
-    lv_obj_scroll_by(ui->warning_view, 0, dy, LV_ANIM_OFF);
+    // 同 about:界面层 dy > 0 表示往下看,LVGL 要负值。
+    lv_obj_scroll_by(ui->warning_view, 0, -dy, LV_ANIM_OFF);
     warning_refresh_hint(ui);
 }
 
@@ -717,8 +721,13 @@ void saya_ui_warning_page(saya_ui_t *ui, int dir)
 {
     if (!ui || !ui->warning_view || dir == 0) return;
     const int step = (int)lv_obj_get_content_height(ui->warning_view);
-    lv_obj_scroll_by(ui->warning_view, 0, dir * step, LV_ANIM_OFF);
+    // dir > 0 = 往下翻一屏,同样要取反交给 LVGL。
+    lv_obj_scroll_by(ui->warning_view, 0, -dir * step, LV_ANIM_OFF);
     warning_refresh_hint(ui);
+    // 临时诊断:确认翻屏真的生效、以及距底部还剩多少。
+    ESP_LOGI(TAG, "警告页翻屏: scroll_y %d, 距底 %d",
+             (int)lv_obj_get_scroll_y(ui->warning_view),
+             (int)lv_obj_get_scroll_bottom(ui->warning_view));
 }
 
 bool saya_ui_warning_ready(saya_ui_t *ui)

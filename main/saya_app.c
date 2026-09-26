@@ -80,12 +80,8 @@ static void chapter_label(const saya_app_t *app, char *out, size_t capacity)
 {
     saya_chapter_t ch;
     saya_pack_chapter(&app->pack, app->player.chapter, &ch);
-    if (app->player.at_choice || ch.id == 0) {
-        snprintf(out, capacity, "第 %u 章", (unsigned)ch.id);
-    } else {
-        snprintf(out, capacity, "第 %u 章  %u/%u", (unsigned)ch.id,
-                 (unsigned)(app->player.scene + 1), (unsigned)ch.scene_count);
-    }
+    // 只显示章号:不带空格,也不再显示章内进度(x/y)。
+    snprintf(out, capacity, "第%u章", (unsigned)ch.id);
 }
 
 // 顶部提示条:2 秒后自动恢复成章节进度。
@@ -167,7 +163,9 @@ static void render_current_page(saya_app_t *app)
         static const char *rows_default[3] = { "从第 1 章开始", "读取存档", "设置" };
         const char *const *rows = app->have_auto ? rows_continue : rows_default;
         const int count = app->have_auto ? 4 : 3;
-        saya_ui_set_title_art(&app->ui, &app->pack);
+        if (!saya_ui_set_title_art(&app->ui, &app->pack)) {
+            ESP_LOGW(TAG, "标题画面解码失败");
+        }
         saya_ui_show_page(&app->ui, SAYA_PAGE_TITLE);
         saya_ui_set_title_rows(&app->ui, rows, count, app->title_sel);
         return;
@@ -418,28 +416,20 @@ static void handle_game(saya_app_t *app, const saya_key_t *key)
             app->fast_forward = false;
             return;
         }
-        if (key->ev == BSP_BTN_CLICK) {             // 下一段(打字中先补全)
-            app->fast_forward = false;
-            advance_reading(app, false);
-            return;
-        }
     }
 
-    // 下:长按进入自动模式(900ms 一句,任意键退出),短按回看上一页。
-    if (key->btn == BSP_BTN_DOWN) {
-        if (key->ev == BSP_BTN_LONG) {
-            app->auto_mode = true;
-            app->auto_accum_ms = 0;
-            app->fast_forward = false;
-            saya_ui_show_full_text(&app->ui);
-            show_notice(app, "自动模式");
-            return;
-        }
-        if (key->ev == BSP_BTN_CLICK && app->player.page > 0) {
-            app->player.page--;
-            render_scene(app);
-            return;
-        }
+    // 上/下短按都是"下一段"(打字中先补全);下长按进入自动模式。
+    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
+        app->fast_forward = false;
+        advance_reading(app, false);
+        return;
+    }
+    if (key->btn == BSP_BTN_DOWN && key->ev == BSP_BTN_LONG) {
+        app->auto_mode = true;
+        app->auto_accum_ms = 0;
+        app->fast_forward = false;
+        saya_ui_show_full_text(&app->ui);
+        show_notice(app, "自动模式");
         return;
     }
 }
@@ -673,7 +663,9 @@ void saya_app_key(saya_app_t *app, const saya_key_t *key)
         }
         if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
             // 没读到底不许进游戏:此时确定只往下翻一屏。
-            if (!saya_ui_warning_ready(&app->ui)) {
+            const bool ready = saya_ui_warning_ready(&app->ui);
+            ESP_LOGI(TAG, "警告页按确定: 已读到底=%d", (int)ready);
+            if (!ready) {
                 saya_ui_warning_page(&app->ui, 1);
                 break;
             }
