@@ -56,7 +56,7 @@ and their output is committed so a plain checkout builds:
 
 | Step | Tool | Output |
 | --- | --- | --- |
-| Script + images | `tools/saya_pack.py` | `main/saya_data/saya_pack.bin` (~2.6 MB): 44 chapters, 473 scenes, 3,828 dialogues, 193 backgrounds, 75 sprites, plus source metadata |
+| Script + images | `tools/saya_pack.py` | `main/saya_data/saya_pack.bin` (~2.8 MB): 44 chapters, 473 scenes, 3,828 dialogues, 193 backgrounds, 75 sprites, plus source metadata |
 | Font subsets | `tools/saya_font.py` | `assets/fonts/saya_cjk_16.c`, `saya_cjk_20.c` and the character inventory `assets/fonts/saya_cjk_symbols.txt` |
 
 The pack is read straight out of Flash — there is no runtime JSON parsing and no
@@ -74,8 +74,9 @@ it decodes under LVGL's plain 4bpp reader), and the generator verifies its own o
 by re-parsing the C file and comparing every glyph against the rasterization. Font
 provenance and license are recorded in [`assets/README.md`](assets/README.md).
 
-Flash budget (ESP-IDF 5.5, app partition 8,323,072 bytes): application 4.2 MB,
-49 % of the partition free.
+Flash budget (ESP-IDF 5.5, app partition 8,323,072 bytes): the community variant uses
+about 4.3 MB, leaving 46 % of the partition free; the patched release variant uses
+about 4.6 MB, leaving 43 %.
 
 ## Variants and the publishing rule
 
@@ -109,6 +110,19 @@ committed or published to the community**. The font is the union of both variant
 only, no story content) and is committed; its inventory `assets/fonts/saya_cjk_symbols.txt`
 remembers the glyphs the patch used, so regenerating from the community pack alone does
 not drop them.
+
+## Releases
+
+- **GitHub Release**: [`v0.1.0-saya-no-uta`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-saya-no-uta)
+  carries two assets: `FoloToy-AI-Passport-full.bin` (the tag-triggered CI build of the
+  community variant) and `FoloToy-AI-Passport-full-patched-r18.bin` (a local build of the
+  same commit with the patch, for personal devices only).
+- **Community market**: submitted as "Saya no Uta (Community)" with the patch-free community
+  merged image. The submission text and publish metadata are archived in
+  [`docs/reference/shinku-chen/saya-no-uta/`](docs/reference/shinku-chen/saya-no-uta/README.md),
+  and the Simplified Chinese peer records the exact localized titles.
+- The publishing workflow and its checks are described in
+  [`docs/development/release/publish-to-community.md`](docs/development/release/publish-to-community.md).
 
 ## Notes
 

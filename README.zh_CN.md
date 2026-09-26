@@ -49,7 +49,7 @@
 
 | 步骤 | 工具 | 产物 |
 | --- | --- | --- |
-| 剧本 + 图片 | `tools/saya_pack.py` | `main/saya_data/saya_pack.bin`（约 2.6 MB）：44 章、473 场景、3,828 段对白、193 张背景、75 张立绘，外加来源元数据 |
+| 剧本 + 图片 | `tools/saya_pack.py` | `main/saya_data/saya_pack.bin`（约 2.8 MB）：44 章、473 场景、3,828 段对白、193 张背景、75 张立绘，外加来源元数据 |
 | 字体子集 | `tools/saya_font.py` | `assets/fonts/saya_cjk_16.c`、`saya_cjk_20.c`，以及字符清单 `assets/fonts/saya_cjk_symbols.txt` |
 
 资源包直接从 Flash 读取：运行时不解析 JSON、不做解压。背景在打包时已裁成 320 × 150 的
@@ -62,7 +62,8 @@ JPEG；立绘按屏幕高度缩放、裁到画面区可见部分，存成 JPEG +
 PLAIN 4bpp 读法解不出字形）；生成器会把写出的 C 文件回读、逐像素与栅格化结果比对。
 字体来源与许可记录在 [`assets/README.md`](assets/README.md)。
 
-Flash 预算（ESP-IDF 5.5，应用分区 8,323,072 字节）：应用 4.2 MB，分区剩余 49%。
+Flash 预算（ESP-IDF 5.5，应用分区 8,323,072 字节）：community 变体应用约 4.3 MB，分区剩余 46%；
+含补丁的 release 变体约 4.6 MB，剩余 43%。
 
 ## 变体与发布规则
 
@@ -92,6 +93,17 @@ python tools/saya_font.py --font <NotoSansSC-Regular.otf> \
 **不得提交、不得发布到社区**。字体是两变体的并集（只含字形，不含剧情内容），
 已随仓库提交；它的字符清单 `assets/fonts/saya_cjk_symbols.txt` 会记住补丁用过的字形，
 所以之后只用社区 pack 重生成也不会丢字。
+
+## 发布
+
+- **GitHub Release**：[`v0.1.0-saya-no-uta`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-saya-no-uta)
+  （显示名「沙耶之歌 (Saya no Uta) v0.1.0」），挂两份附件：`FoloToy-AI-Passport-full.bin`
+  （tag 触发的 CI 构建，community 变体）与 `FoloToy-AI-Passport-full-patched-r18.bin`
+  （同一 commit 的本地构建，含补丁，仅自用）。
+- **社区市场**：以「沙耶之歌(社区版) / Saya no Uta (Community)」提交，上传的是不含补丁的
+  community 合并镜像；发布信息与简介原文记录在
+  [`docs/reference/shinku-chen/saya-no-uta/`](docs/reference/shinku-chen/saya-no-uta/README.zh_CN.md)。
+- 发布流程与检查项见 [`docs/development/release/publish-to-community.md`](docs/development/release/publish-to-community.md)。
 
 ## 说明
 
