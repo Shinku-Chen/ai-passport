@@ -2,111 +2,87 @@
   <a href="README.zh_CN.md">简体中文</a> · <strong>English</strong>
 </p>
 
-# FoloToy AI Passport — Shinku-Chen's Fork
+# Saya no Uta — a visual novel reader for the AI Passport
 
-This is a personal fork of [`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport).
-The upstream repository is the development baseline for the [FoloToy AI Passport](https://ai-passport.folotoy.cn)
-— an open wearable AI device (ESP32-C3, 240×320 display, three keys, 8 MB Flash, no PSRAM).
+A landscape visual-novel reader that ports the Mi Band 10 fan port of
+Nitroplus' *Saya no Uta* ([`liuyuze61/Saya-miband10`](https://github.com/liuyuze61/Saya-miband10))
+to the AI Passport: **44 chapters, 3,828 lines of dialogue, three endings**, all
+offline. The Mi Band title is a portrait touch app; this branch re-implements the
+reading engine in C on LVGL and drives it with the three keys.
 
-This fork carries **several independent applications** built on that baseline. Each
-project lives on its own `feature/*` branch and is introduced below. Board facts,
-the BSP, and the development workflow come from upstream — see
-[`docs/README.md`](docs/README.md), [`AGENTS.md`](AGENTS.md), and
-[`docs/contribution/`](docs/contribution/). Released firmware for each project is
-attached to this repository's [Releases](https://github.com/Shinku-Chen/ai-passport/releases).
+- Branch: [`feature/saya-no-uta`](https://github.com/Shinku-Chen/ai-passport/tree/feature/saya-no-uta)
 
-## Projects
+## Layout
 
-### Voice Keychain
+```text
+┌──────────────────────────────────┐  320 x 240, held in landscape
+│  art area 320 x 136              │  background JPEG + character sprite
+│                        [battery] │  battery chip in the top-right corner
+├──────────────────────────────────┤
+│  speaker name                    │  dialogue box, 104 px, opaque
+│  up to 4 lines of body text      │  16 px font: 19 full-width chars per line
+└──────────────────────────────────┘  (20 px font: 15 chars, 3 lines)
+```
 
-A sound-effects keychain that turns the AI Passport into a pocket audio player:
-boot straight into the app and play one of **hundreds of Chinese voice clips from
-dozens of character packs** — jojo, meme cat, Liu Huaqiang, Haji Mi, Nailong,
-and more. Latest: **v1.3.0**.
+## Controls
 
-- Branch: [`feature/voice-keychain`](https://github.com/Shinku-Chen/ai-passport/tree/feature/voice-keychain)
-- Releases: [v1.1.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.1.0), [v1.3.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.3.0)
-- Experience notes: [`docs/reference/shinku-chen/voice-keychain/`](docs/reference/shinku-chen/voice-keychain/)
+- **Title / lists** — UP / DOWN move the cursor, **OK** selects, **OK (hold)** goes back.
+- **Reading** — **OK** advances (while text is typing, one press shows the whole page),
+  **OK (hold)** opens the menu, UP / DOWN step between pages of a long line.
+- **Choices** — UP / DOWN select, **OK** confirms.
+- **Menu** — save, load, skip scene, back to title, close.
+- **Save slots** — 5 manual slots plus one automatic slot written on every scene
+  change, so "Continue" resumes where you left off. In save mode **OK (hold)** on a
+  slot deletes it.
 
-**Controls (three keys):** UP / DOWN to move in a list, **OK** to enter a
-directory, select a clip, or play it, and **OK (hold)** for settings (volume,
-battery) or to go back.
+Idle behaviour: 60 s dims the backlight, 3 min turns it off, 7 min enters deep
+sleep; any key wakes the device and reopens the reader at the last automatic save.
 
-**Highlights (v1.3.0):**
+## Offline data pipeline
 
-- **Self-contained firmware** — `FoloToy-AI-Passport-full.bin` bakes the
-  `voicefs` data partition (at `0x210000`) into one 8 MB image; flash from `0x0`
-  and nothing else is needed.
-- **Deep-sleep wake fixed** — the GPIO0 wake source was never armed (a pin
-  number was passed where a bitmask is required); buttons could not wake the
-  device. Now it sleeps after 5 min idle and wakes on any key (verified on device).
-- **Reliable list playback** — pressing OK used to stop the current sound but
-  not play the selection (a fresh 16 KB Opus-decode stack per play failed under
-  heap pressure); replaced with one persistent player task on a static stack.
-- Battery percentage refresh every 30 s, plus a voltage-fallback SOC estimate
-  when the CW2017 gauge returns `0xFF` after power-up.
+Nothing is downloaded at runtime. Two tools generate everything the firmware needs,
+and their output is committed so a plain checkout builds:
 
-### What to Eat Today
+| Step | Tool | Output |
+| --- | --- | --- |
+| Script + images | `tools/saya_pack.py` | `main/saya_data/saya_pack.bin` (~2.6 MB): 44 chapters, 473 scenes, 3,828 dialogues, 193 backgrounds, 75 sprites, plus source metadata |
+| Font subsets | `tools/saya_font.py` | `assets/fonts/saya_cjk_16.c`, `saya_cjk_20.c` and the character inventory `assets/fonts/saya_cjk_symbols.txt` |
 
-A button-driven food roulette that answers the eternal question. Hold **UP** to
-run the "what should we eat for lunch?" guide animation, hold **DOWN** to spin
-through the food selector, and release to stop on a random pick. Latest: **v1.2.0**.
+The pack is read straight out of Flash — there is no runtime JSON parsing and no
+decompression. Backgrounds are pre-cropped to 320 × 136 JPEG; sprites are scaled to
+screen height, pre-cropped to the visible band and stored as JPEG plus a 1bpp mask.
+The firmware `mmap`s the pack from the application partition, decodes one scene
+(background plus sprite) into a 320 × 136 RGB565 canvas only when the background or
+sprite actually changes, and composites the sprite with its mask.
 
-- Branch: [`feature/cheerful-goodall`](https://github.com/Shinku-Chen/ai-passport/tree/feature/cheerful-goodall)
-- Release: [v1.2.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.2.0)
-- Experience notes: [`docs/reference/shinku-chen/eat-what/`](docs/reference/shinku-chen/eat-what/)
+Regenerating requires a checkout of the source port and a licensed CJK font; see
+the header of each tool. Font provenance and license are recorded in
+[`assets/README.md`](assets/README.md).
 
-**Controls:** hold UP / DOWN to run the two animations, release to stop on the
-current frame; **OK** toggles LVGL partial vs fast interlaced refresh.
-Auto-poweroff after 2 min idle (deep sleep, GPIO0 wake).
-
-### Shengzi Cards
-
-A Chinese-character flashcard memorization app. Three modes — **Browse**
-(scroll the character cards), **Self-test** (mark each character learned / not
-learned), and **Spell** (see the pinyin and guess the character). A short **OK**
-reveals the answer; learned marks persist to NVS. Latest: **v1.0.0**.
-
-- Branch: [`feature/shengzi-cards`](https://github.com/Shinku-Chen/ai-passport/tree/feature/shengzi-cards)
-- Release: [v1.0.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0)
-
-### Connect Four
-
-A landscape Connect Four for the AI Passport: a **10 × 7 board**, human versus
-computer with three difficulty levels (either side can move first), or two players
-on one device. Latest: **v1.6.0-connect-four**.
-
-- Branch: [`feature/connect-four`](https://github.com/Shinku-Chen/ai-passport/tree/feature/connect-four)
-- Release: [v1.6.0-connect-four](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.6.0-connect-four)
-
-**Controls:** UP / DOWN move the column cursor (held in landscape, UP is the
-right-hand key), **OK** drops a disc, **OK (hold)** returns to the settings
-screen. On the settings screen UP / DOWN picks a row and OK changes it (mode:
-`HUMAN vs AI` / `AI vs HUMAN` / `TWO PLAYERS`, level: `EASY` / `MEDIUM` / `HARD`,
-preview: `LANDING` / `TOP ROW`); selecting `START` begins a match. The two
-computer modes differ only in who moves first.
-
-**Highlights:**
-
-- **Landscape 320 × 240 with a dense board** — 70 positions of 26 px discs spaced
-  3 px apart, fitted to the panel by a BSP-level MADCTL rotation.
-- **Three AI levels** — a wall-clock search budget keeps every move under about a
-  second, while EASY and MEDIUM deliberately blunder at a fixed rate so the game
-  stays winnable.
-- **Sound without assets** — column, drop, win, loss and draw cues are synthesized
-  from a sine table; no audio files are stored in flash.
-- **Idle deep sleep** — 60 s on the settings screen or 180 s in a match, then any
-  key wakes the device (GPIO0 low-level wake, fixed for the ADC-owned pad).
-- **Serial screenshots** — the `FAP_SCREENSHOT_V1` command returns the real
-  320 × 240 frame, which is how the release cover was captured.
+Flash budget (ESP-IDF 5.5, app partition 8,323,072 bytes): application 4.2 MB,
+49 % of the partition free.
 
 ## Notes
 
-- Each application is a separate `feature/*` branch off the upstream baseline.
-  Do not merge demo branches wholesale into `main`; port reusable patterns
-  instead (see upstream `AGENTS.md`).
-- Firmware is flashed with the [web flasher](https://ai-passport.folotoy.cn/tools/web-flasher/)
-  or `esptool` — every release ships a merged `FoloToy-AI-Passport-full.bin`
-  written from offset `0x0`. Target board: 8 MB Flash.
-- Reusable engineering experience collected from these releases lives under
-  [`docs/reference/shinku-chen/`](docs/reference/shinku-chen/).
+- **Content**: the story contains heavy gore. The app keeps the source port's
+  content warning on first boot.
+- **Licensing**: *Saya no Uta* is a commercial Nitroplus title. This is a personal
+  fan port; the artwork and the Chinese translation come from the public Mi Band
+  port, and both the project and the in-app disclaimer ask readers to support the
+  original release. Do not republish the generated pack as your own asset.
+- **No audio**: the source port ships no audio, and this port adds none.
+- **Baseline demo**: the repository's hardware-test menu and `demo_*.c` pages are
+  still in `main/` but are not compiled into this application; see the repository's
+  [AI guide](docs/development/ai-guide.md) and [fork guide](docs/fork-guide.md).
+
+## Build and validate
+
+```bash
+./tools/validate.sh --static     # repository checks, host tests, font coverage
+./tools/validate.sh --firmware    # ESP-IDF build + merged-image verification
+```
+
+The host test `tests/test_saya_model.c` runs the real pack through the reader logic
+(chapter graph, all three endings, pagination round-trips, save encoding), and
+`tools/saya_font.py --check` fails the gate if any UI string or script character is
+missing from the generated font subsets.

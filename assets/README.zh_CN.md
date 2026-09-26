@@ -15,6 +15,21 @@
 - 添加字库前评估 Flash 与内部 RAM 影响；ESP32-C3 无 PSRAM。
 - 不提交许可不允许分发的字库。
 
+### 《沙耶之歌》阅读器 —— `fonts/saya_cjk_16.c`、`fonts/saya_cjk_20.c`
+
+`feature/saya-no-uta` 分支的视觉小说阅读器使用的两个 LVGL 子集（4bpp、未压缩）；
+`fonts/saya_cjk_symbols.txt` 是它们必须覆盖的字符清单。
+
+| 项 | 值 |
+| --- | --- |
+| 来源 | Noto Sans SC Regular（OFL-1.1），2026-09-26 经 jsDelivr 取自 `googlefonts/noto-cjk` 镜像；8.3 MB 源 OTF **不**提交 |
+| 字符范围 | 2,787 个码位 = `main/*.c` 的全部界面文案 + 资源包里的全部剧本字符 |
+| 转换工具 | `lv_font_conv` 1.5.3，`--bpp 4 --format lvgl --no-compress` |
+| 重新生成 | `python tools/saya_font.py --font <NotoSansSC-Regular.otf> --lv-font-conv <lv_font_conv.js> --pack main/saya_data/saya_pack.bin --out-dir assets/fonts` |
+| 校验 | `python tools/saya_font.py --check …`（由 `tools/validate.sh --static` 执行） |
+| 集成方式 | 通过 `main/CMakeLists.txt` 的 `target_sources()` 编进 `main` 组件 |
+| 影响 | 约 0.94 MB Flash；不占静态 RAM（字形常驻 Flash） |
+
 ## 图片（images）
 
 可复用的源图与生成的显示资产放在 `images/`。

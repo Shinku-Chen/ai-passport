@@ -17,6 +17,22 @@ Store reusable font files and generated font sources in `fonts/`.
 - Check Flash and internal-RAM impact before adding a font; the ESP32-C3 has no PSRAM.
 - Do not commit fonts whose license does not permit redistribution.
 
+### Saya no Uta reader — `fonts/saya_cjk_16.c`, `fonts/saya_cjk_20.c`
+
+Two generated LVGL subsets (4 bpp, uncompressed) used by the visual-novel reader on
+`feature/saya-no-uta`; `fonts/saya_cjk_symbols.txt` is the character inventory they
+must cover.
+
+| Item | Value |
+| --- | --- |
+| Source | Noto Sans SC Regular (OFL-1.1), downloaded 2026-09-26 from the `googlefonts/noto-cjk` mirror through jsDelivr; the 8.3 MB source OTF is **not** committed |
+| Inventory | 2,787 code points = every UI string in `main/*.c` plus every character of the script pack |
+| Converter | `lv_font_conv` 1.5.3, `--bpp 4 --format lvgl --no-compress` |
+| Regenerate | `python tools/saya_font.py --font <NotoSansSC-Regular.otf> --lv-font-conv <lv_font_conv.js> --pack main/saya_data/saya_pack.bin --out-dir assets/fonts` |
+| Verify | `python tools/saya_font.py --check …` (runs in `tools/validate.sh --static`) |
+| Integration | compiled into the `main` component through `target_sources()` in `main/CMakeLists.txt` |
+| Impact | about 0.94 MB of Flash; no static RAM (glyphs stay in Flash) |
+
 ## Images
 
 Store reusable source images and generated display assets in `images/`.
