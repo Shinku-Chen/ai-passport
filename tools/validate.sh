@@ -62,6 +62,9 @@ run_static_checks() {
     # 界面文案 + 剧本正文用到的字必须在生成好的字体子集里(缺字就是显示成方块)。
     PYTHONDONTWRITEBYTECODE=1 python3 tools/saya_font.py --check \
         --pack main/saya_data/saya_pack.bin --out-dir assets/fonts
+    # 提交的资源包必须能用 assets/ 里的源素材逐字节重建,并通过打包器自检
+    # (结构/尺寸/上下块接缝/立绘遮罩);改了打包器就要重新提交 pack。
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_saya_pack_rebuild.py
     for demo in audio low_power ble wifi; do
         "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
             -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \

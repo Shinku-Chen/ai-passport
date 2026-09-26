@@ -484,14 +484,283 @@ class PackBuilder:
         return bytes(out)
 
 
+def check_pack(path: str, deep: bool = True) -> int:
+    """自检一个已生成的 pack:结构边界、图像尺寸、上下块接缝、立绘遮罩与元数据。
+
+    这里检查的是"设备端会直接消费"的不变量,也就是真正把画面弄坏过的几类问题:
+    图像尺寸与画布不符、上下块取景不一致(接缝跳变)、遮罩长度与实际像素不符。
+    剧情/文本的语义由 tests/test_saya_model.c 用真实 pack 覆盖,这里不重复。
+    """
+    import struct
+    import sys
+    from PIL import Image
+
+    # 与 main/saya_pack.h 保持一致:头部 20 字节;背景/下半块条目 12B,立绘条目 20B。
+    HEADER_SIZE = 8 + 4 + 4 + 4
+    BG_ENTRY = 12
+    FG_ENTRY = 20
+
+    errors = []
+
+    def fail(msg: str) -> None:
+        errors.append(msg)
+
+    data = open(path, "rb").read()
+    pack_size = len(data)
+    if len(data) < HEADER_SIZE or data[:8] != MAGIC:
+        print(f"ERROR: {path} 不是资源包(魔数不符)", file=sys.stderr)
+        return 1
+    version, total, section_count = struct.unpack_from("<III", data, 8)
+    if version != VERSION:
+        fail(f"版本 {version} != {VERSION}")
+    if total != len(data):
+        fail(f"头部记录的总大小 {total} != 实际 {len(data)}")
+    if not 1 <= section_count <= 32:
+        fail(f"分段数 {section_count} 不合理")
+
+    sections = {}
+    spans = []
+    for i in range(section_count):
+        sec_type, off, count, size = struct.unpack_from("<IIII", data, HEADER_SIZE + 16 * i)
+        if off + size > len(data):
+            fail(f"段 {sec_type} 越界: off={off} size={size}")
+            continue
+        if sec_type in sections:
+            fail(f"段 {sec_type} 重复")
+        sections[sec_type] = (off, count, size, data[off:off + size])
+        spans.append((off, off + size, sec_type))
+    ordered = sorted(spans)
+    for (a1, b1, t1), (a2, _b2, t2) in zip(ordered, ordered[1:]):
+        if b1 > a2:
+            fail(f"段 {t1} 与段 {t2} 数据重叠")
+
+    def image_table(sec_type: int, entry: int):
+        """返回(记录表, 数据区, count):图像分段布局是"表 + 数据区",条目偏移相对数据区。"""
+        _off, count, size, blob = sections[sec_type]
+        if size < count * entry:
+            fail(f"段 {sec_type} 的表({count} x {entry}B)超出段大小 {size}")
+            return b"", b"", count
+        return blob, blob[count * entry:], count
+
+    text_size = sections[0][2] if 0 in sections else 0
+
+    def strings_in_text(off: int, length: int, where: str) -> None:
+        if 0 not in sections:
+            fail(f"{where} 引用文本但缺少文本段")
+            return
+        if off + length > text_size:
+            fail(f"{where} 文本越界: {off}+{length} > {text_size}")
+
+    def jpeg_ok(blob: bytes, off: int, length: int, where: str) -> bool:
+        if off + length > len(blob) or length < 4:
+            fail(f"{where} 图像越界: off={off} len={length}")
+            return False
+        if blob[off:off + 2] != b"\xff\xd8" or blob[off + length - 2:off + length] != b"\xff\xd9":
+            fail(f"{where} 不是完整的 JPEG 数据")
+            return False
+        return True
+
+    # ---- 文本 / 名称 ----
+    if 0 in sections:
+        try:
+            sections[0][3].decode("utf-8")
+        except UnicodeDecodeError as exc:
+            fail(f"文本段不是合法 UTF-8: {exc}")
+    name_count = sections.get(1, (0, 0, 0, b""))[1]
+    if 1 in sections:
+        blob, count = sections[1][3], sections[1][1]
+        if len(blob) < count * 8:
+            fail(f"名称段大小 {len(blob)} < {count} x 8")
+        for i in range(count):
+            off, length, _pad = struct.unpack_from("<IHH", blob, 8 * i)
+            strings_in_text(off, length, f"名称 {i}")
+    dlg_total = sections.get(4, (0, 0, 0, b""))[1]
+    scene_total = sections.get(3, (0, 0, 0, b""))[1]
+    chapter_total = sections.get(2, (0, 0, 0, b""))[1]
+    fg_count = sections.get(6, (0, 0, 0, b""))[1]
+    bg_count = sections.get(5, (0, 0, 0, b""))[1]
+
+    # ---- 章节 / 场景 / 对白 ----
+    if 2 in sections:
+        blob, count = sections[2][3], sections[2][1]
+        if len(blob) < count * 12:
+            fail(f"章节段大小 {len(blob)} < {count} x 12")
+        for i in range(count):
+            _id, first_scene, scene_count, first_dlg, dlg_count, nxt = struct.unpack_from(
+                "<HHHHHH", blob, 12 * i)
+            if first_scene + scene_count > scene_total:
+                fail(f"章节 {i} 的场景范围越界")
+            if first_dlg + dlg_count > dlg_total:
+                fail(f"章节 {i} 的对白范围越界")
+            if nxt != NONE and nxt >= chapter_total:
+                fail(f"章节 {i} 的后继 {nxt} 越界")
+    if 3 in sections:
+        blob, count = sections[3][3], sections[3][1]
+        if len(blob) < count * 16:
+            fail(f"场景段大小 {len(blob)} < {count} x 16")
+        for i in range(count):
+            bg, choice_count, _pad, first_dlg, dlg_count = struct.unpack_from("<HBBHH", blob, 16 * i)
+            choice_names = struct.unpack_from("<HH", blob, 16 * i + 8)   # choice_name[2]
+            if bg != NONE and bg >= bg_count:
+                fail(f"场景 {i} 的背景 {bg} 越界")
+            if choice_count > 2:
+                fail(f"场景 {i} 的选项数 {choice_count} > 2")
+            if first_dlg + dlg_count > dlg_total:
+                fail(f"场景 {i} 的对白范围越界")
+            for name_id in choice_names:
+                if name_id != NONE and name_id >= name_count:
+                    fail(f"场景 {i} 的选项名 {name_id} 越界")
+    if 4 in sections:
+        blob, count = sections[4][3], sections[4][1]
+        if len(blob) < count * 14:
+            fail(f"对白段大小 {len(blob)} < {count} x 14")
+        for i in range(count):
+            off, length, name_id, fg_id = struct.unpack_from("<IHHH", blob, 14 * i)
+            strings_in_text(off, length, f"对白 {i}")
+            if name_id != NONE and name_id >= name_count:
+                fail(f"对白 {i} 的角色名 {name_id} 越界")
+            if fg_id != NONE and fg_id >= fg_count:
+                fail(f"对白 {i} 的立绘 {fg_id} 越界")
+
+    # ---- 背景 / 下半块 ----
+    if 5 in sections:
+        bg_table, bg_data, bg_n = image_table(5, BG_ENTRY)
+        for i in range(bg_n):
+            off, length, w, h = struct.unpack_from("<IIHH", bg_table, BG_ENTRY * i)
+            if (w, h) != (ART_W, ART_H):
+                fail(f"背景 {i} 尺寸 {w}x{h} != 画面区 {ART_W}x{ART_H}")
+            jpeg_ok(bg_data, off, length, f"背景 {i}")
+    if 8 in sections:
+        st_table, st_data, st_n = image_table(8, BG_ENTRY)
+        if st_n != bg_count:
+            fail(f"下半块条目 {st_n} != 背景条目 {bg_count}")
+        for i in range(st_n):
+            off, length, w, h = struct.unpack_from("<IIHH", st_table, BG_ENTRY * i)
+            if (w, h) != (STRIP_W, STRIP_H):
+                fail(f"下半块 {i} 尺寸 {w}x{h} != {STRIP_W}x{STRIP_H}")
+            jpeg_ok(st_data, off, length, f"下半块 {i}")
+
+    # ---- 立绘上下两段 ----
+    fg_widths = {}
+    fg_heights = {}
+    for sec_type, label, max_h in ((6, "立绘上半段", ART_H), (9, "立绘下半段", STRIP_H)):
+        if sec_type not in sections:
+            continue
+        fg_table, fg_data, fg_n = image_table(sec_type, FG_ENTRY)
+        if fg_n != fg_count:
+            fail(f"{label} 条目 {fg_n} != 立绘条目 {fg_count}")
+        for i in range(fg_n):
+            jpeg_off, jpeg_len, mask_off, mask_len, w, h = struct.unpack_from(
+                "<IIIIHH", fg_table, FG_ENTRY * i)
+            if w == 0 and h == 0:
+                # 立绘没有下半段时写一条空记录(设备端按 w/h 为 0 直接跳过)。
+                if sec_type == 9:
+                    fg_heights.setdefault(i, ART_H)
+                continue
+            if w > SPRITE_MAX_W or h > max_h:
+                fail(f"{label} {i} 尺寸 {w}x{h} 超上限 {SPRITE_MAX_W}x{max_h}")
+            if mask_len != ((w + 7) // 8) * h:
+                fail(f"{label} {i} 遮罩长度 {mask_len} != 预期 {((w + 7) // 8) * h}")
+            if mask_off + mask_len > len(fg_data):
+                fail(f"{label} {i} 遮罩越界")
+            jpeg_ok(fg_data, jpeg_off, jpeg_len, f"{label} {i}")
+            if sec_type == 6:
+                fg_widths[i] = w
+                fg_heights[i] = h
+            else:
+                if i in fg_widths and fg_widths[i] != w:
+                    fail(f"立绘 {i} 上下段宽度不一致: {fg_widths[i]} vs {w}")
+                if fg_heights.get(i, ART_H) != ART_H:
+                    fail(f"立绘 {i} 有下半段但上半段不是满高"
+                         f"({fg_heights.get(i, 0)} 行),中间会缺一条")
+
+    # ---- 元数据 ----
+    meta = {}
+    if 7 in sections:
+        for line in sections[7][3].decode("utf-8", "replace").splitlines():
+            if "=" in line:
+                key, value = line.split("=", 1)
+                meta[key.strip()] = value.strip()
+        for key in ("source", "commit", "generator", "variant", "frame"):
+            if not meta.get(key):
+                fail(f"元数据缺少 {key}")
+        if meta.get("frame") and meta["frame"] != f"{ART_W}x{SCREEN_H}":
+            fail(f"元数据 frame={meta['frame']} 与工具不符 {ART_W}x{SCREEN_H}")
+        if meta.get("variant") == "release" and not meta.get("patch"):
+            fail("release 变体没有记录补丁目录")
+    else:
+        fail("缺少元数据段")
+
+    # ---- 解码与接缝(--no-deep 时跳过) ----
+    seam = []
+    if deep and 5 in sections and 8 in sections:
+        bg_table, bg_data, bg_n = image_table(5, BG_ENTRY)
+        st_table, st_data, st_n = image_table(8, BG_ENTRY)
+        for i in range(min(bg_n, st_n)):
+            bg_off, bg_len = struct.unpack_from("<II", bg_table, BG_ENTRY * i)
+            st_off, st_len = struct.unpack_from("<II", st_table, BG_ENTRY * i)
+            try:
+                art = Image.open(io.BytesIO(bg_data[bg_off:bg_off + bg_len])).convert("RGB")
+                low = Image.open(io.BytesIO(st_data[st_off:st_off + st_len])).convert("RGB")
+            except Exception as exc:                      # noqa: BLE001 - 报告原始错误
+                fail(f"背景 {i} 无法解码: {exc}")
+                continue
+            if art.size != (ART_W, ART_H) or low.size != (STRIP_W, STRIP_H):
+                fail(f"背景 {i} 解码尺寸 {art.size}/{low.size} 与记录不符")
+                continue
+            pa, pl = art.load(), low.load()
+            diff = sum(abs(pa[x, ART_H - 1][c] - pl[x, 0][c])
+                       for x in range(0, ART_W, 8) for c in range(3)) / ((ART_W // 8) * 3)
+            seam.append(diff)
+            if diff > 90:
+                fail(f"背景 {i} 上下块接缝跳变过大(平均色差 {diff:.0f})")
+    if deep:
+        for sec_type, label, high in ((6, "立绘上半段", ART_H), (9, "立绘下半段", STRIP_H)):
+            if sec_type not in sections:
+                continue
+            fg_table, fg_data, fg_n = image_table(sec_type, FG_ENTRY)
+            for i in range(min(fg_n, 8)):                # 抽样解码:拦住损坏的 JPEG
+                jpeg_off, jpeg_len = struct.unpack_from("<II", fg_table, FG_ENTRY * i)
+                try:
+                    im = Image.open(io.BytesIO(fg_data[jpeg_off:jpeg_off + jpeg_len]))
+                    if im.height > high:
+                        fail(f"{label} {i} 解码高度 {im.height} 超 {high}")
+                except Exception as exc:                  # noqa: BLE001 - 报告原始错误
+                    fail(f"{label} {i} 无法解码: {exc}")
+
+    if errors:
+        for line in errors:
+            print(f"ERROR: {line}", file=sys.stderr)
+        print(f"资源包自检: FAIL ({len(errors)} 项问题)", file=sys.stderr)
+        return 1
+    detail = ""
+    if seam:
+        ordered_seam = sorted(seam)
+        detail = (f", 接缝色差 中位 {ordered_seam[len(ordered_seam) // 2]:.1f} "
+                  f"最大 {ordered_seam[-1]:.1f}")
+    print(f"资源包自检: PASS ({os.path.basename(path)} {pack_size} 字节, "
+          f"章节 {chapter_total} / 场景 {scene_total} / 对白 {dlg_total} / "
+          f"背景 {bg_count} / 立绘 {fg_count}{detail})")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--source", required=True, help="Saya-miband10 checkout 路径")
-    ap.add_argument("--out", required=True, help="输出 pack 路径")
+    ap.add_argument("--source", help="Saya-miband10 checkout 路径(构建时必填)")
+    ap.add_argument("--out", help="输出 pack 路径(构建时必填)")
+    ap.add_argument("--check", metavar="PACK",
+                    help="只自检一个已生成的 pack:结构/尺寸/接缝/遮罩(不构建)")
+    ap.add_argument("--no-deep", action="store_true",
+                    help="自检时跳过 JPEG 解码与接缝检查,只做结构与尺寸检查")
     ap.add_argument("--commit", default="", help="源仓库 commit(记录到元数据)")
     ap.add_argument("--patch", default="",
                     help="release 变体:源仓库 补丁/ 目录(R18)。生成的 pack 禁提交/禁发布")
     args = ap.parse_args()
+
+    if args.check:
+        return check_pack(args.check, deep=not args.no_deep)
+    if not args.source or not args.out:
+        ap.error("构建时必须同时给出 --source 与 --out;只做自检请用 --check <pack>")
 
     if args.patch:
         if not os.path.isdir(args.patch):
