@@ -138,6 +138,8 @@ NO_CHAR_BG_PREFIX = ("ev", "none", "mask", "hurt")
 # 记录里的特殊值:0xFFFF = 沿用上一张,0xFFFE = 这一屏不画立绘。
 CHAR_KEEP = 0xFFFF
 CHAR_CLEAR = 0xFFFE
+# 立绘靠右站:绘制位置 x = 240 - 立绘宽 - 这个边距(要居中的话设成 -1)。
+CHAR_RIGHT_MARGIN = 6
 # 旧数据把角色画在场景叠加层里(ATd1p1f1 = 夏生、itemATRI = 亚托莉);
 # 这两张现在由角色层接管,不再当效果叠加重复画一遍。
 CHAR_OVERLAY_ALIAS = {
@@ -411,6 +413,13 @@ class PackBuilder:
             self.warnings.append(f"立绘 {stem} 全透明,跳过")
             return NONE
         art = art.crop(bbox)
+        # 站位:默认靠右(留 CHAR_RIGHT_MARGIN 边距),而不是照原画布的居中位置;
+        # 纵向仍用包围盒顶部,保持"全身立绘从原位置站到屏幕底部"。
+        if CHAR_RIGHT_MARGIN >= 0:
+            place_x = max(0, ART_W - art.width - CHAR_RIGHT_MARGIN)
+        else:
+            place_x = bbox[0]
+        place_y = bbox[1]
 
         rgb = art.convert("RGB")
         px = rgb.load()
@@ -426,9 +435,9 @@ class PackBuilder:
 
         idx = len(self.char_list)
         self.char_list.append(stem)
-        self.char_blobs.append((bytes(color), mask, bbox[0], bbox[1], art.width, art.height))
+        self.char_blobs.append((bytes(color), mask, place_x, place_y, art.width, art.height))
         self._char_index[stem] = idx
-        log(f"  立绘 #{idx} {stem} {art.width}x{art.height} @({bbox[0]},{bbox[1]}) "
+        log(f"  立绘 #{idx} {stem} {art.width}x{art.height} @({place_x},{place_y}) "
             f"color {len(color) / 1024:.1f} KB mask {len(mask) / 1024:.1f} KB")
         return idx
 
