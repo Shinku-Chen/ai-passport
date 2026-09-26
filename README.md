@@ -100,6 +100,58 @@ computer modes differ only in who moves first.
 - **Serial screenshots** — the `FAP_SCREENSHOT_V1` command returns the real
   320 × 240 frame, which is how the release cover was captured.
 
+### Asunabi
+
+A portrait visual novel ported from a Xiaomi Band release: **30 chapters, 4,649
+dialogue lines and about 94,000 characters**, read straight through to a single
+ending. Status: **in development** — it builds and has been flashed for testing,
+but is not published as a release yet.
+
+- Branch: [`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame)
+- Asset pipeline: [`tools/gal/`](tools/gal/README.md)
+
+**Controls (three keys):** **UP** advances a line, or reveals the rest of one that
+is still typing; **UP (hold)** fast-forwards while held and stops the moment you
+let go; **OK** opens the menu (resume, save, load, skip chapter, settings, back to
+title); **DOWN** scrolls a line that runs past the panel; **DOWN (hold)** hides the
+panel to look at the artwork.
+
+**Modes and persistence:** six manual save slots that include the position within a
+paginated line (hold confirm on a slot to delete it), an automatically remembered
+last position behind "continue", a chapter jump list, and a settings screen with
+text speed (slow / medium / fast / instant), text size (16 px or 20 px) with a live
+typewriter preview, and auto-play. The story has one ending; reaching it clears the
+resume point.
+
+**Highlights:**
+
+- **Third-party art stays out of the repository** — the artwork and scripts are
+  packed at build time into a dedicated 4 MiB `assets` data partition, read from a
+  local and untracked source tree. Without it the packer emits a placeholder pack,
+  so a fresh clone still configures, builds and boots — which also means a
+  CI-built release does not contain the game; release this branch from a locally
+  built merged image.
+- **Full-screen art with no PSRAM** — backgrounds are LVGL indexed images drawn
+  straight out of the memory-mapped partition and decoded one scan line at a time
+  (about 960 bytes) instead of the 150 KB a frame buffer would need; 83 of the
+  chip's 128 flash-MMU pages are in use.
+- **The panel is sized from the text size** — four lines times the line height plus
+  padding, so a page of four lines fits whole at either 16 px or 20 px. Lines that
+  still do not fit are **paginated, not clipped**: the split is computed in a pure
+  model with punctuation rules, and the page number is part of the saved position.
+- **Hold-to-fast-forward without changing the BSP** — the BSP has no key-release
+  event, so fast forward polls the public `bsp_button_read_mv()` and stops as soon
+  as the reading leaves the documented voltage window for that key.
+- **Asset size cut twice** — character art is cropped to the region that can reach
+  the panel and then trimmed to its alpha box (0.82 MiB to 0.24 MiB), and a
+  substituted asset is stored once instead of twice (4.41 MiB to 3.59 MiB).
+- **Host-tested parser and typesetting** — the pack reader, the advance rules and
+  the pagination run without ESP-IDF or LVGL and are covered by 11 host tests,
+  including a guard for the 4-byte struct alignment the pack format requires.
+- **Eight upstream defects handled** — the source scripts reference eight images
+  their own repository does not contain (five are obvious typos); each is
+  substituted and reported at pack time instead of drawing a blank frame.
+
 ## Notes
 
 - Each application is a separate `feature/*` branch off the upstream baseline.
