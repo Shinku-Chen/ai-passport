@@ -15,6 +15,12 @@ idf_component_register(
     EMBED_FILES "atri_data/atri_pack.bin"
 )
 
+# 真机验收开关:开机直接进入某一章(下标见 tools/atri_pack.py 的 CHAPTER_ORDER,
+# -1 = 正常走标题页)。例如只为了看最后一章:
+#   idf.py -DATRI_BOOT_CHAPTER=33 build
+set(ATRI_BOOT_CHAPTER "-1" CACHE STRING "开机直接进入的章节下标(-1 = 正常标题流程)")
+target_compile_definitions(${COMPONENT_LIB} PRIVATE "ATRI_BOOT_CHAPTER=${ATRI_BOOT_CHAPTER}")
+
 # 中文字体子集(assets/fonts 下由 tools/atri_font.py 生成)。
 target_sources(${COMPONENT_LIB} PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/../assets/fonts/atri_cjk_16.c"

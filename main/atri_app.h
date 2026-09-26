@@ -85,3 +85,8 @@ bool atri_app_take_sleep_request(atri_app_t *app);
 // 调试用:把指定章节/场景直接画进画面区(不改动玩家状态、不落盘),
 // 供串口截图命令 ATRISHOT 使用(见 main.c)。调用时需持有 LVGL 锁。
 bool atri_app_debug_render(atri_app_t *app, uint16_t chapter, uint16_t scene);
+
+// 调试用:从指定章节/场景直接开始阅读(改玩家状态、正常落盘),用于
+// “开机直接进某一章”(CMake 的 ATRI_BOOT_CHAPTER)与串口命令 ATRIJUMP。
+// 调用时需持有 LVGL 锁。
+bool atri_app_debug_start(atri_app_t *app, uint16_t chapter, uint16_t scene);

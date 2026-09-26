@@ -34,6 +34,12 @@ extern const uint8_t atri_pack_bin_end[] asm("_binary_atri_pack_bin_end");
 // 中文字体子集(assets/fonts/atri_cjk_16.c,由 tools/atri_font.py 生成)。
 LV_FONT_DECLARE(atri_cjk_16);
 
+// 开机直接进入的章节下标(-1 = 正常走标题页)。由 CMake 的 ATRI_BOOT_CHAPTER 传入,
+// 用于真机验收某一章(例如“最后一章”):正式固件用默认值,验收时单独构建。
+#ifndef ATRI_BOOT_CHAPTER
+#define ATRI_BOOT_CHAPTER (-1)
+#endif
+
 #define INPUT_QUEUE_DEPTH 8
 #define INPUT_TICK_MS 50
 
@@ -155,6 +161,20 @@ static void debug_task(void *arg)
         }
         int chapter = -1;
         int scene = -1;
+
+        // ATRIJUMP <章下标> [幕下标]:把阅读进度直接拨过去(正常落盘)。
+        if (sscanf(line, "ATRIJUMP %d %d", &chapter, &scene) >= 1) {
+            bool jumped = false;
+            if (bsp_lvgl_lock(1000)) {
+                jumped = atri_app_debug_start(&s_app, (uint16_t)chapter,
+                                              scene < 0 ? 0 : (uint16_t)scene);
+                bsp_lvgl_unlock();
+            }
+            printf("ATRIJUMP-%s %d %d\n", jumped ? "OK" : "ERR", chapter, scene);
+            fflush(stdout);
+            continue;
+        }
+
         if (sscanf(line, "ATRISHOT %d %d", &chapter, &scene) != 2) continue;
 
         bool ok = false;
@@ -275,6 +295,16 @@ void app_main(void)
         return;
     }
     s_input_ready = true;
+
+#if ATRI_BOOT_CHAPTER >= 0
+    // 真机验收用:跳过标题页,直接从指定章节开始读。
+    if (bsp_lvgl_lock(1000)) {
+        if (!atri_app_debug_start(&s_app, (uint16_t)ATRI_BOOT_CHAPTER, 0)) {
+            ESP_LOGE(TAG, "开机进章失败:章节下标 %d 不存在", (int)ATRI_BOOT_CHAPTER);
+        }
+        bsp_lvgl_unlock();
+    }
+#endif
 
     if (xTaskCreate(debug_task, "atri_debug", 4096, NULL, 4, NULL) != pdPASS) {
         ESP_LOGW(TAG, "串口截图任务创建失败(不影响阅读)");

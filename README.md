@@ -192,7 +192,13 @@ builds:
   pack integrity, the happy / bad / true endings, the choice branch, paging rules
   and save round-trips all run on the host in `tools/validate.sh --static`.
 
-**Debug aid:** the console (USB-Serial-JTAG) accepts `ATRISHOT <chapter> <scene>`:
+**On-device acceptance switch:** `idf.py -DATRI_BOOT_CHAPTER=<index> build` boots straight
+into a chapter (indices follow `CHAPTER_ORDER` in `tools/atri_pack.py`: 31 = b501 happy
+ending, 32 = b601 bad ending, 33 = b701 true ending, the last chapter). The default `-1`
+keeps the normal title screen.
+
+**Debug aid:** the console (USB-Serial-JTAG) accepts `ATRIJUMP <chapter> [scene]` (moves the
+live reading position) and `ATRISHOT <chapter> <scene>`:
 the firmware renders that chapter/scene into the art canvas with the normal render
 path and streams the raw 240 x 320 RGB565 frame back (`ATRISHOT <w> <h> <bytes>`,
 then the pixels, then `ATRISHOT-END`). It is how the drawing pipeline was verified

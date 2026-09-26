@@ -787,6 +787,26 @@ bool atri_app_debug_render(atri_app_t *app, uint16_t chapter, uint16_t scene)
     return atri_ui_set_art(&app->ui, &app->pack, sc.bg, sc.ovl, sc.ovl_x, sc.ovl_y, chr);
 }
 
+bool atri_app_debug_start(atri_app_t *app, uint16_t chapter, uint16_t scene)
+{
+    if (!app) return false;
+    if (!atri_player_start(&app->player, &app->pack, chapter, &app->layout_hint)) return false;
+    if (scene > 0) {
+        atri_save_t save;
+        memset(&save, 0, sizeof(save));
+        save.chapter = chapter;
+        save.scene = scene;
+        save.chr = ATRI_CHAR_KEEP;
+        if (!atri_player_load(&app->player, &app->pack, &save, &app->layout_hint)) return false;
+    }
+    app->started = true;
+    app->transition_pending = false;
+    set_page(app, ATRI_PAGE_GAME);
+    render_scene(app);
+    ESP_LOGW(TAG, "调试:直接从第 %u 章 第 %u 幕开始阅读", (unsigned)chapter, (unsigned)scene);
+    return true;
+}
+
 bool atri_app_take_sleep_request(atri_app_t *app)
 {
     if (!app || !app->sleep_requested) return false;
