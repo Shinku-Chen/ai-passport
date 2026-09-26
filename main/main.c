@@ -219,7 +219,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "空闲堆 %u 字节,最大连续块 %u 字节", (unsigned)esp_get_free_heap_size(),
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
-    ESP_LOGI(TAG, "就绪:横屏阅读器;确定开菜单,上(短按/长按)下一段/快进,下回看上一页;"
+    ESP_LOGI(TAG, "就绪:横屏阅读器;确定开菜单,上 下一段/快进,下 回看/长按自动播放;"
                   "空闲 %us 调暗,%us 熄屏,%us 休眠",
              (unsigned)(SAYA_DIM_MS / 1000), (unsigned)(SAYA_SCREEN_OFF_MS / 1000),
              (unsigned)(SAYA_SLEEP_MS / 1000));

@@ -57,6 +57,9 @@ committed to the repository.
   endings in total (End / BadEnd / MadEnd); a choice always stops and waits.
 - **Skip chapter**: the menu entry skips the current chapter, but stops at a choice
   the chapter has not reached yet instead of deciding for the player.
+- **Auto-play**: hold DOWN on the reading screen to start; it advances one segment
+  every 900 ms (finishing the current one first). Any key stops it, choices and endings
+  stop it automatically, and the idle screen-off policy is suspended while it runs.
 - **Saves**: five manual slots plus one automatic slot written on every scene change;
   "Continue" restores the automatic one. Holding OK on a slot in save mode deletes it.
 - **Settings**: text speed, font size, and a scrollable about page.

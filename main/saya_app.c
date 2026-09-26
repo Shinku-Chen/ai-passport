@@ -13,6 +13,8 @@ static const char *TAG = "saya";
 
 // "上"长按后的自动推进间隔:180ms 一段,和常见视觉小说的快进速度接近。
 #define SAYA_FAST_FORWARD_MS 180u
+// "下"长按进入的自动模式:每 900ms 推进一步;任意键退出,且该模式下不调暗/熄屏/休眠。
+#define SAYA_AUTO_ADVANCE_MS 900u
 // 关于页每次滚动的像素数:一行正文的行高(见 SAYA_LINE_H);长按翻 4 行。
 #define SAYA_ABOUT_SCROLL_STEP 19
 // 开机警告页每次滚动的像素数(字号大一样够用);长按与没读完时按确定按整屏翻。
@@ -255,6 +257,7 @@ static void goto_page(saya_app_t *app, saya_page_t page)
     app->page = page;
     app->idle_ms = 0;
     app->fast_forward = false;
+    app->auto_mode = false;
     // 换页可能让画面区画布被别的画面占用(标题图),下次进正文时按需重画。
     app->rendered_bg = SAYA_NONE;
     app->rendered_fg = SAYA_NONE;
@@ -353,16 +356,19 @@ static void advance_reading(saya_app_t *app, bool fast)
         return;
     case SAYA_STEP_CHOICE:
         app->fast_forward = false;   // 选项处停下,交给玩家选
+        app->auto_mode = false;
         render_scene(app);
         return;
     case SAYA_STEP_ENDING:
         app->fast_forward = false;
+        app->auto_mode = false;
         autosave(app);
         goto_page(app, SAYA_PAGE_ENDING);
         return;
     default:
         ESP_LOGW(TAG, "推进失败(数据异常)");
         app->fast_forward = false;
+        app->auto_mode = false;
         goto_page(app, SAYA_PAGE_ENDING);
         return;
     }
@@ -419,11 +425,20 @@ static void handle_game(saya_app_t *app, const saya_key_t *key)
         }
     }
 
-    // 下:长句回看上一页(推进由"上"负责)。
-    if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_DOWN) {
-        if (app->player.page > 0) {
+    // 下:长按进入自动模式(900ms 一句,任意键退出),短按回看上一页。
+    if (key->btn == BSP_BTN_DOWN) {
+        if (key->ev == BSP_BTN_LONG) {
+            app->auto_mode = true;
+            app->auto_accum_ms = 0;
+            app->fast_forward = false;
+            saya_ui_show_full_text(&app->ui);
+            show_notice(app, "自动模式");
+            return;
+        }
+        if (key->ev == BSP_BTN_CLICK && app->player.page > 0) {
             app->player.page--;
             render_scene(app);
+            return;
         }
         return;
     }
@@ -633,6 +648,15 @@ void saya_app_key(saya_app_t *app, const saya_key_t *key)
         as_click.ev = BSP_BTN_CLICK;
         key = &as_click;
     }
+    // 自动播放中按任意键:退出自动模式,并吃掉这次按键(不会连带触发别的操作)。
+    // PRESS/RELEASE 不算“按键”:否则下键长按进入自动模式后,松手就会把它关掉。
+    if (app->auto_mode && key->ev != BSP_BTN_PRESS && key->ev != BSP_BTN_RELEASE) {
+        app->auto_mode = false;
+        app->auto_accum_ms = 0;
+        show_notice(app, "已退出自动模式");
+        bsp_lvgl_unlock();
+        return;
+    }
     if (!bsp_lvgl_lock(200)) {
         ESP_LOGW(TAG, "拿不到 LVGL 锁,忽略本次按键");
         return;
@@ -685,6 +709,23 @@ void saya_app_tick(saya_app_t *app, uint32_t elapsed_ms)
                 bsp_lvgl_unlock();
             }
         }
+    }
+
+    // 自动模式:每 900ms 推进一步。advance_reading(false) 会先把打字机未完成的
+    // 文本补全再返回,所以每一句都能完整显示至少一个间隔。
+    if (app->auto_mode && app->page == SAYA_PAGE_GAME && !app->player.at_choice) {
+        app->auto_accum_ms += elapsed_ms;
+        if (app->auto_accum_ms >= SAYA_AUTO_ADVANCE_MS) {
+            app->auto_accum_ms = 0;
+            if (bsp_lvgl_lock(100)) {
+                advance_reading(app, false);
+                bsp_lvgl_unlock();
+            }
+        }
+        // 自动播放期间不算空闲:不调暗、不息屏、不进 deep sleep。
+        app->idle_ms = 0;
+    } else {
+        app->auto_accum_ms = 0;
     }
 
     if (app->notice_ms > 0) {
