@@ -126,11 +126,11 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 [`fywmjj/better-mb9p-ATRI`](https://github.com/fywmjj/better-mb9p-ATRI)（它在
 [`liuyuze61/ATRI-miband`](https://github.com/liuyuze61/ATRI-miband) 基础上重构，补上了原版没有的
 `src/common/character/*` 全身立绘）。原版是 Vela OS 的触屏应用，本分支用 C + LVGL 重写阅读引擎，
-改成三键操作。状态：**已发布** —— tag `v1.0.1-atri-reader`，并已投稿到 AI Passport 社区市场
-（作品 `my-dear-moments`，审核中）。
+改成三键操作。状态：**已发布** —— tag `v1.0.2-atri-reader`，并已投稿到 AI Passport 社区市场
+（作品 `my-dear-moments-2`，审核中）。
 
 - 分支：[`feature/atri-reader`](https://github.com/Shinku-Chen/ai-passport/tree/feature/atri-reader)
-- 发布：[`v1.0.1-atri-reader`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.1-atri-reader) —— 合并镜像 `FoloToy-AI-Passport-full.bin`，5,134,544 字节
+- 发布：[`v1.0.2-atri-reader`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.2-atri-reader) —— 合并镜像 `FoloToy-AI-Passport-full.bin`，5,134,544 字节
 - 上游作品：[`fywmjj/better-mb9p-ATRI`](https://github.com/fywmjj/better-mb9p-ATRI) 与 [`liuyuze61/ATRI-miband`](https://github.com/liuyuze61/ATRI-miband) —— 本次移植所依据的同人版本，两个仓库都未声明许可；其剧本、背景与立绘随分支提交并打包进固件，来源以上游项目标注。
 - 素材工具链：[`tools/atri_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/atri-reader/tools/atri_pack.py)（剧本 + 图像打包成 `main/atri_data/atri_pack.bin`，3.83 MB）与 [`tools/atri_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/atri-reader/tools/atri_font.py)（16px 中文字体子集，2,771 个码位）
 
