@@ -54,6 +54,14 @@ run_static_checks() {
         tests/test_bsp_audio_recovery.c components/bsp/src/bsp_es8311_sleep_check.c \
         -o "${test_dir}/test_bsp_audio_recovery"
     "${test_dir}/test_bsp_audio_recovery"
+    # 《沙耶之歌》阅读器:纯逻辑(资源包解析 + 剧情推进 + 分页 + 存档)跑真实资源包。
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
+        tests/test_saya_model.c main/saya_model.c main/saya_pack.c \
+        -o "${test_dir}/test_saya_model"
+    "${test_dir}/test_saya_model" main/saya_data/saya_pack.bin
+    # 界面文案 + 剧本正文用到的字必须在生成好的字体子集里(缺字就是显示成方块)。
+    PYTHONDONTWRITEBYTECODE=1 python3 tools/saya_font.py --check \
+        --pack main/saya_data/saya_pack.bin --out-dir assets/fonts
     for demo in audio low_power ble wifi; do
         "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
             -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \

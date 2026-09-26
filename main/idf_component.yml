@@ -1,0 +1,4 @@
+dependencies:
+  idf: ">=5.5.3,<5.6.0"
+  # 背景下拉与立绘解码:包里的图都是 JPEG。
+  espressif/esp_jpeg: "^1.3.1"
