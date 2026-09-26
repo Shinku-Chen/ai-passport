@@ -28,12 +28,17 @@ static void rounded_flush_event(lv_event_t *event)
     const int32_t width = lv_area_get_width(area);
     if (draw_buf->header.stride < (uint32_t)width * sizeof(uint16_t)) return;
 
+    // 刷屏区域始终是 LVGL 逻辑坐标系(硬件旋转由面板 MADCTL 完成),所以遮罩必须用
+    // 当前逻辑分辨率:横屏是 320x240,写死 BSP_LCD_W/H 会把整条边涂黑。
+    const int32_t screen_w = lv_display_get_horizontal_resolution(disp);
+    const int32_t screen_h = lv_display_get_vertical_resolution(disp);
+
     for (int32_t y = area->y1; y <= area->y2; ++y) {
         uint16_t *row = (uint16_t *)(draw_buf->data +
                                      (y - area->y1) * draw_buf->header.stride);
         int32_t visible_x1;
         int32_t visible_x2;
-        if (!bsp_display_rounded_row_span(y, BSP_LCD_W, BSP_LCD_H,
+        if (!bsp_display_rounded_row_span(y, screen_w, screen_h,
                                           BSP_LVGL_SCREEN_RADIUS, &visible_x1,
                                           &visible_x2)) {
             memset(row, 0, (size_t)width * sizeof(uint16_t));
@@ -129,4 +134,21 @@ bool bsp_lvgl_lock(int timeout_ms) {
 }
 void bsp_lvgl_unlock(void) {
     if (s_disp) lvgl_port_unlock();
+}
+
+esp_err_t bsp_lvgl_set_landscape(bool landscape) {
+    if (!s_disp) return ESP_FAIL;
+
+    // LVGL ROTATION_90/270 只是“相对 disp_cfg.rotation 再转 90 度”:esp_lvgl_port
+    // 收到 RESOLUTION_CHANGED 后会写入 MADCTL(MV 翻转行列 + 一个 mirror 保证是
+    // 旋转而不是镜像),并同步 LVGL 逻辑分辨率。
+    // 方向若上下颠倒,把这里的 90 换成 270 即可(对应另一组 mirror)。
+    const lv_display_rotation_t rotation =
+        landscape ? LV_DISPLAY_ROTATION_90 : LV_DISPLAY_ROTATION_0;
+    lv_display_set_rotation(s_disp, rotation);
+
+    ESP_LOGI(TAG, "LVGL 方向: %s(%dx%d)", landscape ? "横屏" : "竖屏",
+             (int)lv_display_get_horizontal_resolution(s_disp),
+             (int)lv_display_get_vertical_resolution(s_disp));
+    return ESP_OK;
 }

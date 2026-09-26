@@ -53,12 +53,32 @@ uint32_t lv_display_get_event_count(lv_display_t *disp) {
     assert(disp == &display && lock_depth);
     return 1 + callback_live; // The display already owns an internal callback.
 }
+// 横屏支持:运行时请求旋转,分辨率 getter 跟着切换(与 LVGL 换逻辑分辨率一致)。
+static int rotation_calls;
+static lv_display_rotation_t last_rotation;
+static int landscape_live;
+void lv_display_set_rotation(lv_display_t *disp, lv_display_rotation_t rotation) {
+    assert(disp == &display);
+    ++rotation_calls;
+    last_rotation = rotation;
+    landscape_live = (rotation == LV_DISPLAY_ROTATION_90 || rotation == LV_DISPLAY_ROTATION_270);
+}
+int32_t lv_display_get_horizontal_resolution(const lv_display_t *disp) {
+    assert(disp == &display);
+    return landscape_live ? BSP_LCD_H : BSP_LCD_W;
+}
+int32_t lv_display_get_vertical_resolution(const lv_display_t *disp) {
+    assert(disp == &display);
+    return landscape_live ? BSP_LCD_W : BSP_LCD_H;
+}
+
 static void expect_failure(void) {
     assert(bsp_lvgl_init() == NULL);
     assert(!s_disp && !lock_depth && !display_live);
     assert(!bsp_lvgl_lock(0));
 }
 int main(void) {
+    assert(bsp_lvgl_set_landscape(true) == ESP_FAIL);   // 未初始化时不可切换
     panel_present = 0; expect_failure(); panel_present = 1;
     fail_port = 1; expect_failure(); fail_port = 0;
     const int failed_init_calls = init_calls;
@@ -82,5 +102,27 @@ int main(void) {
     lv_event_t ev = { .target = &display, .area = &area };
     rounded_flush_event(&ev);
     assert(pixels[0] == 0 && pixels[BSP_LCD_W - 1] == 0 && pixels[BSP_LCD_W / 2] == 0xffff);
+
+    // 横屏:逻辑分辨率变 320x240,圆角遮罩必须跟着换 —— 写死 240x320 会把两条边涂黑。
+    assert(bsp_lvgl_set_landscape(true) == ESP_OK);
+    assert(rotation_calls == 1 && last_rotation == LV_DISPLAY_ROTATION_90 && landscape_live);
+    uint16_t wide[BSP_LCD_H] = {0};
+    for (int x = 0; x < BSP_LCD_H; ++x) wide[x] = 0xffff;
+    display.buffer = (lv_draw_buf_t){ .data = (uint8_t *)wide, .header.stride = sizeof(wide) };
+    lv_area_t wide_top = { .x1 = 0, .y1 = 0, .x2 = BSP_LCD_H - 1, .y2 = 0 };
+    lv_event_t wide_ev = { .target = &display, .area = &wide_top };
+    rounded_flush_event(&wide_ev);
+    assert(wide[0] == 0 && wide[BSP_LCD_H - 1] == 0 && wide[BSP_LCD_H / 2] == 0xffff);
+
+    // 横屏中间行离圆角足够远:整行保留。
+    for (int x = 0; x < BSP_LCD_H; ++x) wide[x] = 0xffff;
+    lv_area_t wide_mid = { .x1 = 0, .y1 = 120, .x2 = BSP_LCD_H - 1, .y2 = 120 };
+    lv_event_t mid_ev = { .target = &display, .area = &wide_mid };
+    rounded_flush_event(&mid_ev);
+    assert(wide[0] == 0xffff && wide[BSP_LCD_H - 1] == 0xffff);
+
+    // 切回竖屏后分辨率与遮罩都复原。
+    assert(bsp_lvgl_set_landscape(false) == ESP_OK);
+    assert(rotation_calls == 2 && last_rotation == LV_DISPLAY_ROTATION_0 && !landscape_live);
     puts("BSP LVGL initialization tests: PASS");
 }

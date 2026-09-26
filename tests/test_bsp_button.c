@@ -4,6 +4,41 @@
 #include <stdio.h>
 #include "../components/bsp/src/bsp_button.c"
 
+// driver/gpio 与 vTaskDelay 的桩:deep sleep 释放流程只用到这几个调用。
+static gpio_num_t gpio_last_pin;
+static gpio_mode_t gpio_last_mode;
+static gpio_pullup_t gpio_last_pull;
+static int gpio_level_value = 1;
+static int gpio_set_direction_result = ESP_OK;
+static int gpio_set_pull_result = ESP_OK;
+static int gpio_direction_calls;
+static int gpio_pull_calls;
+static int delay_calls;
+
+esp_err_t gpio_set_direction(gpio_num_t gpio_num, gpio_mode_t mode) {
+    gpio_last_pin = gpio_num;
+    gpio_last_mode = mode;
+    gpio_direction_calls++;
+    return gpio_set_direction_result;
+}
+
+esp_err_t gpio_set_pull_mode(gpio_num_t gpio_num, gpio_pullup_t pull) {
+    assert(gpio_num == gpio_last_pin);
+    gpio_last_pull = pull;
+    gpio_pull_calls++;
+    return gpio_set_pull_result;
+}
+
+int gpio_get_level(gpio_num_t gpio_num) {
+    assert(gpio_num == gpio_last_pin);
+    return gpio_level_value;
+}
+
+void vTaskDelay(uint32_t ticks) {
+    assert(ticks > 0);
+    delay_calls++;
+}
+
 struct button_dev_t { button_driver_t *driver; bool live; };
 static struct button_dev_t buttons[BSP_BTN_COUNT];
 static int adc_token, cal_token, adc_live, cal_live, live_buttons;
@@ -131,5 +166,40 @@ int main(void) {
     assert(adc_live && cal_live && live_buttons == BSP_BTN_COUNT);
     assert(bsp_button_init(event_cb, &events) == ESP_ERR_INVALID_STATE);
     fail_delete = 0; button_cleanup(); retry_success();
+
+    // ---- deep sleep 释放流程 ----
+    // ① 正常路径:按键脚切回数字输入 + 上拉,回读电平(松开=1),并释放 ADC。
+    gpio_direction_calls = gpio_pull_calls = delay_calls = 0;
+    gpio_level_value = 1;
+    int level = -1;
+    assert(bsp_button_prepare_deep_sleep(&level) == ESP_OK);
+    assert(level == 1);
+    assert(gpio_direction_calls == 1 && gpio_pull_calls == 1 && delay_calls == 1);
+    assert(gpio_last_pin == BSP_BTN_GPIO);
+    assert(gpio_last_mode == GPIO_MODE_INPUT && gpio_last_pull == GPIO_PULLUP_ONLY);
+    // 按键设备与 ADC 都已释放:再初始化一次必须走完整流程且成功。
+    assert(!adc_live && !cal_live && live_buttons == 0);
+    retry_success();
+
+    // ② 仍按着不放(电平 0):如实回传 0,让调用方决定不休眠。
+    gpio_level_value = 0;
+    level = -1;
+    assert(bsp_button_prepare_deep_sleep(&level) == ESP_OK);
+    assert(level == 0);
+    retry_success();
+
+    // ③ 引脚配置失败:返回错误,且不再读电平。
+    gpio_set_direction_result = ESP_FAIL;
+    level = -1;
+    assert(bsp_button_prepare_deep_sleep(&level) != ESP_OK);
+    assert(level == -1);
+    gpio_set_direction_result = ESP_OK;
+    gpio_set_pull_result = ESP_FAIL;
+    assert(bsp_button_prepare_deep_sleep(&level) != ESP_OK);
+    gpio_set_pull_result = ESP_OK;
+    // level 传 NULL 也不能崩(调用方只想释放引脚)。
+    assert(bsp_button_prepare_deep_sleep(NULL) == ESP_OK);
+    retry_success();
+
     puts("BSP button fault-injection tests: PASS");
 }

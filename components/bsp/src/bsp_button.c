@@ -3,11 +3,14 @@
 #include "bsp_button.h"
 #include "bsp_pins.h"
 #include "iot_button.h"
+#include "driver/gpio.h"
 #include "esp_adc/adc_oneshot.h"
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 static const char *TAG = "bsp_btn";
 
@@ -176,7 +179,10 @@ esp_err_t bsp_button_init(bsp_btn_cb_t cb, void *user) {
             .base = { .get_key_level = button_level, .del = button_driver_delete },
             .index = (unsigned)i,
         };
-        const button_config_t bc = { 0 };
+        const button_config_t bc = {
+            .long_press_time = BSP_BTN_LONG_MS,
+            .short_press_time = BSP_BTN_SHORT_MS,
+        };
         esp_err_t e = iot_button_create(&bc, &s_drivers[i].base, &s_btn[i]);
         if (e != ESP_OK || !s_btn[i]) {
             ESP_LOGE(TAG, "按键 %d 创建失败 (%s) —— 检查 GPIO%d 的 ADC 配置与分压电阻",
@@ -196,7 +202,32 @@ esp_err_t bsp_button_init(bsp_btn_cb_t cb, void *user) {
 
     s_sample_valid = false;
     s_ready = true;
-    ESP_LOGI(TAG, "按键就绪:ADC1_CH%d 三键分压", BSP_BTN_ADC_CHANNEL);
+    ESP_LOGI(TAG, "按键就绪:ADC1_CH%d 三键分压,短按>=%dms 长按>=%dms", BSP_BTN_ADC_CHANNEL,
+             BSP_BTN_SHORT_MS, BSP_BTN_LONG_MS);
+    return ESP_OK;
+}
+
+esp_err_t bsp_button_prepare_deep_sleep(int *level)
+{
+    // ① 先停按键驱动,再放 ADC —— 反过来会让 timer 回调碰到已释放的句柄。
+    button_cleanup();
+
+    // ② 按键脚交回普通数字输入 + 上拉。ADC 接管的脚数字读回是 0,而深睡低电平唤醒
+    //    正是比这个值;不恢复的话唤醒条件在入睡瞬间就成立。
+    const gpio_num_t pin = (gpio_num_t)BSP_BTN_GPIO;
+    esp_err_t err = gpio_set_direction(pin, GPIO_MODE_INPUT);
+    if (err == ESP_OK) err = gpio_set_pull_mode(pin, GPIO_PULLUP_ONLY);
+    if (err != ESP_OK) {
+        // 失败时不写 level:调用方以返回码为准,不要读到陈旧电平。
+        ESP_LOGE(TAG, "按键脚切回数字输入失败: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    // 上拉建立需要一点时间,再回读。
+    vTaskDelay(pdMS_TO_TICKS(20));
+    if (level) *level = gpio_get_level(pin);
+    ESP_LOGI(TAG, "按键已释放,深度休眠唤醒脚 GPIO%d 电平=%d", (int)pin,
+             level ? *level : -1);
     return ESP_OK;
 }
 
