@@ -209,9 +209,12 @@ static void render_current_page(saya_app_t *app)
 
 static void render_slots(saya_app_t *app)
 {
+    // 这两个数组是【指针数组】,分别指向下面的字符缓冲 —— 不能把二维字符数组
+    // 强转成指针数组传给列表:那样被调方会把字符串内容当地址读,直接野指针崩溃。
     static const char *labels[SAYA_UI_MAX_ROWS];
-    static char values[SAYA_UI_MAX_ROWS][40];
+    static const char *values[SAYA_UI_MAX_ROWS];
     static char label_buf[SAYA_UI_MAX_ROWS][16];
+    static char value_buf[SAYA_UI_MAX_ROWS][40];
 
     const int slot_rows = SAYA_SAVE_SLOTS;
     for (int i = 0; i < slot_rows; ++i) {
@@ -221,20 +224,21 @@ static void render_slots(saya_app_t *app)
         if (saya_slot_load((uint8_t)i, &save) && save.chapter < app->pack.chapter_count) {
             saya_chapter_t ch;
             saya_pack_chapter(&app->pack, save.chapter, &ch);
-            snprintf(values[i], sizeof(values[i]), "第 %u 章 · %u/%u", (unsigned)ch.id,
+            snprintf(value_buf[i], sizeof(value_buf[i]), "第 %u 章 · %u/%u", (unsigned)ch.id,
                      (unsigned)(save.scene + 1), (unsigned)ch.scene_count);
         } else {
-            snprintf(values[i], sizeof(values[i]), "空");
+            snprintf(value_buf[i], sizeof(value_buf[i]), "空");
         }
+        values[i] = value_buf[i];
     }
     labels[slot_rows] = "返回";
-    values[slot_rows][0] = '\0';
+    values[slot_rows] = "";
 
     saya_ui_show_page(&app->ui, SAYA_PAGE_SLOTS);
     saya_ui_slots_setup(&app->ui, app->slots_saving ? "保存进度" : "读取进度",
                         app->slots_saving ? "确定保存 · 长按删除该槽 · 选“返回”离开"
                                           : "确定读取 · 选“返回”离开",
-                        labels, (const char *const *)values, slot_rows + 1);
+                        labels, values, slot_rows + 1);
     saya_ui_set_slots_selected(&app->ui, app->slots_sel);
 }
 
