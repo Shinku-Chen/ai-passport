@@ -8,15 +8,14 @@ These tools turn the upstream visual novel
 [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) into the
 read-only `assets` flash partition consumed by `main/gal/*`.
 
-That upstream repository declares no license, so its artwork and chapter scripts
-are never committed here. The pack format, the tools and the generated fonts are
-this repository's own work; the material they consume is not.
+That upstream repository declares no license. Its artwork and chapter scripts are
+committed in this repository under `assets/gal-source/`; the pack format, the
+tools and the generated fonts are this repository's own work.
 
 ## Where the source material goes
 
-The artwork and chapter scripts are third-party content and are **not tracked by
-this repository**. Put a local copy of the upstream project's `src/common`
-directory at:
+The artwork and chapter scripts are third-party content, tracked at the path the
+upstream project itself uses for them:
 
 ```text
 assets/gal-source/common/
@@ -26,12 +25,13 @@ assets/gal-source/common/
 └── text_bg.png, logo.png
 ```
 
-That path is git-ignored. The layout matches the upstream project's `src/common`
-directory, so a copy of it can be dropped in unchanged.
+The layout matches the upstream project's `src/common` directory, so a newer copy
+of that directory can be dropped in unchanged, and `--source` accepts any other
+location.
 
 When the directory is absent the packer emits a small placeholder pack instead,
-so a fresh clone still configures, builds and boots. The placeholder needs no
-image library.
+so a clone without the material still configures, builds and boots. The
+placeholder needs no image library.
 
 ## Tools
 
@@ -51,8 +51,9 @@ python tools/gal/inspect_pack.py build/gal/gal_assets.bin --chapter 3 --lines 4
 python tools/gal/pack_assets.py --preview 8 --preview-out scene8.png
 ```
 
-Packing the real artwork needs Pillow. Install it into the interpreter ESP-IDF
-builds with, otherwise the firmware build stops at the packer:
+Packing the real artwork needs Pillow in the interpreter ESP-IDF builds with,
+otherwise the firmware build stops at the packer. The firmware workflows install
+it, so CI packs the committed material too:
 
 ```bash
 "$IDF_PYTHON_ENV_PATH/Scripts/python.exe" -m pip install Pillow   # Windows

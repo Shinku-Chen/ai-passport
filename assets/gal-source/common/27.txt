@@ -1,0 +1,766 @@
+[
+  {
+    "background": "bg00a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我们最先玩的是过山车。"
+      },
+      {
+        "character": "",
+        "text": "这架过山车为了锻炼乘客的心理素质，特别提升了速度。光是坐在上面，飞鸟就给人一种威压感。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「呀～～～～～～～～！！」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      },
+      {
+        "character": "",
+        "text": "速度达到顶峰时，飞鸟发出了愉悦的尖叫。"
+      },
+      {
+        "character": "",
+        "text": "看着她在由衷享受，我却只能紧咬牙关。"
+      },
+      {
+        "character": "",
+        "text": "接下来我们去坐了旋转木马，飞鸟好像没怎么玩过这个。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「好、好快，没想到还挺快的！」",
+        "body": "ask_z1a0200",
+        "face": "a0019h"
+      },
+      {
+        "character": "",
+        "text": "我一边声援与预想之外的速度苦战的飞鸟，一边欣赏旋转的景色。"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「吓到我了。体感速度说不定比过山车还要快」",
+        "body": "ask_z1a0200",
+        "face": "a0019h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那不可能吧」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「骑马时基本都有挽具，而旋转木马没有，所以就不太稳定，有些晃来晃去的……」",
+        "body": "ask_z1a0200",
+        "face": "a0020h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「被豪华的装饰和圆溜溜的马眼睛给骗了……旋转木马真是可怕」",
+        "body": "ask_z1a0200",
+        "face": "a0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我反而是坐不来过山车。你坐我旁边就像个没事人一样」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是你坐过山车的姿势不对吧？  不应该高举双手大喊才对吗」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你真是受到了好教育啊……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「心态和习惯决定了你会享受还是会害怕。我保证，只有最开始才会害怕的」",
+        "body": "ask_z1a0200",
+        "face": "a0016h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你还真是喜欢过山车啊——」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯，非常喜欢」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……那待会再一起去。先去吃午饭吧」"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "听到飞鸟直视着我说“非常喜欢”，我一边体会着莫名的心跳感，一边寻找餐厅。"
+      },
+      {
+        "character": "",
+        "text": "虽说也可以选择去雅致的餐厅，但我们还是选择了有露天席位、能在外面吃的店。"
+      },
+      {
+        "character": "",
+        "text": "景区的物价怎么说呢，讲恭维话也不能说性价比高，不过这也是主题公园的妙处所在吧。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哦哦！ 飞鸟的餐盘摆得好精致啊——」"
+      },
+      {
+        "character": "",
+        "text": "飞鸟点的以旋转木马为原型的松软午餐薄饼。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你看，这个薄饼的形状和马一模一样。好厉害」",
+        "body": "ask_z1a0200",
+        "face": "a0016h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「刀叉的柄和游乐项目有一样的颜色，盘子的装饰也好豪华……」",
+        "body": "ask_z1a0200",
+        "face": "a0007h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不仅能吃，还能展示出项目的世界观，能感受到商家的讲究，我很喜欢。好想带回家啊」",
+        "body": "ask_z1a0200",
+        "face": "a0013h"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「游马你点的是……看起来绿油油的意大利面」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「据说是以泳池为原型的」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「泳泳、泳池！？」",
+        "body": "ask_z1a0200",
+        "face": "a0009h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊，你误会了啊！？ 我可没想着要带你去！？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「虽然确实想看飞鸟的泳装就是了……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「哎哎！？」",
+        "body": "ask_z1a0200",
+        "face": "a0009h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不对，我不是那个意思！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我看菜单上说它含有很多鱼类和贝类，就想着应该很好吃吧」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「原来是这样啊……真是的」",
+        "body": "ask_z1a0200",
+        "face": "a0008h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那我们就开始吃吧。不然要冷了」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "",
+        "text": "我们一齐双手合十，说完“我开动了”便拿起了刀叉。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……真好吃」",
+        "body": "ask_z1a0200",
+        "face": "a0016h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「好好吃啊」"
+      },
+      {
+        "character": "",
+        "text": "彼此说完感想后，我们对视一笑。"
+      },
+      {
+        "character": "",
+        "text": "能一起度过幸福的时间，比任何事都更令人开心。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「下次想吃吃看飞鸟亲手做的料理啊」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「唔！？ 真、真是突然……」",
+        "body": "ask_z1a0200",
+        "face": "a0009h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「脑海里突然就蹦出来这个想法了……不行吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不要像撒娇一样说啊……」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不过，也是呢……有机会的话我考虑考虑」",
+        "body": "ask_z1b0200",
+        "face": "b0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「噢噢！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我做的东西非常普通，可不像这薄饼一样，别抱太多期待」",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「只要是飞鸟亲手做的料理就够了！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你的意思是，只要有狮子堂飞鸟这个品牌，做成什么样都无所谓了？」",
+        "body": "ask_z1a0200",
+        "face": "a0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不是那个意思……我是说，只要喜欢的人能为我做料理就足够了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「唔……我只是说，有机会的话再考虑。这个话题到此为止，明白了吗」",
+        "body": "ask_z1a0200",
+        "face": "a0009h"
+      },
+      {
+        "character": "",
+        "text": "现在来说能积极地探讨这件事就够了。虽说不知道要等到什么时候，但我很期待实现的那一天。"
+      }
+    ]
+  },
+  {
+    "background": "bg03b.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "快乐的时光转瞬即逝，不知不觉已经到了傍晚。"
+      },
+      {
+        "character": "",
+        "text": "夕阳下的主题公园中，游客也变得稀疏。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「再玩最后一个项目吧」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「已经这个时间了吗……过得可真快呀」",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟……最后，要不要去坐那个？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那个么」",
+        "body": "ask_z1a0200",
+        "face": "a0002h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「好啊。作为约会的收尾，我觉得是个不错的选择」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c07_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「上次坐摩天轮还是什么时候呢……我一共也只坐过那么一两次吧」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「在慢慢上升呢……好高啊」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不要紧吧？」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c07_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「你是在问我害不害怕吗？  怎么可能。我可是连鬼屋都不怕的」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「刚进去时看上去倒是游刃有余，但出来的时候已经被吓得动弹不得了吧？」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c07_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「那、那个是……反正不是因为害怕。怎么说呢，算是一直神经紧绷的副作用……」"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "去鬼屋的时候她牢牢带上了假面，让我见识到了冰之公主的实力。",
+        "body": "ask_z1a0200",
+        "face": "a0013h"
+      },
+      {
+        "character": "",
+        "text": "我还稍微期待了一下她会来依靠我，说白了感觉有点遗憾……"
+      },
+      {
+        "character": "",
+        "text": "也正因如此，结束以后动都动不了的飞鸟实在是太可爱了。",
+        "body": "ask_z1a0200",
+        "face": "a0019h"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c07_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「啊……离最高点越来越近了」"
+      },
+      {
+        "character": "",
+        "text": "摩天轮到达了顶端，映入眼帘的是被染成橘黄的景色。"
+      },
+      {
+        "character": "",
+        "text": "和恋人在狭小的、触手可及的空间中独处。"
+      },
+      {
+        "character": "",
+        "text": "作为约会的收尾……我想不出比这更好的场景了。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟……」"
+      },
+      {
+        "character": "",
+        "text": "我决定实行早已准备好的方案。"
+      },
+      {
+        "character": "",
+        "text": "尽情享受约会……并用接吻画上终止符。"
+      },
+      {
+        "character": "",
+        "text": "这样便能传达我的感情了。我下定了决心，向飞鸟靠近。"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "但——"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c07_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「游马」"
+      },
+      {
+        "character": "",
+        "text": "突然，飞鸟凑了过来。"
+      },
+      {
+        "character": "",
+        "text": "她像是一直在等待我的动作，从中寻找可乘之机一般。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c07_09.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「嗯……啾」"
+      },
+      {
+        "character": "",
+        "text": "嘴唇传来柔软的触感。"
+      },
+      {
+        "character": "",
+        "text": "是我绝不会忘记、绝不会认错的，飞鸟的嘴唇。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c07_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「呵呵……今天是我主动呢」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哎……啊……」"
+      },
+      {
+        "character": "",
+        "text": "我这是被飞鸟……亲了么？"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c07_01.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「哦、噢噢噢…………」"
+      },
+      {
+        "character": "",
+        "text": "我说不出话来，任凭身体抖个不停。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c07_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「呵呵，怎么样」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「被、被算计了！ 但好开心！」"
+      },
+      {
+        "character": "",
+        "text": "嘴唇上残留的余温告诉着我，刚刚的不是幻觉。"
+      },
+      {
+        "character": "",
+        "text": "我今天还打算主动的。被抢先了一步，有点不甘心。"
+      },
+      {
+        "character": "",
+        "text": "但胸口涌上一股暖流，将那些想法吹得烟消云散。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c07_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "眼前的飞鸟愈发惹人怜爱起来，我情不自禁地握住了她的双手。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c07_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「呀，你冷静点，握得有一点痛」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「抱、抱歉。太开心了，不小心就」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c07_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「真是的……拿你没办法。刚才有这么意外吗？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯，完全没想到。而且真的很开心」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c07_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "而且，飞鸟开心的表情也很可爱。"
+      },
+      {
+        "character": "",
+        "text": "摩天轮缓缓下降，约会的尾声渐渐逼近。"
+      },
+      {
+        "character": "",
+        "text": "虽然我想让这一刻永远持续下去……但还有很多想一起体验的新事物。"
+      },
+      {
+        "character": "",
+        "text": "想和飞鸟，一起经历更多更多。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「等下了摩天轮，还能继续牵着手吗」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c07_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「我当然不介意。毕竟我们……是恋人呀」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「一直、牵到车站也可以吗？」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c07_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「一直！？ 嗯、嗯……我允许了」"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我们从主题公园回到了平时乘车的车站。"
+      },
+      {
+        "character": "",
+        "text": "和说的一样，我一路上一直牵着飞鸟的手。"
+      },
+      {
+        "character": "",
+        "text": "在车站牵着手的话，说不定会被认识的人看到……但我不想松开。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「差不多了吧？」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯，你是说手吧，当然」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「松开手就分别了。虽然下周在学校还会再见面，但暂时得说再见了」",
+        "body": "ask_z1b0200",
+        "face": "b0008h"
+      },
+      {
+        "character": "",
+        "text": "在车站前分别然后各回各家，这是理所当然的。"
+      },
+      {
+        "character": "",
+        "text": "但我不想松开牵着的手，不想回家。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……………」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……………」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "",
+        "text": "必须要回去了啊……"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「不松手吗？」",
+        "body": "ask_z1b0200",
+        "face": "b0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不想松开啊」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「或许因为收到了意料之外的吻，变得飘飘然了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「有、有那么好吗？ 那个吻……」",
+        "body": "ask_z1b0200",
+        "face": "b0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「棒极了！ 我很开心！ 飞鸟好可爱！  感觉体内涌起了一股暖流……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你声音太大了，这里是车站！」",
+        "body": "ask_z1a0200",
+        "face": "a0009h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「抱歉……但，也是。不松手可不行」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯………」",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……………」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……………」",
+        "body": "ask_z1a0200",
+        "face": "a0008h"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "可是，手却分不开。明明想把手抽回，却被飞鸟的手牢牢地吸住不动。"
+      },
+      {
+        "character": "",
+        "text": "我做了个深呼吸，让自己冷静下来。"
+      },
+      {
+        "character": "",
+        "text": "但果然还是不想松手。"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「……哎，该怎么办才好呀」",
+        "body": "ask_z1a0200",
+        "face": "a0008h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「怎么办才好吗……」",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「也是呢……我有一个想法，你愿意听吗？」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "",
+        "text": "飞鸟有些害羞，但又有些开心地提出了一个方案。"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": ""
+      }
+    ]
+  }
+]

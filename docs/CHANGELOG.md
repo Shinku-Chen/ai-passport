@@ -60,5 +60,5 @@
 ## v0.1.0-asunabi - 2026-09-27
 
 - Added the Asunabi portrait visual-novel reader on `feature/asunabi-galgame`. The firmware boots into the title screen and provides line advance, pagination, chapter skip, six save slots, text speed and size, auto-play, and a single ending screen.
-- Added a 4 MiB `assets` data partition and the `tools/gal/` pack pipeline. Third-party artwork and chapter scripts stay in the git-ignored `assets/gal-source/` tree and are not part of this release. A build without that tree, including the tag-triggered CI artifact, ships a placeholder pack with no artwork and no chapter script.
+- Added a 4 MiB `assets` data partition and the `tools/gal/` pack pipeline. The upstream artwork and chapter scripts are committed under `assets/gal-source/`, so the tag-triggered CI artifact carries the complete game; the packer falls back to a placeholder pack only when that tree is absent.
 - Added committed Noto Sans SC subset fonts for the reader UI.

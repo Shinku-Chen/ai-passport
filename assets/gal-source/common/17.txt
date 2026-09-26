@@ -1,0 +1,652 @@
+[
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「呼……」"
+      },
+      {
+        "character": "",
+        "text": "尽情享受完橱窗购物后，我们前往咖啡馆歇脚。"
+      },
+      {
+        "character": "",
+        "text": "飞鸟眺望着夕阳，叹了一口气。不愧是她，仅仅如此就美得像幅画。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「走了好久呐，腿都有点酸了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「虽然很想说“这是因为你锻炼不足”，但我也和你一样」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「只是逛逛买买就到傍晚了。时间过得好快啊」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是啊」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟觉得今天的约会怎么样？」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「还是挺开心的」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哦哦……那可以说今天的约会很成功啊」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「成功还是失败么……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「游马君还有其他想去的地方吗？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯~我吗，我想去飞鸟想去的地方」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「刚刚的回答……说不定会让人产生负担哦。你可以多有些主见，或者也可以带领我」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「啊啊，我并没有要求你这么做的意思，只是提点建议」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我知道了，谢谢你的关心」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「下次起我会试着主动一点的，敬请期待！」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「还是这么积极乐观呢。你觉得还会有下次吗？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「咦，没有下次了吗？ 看现在的样子感觉还能有下次呢」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「这倒是……但我可没有明确地这么说」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这样啊……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不过，就算你说不行，我也不会放弃的。为了争取到机会，我不惜弯下腰求你」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「……你啊，在这种时候也一如既往呢。约会时的你和在学校里的你完全没有区别」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「因为真实的一面是最好的啊。飞鸟不也这么说过吗」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「嗯，我是说过。不过……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「我终究只是想从客观角度给你一些建议而已，你稍微留意一下就好……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「我觉得不做作的态度是一种魅力，但其中也有美中不足的部分」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「这怎么说也是约会，你不该多向我展示一些你的魅力吗」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「既然说了要让我喜欢上你，你就应该让我看到自己更好的一面吧？」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「我就觉得，还有更好的做法值得你尝试一下」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「原来如此啊……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我也可以说两句吗。当然，我并不是要否认你说的话」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「请说吧，让我听听」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我这次有意识地没去逞能」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「就算伪装自己、让自己显得很帅气，之后却让你幻灭就毫无意义了」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「这倒也是。说得有道理」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「的确有些人在自然状态下更能体现魅力。但你未必就是这样的人」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「虽然自己这么说有些不妥。但如果想让我喜欢上你，你是不是该多下点功夫呢？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「唔——我觉得即使强行打造出好形象，真面目总有一天还是会暴露的」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「——你这是在讽刺我吗？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不对不对！ 我不是这个意思！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我不像飞鸟那样能干，没办法勉强自己……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟的表情变得有些严肃，沉默在两人间扩散开来。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我一边搅动着咖啡一边组织着语言，开口说道。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「果然，我还是觉得飞鸟现在的状态挺可惜的」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟真实的样貌……无论是会因为小事而生气的一面、顽固的一面」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「还是看小狗视频露出笑容的一面、喜欢吃甜食的一面……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「我都觉得很棒，很可爱。把充满魅力的一面隐藏起来真是太可惜了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这、这么难为情的话，真亏你能……面不改色地说出口啊」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「那么我问你，你难道不想独占这个谁都不知道的我吗」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「虽然你说“很可惜”，但如果保持现在的状态，我的、可爱的一面？ 出色的一面？ 诸如此类……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「都会只属于你一个人哦」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「……………………」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「怎么了？ 为什么沉默这么久」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我都没想过这些……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊但是，等等……确实，这种独占欲……硬要说的话，还是有的……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「唔，你在说什么——」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哎但是，果然还是不太对」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「如果只忠于自己的欲望，我可能会选择独占你。但如果希望你能幸福的话，我还是觉得独占是不好的」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「怎么样。你能接受这个答案吗」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「姆姆姆……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「你还真是老样子呢……虽然我觉得很感激……（嘟嘟囔囔）……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「抱歉，你说什么？」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「什么都没有」"
+      },
+      {
+        "character": "",
+        "text": "进入这家店后，我们第二次陷入了沉默。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟同学一副气鼓鼓的表情，不满地盯着我看。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「游马君，你应该了解一下什么是少女心了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「让我补充一下。对于我的这一面，就连我父母都采取了观望的态度。你还是第一个不知轻重便闯进来的」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「嗯嗯嗯嗯……总觉得，专门允许你踏入其中的自己也变得不可原谅了……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞、飞鸟同学 ……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「不过也好吧。我已经听到了你的答案，这个话题就到此为止」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「对不起。今天我可以先回去了吗？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这没关系。总觉得，有些抱歉」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「你没必要道歉。我们走吧」"
+      }
+    ]
+  },
+  {
+    "background": "bg00b.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我们离开咖啡馆后，飞鸟很快就回去了。"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我迈着沉重的步伐，好不容易才回到家。"
+      },
+      {
+        "character": "隼斗",
+        "text": "（搞砸了吗……）"
+      },
+      {
+        "character": "",
+        "text": "到中途为止都很顺利，但在最后出了差错。"
+      },
+      {
+        "character": "",
+        "text": "以不太好的方式收了尾……我感到有些抱歉。"
+      },
+      {
+        "character": "",
+        "text": "该怎么做才好呢？ 我不断回顾、反省迄今为止的事。"
+      },
+      {
+        "character": "隼斗",
+        "text": "（最坏的情况是，也许没有下次了……）"
+      },
+      {
+        "character": "",
+        "text": "我一边斥责变得消极的自己，一边集中精力思考如何挽回。"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "手机收到了消息……"
+      },
+      {
+        "character": "",
+        "text": "是飞鸟发来的吗……要是是的话，老实说我不敢看。"
+      },
+      {
+        "character": "",
+        "text": "如果发来的是拒绝的话语，我一定会沮丧到再也无法振作的。"
+      },
+      {
+        "character": "",
+        "text": "虽然很害怕，但也不可能不去看，我只好打开手机。"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "『怎么样游马，被甩了吗？』"
+      },
+      {
+        "character": "隼斗",
+        "text": "「原来是梅林吗！！」"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我差点想都没想就把手机丢到一边。就在这时——"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟发来了……」"
+      },
+      {
+        "character": "",
+        "text": "我不假思索地打开与飞鸟的聊天窗口。"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "『很抱歉今天以那种形式收了尾』"
+      },
+      {
+        "character": "飞鸟",
+        "text": "『不过总觉得心里很不痛快，下次约会的时候选个能活动身体的项目比较好』"
+      },
+      {
+        "character": "飞鸟",
+        "text": "『你觉得怎么样？』"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "『我觉得您的想法棒极了！』"
+      },
+      {
+        "character": "飞鸟",
+        "text": "『怎么用敬语？』"
+      },
+      {
+        "character": "隼斗",
+        "text": "『抱歉。我太高兴了』"
+      },
+      {
+        "character": "飞鸟",
+        "text": "『是吗。那就学校见，我很期待下周』"
+      },
+      {
+        "character": "隼斗",
+        "text": "『好！』"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「好耶……好耶！！」"
+      },
+      {
+        "character": "",
+        "text": "也许因为之前还担心着会不会就此结束，所以得到第二次约会的约定后，我心花怒放。"
+      },
+      {
+        "character": "",
+        "text": "不由得摆出了胜利pose。"
+      },
+      {
+        "character": "",
+        "text": "我真是越来越对飞鸟着迷了啊——"
+      },
+      {
+        "character": "",
+        "text": "这么想着，我突然变得害羞起来，只好挠了挠头。"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": ""
+      }
+    ]
+  }
+]

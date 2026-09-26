@@ -1,0 +1,569 @@
+[
+  {
+    "background": "bg00a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "——那是我们成为恋人后的第一个周日。"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「早上好，游马君」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯，早上好」"
+      },
+      {
+        "character": "",
+        "text": "有了之前来太早的教训，我们这次只提前了五分钟集合。"
+      },
+      {
+        "character": "",
+        "text": "不过——"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……」",
+        "body": "ask_z1b0200",
+        "face": "b0001h"
+      },
+      {
+        "character": "",
+        "text": "只是打了个招呼，飞鸟的脸颊便微微泛红。我一定也和她一样。"
+      },
+      {
+        "character": "隼斗",
+        "text": "（我和飞鸟……成为恋人了啊）"
+      },
+      {
+        "character": "",
+        "text": "由于害羞，两人的对话都不算积极，但却一点也不觉得尴尬。"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「呃，你昨天睡得好吗？」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「说实话……不太好」",
+        "body": "ask_z1a0200",
+        "face": "a0007h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊哈哈……我也是」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是、是不是因为太兴奋了？」",
+        "body": "ask_z1b0200",
+        "face": "b0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「大概是。不过飞鸟应该也一样吧？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「没有这回事。才没有呢」",
+        "body": "ask_z1b0200",
+        "face": "b0018h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「真的吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是真的」",
+        "body": "ask_z1b0200",
+        "face": "b0006h"
+      },
+      {
+        "character": "",
+        "text": "她的小紧张逃不过我的眼睛，这里还是看破不说破吧。"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「咳咳。时间也是很宝贵的，我们走吧」",
+        "body": "ask_z1a0200",
+        "face": "a0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不过真的可以吗？ 今天的流程，和初次约会时是一样的」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我是有意想去之前去过的地方」",
+        "body": "ask_z1a0200",
+        "face": "a0012h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那个……我觉得，成为恋人前后，感受到的东西可能也会不一样吧……」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "（唔……）"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "光是从飞鸟口中听到“恋人”这个词，我就……"
+      },
+      {
+        "character": "",
+        "text": "飞鸟羞涩的表情也让人忍不了……"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「游马君？」",
+        "body": "ask_z1b0200",
+        "face": "b0010h"
+      },
+      {
+        "character": "",
+        "text": "不好不好，看飞鸟看入迷了。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那么，首先是电影」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯，走吧」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我们两人迈开脚步，交流也变少了。"
+      },
+      {
+        "character": "",
+        "text": "很明显，我们太过在意对方，导致两人都非常紧张。为了打破现状，我开始拼命寻找话题。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……嗯~嗯，衣服！ 我之前就在想，你的衣品还挺成熟的」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯、是啊……虽然我也喜欢女孩风格的衣服，不过是自己穿的话，还是更习惯穿这种的」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「女孩风格，就是那种很可爱的风格？ 和女性风格不同吗」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「女孩风格的衣服，就是有少女感的可爱衣服」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「相对的，女性风格的衣服就更能凸显女性魅力。与女孩风格相比更加成熟稳重」",
+        "body": "ask_z1b0200",
+        "face": "b0016h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「怎么说呢，如果我穿女孩风格的衣服，就难免会显得孩子气呢……」",
+        "body": "ask_z1b0200",
+        "face": "b0008h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「游马君更喜欢适合穿可爱衣服的女朋友吗？」",
+        "body": "ask_z1b0200",
+        "face": "b0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我只想和飞鸟成为恋人。再说了，你现在穿的衣服也很可爱啊」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「居然坦然地说出这种话……唔、咕唔唔，不需要恭维我」",
+        "body": "ask_z1b0200",
+        "face": "b0009h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这不是客套话。你也知道我不会这样说的吧？」"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「呜呜……好狡猾……」",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你对服装本身的款式有偏好，但不太在意服装品牌，是这样吗」",
+        "body": "ask_z1a0200",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我在挑衣服的时候，一直都是凭直觉吧？ 最多试穿一下，看看穿着舒不舒服」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「也就是，更加注重实用性吗……你喜欢宽衫的吗？ 又大又宽松的那种衣服」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「是吗，原来这叫宽衫啊。确实，我可能有不少这种衣服」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「宽衫的特征，就是尺码很多都是大小通用的。……嗯，原来如此」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「好羡慕能凭直觉搭配服装的人呀。很有品位呢」",
+        "body": "ask_z1b0200",
+        "face": "b0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「是嘛……我觉得经过思考，把衣服穿很得体的飞鸟也很厉害啊」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「但如果不好好思考，衣服就搭不好。这套衣服也是，昨晚烦恼了好久才……」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「哈！ 我、我什么也没说」",
+        "body": "ask_z1b0200",
+        "face": "b0019h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯，嗯嗯？」"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「啊已经能看见电影院了呢。电影就快上映了，我们抓紧吧！」",
+        "body": "ask_z1a0200",
+        "face": "a0007h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「喂飞鸟！？ 时间还来得及啊！？」"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "如此这般，我们来到了电影院，先是取了订好的电影票。"
+      },
+      {
+        "character": "",
+        "text": "接着又买了两人份的大桶爆米花。爆米花上还沾着不少甜甜的焦糖。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「买两人份大桶，真有恋人的风格呢。原来如此，我觉得很棒，嗯嗯……」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c03_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "随着照明灯变暗，光线投射在了屏幕上。其他作品的广告终于结束，电影开始了。"
+      },
+      {
+        "character": "",
+        "text": "今天我们选了王道恋爱电影。之前来这里的时候，看过它的广告。"
+      },
+      {
+        "character": "",
+        "text": "电影设定在欧洲中世纪风格的世界。讲述了一个骑士，爱上了身世悬殊、苦于王女立场的公主……二人的爱情故事。"
+      },
+      {
+        "character": "",
+        "text": "对公主一见钟情的骑士为了博得她的回眸，讨伐了袭击人民的反贼、揭露了贵族的腐败，不断立下功绩。"
+      },
+      {
+        "character": "",
+        "text": "虽然有时会白忙一场，但他始终怀着炽热的感情接近公主。"
+      },
+      {
+        "character": "",
+        "text": "我尽管很在意之后的剧情发展，但还是会不经意地留心身旁。"
+      },
+      {
+        "character": "隼斗",
+        "text": "（和女孩子一起看恋爱电影，总觉得心里痒痒的……）"
+      },
+      {
+        "character": "隼斗",
+        "text": "（但感觉不坏。更确切地说，这种骚动令人很愉快……）"
+      },
+      {
+        "character": "隼斗",
+        "text": "（竟然能和飞鸟一起看恋爱电影，真是让人感概万千——）"
+      },
+      {
+        "character": "隼斗",
+        "text": "（飞鸟呢……）"
+      }
+    ]
+  },
+  {
+    "background": "zev_ask_c03_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我偷偷向旁边一瞥，窥探飞鸟的表情。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「啊……」"
+      },
+      {
+        "character": "",
+        "text": "本该看向屏幕的视线，此时却注视着我。我们四目相对。"
+      },
+      {
+        "character": "",
+        "text": "飞鸟尽管很快将视线移回到电影上，但又是一副静不下心的样子，时不时地看向我这边。"
+      },
+      {
+        "character": "",
+        "text": "飞鸟也会在意电影以外的事，让我情不自禁地高兴起来。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c03_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "另一边，银幕上的故事还在继续，骑士向公主求婚了。"
+      },
+      {
+        "character": "隼斗",
+        "text": "（这个求婚，看得我都害羞了……那份热情，比什么都直率啊）"
+      },
+      {
+        "character": "隼斗",
+        "text": "（虽然我也向飞鸟直接表达了心意……但果然还是没办法像电影角色这么帅啊）"
+      },
+      {
+        "character": "",
+        "text": "要是当时再下点功夫就好了。想着想着，我变得难为情起来。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c03_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "为了糊弄过去，我将手伸向了爆米花。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c03_11.png",
+    "dialogues": [
+      {
+        "character": "飞鸟＆隼斗",
+        "text": "「唔——！」"
+      },
+      {
+        "character": "",
+        "text": "双手触碰的瞬间，我们都吓了一跳。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c03_11.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我们无法缩回僵硬的手，只好保持着接触，任时间流逝。"
+      }
+    ]
+  },
+  {
+    "background": "zev_ask_c03_11.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「那、那个……不好意思」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯、嗯，我才是……」"
+      },
+      {
+        "character": "",
+        "text": "我们红着脸，互相轻声道歉。"
+      },
+      {
+        "character": "",
+        "text": "以前也发生过同样的事，但反应已截然不同。"
+      }
+    ]
+  },
+  {
+    "background": "zev_ask_c03_11.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "但要是把手缩回去就太可惜了，所以我开始集中精神，感受着飞鸟。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「游马君……」"
+      },
+      {
+        "character": "",
+        "text": "透过相互贴合，飞鸟的手传来了鲜明的触感。"
+      },
+      {
+        "character": "",
+        "text": "手的温暖、指的纤细、肌肤的柔嫩。我将传来的一切，都细细地感受。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「啊……」"
+      },
+      {
+        "character": "",
+        "text": "我不禁将她的手握得更紧了。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c03_11.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "忽地将目光转回银幕，上面播放的，正好是骑士与公主偶然碰到手的一幕。"
+      },
+      {
+        "character": "",
+        "text": "总觉得此情此景同我们有了联系……我能更强烈地感觉到，飞鸟此刻就在我身边。"
+      },
+      {
+        "character": "",
+        "text": "除了银屏上的光亮，黑暗的世界中再无他物。"
+      },
+      {
+        "character": "",
+        "text": "我不禁想到，这个世界是不是只有我和飞鸟两人呢。"
+      }
+    ]
+  },
+  {
+    "background": "zev_ask_c03_11.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「嗯……真是的……拿你没办法……」"
+      }
+    ]
+  },
+  {
+    "background": "zev_ask_c03_11.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟小声地嘟囔了些什么，却没有拨开我的手。"
+      },
+      {
+        "character": "",
+        "text": "我们就这样牵着手，迎来了电影的高潮。"
+      }
+    ]
+  },
+  {
+    "background": "zev_ask_c03_11.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "骑士与公主为了爱舍弃了身份与所有的一切，发誓要作为两个普通人相伴一生。"
+      },
+      {
+        "character": "",
+        "text": "就算前路荆棘丛生，但只要两人一起便能克服困难。电影以美好的结局画下了句号——"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": ""
+      }
+    ]
+  }
+]

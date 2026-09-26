@@ -1,0 +1,658 @@
+[
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "资料一事发生之后，飞鸟也慢慢开始让我做一些学生会工作了。"
+      },
+      {
+        "character": "",
+        "text": "于是在加入学生会后，我的学校生活就发生了翻天覆地的变化。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「早上好」",
+        "body": "ask_z1b0100",
+        "face": "b0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊，狮子堂同学。早上好」"
+      },
+      {
+        "character": "",
+        "text": "我和飞鸟在学校里见面时，已经会互相打招呼了。虽然还有些顾虑对方就是了。"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "周围的学生见我们打完招呼，都吵嚷了起来……"
+      },
+      {
+        "character": "男学生",
+        "text": "（冰之公主居然向他打招呼，真的太羡慕了啊）"
+      },
+      {
+        "character": "女学生",
+        "text": "（那个人就是新的学生会成员？ 真的只是普通的成员吗？）"
+      },
+      {
+        "character": "隼斗",
+        "text": "（也太引人注目了！）"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「为什么要用敬语？ 明明平时都不用敬语的」",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那、那是因为……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「还有，你怎么不叫我的名字？ 你之前不是说想直接叫我的名字吗」",
+        "body": "ask_z1a0100",
+        "face": "a0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「！！？」"
+      },
+      {
+        "character": "女学生",
+        "text": "（他、他们到底是什么关系！？ 可恶，那个学生会成员怎么回事啊！）"
+      },
+      {
+        "character": "男学生",
+        "text": "（喂喂，真的假的啊……混蛋，我们的学生会长被那家伙......）"
+      },
+      {
+        "character": "隼斗",
+        "text": "（要被杀掉了——）"
+      },
+      {
+        "character": "",
+        "text": "明明一开始，是飞鸟不希望我们的关系被其他人误会的吧！ 现在这样不等于是自掘坟墓吗？"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「那么放学后，学生会教室见」",
+        "body": "ask_z1b0100",
+        "face": "b0015h"
+      },
+      {
+        "character": "",
+        "text": "飞鸟一脸若无其事地丢下这句话，走向了自己的教室。"
+      },
+      {
+        "character": "",
+        "text": "而留在原地的我，则被周围的视线刺穿了。"
+      },
+      {
+        "character": "女学生",
+        "text": "（那种不起眼的男生竟然在和飞鸟大人交往？ 我不能接受！）"
+      },
+      {
+        "character": "男学生",
+        "text": "（这家伙不管怎么看都很普通啊！ 可恶，明明我......）"
+      },
+      {
+        "character": "隼斗",
+        "text": "（我、可能要死掉了……）"
+      }
+    ]
+  },
+  {
+    "background": "bg00a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "放学后——"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「不好意思，稍微迟到了一会儿——」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「哼哼……」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟正笑盈盈地看着手机屏幕。",
+        "body": "ask_z1a0100",
+        "face": "a0012h"
+      },
+      {
+        "character": "隼斗",
+        "text": "（她还会这么笑啊……）"
+      },
+      {
+        "character": "",
+        "text": "虽然平时看见的尽是飞鸟冷漠、愤怒的表情，但她的笑容实在太过可爱，令我联想到了惹人怜爱这个词。"
+      },
+      {
+        "character": "",
+        "text": "那笑容仿佛能将人吞噬，我不禁聚精会神地盯着她。"
+      },
+      {
+        "character": "",
+        "text": "然后……"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「唔……」",
+        "body": "ask_z1a0100",
+        "face": "a0017h"
+      },
+      {
+        "character": "",
+        "text": "飞鸟瞪大了眼睛，凝视着手机屏幕……"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「啊，危险——呼……」",
+        "body": "ask_z1a0100",
+        "face": "a0010h"
+      },
+      {
+        "character": "",
+        "text": "她刚喊出声，又马上松了口气……"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……」",
+        "body": "ask_z1a0100",
+        "face": "a0016h"
+      },
+      {
+        "character": "",
+        "text": "飞鸟一个劲儿地傻笑。这幅场景我看多久都看不厌。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「你在看什么呢？」",
+        "body": "ask_z1a0100",
+        "face": "a0016h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「小狗狗的视频。真的超级可爱哦」",
+        "body": "ask_z1a0100",
+        "face": "a0012h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你看你看。小狗歪着头的样子好可爱……」",
+        "body": "ask_z1a0100",
+        "face": "a0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我看看……」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我正打算探头去看飞鸟的手机屏幕——",
+        "body": "ask_z1a0100",
+        "face": "a0004h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「咿呀啊啊啊！？」",
+        "body": "ask_z1a0100",
+        "face": "a0009h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哇啊！？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你、你什么时候来的！？」",
+        "body": "ask_z1b0100",
+        "face": "b0006h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟好像才注意到我，慌慌张张地收起了手机。",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「为什么这么问，我都打过招呼了啊……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我这可不是在偷懒啊！ 只是休息、休息一下！」",
+        "body": "ask_z1b0100",
+        "face": "b0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我明白的啊，你不用这么拼命地解释」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我知道飞鸟是绝对不会偷懒的。作为学生会成员，我一直在旁边好好看着呢」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……被你这么说也有些不爽呢」",
+        "body": "ask_z1b0100",
+        "face": "b0018h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「什么啊」"
+      },
+      {
+        "character": "",
+        "text": "飞鸟闹别扭似的撅起了嘴。"
+      },
+      {
+        "character": "",
+        "text": "尽管飞鸟平时总是很冷静，但她也有着可爱的一面，总觉得像小孩子一样，十分讨人喜欢。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「今天你来得有些晚了。你不在的话我会很为难的」",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「咦……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「怎么了？ 我是为了监视你才让你进学生会的，这是理所当然的吧？」",
+        "body": "ask_z1a0100",
+        "face": "a0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯，说的也是。没事没事」"
+      },
+      {
+        "character": "隼斗",
+        "text": "（你不在的话我会很为难......都怪她说得轻描淡写的，这不是让我产生了奇怪的误会吗）"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「你看，我去小卖部买了新商品噢。就是这个巧克力」",
+        "body": "ask_z1b0100",
+        "face": "b0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「因为买零食才迟到了吗」",
+        "body": "ask_z1b0100",
+        "face": "b0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「毕竟是要动脑子的工作嘛，吃点甜品能提高效率吧。还有我这是调研噢，调研」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「调研？」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「统计学生的需求再传达给小卖部，不也是学生会的工作吗？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这样的话，我们也应该确认一下小卖部里卖的商品」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「净往好处说……但是也有点道理」",
+        "body": "ask_z1a0100",
+        "face": "a0017h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟轻易地接受了我的说辞，令我有些意外。\n之后我们一边做着学生会的工作，一边品鉴起了新品。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「唔呣，这个是.......黑巧克力吗」",
+        "body": "ask_z1b0100",
+        "face": "b0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「它好像很受欢迎哦」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我尝尝我尝尝……啊呜」",
+        "body": "ask_z1b0100",
+        "face": "b0014h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……原来如此，苦味和涩味有着完美的平衡。我能理解它为什么受欢迎了」",
+        "body": "ask_z1a0100",
+        "face": "a0013h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你喜欢吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯唔！」",
+        "body": "ask_z1a0100",
+        "face": "a0018h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「咳咳。小卖部不适合卖口味太极端的食物，不过这个应该没问题」",
+        "body": "ask_z1b0100",
+        "face": "b0008h"
+      },
+      {
+        "character": "",
+        "text": "啊，被她蒙混过去了。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「觉得巧克力好吃就说好吃呀，这又没什么的。我觉得你不用逞强，活得再轻松一点就好」",
+        "body": "ask_z1b0100",
+        "face": "b0020h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「说得我好像一直在逞强似的」",
+        "body": "ask_z1b0100",
+        "face": "b0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「在我看来就是这样」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那一定是你的眼睛有问题」",
+        "body": "ask_z1b0100",
+        "face": "b0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「是这样吗」"
+      },
+      {
+        "character": "",
+        "text": "但我觉得刚刚看视频和吃巧克力的时候，飞鸟还是相当放松的。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「话说，你刚才看的小狗视频是在网站上找的吗？能告诉我网址吗」",
+        "body": "ask_z1b0100",
+        "face": "b0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「休息时间已经结束了，请开始工作吧」",
+        "body": "ask_z1b0100",
+        "face": "b0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「问完这个我就会去工作的！看飞鸟说得这么可爱，我真的很好奇」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「真拿你没办法呢」",
+        "body": "ask_z1b0100",
+        "face": "b0017h"
+      },
+      {
+        "character": "",
+        "text": "说完，飞鸟嘟着嘴将网址发给了我。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「噢噢，真的很可爱啊……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你不是说问完就去工作的吗。请你结束工作之后再看」",
+        "body": "ask_z1a0100",
+        "face": "a0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「确实啊！ 抱歉抱歉」"
+      }
+    ]
+  },
+  {
+    "background": "bg00a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "之后，直到做完学生会工作，我们都只进行了必要的交流。"
+      }
+    ]
+  },
+  {
+    "background": "bg09b.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「那么，今天就到此为止了。后天也有学生会的工作，拜托你了」",
+        "body": "ask_z1b0100",
+        "face": "b0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「放心吧，我已经牢牢记住工作日程表了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这和记性没有关系。毕竟你也可能故意不来」",
+        "body": "ask_z1b0100",
+        "face": "b0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊，是吗……」"
+      },
+      {
+        "character": "",
+        "text": "飞鸟同学果然很严厉啊——"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "第二天的放学后。今天没有学生会工作，干什么好呢——"
+      },
+      {
+        "character": "男同学？",
+        "text": "「什么嘛，因为见不到会长所以感觉很寂寞？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「别嫉妒得这么明显啊......梅林」"
+      },
+      {
+        "character": "梅林",
+        "text": "「哼，你不是最近和会长蛮亲近的吗。这点儿嫉妒你就忍忍吧」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "这位姓真里野，绰号梅林。在我们以前玩的网游中担任魔法师。"
+      },
+      {
+        "character": "",
+        "text": "虽然游戏停服了，但作为朋友，我仍然还用这个绰号叫他。"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「会长的狂热粉丝们可比我更危险，你要小心啊？ 最近还有传闻说你和会长其实在交往呢」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不是，都说了我和飞鸟不是那种关系了」"
+      },
+      {
+        "character": "梅林",
+        "text": "「就是因为这个啊，称呼！ 直接叫狮子堂会长的名字的人就你一个吧」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这个是……唉，说来话长啊，总之我只能告诉你，我得到了直接叫她名字的许可」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「还有，我只是碰巧加入了学生会，现在和飞鸟也只有工作上的关系」"
+      },
+      {
+        "character": "梅林",
+        "text": "「嗯，哎呀，说得也是呢！ 毕竟是会长和游马嘛！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你这什么意思啊」"
+      },
+      {
+        "character": "梅林",
+        "text": "「容貌端庄、文武双全、才貌兼备。感觉这些词都是为了形容会长而生的啊」"
+      },
+      {
+        "character": "梅林",
+        "text": "「而且她无论对谁都用敬语，简直就是名副其实的高岭之花！\n正因如此，她才会成为全校学生的憧憬对象啊。」"
+      },
+      {
+        "character": "隼斗",
+        "text": "（嗯……）"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "沉默寡言、难以接近的孤狼......\n这就是飞鸟一直以来向外界展示的虚假形象。",
+        "body": "ask_z1b0100",
+        "face": "b0015h"
+      },
+      {
+        "character": "",
+        "text": "她一边维持着孤高的形象，一边作为学生会长统领着全校学生，给人一种宛若王族的高贵感。"
+      },
+      {
+        "character": "",
+        "text": "因为大家都想成为那样崇高的人，她才会受到全校学生的憧憬吧。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "而实际上通过这几天的相处，我已经完全明白了，飞鸟也只是个害羞的时候会脸红的普通女生。",
+        "body": "ask_z1a0100",
+        "face": "a0018h"
+      },
+      {
+        "character": "",
+        "text": "也就是说，飞鸟在扮演着一只高冷的猫——不，毕竟是孤狼，所以准确来说是披着狼皮的羊吧？"
+      }
+    ]
+  }
+]

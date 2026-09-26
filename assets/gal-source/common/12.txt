@@ -1,0 +1,858 @@
+[
+  {
+    "background": "bg06a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "离开学校后不久……"
+      },
+      {
+        "character": "",
+        "text": "我用力地抱着头。"
+      }
+    ]
+  },
+  {
+    "background": "bg00a.png",
+    "Img": "line21.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「“那我怎么样？”  ……我是笨蛋吗！」"
+      },
+      {
+        "character": "",
+        "text": "一想到这里，我既羞耻又感觉自己像个笨蛋一样，忍不住发出了声音。"
+      },
+      {
+        "character": "",
+        "text": "如果可以时间回溯，真想回到那个时候揍自己一顿。"
+      },
+      {
+        "character": "",
+        "text": "发言再怎么不谨慎也要有个限度，何况在那之后的应对也很糟糕。"
+      },
+      {
+        "character": "",
+        "text": "因为说了奇怪的话，焦躁的心情占了上风，我逃也似地离开了。"
+      }
+    ]
+  },
+  {
+    "background": "bg06a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「哈啊～～～～～～……」"
+      },
+      {
+        "character": "",
+        "text": "我长叹一声，重新迈开了停下的步伐。"
+      },
+      {
+        "character": "",
+        "text": "……说到底，我为什么会说那样的话？"
+      },
+      {
+        "character": "隼斗",
+        "text": "（飞鸟她会怎么想呢……）"
+      },
+      {
+        "character": "隼斗",
+        "text": "（话回说来，飞鸟那时也脸红了啊……）"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "冰之公主，狮子堂飞鸟。",
+        "body": "ask_z1b0100",
+        "face": "b0015h"
+      },
+      {
+        "character": "",
+        "text": "我从之前就很仰慕她的坚强和美丽。"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "但是——"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c01_01.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "从误会和偶然开始，我们逐渐有了关联，然后……"
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "有机会能够和她说上话，与她一同在学生会工作，一起出去玩，共度了许多时光。",
+        "body": "ask_z1a0100",
+        "face": "a0004h"
+      },
+      {
+        "character": "",
+        "text": "我所见到的飞鸟的真实面貌，与冰之公主这样的先入之见截然不同。她也是个普通的女生。"
+      },
+      {
+        "character": "",
+        "text": "会生气、会笑、也会害羞……"
+      },
+      {
+        "character": "",
+        "text": "我觉得那样的她很有魅力。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "因为会破坏原有的印象，所以飞鸟说不想让人看到自己那样的一面。",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "",
+        "text": "为此感到可惜的我也和她讨论过，不过谁也没能说服谁。就是从那时开始被认为太过“勇者”了吗。"
+      },
+      {
+        "character": "",
+        "text": "也许是因为我无法忍受，将伪装、勉强着自己的飞鸟置之不理吧……"
+      },
+      {
+        "character": "",
+        "text": "正是之前和飞鸟认真谈过，现在的我们才能成为毫无顾忌地交谈的关系。"
+      },
+      {
+        "character": "",
+        "text": "即使是作为工作伙伴，我也切实地感受到了她的认可。"
+      }
+    ]
+  },
+  {
+    "background": "bg06a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我们的距离确实在逐渐缩短。"
+      },
+      {
+        "character": "",
+        "text": "我会在那个时候说出“那我怎么样”……"
+      },
+      {
+        "character": "",
+        "text": "其实也没什么缘由。现在想来，理由也很简单。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我想更加了解飞鸟。",
+        "body": "ask_z1a0100",
+        "face": "a0004h"
+      },
+      {
+        "character": "",
+        "text": "想更加接近她。"
+      },
+      {
+        "character": "",
+        "text": "想看见她各种各样的表情。"
+      },
+      {
+        "character": "",
+        "text": "仅此而已，简单明了的答案。"
+      }
+    ]
+  },
+  {
+    "background": "bg06a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "（我在想什么呢……）"
+      },
+      {
+        "character": "",
+        "text": "虽然现在的关系并不算疏远，但我仍然想要更进一步。"
+      },
+      {
+        "character": "",
+        "text": "这份无止境的思绪为什么会萦绕于心呢，我深入思考着……"
+      },
+      {
+        "character": "",
+        "text": "愈是思考下去，我的脸就愈是发热，头脑也开始混乱。"
+      },
+      {
+        "character": "",
+        "text": "即使把头发揉得乱糟糟的，也无法平静下来。"
+      },
+      {
+        "character": "隼斗",
+        "text": "（啊啊，这算什么啊……为什么会这样……）"
+      },
+      {
+        "character": "",
+        "text": "要是有人看到现在的我，一定会认为是什么形迹可疑的家伙。"
+      },
+      {
+        "character": "",
+        "text": "即使我清楚自己现在的状态，但却无法停下思考。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……啊——」"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "被冲动驱使着，我往家的方向拼命奔跑起来。"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「啊，真是的，那算什么呀……」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我用丢的力度将书包放到床上，坐在了书桌前。",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "",
+        "text": "因为距离晚饭还有段时间，我拿出笔记本后握住自动铅笔。"
+      },
+      {
+        "character": "",
+        "text": "必须要先预习，为明天的课做准备……"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「…………」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "",
+        "text": "……但手很快便停了下来。"
+      },
+      {
+        "character": "",
+        "text": "完全无法专心学习，脑袋里一团糟。",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "",
+        "text": "原因很清楚——那就是他说的话。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「～～～～！」",
+        "body": "ask_z1a0100",
+        "face": "a0018h"
+      },
+      {
+        "character": "",
+        "text": "我随手将笔丢在一旁，抱住脑袋。"
+      },
+      {
+        "character": "",
+        "text": "双腿止不住地乱蹬，这令我很是烦躁，却又停不下来。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那算什么，那算什么，那算什么呀！？」",
+        "body": "ask_z1a0100",
+        "face": "a0009h"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "为了抑制自己躁动的身体，我把脸埋在桌子上。",
+        "body": "ask_z1a0100",
+        "face": "a0018h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "（难道他，一开始就是抱着这个打算来学生会的……不，是我任命他的，应该没有关系啊……）"
+      },
+      {
+        "character": "飞鸟",
+        "text": "（问题是，他这么说的目的是什么……像是什么都没想就说出来了……）",
+        "body": "ask_z1b0100",
+        "face": "b0020h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "（如果是下意识说出来的话，那不就更成问题了嘛，因为、因为下意识的话语也就是坦率的欲望……）",
+        "body": "ask_z1b0100",
+        "face": "b0006h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "（“那我怎么样”是什么意思？ 到底是什么意思……）",
+        "body": "ask_z1a0100",
+        "face": "a0018h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "（反正要说，不如索性好好说——）",
+        "body": "ask_z1a0100",
+        "face": "a0018h"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「不、不对！ 好好说是要说什么啊！ 啊——」",
+        "body": "ask_z1a0100",
+        "face": "a0009h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「呜——那个人真是的！」",
+        "body": "ask_z1b0100",
+        "face": "b0009h"
+      },
+      {
+        "character": "",
+        "text": "内心有些恼火又有些郁闷，就这样糊里糊涂地度过了这段时间……"
+      },
+      {
+        "character": "",
+        "text": "直到母亲喊我吃饭，也没能平静下来。"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「啊……」"
+      },
+      {
+        "character": "",
+        "text": "这几天里，没有比和飞鸟见面更尴尬的事了。"
+      },
+      {
+        "character": "",
+        "text": "今天虽然没有学生会工作，但是……"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「游马，早上好——」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哈啊啊……」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「哟，游马。还好吗？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哈啊～……」"
+      },
+      {
+        "character": "梅林",
+        "text": "「唔哇，完全没有反应呢，发生了什么吗？」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "那喀索斯",
+        "text": "「哼哼，你们俩看不出来吗？ 那是追求恋爱之人才会表现出来的独特表情哦」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「咦~唯独游马是不会做那种事——」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不不不不是那样的哦！？」"
+      },
+      {
+        "character": "梅林",
+        "text": "「这不是说中了吗！」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「我们小队的勇者也终于迎来春天了吗？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不对，不是恋爱方面的事……是关于飞鸟的」"
+      },
+      {
+        "character": "大卫",
+        "text": "「吼吼，学生会长啊~最近总是在一起呢~然后呢，然后呢？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「总觉得很在意，又或者说想跟她变得更要好……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我只是在想，要是和她的距离变得更近，要是能比现在更加了解飞鸟的话，一定会很开心吧」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「那不就是恋爱吗！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不不不！？」"
+      },
+      {
+        "character": "大卫",
+        "text": "「明明不用害羞的，嘿嘿」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「哈哈，原来如此……什么时候，从什么时候开始喜欢的呢？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「所以才不是喜欢！」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "那喀索斯",
+        "text": "「那么我们用游马的说法吧，是从什么时候开始，想要缩短彼此间距离的呢？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……昨天放学的时候」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「就在最近呢。那你应该还记得吧，那时有怎样的心情？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「胸口发热，感觉自己变得不是自己，回家后也只想着飞鸟的事……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「即使想要转换心情也做不到。所以只能一个劲地叹气啊」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「哼——哼哼，真是纯情啊！ 听得我都不好意思了」"
+      },
+      {
+        "character": "梅林",
+        "text": "「我也是，有点兴奋起来了」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「好烦啊，别开玩笑了」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「变成这样是理所当然的，也没什么好意外的」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「这……就是恋爱吧！」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「是恋爱啊！」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "那喀索斯",
+        "text": "「是恋爱吧！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊啊啊啊……」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「话说回来，也不用那么极力否定吧。为什么就不能是恋爱呢？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不是不行，只是……没有恋爱的实感罢了」"
+      },
+      {
+        "character": "梅林",
+        "text": "「太纯情了！ 好耀眼！」"
+      },
+      {
+        "character": "大卫",
+        "text": "「这样啊。那么不冠以恋爱之名也可以。毕竟给心情命名大概也没什么意义？」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「好，说得真好！」"
+      },
+      {
+        "character": "大卫",
+        "text": "「我说得没错吧。所以游马，你就放松点吧，暂且就当是喜欢怎么样？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「噢、噢……」"
+      },
+      {
+        "character": "",
+        "text": "总觉得被推了一把，但继续否定下去也不太好。"
+      },
+      {
+        "character": "",
+        "text": "大卫建议我自己在心中好好地咀嚼一下名为“喜欢”的心情。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这样啊……我也许，喜欢飞鸟」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不，我想我一定是喜欢飞鸟」"
+      },
+      {
+        "character": "",
+        "text": "我如今的这份心情。"
+      },
+      {
+        "character": "",
+        "text": "如果说这就是恋爱的话……我可能第一次明白了什么是恋爱。"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "那喀索斯",
+        "text": "「所以说，明白了自己心意的勇者打算怎么办？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「怎么办啊……」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "当然是——告白，虽然我很想这么说，但人是不可能马上下定决心的……"
+      },
+      {
+        "character": "",
+        "text": "毕竟这两天，气氛都很尴尬。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「等稍微冷静下来后，我再慢慢对她传达自己的心情吧」"
+      },
+      {
+        "character": "大卫",
+        "text": "「那样是绝对不行的！ 游马不擅长恋爱呢，肯定会表达得很生硬」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这一点我承认……那你说我该怎么做？」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「那肯定是，现在不冲更待何时！」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「自己不主动，一切都会停滞不前。等她自然地喜欢上自己什么的，不可能有这种事吧」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "那喀索斯",
+        "text": "「首先勇敢地冲过去吧，从正面堂堂正正发出挑战，才是勇者之流吧？」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「唔……这样……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「但是，如果气氛变得奇怪，被讨厌了的话……」"
+      },
+      {
+        "character": "梅林",
+        "text": "「总之，先行动起来！ 之后再思考怎么办吧！」"
+      },
+      {
+        "character": "大卫",
+        "text": "「这么胆怯可就不是勇者了哦！ 没关系，你一定可以的！」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「我也是这么想的，明明我们这么相信你，你却还不能相信自己吗？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「大家……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……………………」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「也是啊……」"
+      },
+      {
+        "character": "",
+        "text": "不管这之后会发生什么，不管飞鸟会怎么回答，这都不重要。"
+      },
+      {
+        "character": "",
+        "text": "我也是第一次喜欢上别人，是不可能熟练应对的。"
+      },
+      {
+        "character": "",
+        "text": "即使被说成无谋之勇，我也要勇往直前。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「好……」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「嗯……游马向学生会长表白吗？」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「是像其他人一样被拒绝，成为尸体之一，还是表白成功，获得辉煌的荣光呢？」"
+      },
+      {
+        "character": "梅林",
+        "text": "「拒绝了众多表白者的学生会长、狮子堂飞鸟……学校的魔王啊」"
+      },
+      {
+        "character": "大卫",
+        "text": "「或者说是最终BOSS？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「是同学吧……」"
+      },
+      {
+        "character": "",
+        "text": "虽然威严和存在感确实是魔王级别的。"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「不管怎么样，我们会协助你的。作为勇者小队中的一员」"
+      },
+      {
+        "character": "梅林",
+        "text": "「嘿嘿嘿，我会给你加满BUFF的」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「赐予勇者光明的祝福」"
+      },
+      {
+        "character": "",
+        "text": "虽然感觉同伴们都在半开玩笑，但这种时候还是值得信赖的。"
+      },
+      {
+        "character": "",
+        "text": "即使不会像RPG游戏那样增加攻击力，但是真的很感谢大家。"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「要是失败了的话，也许会看到很有趣的画面，有点像副本活动呢」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "那喀索斯",
+        "text": "「让我们见证勇者的最后时刻吧！」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「你们真的打算帮我吗？」"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": ""
+      }
+    ]
+  }
+]

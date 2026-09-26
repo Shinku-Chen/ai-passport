@@ -1,0 +1,1217 @@
+[
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「你总是和他们在一起呢」",
+        "body": "ask_z1b0100",
+        "face": "b0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「梅林他们吗？ 是啊，经常回过神来就在一块儿了……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你们是无话不谈的朋友吗」",
+        "body": "ask_z1b0100",
+        "face": "b0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「是啊。我们既会大聊无关紧要的事，也会互诉烦恼」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我想珍惜这份友谊」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……是么」",
+        "body": "ask_z1b0100",
+        "face": "b0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我和游马君是截然相反的人呢」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯……为什么突然这么说？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「没什么，我的话中并没有深层含义。我只是觉得……」",
+        "body": "ask_z1b0100",
+        "face": "b0015h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我大概没法做到和你们一样，能与朋友互诉衷肠」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「也就是说，我们的生活方式是截然相反的」",
+        "body": "ask_z1b0100",
+        "face": "b0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「原来如此。不过，我们的生活方式确实不一样」"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「哎……真稀奇。我还以为你又要说“太可惜了”」",
+        "body": "ask_z1a0100",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哈哈哈，我的确是这么想的。但最近我又觉得，慢慢来其实也挺好的」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「一步一步适应就好。突然被要求去改变自己，也很难一下子做到吧」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「总觉得你的措辞有些令人不快，简直就像高高在上一样」",
+        "body": "ask_z1a0100",
+        "face": "a0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哼哼哼，在交友经历这方面，我觉得我已经赢了哦？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「真是的……算了，这样也好。毕竟我们的生活方式不一样」",
+        "body": "ask_z1a0100",
+        "face": "a0008h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「顺便问一句，与朋友同欢喜共忧伤又是种怎样的感觉呢？」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「嗯嗯嗯，这个问题有点难啊……嗯——」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「有种安心感？ 可能是在说话的过程中整理了自己的思绪吧」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「与他人交谈时也能总结自己的想法，我觉得是件好事」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯……这样也许确实有好处，我承认」",
+        "body": "ask_z1b0100",
+        "face": "b0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「没错。我和飞鸟的关系与其他人有些不同吧？ 只要你愿意的话，我随时都能听你说话的」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「总之，有什么事就先跟我说吧。说不定我能帮上忙」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我记住了。不过，我觉得大概不会有这种机会的」",
+        "body": "ask_z1b0100",
+        "face": "b0015h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯，是嘛」"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「……奇怪，你没有接着死缠烂打呢」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你希望我死缠烂打吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「怎么可能」",
+        "body": "ask_z1b0100",
+        "face": "b0015h"
+      }
+    ]
+  },
+  { 
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "虽然飞鸟冷静地做出了回答，但我注意到她的脸颊似乎有些微微泛红。",
+        "body": "ask_z1b0100",
+        "face": "b0015h"
+      },
+      {
+        "character": "隼斗",
+        "text": "（她害羞了吗？ 飞鸟居然会把感情表现在脸上）"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「你笑嘻嘻的是什么意思」",
+        "body": "ask_z1a0100",
+        "face": "a0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我只是在想，自从能和飞鸟交流之后，我一直注视你的脸」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「多亏了这点，我好像能注意到别人难以察觉的细小变化了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「原来如此。你的意思是，可以从我的表情来揣测我的心情吗？」",
+        "body": "ask_z1a0100",
+        "face": "a0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「谁知道呢。就算理解错了也没有损失，挺好的吧」"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「一点也不好。如果明明不喜欢却被人误认为喜欢，我会不高兴的」",
+        "body": "ask_z1b0100",
+        "face": "b0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「没关系，我不会胡思乱想的！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「说得不错，从现在开始不许做奇怪的妄想。要是被当成糟糕妄想的对象，我会很生气的」",
+        "body": "ask_z1b0100",
+        "face": "b0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「喂喂！ 你把我想成什么样了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「毕竟是游马君呀？ 有时候，你的想法会羞耻到令我难以想——」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「啊……！」",
+        "body": "ask_z1a0100",
+        "face": "a0010h"
+      },
+      {
+        "character": "",
+        "text": "我们正要从走廊尽头拐弯时，撞到了人。"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "女学生手中的文件散落在了走廊上。"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "女学生",
+        "text": "「对对、对不起，我没有看清前面！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我才该说对不起，是我疏忽了」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我也很抱歉！ 我们聊得太入迷没注意路况。你没事吧？」"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "总之，我和飞鸟先一起捡起了散落的文件，交给了女学生。"
+      },
+      {
+        "character": "女学生",
+        "text": "「非、非常感谢！！」"
+      },
+      {
+        "character": "",
+        "text": "女学生站在飞鸟面前，双眼发光地接过了资料。"
+      },
+      {
+        "character": "",
+        "text": "每当发生这种事时，我都会意识到，飞鸟果然是很特别的。"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「如果你要把文件拿去办公室的话，我们可以帮忙，因为正好是顺路的」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "女学生",
+        "text": "「并不是办公室，而是要拿去理科教室，所以没关系的！ 谢谢您的关心！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是吗，给你添麻烦了」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "女学生",
+        "text": "「没有没有！ 嘻嘻嘻」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯，为什么要笑呢？」",
+        "body": "ask_z1a0100",
+        "face": "a0010h"
+      },
+      {
+        "character": "女学生",
+        "text": "「啊、那个，虽然大家都说会长是冰之公主，但实际上您非常温柔呢」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「温柔吗。这件事的起因是我的疏忽，我只是做了我该做的而已」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "女学生",
+        "text": "「即便如此！ 最近我看见的会长与印象中的不同，感觉并不冷漠，而是非常有魅力……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「咦……？」",
+        "body": "ask_z1b0100",
+        "face": "b0010h"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "女学生",
+        "text": "「哎呀，很抱歉说了奇怪的话！！ 那个，真是太感谢您了！！ 那么我先走了！」"
+      },
+      {
+        "character": "",
+        "text": "女同学用力鞠了一躬后快步离去了。飞鸟一脸茫然地目送着她的背影。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「真是个坦率的好孩子啊——」"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「…………」",
+        "body": "ask_z1b0100",
+        "face": "b0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……飞鸟？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我……」",
+        "body": "ask_z1b0100",
+        "face": "b0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「喂~」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「啊、嗯，怎么了」",
+        "body": "ask_z1a0100",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「怎么突然发起呆了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不……没什么……」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是因为…………在一起吗？ 只有这个原因了……」",
+        "body": "ask_z1b0100",
+        "face": "b0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「…………」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……我们去学生会室吧」",
+        "body": "ask_z1b0100",
+        "face": "b0015h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……我知道了」"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟的样子很奇怪。她与刚才截然不同，一下子变得沉默寡言起来。"
+      },
+      {
+        "character": "",
+        "text": "虽然我很想推测出发生了什么，但实在是想不明白，最后与她一样陷入了沉默。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「…………」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "",
+        "text": "到学生会室之后，我们也一直保持着沉默。"
+      },
+      {
+        "character": "",
+        "text": "一边感受着尴尬的气氛，一边不停地动手工作。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……游马君」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "",
+        "text": "过了一会儿，飞鸟停下了手中的工作，定睛望向了我。"
+      },
+      {
+        "character": "",
+        "text": "她的目光是多么认真，令我下意识挺直了身子。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「游马君，我们暂时保持距离吧」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……咦？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这样做是最好的。明天开始就拜托你了」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「等等等等，这是什么意思？ 为什么事情会变成这样」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「通过和刚刚那位学生的对话，我得到了确信。这样下去，我将变得不再是“我”」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你在说什么……飞鸟就是飞鸟吧？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不，现在的我，现在的狮子堂飞鸟……并不是众人所追求的“冰之公主”」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「冰之公主的形象正在分崩离析。这一事态非常严重」",
+        "body": "ask_z1a0100",
+        "face": "a0005h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……我不得不与你保持距离。为了不让形象受到破坏，我必须重新树立它」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这样……」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "不也挺好的吗? 我刚想这么说，又放弃了。"
+      },
+      {
+        "character": "",
+        "text": "因为刚刚才说过。我与她的生存方式不同。"
+      },
+      {
+        "character": "",
+        "text": "试试不同的生活方式不也挺好吗？ 像以前一样生活太可惜了不是吗？"
+      },
+      {
+        "character": "",
+        "text": "本可以这样轻描淡写地说出来，但正因为我们之间的距离比以往更近了，我才会犹豫不决。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……你就那么在意别人对你的看法吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……是的」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「我不想破坏自己的形象。我现在正处于最不愿看到的糟糕事态中」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「但她不是说你很温柔，还很有魅力吗？ 你根本就不需要觉得丢脸」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这就是真正的飞鸟啊。狮子堂飞鸟，就是一个很有魅力的人」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这样一点也不好。一点也不好。」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我至今为止……都理所当然地将自己与“他人心中理想的我”同化」",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「比任何人都优秀、比任何人都冷静、比任何人都坚强——理想中的学生会长」",
+        "body": "ask_z1a0100",
+        "face": "a0020h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这才是狮子堂飞鸟。我只知道这种生活方式」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「与其说是生活方式，不如说是“展示自己的方式”吧？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你难道不能考虑考虑，稍微改变一下展示自己的方式吗？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「无论是以大家印象中原本的冰之公主、还是以现在的飞鸟示人，最终只要取得积极的结果就可以了吧」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「以现在的形象，你毫无疑问已经得到了不错的成果。所以，稍微改变改变展示自己的方式也无所谓吧？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「请停下。不要再操弄话术迷惑我了」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「迷惑你……我没有这个意思啊」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那么我问一句，飞鸟你为什么要这么做？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「为什么……」",
+        "body": "ask_z1a0100",
+        "face": "a0010h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟的瞳孔中摇曳着不安的神色。我总觉得飞鸟心中有什么动摇了。"
+      },
+      {
+        "character": "",
+        "text": "我很明白，这并不是能随意讨论的事。但是，只要有可能的话……"
+      },
+      {
+        "character": "",
+        "text": "我放下顾虑，开口说道。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「很多人都渴望着受人憧憬。所以他们会回应他人的期待，迎合他人的理想」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「虽然我能理解，但为了这一点不惜伪装自己，一定也会同时感到痛苦」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你是从什么时候开始，成为像现在这样完美的“狮子堂飞鸟”的？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「请告诉我，也许我可以从那里得到一些灵感」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「“灵感”指的是什么」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「找到“可以不与你保持距离的方法”的灵感」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你这不是以自我为中心么。太任性了」",
+        "body": "ask_z1b0100",
+        "face": "b0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「没错，我很任性。我想以现在的距离与飞鸟相处。要我和你分开……即使飞鸟觉得这样更好，我也不愿意」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「如果明显是我错了的话，我会试着放弃……但我觉得现在并非如此」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「…………」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……我不知道」",
+        "body": "ask_z1a0100",
+        "face": "a0008h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「契机也好、理由也好，我都不知道」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「也许并不是什么大事。或许契机就是偶然发生的某件事」",
+        "body": "ask_z1b0100",
+        "face": "b0008h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「但我已经忘记了」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我这么活着的时间太长了，就连是从什么时候开始的都不记得了」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「所以，我只知道这样的自己。无论是向他人展示自己的方式，还是与他人相处的方式……」",
+        "body": "ask_z1a0100",
+        "face": "a0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「把你在我面前的姿态，也稍微展示给其他人看一看。你觉得这样如何呢？」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「那是……我不认识的我」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「成为连自己都不认识的自己……老实说，很可怕」",
+        "body": "ask_z1a0100",
+        "face": "a0008h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「让人改变生活方式……不，让人改变“展示自己的方式”是很简单的。虽然……我不该用这种说法……」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「但是，请你不要说得这么轻描淡写」",
+        "body": "ask_z1b0100",
+        "face": "b0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「…………」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「…………」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不好意思……让你感到不舒服了吗」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「没有……」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「那个……啊……」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不……对不起，今天就先回家吧」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「刚才说的“保持距离”，就留到之后再谈吧」",
+        "body": "ask_z1b0100",
+        "face": "b0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「但是……才工作到一半啊？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「由我明天来做，请你放在这里吧」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不，但是……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那么，再见」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「等——」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「…………走掉了啊」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "学生会室里只剩下了我一个人。"
+      },
+      {
+        "character": "",
+        "text": "我无所事事地环顾着空无一人的学生会室。"
+      },
+      {
+        "character": "",
+        "text": "桌子上摆着成堆的文件。我作为学生会成员，应该把它们做完的。"
+      },
+      {
+        "character": "",
+        "text": "虽然飞鸟说放着就好，但不做可不行啊……"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……我真的觉得，这样就好了吗」"
+      },
+      {
+        "character": "",
+        "text": "如果做完工作，她也许会觉得我是个不错的人。"
+      },
+      {
+        "character": "",
+        "text": "但也仅此而已了。"
+      },
+      {
+        "character": "",
+        "text": "现在最重要的不是完不完成工作。"
+      },
+      {
+        "character": "",
+        "text": "而是我到底该怎么做……"
+      },
+      {
+        "character": "",
+        "text": "这还需要犹豫吗！"
+      }
+    ]
+  },
+  {
+    "background": "bg06a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「飞鸟！！ 等等我！」"
+      },
+      {
+        "character": "",
+        "text": "走出校园不久，我就发现了要找的那个人。"
+      }
+    ]
+  },
+  {
+    "background": "bg06a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟静静地回过头，她的长发在风中摇曳。",
+        "body": "ask_z1b0100",
+        "face": "b0015h"
+      },
+      {
+        "character": "",
+        "text": "以前也发生过这样的事吧。"
+      },
+      {
+        "character": "",
+        "text": "她和这次一样，突然就回去了……所以，我叫住了她……"
+      },
+      {
+        "character": "",
+        "text": "是和梅林他们一起去卡拉OK的时候吧。那还是我向她表白之前的事。"
+      },
+      {
+        "character": "",
+        "text": "那时好像和现在没什么不同……不对。"
+      },
+      {
+        "character": "",
+        "text": "至少……我内心的想法已经与那时不一样了。"
+      }
+    ]
+  },
+  {
+    "background": "bg06a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「……怎么了？」",
+        "body": "ask_z1b0100",
+        "face": "b0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哈啊……哈啊……稍微、等一下。我是用最快的速度跑过来的，所以、让我喘口气，哈哈哈……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「…………为什么？」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「为什么要追上来？」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「如果不追上去的话，我想我会后悔的。大概是直觉吧……觉得，不能让你就这么逃开」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「很抱歉……但现在我只想一个人静一静。能请你别来管我吗」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      }
+    ]
+  },
+  {
+    "background": "bg06a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「对不起。我不能答应你」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我不想在话只说了一半的情况下放任飞鸟不管」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你又要说我很任性了吧。但是，至少让我把这句话传达给你」"
+      },
+      {
+        "character": "",
+        "text": "面对沉默的飞鸟，我平静了一下呼吸。"
+      },
+      {
+        "character": "",
+        "text": "要说的只有一句话。"
+      },
+      {
+        "character": "",
+        "text": "只要将这句话告诉她，就足够了。"
+      }
+    ]
+  },
+  {
+    "background": "bg06a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「我会守护你」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟，我来守护你」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你来……」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我绝对会守护你的，我保证」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「如果遇到恐怖的事、可怕的事，就来依靠我吧。请你相信我」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我会用尽全部心力来守护你的」"
+      }
+    ]
+  },
+  {
+    "background": "bg06a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「…………那是、什么意思」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你的全部心力，又有多少力量呢？」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「游马隼斗对于飞鸟你来说，是特别的吧」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不是指喜欢、讨厌，也不是指恋爱感情……作为一个人而言，我对你是特别的吧」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你这么说过。这不是谎话吧？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……这不是谎话。我讨厌撒谎」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那么，就由我再告诉你一次吧」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「对我来说，狮子堂飞鸟是特别的、是很重要的人」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「所以，我会守护你。我发誓」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……………………」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      }
+    ]
+  },
+  {
+    "background": "bg06a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「…………笨蛋」",
+        "body": "ask_z1a0100",
+        "face": "a0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……抱歉，我没听见」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我讨厌热血笨蛋」",
+        "body": "ask_z1b0100",
+        "face": "b0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯……是嘛」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……你要说的就只有这些吗？」",
+        "body": "ask_z1b0100",
+        "face": "b0006h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯。只有这些」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「再见」",
+        "body": "ask_z1b0100",
+        "face": "b0020h"
+      },
+      {
+        "character": "",
+        "text": "飞鸟扔下一句简短的话便离开了。"
+      },
+      {
+        "character": "",
+        "text": "转过身去的时候，她的脸有些泛红，这不是我的错觉。",
+        "body": "ask_z1b0100",
+        "face": "b0020h"
+      },
+      {
+        "character": "",
+        "text": "她到底是感到害羞，还是生了气呢。"
+      }
+    ]
+  },
+  {
+    "background": "bg06a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我一边目送着她渐行渐远的身影，一边思考着。"
+      },
+      {
+        "character": "",
+        "text": "也许我说过头了……事到如今，我才意识到这点。"
+      },
+      {
+        "character": "",
+        "text": "是不是再等一段时间，明天再跟她说比较好呢。我的脑中不断冒出这样的想法。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「但这些都只是马后炮罢了」"
+      },
+      {
+        "character": "",
+        "text": "该说的话已经说完了。我坦率地将自己的感受传达给了她。"
+      },
+      {
+        "character": "",
+        "text": "之后就看飞鸟怎么想了。是否与我保持距离，以及暂且搁置的论题会得出怎样的结论……"
+      }
+    ]
+  },
+  {
+    "background": "bg06a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「……啊。忘记拿书包了」"
+      },
+      {
+        "character": "",
+        "text": "我头脑一热就追了出来，把书包落在了学生会室里。"
+      },
+      {
+        "character": "",
+        "text": "待飞鸟的背影消失在视野中后，我走回了学校。"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      }
+    ]
+  }
+]

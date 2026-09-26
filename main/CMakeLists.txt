@@ -31,8 +31,8 @@ target_sources(${COMPONENT_LIB} PRIVATE
 )
 
 # The galgame's artwork and scripts are packed into the `assets` data partition.
-# Third-party material is not tracked in this repository, so the packer emits a
-# placeholder pack when its sources are missing and the build still succeeds.
+# The third-party material is tracked under assets/gal-source/; when that tree is
+# missing the packer emits a placeholder pack and the build still succeeds.
 set(GAL_OUT_DIR "${CMAKE_BINARY_DIR}/gal")
 set(GAL_IMAGE "${GAL_OUT_DIR}/gal_assets.bin")
 set(GAL_PACKER "${CMAKE_CURRENT_LIST_DIR}/../tools/gal/pack_assets.py")

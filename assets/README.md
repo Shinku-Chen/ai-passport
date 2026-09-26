@@ -56,3 +56,21 @@ Store reusable music and sound-effect sources in `music/`.
 - Document the source, license, sample rate, bit depth, channels, conversion command, and destination.
 - Prefer 16 kHz, 16-bit mono PCM when it matches the current BSP audio path.
 - Check Flash and internal-RAM cost before embedding audio; stream or chunk long recordings.
+
+## Galgame source material
+
+`gal-source/common/` is the artwork and chapter-script tree of the upstream visual
+novel [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband),
+copied in unchanged: 41 background PNG files in `bg/`, 46 character sprites and
+expression patches in `fg/`, 30 chapter scripts (`1.txt` … `30.txt`, JSON),
+`logo.png`, and `text_bg.png` — 3.3 MiB in total.
+
+The upstream repository declares no license. The tree stays committed so that a
+clone builds the complete game, and this repository consumes it only through
+[`tools/gal/pack_assets.py`](../tools/gal/pack_assets.py), which documents the
+on-flash layout, the scale it applies, and the bitmaps it derives.
+
+- The packer reports chapter references to missing images and substitutes the
+  nearest existing asset; adjust its alias table if a substitution is wrong.
+- Regenerate the CJK subsets with `python tools/gal/gen_font.py` whenever a
+  chapter script changes — the subset is derived from the packed text.

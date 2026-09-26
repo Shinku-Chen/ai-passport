@@ -1,0 +1,539 @@
+[
+  {
+    "background": "bg00a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我赶紧在杂货店买好了东西，前往咖啡店。"
+      },
+      {
+        "character": "",
+        "text": "路上，飞鸟为了掩饰害羞，一直对着我唠叨个不停。"
+      },
+      {
+        "character": "",
+        "text": "我老老实实地听了一路，也好好反省了。不管出于什么理由，都不该看别人的手帐。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「呼……芭菲，多谢款待」"
+      },
+      {
+        "character": "",
+        "text": "飞鸟一个人吃完了一大份芭菲，露出了满足的笑容。"
+      },
+      {
+        "character": "",
+        "text": "看来甜食装在另一个胃里是真的呀……相对的，我的钱包就要流泪了。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那个……我说啊」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「什么事？」"
+      },
+      {
+        "character": "",
+        "text": "看样子约会也快结束了，差不多可以问她了吧。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「今天的约会怎么样？ 从整体上看」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_09.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「问、问得这么直接呀……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「要问别人感想，不应该自己先说吗」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「也是。成为恋人之前和之后……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「果然还是不一样呀……自始至终，都感觉有些害羞」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「所谓成为恋人就是说，我喜欢飞鸟，飞鸟也喜欢着我……这是双向的对吧？」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「是啊，嗯，没错……双向的」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「所以我就会有所意识，胸口变得暖暖的……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「打心底觉得，好幸福啊」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_09.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「啊……唔……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哈哈哈，我说着害羞你听着也害羞……不过，现在轮到你回答了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我可不会向你一样，说得那么直白」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「唔，我这不就等于自己承认了嘛。我一定非说不可吗」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「是啊，因为我也说过了呀」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是吗……也是啊，如果不是五五开的话，就不公平了」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟到哪都循规蹈矩。她做了个深呼吸让自己冷静下来，随后开口说道。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「最开始……从我出门的时候，就感觉、一切都不同了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「还特意准备了高跟鞋，光是穿上就觉得好开心……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「看电影的时候也是……可以说，我比起电影更在意你」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「走在街上，还、还牵了手……和我想象的相比，有很大的不同……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「所以，那个……呃……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_09.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「我觉得，能成为恋人真是太好了」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_09.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「……唔、唔唔……这样行了吧？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「…………」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……什么意思……你说点什么呀」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「可……可爱到，让我哑口无言」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_09.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「笨蛋……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「还有，不要一直盯着我看」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这也是没办法的吧，这么可爱的飞鸟，我还是第一次见」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_09.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「真是的，笨蛋、笨蛋、笨蛋……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「唔唔唔唔唔唔唔……脑袋和胸口，都感觉要爆炸了……」"
+      },
+      {
+        "character": "",
+        "text": "飞鸟也许想喝一口咖啡让自己冷静下来，然而手中的杯子已经空了，于是她只好叹了口气，将杯子放下。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「时间也差不多了，我们走吧。也不能太晚回去」"
+      },
+      {
+        "character": "",
+        "text": "我感觉还没有聊够。无论在一起待多久，都感觉不够。"
+      },
+      {
+        "character": "",
+        "text": "也许飞鸟也有相同的感受，才决定到此为止。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「而且，还有明天呀」"
+      },
+      {
+        "character": "",
+        "text": "言外之意，就是明天还可以再多聊一会儿……"
+      },
+      {
+        "character": "",
+        "text": "我开心了起来，同意了飞鸟的提议。"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "结完账，我送飞鸟去车站。"
+      },
+      {
+        "character": "",
+        "text": "路上，我们聊着下次约会的打算。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「先把下次定好，就有很多事情可以仔细考虑了。约会的打算越早决定越好」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "",
+        "text": "飞鸟的语速有些快，但也让我又收获了一份美好的回忆。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「下次休息日出个远门，去主题公园怎么样？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「好呀。正好最近都没去过。过山车之类的我可是很擅长坐的哦」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊啊，不愧是你……」"
+      },
+      {
+        "character": "",
+        "text": "看样子是见不到飞鸟害怕尖叫的场景了，但这也意味着我们能一起好好玩儿，这让我兴奋了起来。"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「那就定了呢。下次约会，也请多多关照」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我才是……对了，飞鸟」"
+      },
+      {
+        "character": "",
+        "text": "在道别之前，我将一个东西递到飞鸟手中。"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「这是，杂货店的……」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「包装得很漂亮吧。还是你告诉我的」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这是给你的礼物，请收下吧」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……说是买自己的东西，结果是给我买礼物吗？」",
+        "body": "ask_z1a0200",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯。差不多」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「呣……你也太会演戏了……我能打开吗？」",
+        "body": "ask_z1a0200",
+        "face": "a0018h"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我点头表示没问题，飞鸟小心翼翼地拆开包装。"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「啊！  勿忘草色的手帐！」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我看你非常喜欢，就让老板去里面拿了个新的，然后买下来了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不是，但……手帐……」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你可能用不到，但机会难得呀」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「杂货也是过了这个村就没这家店，喜欢的东西总不可能放过。对吧？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「买来又退回去也不太好，希望你能收下」"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「真是的……来这一招，你呀……」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「让我想起了足球部预算那次，你圆满解决问题回来的时候」",
+        "body": "ask_z1b0200",
+        "face": "b0008h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「感觉就像是许久之前的事情，但其实就在前不久……」",
+        "body": "ask_z1b0200",
+        "face": "b0015h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「和那时一样。你做得让我无话可说」",
+        "body": "ask_z1a0200",
+        "face": "a0018h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这么一来，我不就只能收下了吗」",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你讨厌这样吗」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不，不讨厌。你这种地方我反而喜……」",
+        "body": "ask_z1b0200",
+        "face": "b0012h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……没什么，总之，不讨厌，我收下了。明白了吗，可以了吧」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哦、哦哦！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「呼——唔——唔唔……」",
+        "body": "ask_z1a0200",
+        "face": "a0006h"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「那么，明天学校见了」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯，明天见！」"
+      },
+      {
+        "character": "",
+        "text": "飞鸟快步离去——虽然她穿着高跟鞋也走不快。我目送着她，松了一口气。"
+      },
+      {
+        "character": "",
+        "text": "这次约会的结尾还不错吧。"
+      },
+      {
+        "character": "",
+        "text": "也许某些地方还能做得更好，那些就留着在今后的约会里改善吧。"
+      }
+    ]
+  },
+  {
+    "background": "bg00b.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "回家路上，我收到了飞鸟发的消息。我马上打开查看。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "『今天谢谢你了』"
+      },
+      {
+        "character": "飞鸟",
+        "text": "『虽说是交往后的第一次约会……不过……我很开心』"
+      },
+      {
+        "character": "飞鸟",
+        "text": "『虽然最后的礼物真的吓了我一跳，但我非常高兴。我会珍惜好好使用的』"
+      },
+      {
+        "character": "隼斗",
+        "text": "『太好了！ 下次我会努力让你更开心的』"
+      },
+      {
+        "character": "飞鸟",
+        "text": "『你能这么想我很高兴，但不能勉强喔』"
+      },
+      {
+        "character": "",
+        "text": "这话真有飞鸟的风格。我一边想着该怎么回消息道谢，一边加快了回家的脚步。"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      }
+    ]
+  }
+]

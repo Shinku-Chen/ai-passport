@@ -1,0 +1,1080 @@
+[
+  {
+    "background": "bg00a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "第二周，如往常一样过完了校园生活后，崭新的周六到来了。"
+      },
+      {
+        "character": "",
+        "text": "没错，今天是第二次和飞鸟约会的日子！"
+      },
+      {
+        "character": "",
+        "text": "我意气风发地走出家门，早早地抵达了碰头地点。"
+      },
+      {
+        "character": "",
+        "text": "飞鸟也来得很早，这点真有她的风格。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我们走吧」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「哈啊啊啊啊啊！！」"
+      },
+      {
+        "character": "",
+        "text": "身穿租借羽毛球服的飞鸟，用尽全力击打着羽毛球。"
+      },
+      {
+        "character": "",
+        "text": "那扣杀的速度之快，连肉眼都无法看清。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「太强了吧！！」"
+      },
+      {
+        "character": "",
+        "text": "见了飞鸟过于高超的技术，我不禁喊出了声。"
+      },
+      {
+        "character": "",
+        "text": "完全看不到获胜的希望呐……"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「果然还是放点水吧？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「可恶……明明都没进运动部，怎么会这么强！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「没办法，羽毛球这项运动不太容易体现出双方的体力差距。请不要太失落了」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你说什么？ 岂能这样乖乖任你摆布！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「好吧！ 就让我来击碎你这份斗志吧！」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我们这次来到了人们常说的体育娱乐一体化设施，这里是既能活动身体又能乐在其中的梦幻之地。"
+      },
+      {
+        "character": "",
+        "text": "本该是这样的……面对压倒性的实力，我简直就像在与魔王对峙一般。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「我很强的哦？」"
+      },
+      {
+        "character": "",
+        "text": "飞鸟事先说过这么一句话。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我知道的」"
+      },
+      {
+        "character": "",
+        "text": "学生会长文武双全、冰雪聪明、运动神经超群。这是我校学生人尽皆知的传说。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「我可以给你放点水哦」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「别说笑了。放水就没意思了」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「嚯嚯……这可是你说的，哼哼哼哼哼哼哼」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我们选择在运动场的一角打羽毛球。"
+      },
+      {
+        "character": "",
+        "text": "本想着至少报挑衅之仇，而结果却是如此。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「嘿呀！！！！！！」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「看不见！ 我看不见球啊！！」"
+      },
+      {
+        "character": "",
+        "text": "飞鸟之所以能露出毫不畏惧的挑衅笑容，其原因就在这里。"
+      },
+      {
+        "character": "",
+        "text": "她实在是强到过头了。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「但这个分数差还是能逆转的，我不会再让你肆意妄为了」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「不错，这才叫勇者！ 来吧，无论从哪儿发起攻击都没问题！」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "比赛进入白热化阶段，双方激烈地争夺着胜利。"
+      },
+      {
+        "character": "",
+        "text": "但是……也许是飞鸟同学看穿了我的球路，她总能在落球点等着。"
+      },
+      {
+        "character": "",
+        "text": "难道我被诱导了吗……没错，一定是这样。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这样下去状况会越来越糟的！」"
+      },
+      {
+        "character": "",
+        "text": "飞鸟的控球能力也很强，即便不使出扣杀也能构成威胁。"
+      },
+      {
+        "character": "",
+        "text": "相反，我却越来越难以保持从容， 控球力和击球的力度也不断地丧失。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「一味防守是赢不了的哟？ 我还没用出全力呢」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「还有下一阶段吗，这是哪里的最终BOSS啊……」"
+      },
+      {
+        "character": "",
+        "text": "飞鸟甚至都没用出全力，我怎能输给她……但我该怎么做。"
+      },
+      {
+        "character": "",
+        "text": "既然击球路线被完全看穿了，那么不管多强力的回击都没有意义。"
+      },
+      {
+        "character": "",
+        "text": "要想办法摆脱这种局面，让她的预想落空……！"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「哈啊……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「哇啊！ 可恶！」"
+      },
+      {
+        "character": "",
+        "text": "飞鸟的扣杀球划破了球场的空气，而且飞向了我无论如何都够不到的地方。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「很遗憾。看来已经可以确定是我的胜利了」"
+      },
+      {
+        "character": "",
+        "text": "漂亮的回击球再次飞向了我的手绝对够不到的地方。我陷入了与刚才相同的被动局面。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「怎么了吗？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不、没什么。比起这个，下一回合我肯定不会输给你」"
+      },
+      {
+        "character": "",
+        "text": "这局轮到我发球了。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嘿」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你这发球有点粗糙啊？ 是累了吗？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「说不定……呢！」"
+      },
+      {
+        "character": "",
+        "text": "我想到了一个点子，并开始实践。"
+      },
+      {
+        "character": "",
+        "text": "老实说这方法只是赶鸭子上架，相当靠不住。但不足的地方用身体来补足就好了。"
+      },
+      {
+        "character": "",
+        "text": "我好像也只有身体上的优势了！"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「忍耐力意外地不错呢……想法有了什么变化吗！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「随你猜……！」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「不过！ 呼……」"
+      },
+      {
+        "character": "",
+        "text": "糟、糟了……那是想彻底击溃猎物的眼神！"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「给我赶上！」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「什么，擦网！？」"
+      },
+      {
+        "character": "",
+        "text": "失去力度的羽毛球擦过网……飞鸟急忙跑去接球。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「糟糕……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "（过网了！ 好球！）"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我打出的球以巧妙的角度砸在了地面上。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「好啊终于得到一分了！ 虽然老接不到你的球，但总算扳回一城了！」"
+      },
+      {
+        "character": "",
+        "text": "虽然得益于擦网，但羽毛球的乐趣就在于此。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「幸运球……虽然很想这么说，但你的动作确实变得漂亮起来了」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我只是不再按飞鸟设想的一样打回击球了」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「从我落球的位置推测出我想让你打出的球路」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「有时按照我的预测打球，有时却打出和我的预测相反的球路，从而使我失算……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「游马君，你还挺能干的」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「过奖了」"
+      },
+      {
+        "character": "",
+        "text": "虽然很高兴获得了一点点认可，但现在还高兴得太早了。"
+      },
+      {
+        "character": "",
+        "text": "我仅仅只拿到了一分，飞鸟仍然有着优势。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「从现在起要让你看看我的真本事」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟听着我的豪言壮语，扬起了嘴角。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我也会全力以赴的」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「求之不得——来吧！！」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「呀啊啊啊啊！！」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「还没结束！！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「去吧！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「…………咦？」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "那之后，战斗完全就是一边倒。"
+      },
+      {
+        "character": "",
+        "text": "人真的能强成这样吗？ 好奇怪啊？"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「你在那发什么呆！ 看招！」"
+      },
+      {
+        "character": "",
+        "text": "她出色的网前吊球又让我丢了一分。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「怎么样？ 还不错吧？」"
+      },
+      {
+        "character": "",
+        "text": "飞鸟一脸得意洋洋的样子，但我已经没有心思去在意球了。"
+      },
+      {
+        "character": "",
+        "text": "其中一个原因是她实在太强，而更重要的是……"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「哼哼，我还游刃有余哦？」"
+      },
+      {
+        "character": "",
+        "text": "飞鸟身穿租来的羽毛球服，不断地将球拍转来转去把玩着。"
+      },
+      {
+        "character": "",
+        "text": "也许因为太过专注于比赛，她并没有注意到……"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "（肚脐…… 肚脐露出来了！）"
+      },
+      {
+        "character": "",
+        "text": "每当她用力挥出球拍时，我便能从羽毛球服的缝隙中瞥见健康的小腹。"
+      },
+      {
+        "character": "",
+        "text": "这在平时是绝对看不到的，我无论如何都很在意。"
+      },
+      {
+        "character": "隼斗",
+        "text": "（仔细想想……飞鸟和羽毛球服很搭啊……）"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "出现了，又出现了。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "看一眼、再看一眼！"
+      },
+      {
+        "character": "隼斗",
+        "text": "（好棒……太棒了！）"
+      },
+      {
+        "character": "",
+        "text": "虽然又丢了一分，但没办法，我实在是太在意了。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「太天真了！ 看样子，你根本追不上动真格的我！」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "（唔噢……而且裙子也飘来飘去的……根本不可能不去看吧！？）"
+      },
+      {
+        "character": "",
+        "text": "虽说她穿了打底裤，但只要露出来的话我还是会很在意啊……不如说，光看到那白嫩的大腿就够刺激了。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "而且，不知道是不是错觉，我总觉得飞鸟的表情也格外生动。"
+      },
+      {
+        "character": "",
+        "text": "喜欢的女孩子露出这样的表情，任谁都会看入迷吧？"
+      },
+      {
+        "character": "隼斗",
+        "text": "「可恶！ 这就是所谓的“被爱情冲昏了头脑”吗！！」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「你、你突然说什么呢！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「因为啊！！」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「别找借口了！ 来吧，这就给你致命一击，哈啊啊啊啊啊！！」"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "之后我们又去试了试其他项目，玩着玩着，天空便不知不觉染上了橙色。"
+      },
+      {
+        "character": "",
+        "text": "总而言之，这是段很不错的时光……"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「嗯！ 打了很多场好比赛啊！ 非常感谢」",
+        "body": "ask_z1a0200",
+        "face": "a0016h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我也觉得！ 真是太棒了！ 谢谢你！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……你看起来神清气爽的呢，明明战绩不太好吧？」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「也许是吧，但我出了一身汗，感觉很爽快啊！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯、嗯嗯？ 这样吗，那就好」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "",
+        "text": "我在羽毛球比赛中以一分惨败，其他比赛也接连取得败绩，所以我能理解飞鸟为什么这么惊讶。"
+      },
+      {
+        "character": "",
+        "text": "今天一天使我领会到了飞鸟那深不见底的运动能力与魅力。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c05_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "还有，她肌肤的美丽……"
+      }
+    ]
+  },
+  {
+    "background": "bg00b.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "为了让运动完疲劳不已的身体休息休息，我们前往上次约会去过的那家咖啡厅。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「结果一场都没赢啊——」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「就比如射靶游戏，明明我也打得不错，但飞鸟你竟然全射中了」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「没什么了不起的。那个射靶游戏的难度等级很低」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「做特别简单的事时，只要注意不犯低级错误就可以了。考试不也是这样的吗？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我倒不这么觉得啊。话说，你对待考试也是这个态度吗……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「对了，在打篮球的时候，总觉得你的状态有些奇怪啊……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那、那个啊。我觉得下手太重的话说不定会让你受伤」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「我才没有那么柔弱，你没必要担心」"
+      },
+      {
+        "character": "",
+        "text": "就算她这么说……但篮球毕竟是项身体接触很多的运动。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我还是男人，会在意也是难免的。"
+      },
+      {
+        "character": "",
+        "text": "更何况，如果贴得太紧的话，还会碰到飞鸟的那里，那时可不是该分心的时候啊……"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「怎么了？」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「没、没事，什么都没有！」"
+      },
+      {
+        "character": "",
+        "text": "但是，就算不考虑这些，飞鸟也确实很强。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不过你还真行啊。十八般运动样样精通，一般可是做不到的哦？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「有吗。只要掌握了诀窍，很快就能达到一定水平的」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「要掌握那些诀窍可不容易啊。虽然我早就知道，但你实在是太厉害了！ 可恶！！」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「嘻嘻。我不否认。」"
+      },
+      {
+        "character": "",
+        "text": "飞鸟露出了从容不迫的笑容。虽然很不甘心，但这个表情也好棒啊！"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「话说回来，我们的比赛真的好激烈。我的身体到现在还没冷却下来」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「好久没有运动得这么忘我了。这都要归功于游马君呢」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟上下扇着衣服，将新鲜空气送进胸口。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "（啊……飞鸟的胸……胸谷……）"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「呼……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "（不能看……虽然好像能看到但是绝对不能看，忍耐吧勇者！）"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯……稍微凉快些了…」"
+      },
+      {
+        "character": "",
+        "text": "飞鸟似乎没有注意到我的视线，用空着的手像扇子一样扇动空气。"
+      },
+      {
+        "character": "隼斗",
+        "text": "（等等，稍微看两眼也算不可抗力吧……）"
+      },
+      {
+        "character": "",
+        "text": "就如同堕入地狱一般，我的意识坠落进了胸谷——"
+      },
+      {
+        "character": "",
+        "text": "喂不行啊不行！ 要坚持住！"
+      },
+      {
+        "character": "",
+        "text": "除了我，这里还有别人会看到。"
+      },
+      {
+        "character": "",
+        "text": "一直这样下去可不好。应该好好提醒她一下吧……"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「飞鸟? 那个，把衣服这样扇来扇去的……我觉得不太好哦？」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「啊……你觉得这很没礼貌吗? 我下意识就做了……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不是那样，那个……是不是露得有些太多了呢」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟的视线一下子落到了自己的胸口。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「啊啊！？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你你你、你突然说什么呢！？ 不会换个更好的说法吗！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不是，我是打算尽可能委婉地告诉你的……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「咕～不对……是我疏忽了……抱歉……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟偶尔也会有疏忽的时候啊」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「你好烦。明明我平时一直很注意的，为什么今天就……」"
+      },
+      {
+        "character": "",
+        "text": "如果飞鸟是因为玩得太入迷了才会这样，那还挺令人高兴的。我决定把这个想法藏在心中。"
+      },
+      {
+        "character": "",
+        "text": "因为说出来可能会让飞鸟更生气。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「那么，差不多该回家了吧？ 时间也刚好」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「是啊。我也想在太阳落山前回家……果然运动完还是很疲惫的」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「是种畅快的疲劳感呐」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「是的。很惬意」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「还有……你觉得今天怎么样？」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「我想想……既痛快地活动了身体，又能在咖啡店慢慢休息，是个不错的假日」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c04_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「谢谢你陪我」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我才要感谢你！ 下次再一起玩吧」"
+      },
+      {
+        "character": "",
+        "text": "见到了飞鸟少有的一面，更重要的是她也很开心。今天的约会非常成功。"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我们带着满足的心情离开了咖啡店。"
+      }
+    ]
+  }
+]

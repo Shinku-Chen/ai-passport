@@ -52,3 +52,19 @@ Flash 开销约为 87 KiB（16 px）加 120 KiB（20 px）的位图与字形描�
 - 记录来源、许可、采样率、位深、声道、转换命令与目标路径。
 - 与当前 BSP 音频路径匹配时优先采用 16 kHz、16 位单声道 PCM。
 - 嵌入音频前评估 Flash 与内部 RAM 成本；长录音应流式或分块。
+
+## Galgame 源素材（gal-source）
+
+`gal-source/common/` 是上游视觉小说
+[`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) 的美术与章节剧本目录，
+原样拷入：`bg/` 下 41 张背景 PNG，`fg/` 下 46 个立绘与表情补丁，30 份章节剧本
+（`1.txt` … `30.txt`，JSON），以及 `logo.png`、`text_bg.png`，合计 3.3 MiB。
+
+上游仓库未声明任何许可。该目录保留在仓库中，使 clone 就能构建出完整作品；
+本仓库只通过 [`tools/gal/pack_assets.py`](../tools/gal/pack_assets.py) 消费它，
+该脚本记录了磁盘布局、缩放方式与派生出的位图。
+
+- 剧本引用了不存在的图时打包器会报告，并替换为最接近的现有素材；
+  若某个替换不合适，修改它的别名映射表。
+- 章节剧本变化后重新生成 CJK 子集：`python tools/gal/gen_font.py`
+  —— 子集由打包后的文本推导。

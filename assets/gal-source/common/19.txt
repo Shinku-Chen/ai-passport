@@ -1,0 +1,718 @@
+[
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「今天就在这里道别吧」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯。放空大脑痛快地玩了一天，我很高兴。谢谢你」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「喔！ 是嘛是嘛——」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「什么呀……请不要笑嘻嘻的」",
+        "body": "ask_z1b0200",
+        "face": "b0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「但我真的很开心嘛」"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "上次约会，飞鸟回去得很突然。不过这次她看上去挺享受的，我不由松了口气。",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "",
+        "text": "而且，没想到被喜欢的人道谢竟能令人如此开心。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那么，学校见」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯」"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我们现在仅仅是学生会长与学生会成员的关系。"
+      },
+      {
+        "character": "",
+        "text": "所以今天就到此为止。正常地打了招呼，正常地别过。"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我挥着手，目送飞鸟的背影。"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "望着她的背影渐渐远去……"
+      },
+      {
+        "character": "",
+        "text": "忽然，我的喉咙就像哽住了似的，喘不上气来。"
+      },
+      {
+        "character": "",
+        "text": "如果不忍耐住的话，言语一定会倾泻而出。"
+      },
+      {
+        "character": "",
+        "text": "虽然理智告诫着自己不能在大庭广众之下大喊出声，但最后，我还是——"
+      }
+    ]
+  },
+  {
+    "background": "bg00b.png",
+    "Img": "line21.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「飞鸟——」"
+      },
+      {
+        "character": "",
+        "text": "深吸一口气，将所有力量全部注入腹部，放声大喊。"
+      },
+      {
+        "character": "",
+        "text": "我浑然不顾周围的喧嚣，高声呼喊道。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我一定不会放弃的！ 会一直喜欢你的！！」"
+      },
+      {
+        "character": "",
+        "text": "将这份愈发强烈的感情寄托在自己的声音中。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我喜欢你啊啊啊——」"
+      },
+      {
+        "character": "",
+        "text": "周围的人有些被我惊呆了，有些用手捂着嘴窃笑。"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "即便如此，飞鸟也没有回头，很快便消失在了我的视野中。"
+      },
+      {
+        "character": "",
+        "text": "结果，我没能知道她有没有听见我的话。但我并不后悔。"
+      },
+      {
+        "character": "",
+        "text": "再次表明决心一定不会是徒劳。我抱着这样的想法踏上了归途。"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「唉……」",
+        "body": "ask_z1a0200",
+        "face": "a0008h"
+      },
+      {
+        "character": "",
+        "text": "到家的时间比预想中要晚。",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      },
+      {
+        "character": "",
+        "text": "父母有些担心我，但我只是简单地解释说自己去和朋友玩了，便回到了自己的房间。"
+      },
+      {
+        "character": "",
+        "text": "还不想吃晚饭。虽然肚子确实很饿了，但我没有吃东西的心情。",
+        "body": "ask_z1a0200",
+        "face": "a0015h"
+      },
+      {
+        "character": "",
+        "text": "究其原因……那根本不用问。",
+        "body": "ask_z1a0200",
+        "face": "a0020h"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c06_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「嗯～～～～～！ 唔～！ 唔～～！ 嗯～～～～～！！！」",
+        "body": "ask_z1a0200",
+        "face": "a0020h"
+      },
+      {
+        "character": "",
+        "text": "脑中充斥着难以言喻的情感，我胡乱地扭动着身子。"
+      },
+      {
+        "character": "",
+        "text": "我像要让自己窒息一般，将脸狠狠地埋进枕头中，双腿只是一味地上下乱蹬"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那算什么呀，那算什么呀，那算什么呀！？」"
+      },
+      {
+        "character": "",
+        "text": "啪嗒、啪嗒、啪嗒。发出这么大的声响说不定会被父母批评。"
+      },
+      {
+        "character": "",
+        "text": "但是，我也没有办法啊！"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c06_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「嗯姆唔唔唔～～～～～！ 嗯嗯嗯嗯嗯～！ 啊——」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「在大庭广众之下，用那么大的声音说喜欢我！！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「蠢不蠢啊？ 蠢不蠢啊！？ 一定是蠢到家了吧！？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「莫名其妙莫名其妙莫名其妙！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「笨蛋笨蛋笨蛋笨蛋笨蛋笨蛋……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「呼！ 呼呜！ 呼～～～！ 嗯嗯嗯嗯嗯嗯嗯……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c06_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「那算什么呀……真是的」"
+      },
+      {
+        "character": "",
+        "text": "这么折腾了一会儿后，我的心情仍然没有平复下来。"
+      },
+      {
+        "character": "",
+        "text": "真是莫名其妙。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c06_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「为什么做得出那种事？ 不知道“害羞”这两个字怎么写吗？」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c06_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「难道他是外星人吗？ 没错，一定是那样的！」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c06_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「嗯嗯，不……说他是外星人好像太过分了」"
+      },
+      {
+        "character": "",
+        "text": "不好，我失去冷静了。虽然我难以理解他那些与外星人毫无二致的想法。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c06_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "但是……要说有什么事是我能够理解的……"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c06_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "那就是，当和他在一起的时候，我会成为与平时不同的自己。"
+      },
+      {
+        "character": "",
+        "text": "身为学生会长的我。被周围的人尊重、憧憬的我。以及与这两者都不同、平凡无奇的我。"
+      },
+      {
+        "character": "",
+        "text": "这是因为他对我来说很特别——"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c06_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「～～～～～唔！！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不对不对！ 不是这样！ 不是这样的！！」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c06_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「哈啊、呼……哈啊啊……嘶、哈……」"
+      },
+      {
+        "character": "",
+        "text": "这样可不行……"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c06_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "冷静下来，在学校里我必须扮演好“我自己”……"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c06_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「对我来说，根本一点儿都不特别……你可别误会了……」"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "来到学校，我看见飞鸟从前方走来。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「早上好」",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "那堂堂大方的模样俨然有着冰之公主的风度。"
+      },
+      {
+        "character": "",
+        "text": "飞鸟披上狼皮的技艺是多么自然，简直可以说是登峰造极了。"
+      },
+      {
+        "character": "",
+        "text": "之前的约会就像从来没发生过一样。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「早、早……早上好」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「怎么了吗？」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不，没事」"
+      },
+      {
+        "character": "",
+        "text": "该说不愧是飞鸟吗。"
+      },
+      {
+        "character": "",
+        "text": "虽然她现在给人的感觉也不错，但她的表情要是能再柔和些就更好了。"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "说起来……现在想想，当时的我情绪过于激动了。甚至大声地喊出了“我喜欢你”这种话。"
+      },
+      {
+        "character": "",
+        "text": "但喊了之后，飞鸟对我的态度还是毫无变化……"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「果然是因为她没听到吧……」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「唔……游马君，你应该知道今天有学生会的工作吧？」",
+        "body": "ask_z1a0100",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯，当然」"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "果然她不是个好对付的对手。可以说，这才是飞鸟。",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "",
+        "text": "这样的话，只能无数次地向她进攻了。我燃起了一股迷之热情。"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「你还真是能干啊——」"
+      },
+      {
+        "character": "",
+        "text": "放学后，梅林用满怀感慨的声音对我说道。"
+      },
+      {
+        "character": "梅林",
+        "text": "「你还没放弃会长吧？ 明明都被当面拒绝了，还要继续发起挑战」"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "那喀索斯",
+        "text": "「就连我也不得不佩服你的心理素质了」"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「要是再被甩了的话就一起去唱K吧，朋友啊！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这种话还是等我被完全拒绝之后再说吧。现在还是有机会的」"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「不仅是有机会，我甚至觉得可能有戏啊——」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「噢噢，真的吗！」"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「大卫同学，何出此言？」"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "Img": "line21.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「因为你们起码还说得上话，这样就已经很好了」"
+      },
+      {
+        "character": "大卫",
+        "text": "「表白失败后彼此感到尴尬从而疏远，这种事很常见吧？」"
+      },
+      {
+        "character": "大卫",
+        "text": "「从这方面考虑，可以看出会长有和你继续保持关系的想法，也就是说……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哦哦……总觉得勇气涌出来了……」"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「原来如此啊……这是游马的执念引来的结果吗？ 不愧是勇者」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这是在夸我么？」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「但仅凭一腔热血还不够。事实上，你的胜算还是很低」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「即便胜算很低……也只能说是“被恋爱冲昏了头脑”了。无论有多么不利，我都会竭尽全力的」"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「说得不错！ 万一真的获胜，那可就不得了了。说不定会变成大事件」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「事件发生的概率是？」"
+      },
+      {
+        "character": "大卫",
+        "text": "「……三成三？」"
+      },
+      {
+        "character": "梅林",
+        "text": "「在棒球比赛里算是很高的打率了，但这是恋爱啊——」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「随你们怎么说，给我等着瞧吧？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「话说回来，梅林和那喀索斯不是也想接近飞鸟吗？」"
+      },
+      {
+        "character": "梅林",
+        "text": "「我们只是想和她成为朋友。这单纯是憧憬而已，和恋爱不同吧」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「我看到游马的行动后改变心意了。你比我要认真得多，所以我支持你」"
+      },
+      {
+        "character": "梅林",
+        "text": "「我也打心底支持你」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「梅林，那喀索斯……」"
+      },
+      {
+        "character": "",
+        "text": "我被缘分眷顾着啊……真是交到好朋友了。"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「话说，如果像游马一样认真，最后还是被甩了的话！ 心会彻底碎掉的吧，太可怕了！」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「还真是，哈哈哈! 今后也继续给我们带来欢乐吧，喜剧演员！」"
+      },
+      {
+        "character": "梅林",
+        "text": "「赐予勇者好运吧！ 哪怕前方等待着你的是地狱！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你们这群家伙！ 把我宝贵的心情还给我！」"
+      }
+    ]
+  },
+  {
+    "background": "bg00a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「唔哇！ 要被游马童鞋袭击啦！」"
+      },
+      {
+        "character": "大卫",
+        "text": "「你们在干啥啊」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……咳咳」",
+        "body": "ask_z1a0100",
+        "face": "a0020h"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「会、会长！？」",
+        "body": "ask_z1b0100",
+        "face": "b0015h"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「哎呀对不起，学生会对吧！ 我马上去」",
+        "body": "ask_z1b0100",
+        "face": "b0015h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我并没有打算催你，只是正巧路过而已」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "",
+        "text": "尽管嘴上这么说，但她肯定是来监视我的吧。怎么说呢，真守规矩啊。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不过也正好，我们就直接去学生会室吧」",
+        "body": "ask_z1b0100",
+        "face": "b0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「明白了！」"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": ""
+      }
+    ]
+  }
+]

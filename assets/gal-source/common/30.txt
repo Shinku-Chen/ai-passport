@@ -1,0 +1,1461 @@
+[
+  {
+    "background": "bg00a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "天亮了，今天是周日。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「今天我们做什么呢」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "",
+        "text": "吃完她父母为我们准备的早饭后，飞鸟像是认为我俩在一起是理所应当的一样，自然地向我问道。"
+      },
+      {
+        "character": "",
+        "text": "这看似平平无奇的话语却让我非常兴奋。因为我也想和她在一起。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我想去你家看看」",
+        "body": "ask_z1a0200",
+        "face": "a0012h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我家？ 可以是可以，但我家有能让飞鸟开心的东西么」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那些平时一直和你在一起的朋友，也去你家玩过吧？  我想看看你的房间里有哪些好玩的东西，学习学习」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "",
+        "text": "原来如此，很有热爱学习的飞鸟作风。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「而且，我想更加了解你……」",
+        "body": "ask_z1a0200",
+        "face": "a0002h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不、不对，那个……对、对了！  只有我的房间被你看到，不公平！」",
+        "body": "ask_z1a0200",
+        "face": "a0009h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「所以，我也想看隼斗的房间」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这样啊——」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「唔。干什么，怎么一脸笑眯眯的」",
+        "body": "ask_z1a0200",
+        "face": "a0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「没什么喔」"
+      },
+      {
+        "character": "",
+        "text": "你明显是在掩饰害羞吧——这样的话我不可能说出口。"
+      },
+      {
+        "character": "",
+        "text": "我也没理由拒绝，既然决定下来了就立刻行动吧。"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「让你们照顾了！」"
+      },
+      {
+        "character": "",
+        "text": "和飞鸟父母好好打了个招呼后，就一起向我家出发。"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟和我父母打了招呼，来到我的房间里环视了一圈。",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这儿就是，隼斗的房间吗」",
+        "body": "ask_z1a0200",
+        "face": "a0002h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「原来男生的房间是这个样子的呀……啊，居然盯着别人的房间到处看，有点不太礼貌呢」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「别在意，随便看吧」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是嘛……那就，恭敬不如从命……」",
+        "body": "ask_z1b0200",
+        "face": "b0010h"
+      },
+      {
+        "character": "",
+        "text": "之后飞鸟就这看看那儿看看，我不由得苦笑了出来。",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我房间里也没什么稀奇的东西吧？」"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「或许吧，但对我来说是宝贵的体验。怎么说呢，感觉非常新鲜……」",
+        "body": "ask_z1a0200",
+        "face": "a0007h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我从来没有邀请别人来自己的房间过，也没有拜访过别人的私人房间」",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……虽然这么说很奇怪，但每个人房间的风格，果然都因人而异呢」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「在我房间里就能感受到我房间的氛围啊」"
+      }
+    ]
+  },
+  {
+    "background": "bg05a.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「飞鸟的房间，也给人一种飞鸟的感觉。从物品的摆放、房间的气味里，都能窥见她生活的痕迹」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「气味么……那个，顺便问一下，我的房间是什么味道的？」",
+        "body": "ask_z1b0200",
+        "face": "b0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「香喷喷的！」"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「是么。那就好……顺、顺带一提，隼斗的房间也很香」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「毕竟有时也会招待朋友来玩，我还是挺注意的」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「以前，我还问过大卫也没有什么推荐的除臭剂。以防房间里有一股男人的臭味」",
+        "body": "ask_z1b0200",
+        "face": "b0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「原来如此……为什么问大卫？」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「一般女生对这方面比较敏感吧？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯。那下次，我也把推荐的除臭剂介绍给你」",
+        "body": "ask_z1a0200",
+        "face": "a0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「好，麻烦你了！」"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "但是啊，没想到飞鸟居然会来我的房间。刚入学生会那会我做梦都梦不到。"
+      },
+      {
+        "character": "",
+        "text": "飞鸟正在我的私人空间里。我很是高兴，感觉心中痒痒的，静不下来。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊……」"
+      },
+      {
+        "character": "",
+        "text": "想到飞鸟在这里，我突然记起一件事情来。"
+      },
+      {
+        "character": "",
+        "text": "手帐——手帐还放在抽屉深处。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「怎么了？」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯……」"
+      },
+      {
+        "character": "",
+        "text": "这对飞鸟来说是个敏感话题，我不知道该不该现在说出来……"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟的手帐在那个抽屉里」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯……是么」",
+        "body": "ask_z1a0200",
+        "face": "a0019h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「抱歉，我没打算破坏气氛的。但我觉得也差不多是时候该还给你了」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你之前不是说，时候到了就解除监视，然后让我还你手帐吗？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我已经决定不会再碰它了。所以，你打开抽屉拿回去就好了」"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「确实，现在还给我刚刚好……有一定的道理呢……确实有……呜嗯」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "看着飞鸟有些烦恼，我不解地歪了歪脑袋。"
+      },
+      {
+        "character": "",
+        "text": "这也不是什么值得烦恼的事情啊……怎么了。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「算了，还是放你这儿吧。你不是也送了本新手帐给我吗」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……这样好吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「没事的。反正内容也都被你看到了，放你这儿也没什么问题」",
+        "body": "ask_z1a0200",
+        "face": "a0013h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊哈哈哈哈……抱歉我偷看了……」"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「还有就是……不管怎么说，和你的关系都是从这本手帐开始的」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「只要手帐在你这儿，就能证明我们的关系还持续着……」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「无论是交到男友，还是与他人成为恋人，都是我从未有过的经历……\\n所以，也想要一个定情信物？ 之类的……」",
+        "body": "ask_z1a0200",
+        "face": "a0012h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「哎真是的，总之，请你保管着。知道了吗？」",
+        "body": "ask_z1a0200",
+        "face": "a0009h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「定情信物吗……这样想想也挺不错的」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我知道了！ 那就让我就和之前一样，郑重地好好保管着吧！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「拜托你了」",
+        "body": "ask_z1a0200",
+        "face": "a0016h"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「那接下来——差不多该开始学习了。虽然只是学习怎么玩就是了」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那么，我就教你两人在家里该怎么玩吧。我会让飞鸟既玩得开心，又能学到东西噢」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯，请多多指教。今天是不是叫你老师比较好？」",
+        "body": "ask_z1a0200",
+        "face": "a0016h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「喔，好主意。飞鸟同学，请多多指教」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「开个玩笑而已。请不要当真」",
+        "body": "ask_z1b0200",
+        "face": "b0007h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哈哈哈，我知道。那首先……就是这个啦！」"
+      },
+      {
+        "character": "",
+        "text": "我拿起了在梅林推荐下购买的物品。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「啊，这是任天堂的Switch吧？ 我知道」",
+        "body": "ask_z1b0200",
+        "face": "b0004h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「听说是老牌公司的最新款游戏机，手感轻盈，有很多款体感游戏」",
+        "body": "ask_z1b0200",
+        "face": "b0013h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「主机受到广大人群青睐，卖得很不错」",
+        "body": "ask_z1b0200",
+        "face": "b0016h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我觉得它最好的一点就在于，里面有很多游戏可以大家一起玩」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「当然也有双人模式。要试试吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我想试试，来吧」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "见飞鸟积极同意，我便插上了电源。"
+      },
+      {
+        "character": "",
+        "text": "毕竟是飞鸟嘛，应该很快就能上手。我反而好奇起，要过多久她就不用我教了。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「既然要玩，就来玩动作射击类游戏吧」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「规则很简单。在躲避敌人攻击的同时，发射子弹、击倒敌人。」"
+      },
+      {
+        "character": "",
+        "text": "我说着将手柄递给飞鸟，她便仔细确认起上面的按键和符号。"
+      },
+      {
+        "character": "",
+        "text": "飞鸟把认真劲儿发挥得淋漓尽致，一心想要玩好这个游戏。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「只是玩个游戏而已，你可以放轻松点哦？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「抱歉，不小心就……」",
+        "body": "ask_z1a0200",
+        "face": "a0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「虽然很有你的作风，但今天咱们还是玩个痛快吧！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      },
+      {
+        "character": "",
+        "text": "之后，我们就将精力集中在了游戏上。"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「原来如此……即使队友死亡，在一定时间内也能救助他……不愧是以合作为核心的游戏」",
+        "body": "ask_z1a0200",
+        "face": "a0002h"
+      },
+      {
+        "character": "",
+        "text": "飞鸟通过教程学会了玩法。虽然她刚开始玩的时候还有些生疏……"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「隼斗君，接下来，准备迎接从左侧来的敌人！」",
+        "body": "ask_z1a0200",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「明白！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟，左边有炸弹过来了！！！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不要击落，这里应该完美回避！ 下一个炸弹才是关键，优先积攒必杀技能量槽吧！」",
+        "body": "ask_z1a0200",
+        "face": "a0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「明白！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「啊啊啊隼斗君，那个敌人在落雷云里……刚打算提醒你……」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊——躲不掉了！ 要死了——死了——」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我帮你复活！ 看我的！」",
+        "body": "ask_z1a0200",
+        "face": "a0006h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「谢啦！！！」"
+      },
+      {
+        "character": "",
+        "text": "但比预想得还要快，她就玩得比我更好、反过来带我了……"
+      },
+      {
+        "character": "",
+        "text": "飞鸟华丽地躲开敌人攻击，精准反击，并击溃敌人。她的高超操作让我只能瞠目结舌。"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「可恶——又被干掉了！ 你就别管我了，专心对付敌人吧！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不，我绝对会救你的。这可是合作游戏！」",
+        "body": "ask_z1a0200",
+        "face": "a0006h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟！！」"
+      },
+      {
+        "character": "",
+        "text": "原本这台词是我想说的，但从飞鸟口中听到也不错啊，心动了！"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「用这招定胜负吧，一起放必杀技！」",
+        "body": "ask_z1b0200",
+        "face": "b0006h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「了解！ 上吧ーーーー」"
+      },
+      {
+        "character": "",
+        "text": "伴随着华丽的特效，双重必杀技漂亮地取得了胜利。"
+      },
+      {
+        "character": "",
+        "text": "“Knockout！！”——屏幕中跳出了这样的字样，随后切出了成功击倒BOSS的画面。"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「成功了，飞鸟！」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯，成功了呢，隼斗君！」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      },
+      {
+        "character": "",
+        "text": "完全沉浸在游戏中的我们，通关后都不约而同地击了个掌。",
+        "body": "ask_z1a0200",
+        "face": "a0016h"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「哈啊～～真不愧是飞鸟」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「虽然早就知道你学东西快，但没想到会这么快」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「有个好老师，学生自然就学得快了」",
+        "body": "ask_z1a0200",
+        "face": "a0016h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「别这么说呀。你的操作都不像是第一次玩」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「就比如那个炸弹。你是怎么知道下一个才是关键的啊？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我会一边观察敌人的动作，一边分析他的行动模式……虽然这么说有点夸张」",
+        "body": "ask_z1b0200",
+        "face": "b0002h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「如果我是这个游戏的制作者，我会思考怎样才让玩家陷入窘境、怎样才能让玩家感到惊喜并乐在其中」",
+        "body": "ask_z1b0200",
+        "face": "b0020h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「从这个角度来分析的话……我就成功做出了准确的预测。当然也有运气成分」",
+        "body": "ask_z1b0200",
+        "face": "b0013h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「读懂制作者的想法，然后预测出后续发展。果然你很厉害啊」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「没有没有，你过奖了。隼斗君也玩得很不错啊」",
+        "body": "ask_z1a0200",
+        "face": "a0007h"
+      },
+      {
+        "character": "",
+        "text": "我们体会到了合作游戏的趣味，相视一笑。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「去挑战下一个BOSS吧。真期待会是什么样的BOSS呀」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「我先去拿点喝的来吧。你想喝果汁还是茶？」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「啊，那就茶吧」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「好的——」"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我暂时脱战，等拿饮料回去后再继续。"
+      },
+      {
+        "character": "",
+        "text": "来到客厅后，我妈告诉我她要出一会儿门。"
+      },
+      {
+        "character": "",
+        "text": "虽然家里只剩下我和飞鸟两个人，但要做的事情不会变。"
+      },
+      {
+        "character": "",
+        "text": "我一边想着今天要玩个爽，一边把茶水和冰块倒入杯中端回房间。"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "之后，我重新打起精神，与展现出高手操作的飞鸟搭档，逐个击破各个BOSS。"
+      },
+      {
+        "character": "",
+        "text": "我也搞清楚了自己该怎么玩才好，从前锋换成了飞鸟的辅助。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「谢谢！ 刚刚那下辅助得好！」",
+        "body": "ask_z1b0200",
+        "face": "b0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你才是，干得漂亮！」"
+      },
+      {
+        "character": "",
+        "text": "我们互相称赞，继续打着游戏。"
+      },
+      {
+        "character": "",
+        "text": "接下来，当我们打倒被视为游戏中最难打的BOSS时，两个人都筋疲力尽了。"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「差不多，休息……一下吧」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯。玩了这么久，我也累了」",
+        "body": "ask_z1b0200",
+        "face": "b0008h"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我啪的一声倒在靠垫上。"
+      },
+      {
+        "character": "",
+        "text": "据说这个靠垫能使人变成废人。舒适度真是无与伦比。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「虽然还没完全通关，但已经感觉大功告成了」",
+        "body": "ask_z1a0200",
+        "face": "a0013h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我们一天内打通的关卡已经远远超过平均值了」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「成就感满满，对吧？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「心情好舒畅。感觉和之前打羽毛球那次差不多吧」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「在家中和别人一起玩，原来是这么美妙的事啊」",
+        "body": "ask_z1a0200",
+        "face": "a0016h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「虽然在外面玩也不错，但像这样两个人在家里一起玩也棒极了啊——」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这会成为只属于我们的、特别的时光……」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我学到了。谢谢你今天带我来家里」",
+        "body": "ask_z1b0200",
+        "face": "b0004h"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「我才该说谢谢……哈啊～呼」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「好大一个哈欠呀。呵呵呵」",
+        "body": "ask_z1b0200",
+        "face": "b0016h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「抱歉，可能是打游戏太投入，玩过头了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「就是所谓的，放松了就犯困……哈啊~呼，我也跟着打了」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯——现在回去也太早了点啊……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「稍微睡一会怎么样？  就算只睡五分钟，也会舒服不少的」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那有点不太好吧。毕竟你也在这呀」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「只用闭上眼睛就好了。有这么一种说法，闭目养神也能得到和睡眠相同的效果」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「总之先休息吧，休息好了再一起玩」",
+        "body": "ask_z1a0200",
+        "face": "a0016h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……那，恭敬不如从命」"
+      },
+      {
+        "character": "",
+        "text": "我躺在靠垫上放松身体，闭上了眼睛。"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「飞鸟在做什么？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我在看书，包里有带小说」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「快休息，说话可不行。就按我说的做」",
+        "body": "ask_z1a0200",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「知道啦——闭目养神对吧」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「…………」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「真是的。又怎么了」",
+        "body": "ask_z1b0200",
+        "face": "b0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我喜欢你」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「唔 ……我也……」",
+        "body": "ask_z1b0200",
+        "face": "b0009h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「…………喜欢你」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「是么」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是啊」",
+        "body": "ask_z1b0200",
+        "face": "b0020h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「哎呀真是的，都说了不要说话了。快休息，五分钟就好了，给我老实休息」",
+        "body": "ask_z1a0200",
+        "face": "a0018h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「好好好」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「“好”说一次就够了」",
+        "body": "ask_z1a0200",
+        "face": "a0005h"
+      },
+      {
+        "character": "",
+        "text": "感觉再不乖乖听话，就要惹她生气了。"
+      },
+      {
+        "character": "",
+        "text": "我主动放空大脑，让身体放松下来。"
+      },
+      {
+        "character": "",
+        "text": "啊，这样子真不错……"
+      },
+      {
+        "character": "",
+        "text": "正如飞鸟所言，很舒服……"
+      },
+      {
+        "character": "",
+        "text": "…………"
+      },
+      {
+        "character": "",
+        "text": "……"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「…………隼斗君？」",
+        "body": "ask_z1a0200",
+        "face": "a0002h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……睡着了么」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「睡脸……真可爱呀……呵呵……」",
+        "body": "ask_z1a0200",
+        "face": "a0016h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「睡着了的话……应该不要紧吧，就稍微一下下……」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「别把他弄醒……好了……」",
+        "body": "ask_z1b0200",
+        "face": "b0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「像昨天那样，让我在你身旁吧……」",
+        "body": "ask_z1b0200",
+        "face": "b0012h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「隼斗君…………」",
+        "body": "ask_z1b0200",
+        "face": "b0016h"
+      },
+      {
+        "character": "",
+        "text": "…………"
+      },
+      {
+        "character": "",
+        "text": "……"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「咦……我睡着了吗」"
+      },
+      {
+        "character": "",
+        "text": "不知不觉间陷入沉睡的意识逐渐恢复。"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「呼……呼……」",
+        "body": "ask_z1b0200",
+        "face": "b0014h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「………………………………」"
+      },
+      {
+        "character": "",
+        "text": "睁开眼睛，飞鸟就在身旁。"
+      },
+      {
+        "character": "",
+        "text": "她坐在我旁边，靠着靠垫发出静静的呼吸声。"
+      },
+      {
+        "character": "",
+        "text": "那毫无防备的样子，让人完全联想不到平时的飞鸟。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「呼……呼……嗯……」",
+        "body": "ask_z1b0200",
+        "face": "b0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊，醒了吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「呼……呼……」",
+        "body": "ask_z1b0200",
+        "face": "b0014h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「还在睡么……」"
+      },
+      {
+        "character": "",
+        "text": "她的睡脸实在太可爱了——可爱的凶残程度让我忍不住想要紧紧抱住她。"
+      },
+      {
+        "character": "",
+        "text": "这么有魅力的女生，还找得出第二个吗。而且，她还是我的女友……我也太幸福了。"
+      },
+      {
+        "character": "",
+        "text": "无论说多少次“我喜欢你”、“我爱你”，都不足以表达出这份念想。"
+      },
+      {
+        "character": "",
+        "text": "我知道自己打心底爱上了飞鸟。"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「……这再怎么说也太没防备了吧，飞鸟」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我也是个男人啊？ 真是的……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「呼……呼……隼斗君……」",
+        "body": "ask_z1b0200",
+        "face": "b0014h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「喜欢……」",
+        "body": "ask_z1b0200",
+        "face": "b0014h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「！」"
+      },
+      {
+        "character": "",
+        "text": "原本准备忍耐的想法，被这一句话吹到了九霄云外。"
+      },
+      {
+        "character": "",
+        "text": "我不徐不疾地将脸靠近闭着眼睛的飞鸟。"
+      },
+      {
+        "character": "",
+        "text": "温柔地、像轻啄一般吻了吻飞鸟的嘴唇。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯嗯……」",
+        "body": "ask_z1b0200",
+        "face": "b0008h"
+      },
+      {
+        "character": "",
+        "text": "被轻吻之后，飞鸟动了动身子。"
+      },
+      {
+        "character": "",
+        "text": "也许是感受到了触感和体温。她缓缓地睁开了眼睛。"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「…………」",
+        "body": "ask_z1a0200",
+        "face": "a0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟……」"
+      },
+      {
+        "character": "",
+        "text": "在极近的距离，我轻声唤着她的名字。"
+      },
+      {
+        "character": "",
+        "text": "飞鸟一言不发。也没有试图逃开。"
+      },
+      {
+        "character": "",
+        "text": "她就这样抿着惹人怜爱的嘴唇，注视着我。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯……啾……」",
+        "body": "ask_z1a0200",
+        "face": "a0014h"
+      },
+      {
+        "character": "",
+        "text": "我们再次双唇相触。"
+      },
+      {
+        "character": "",
+        "text": "轻触、分开，这一吻如同蜻蜓点水一般。然而，却使我体内的热量飞速上涨。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「啾……」",
+        "body": "ask_z1a0200",
+        "face": "a0014h"
+      },
+      {
+        "character": "",
+        "text": "我们第三次交换了温和的吻。"
+      },
+      {
+        "character": "",
+        "text": "飞鸟她……只是一味地任由我亲吻。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「哈啊……呼……嗯嗯……」",
+        "body": "ask_z1a0200",
+        "face": "a0014h"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「真是的……你在做什么呀」",
+        "body": "ask_z1a0200",
+        "face": "a0018h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「接吻」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这个我知道……这就是所谓的趁人之危吧」",
+        "body": "ask_z1a0200",
+        "face": "a0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这个嘛，感觉有些不一样……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「没有不同，嗯嗯，你居然做这种事情……不说明理由，我可不接受」",
+        "body": "ask_z1a0200",
+        "face": "a0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……因为飞鸟太没有防备了，我就……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「女生没有防备你就会去亲人家？」",
+        "body": "ask_z1b0200",
+        "face": "b0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「因为飞鸟，实在是太可爱了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「只要可爱，你谁都亲吗？」",
+        "body": "ask_z1b0200",
+        "face": "b0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟太惹人怜爱了，听见你在梦中喊我的名字，我就按捺不住喜欢的情感。好喜欢、好喜欢你——」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「之后，我的爱意满溢而出，就这么吻了上去」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……是这样啊……呵呵呵」",
+        "body": "ask_z1b0200",
+        "face": "b0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你能原谅我吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「原谅你……前提是，你要最后再亲我一次」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「当然没问题」"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「嗯、啾……哈啊」",
+        "body": "ask_z1a0200",
+        "face": "a0014h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「真是不可思议啊。明明只是相互触碰嘴唇而已，为什么会感到这么幸福呢」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「无论亲多少次都不会满足。反而会想要更多、更多」",
+        "body": "ask_z1a0200",
+        "face": "a0012h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那就，再多接几次吻吧」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不行。你的父母也还在家，该分开了」",
+        "body": "ask_z1a0200",
+        "face": "a0015h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊……我忘说了么」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「他们出门了。我去拿饮料的时候跟我说的」"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「哎……也就、是说……」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「现在，家里只有你和我」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「…………那」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「可以、拜托你，再来最后一次吗？」",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      }
+    ]
+  },
+  {
+    "background": "bg04a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我用行动代替了回答，吻了上去。",
+        "body": "ask_z1a0200",
+        "face": "a0014h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯嗯……啾……呼……」",
+        "body": "ask_z1a0200",
+        "face": "a0014h"
+      },
+      {
+        "character": "",
+        "text": "虽然已经是第五次，但我完全不会厌烦。如果可以，我都想吻上几十上百次。"
+      },
+      {
+        "character": "",
+        "text": "我这样想着将双唇分开。随后，飞鸟用一副朦胧的表情注视着我。",
+        "body": "ask_z1a0200",
+        "face": "a0015h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我喜欢你。非常非常喜欢你」",
+        "body": "ask_z1a0200",
+        "face": "a0012h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我也是。我会珍惜飞鸟一辈子的」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这些话听起来就像，我们是在以结婚为前提交往一样……」",
+        "body": "ask_z1a0200",
+        "face": "a0008h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我好开心……」",
+        "body": "ask_z1a0200",
+        "face": "a0012h"
+      },
+      {
+        "character": "",
+        "text": "也不知道是谁主动，我们的嘴唇再次重合在了一起。",
+        "body": "ask_z1a0200",
+        "face": "a0014h"
+      },
+      {
+        "character": "",
+        "text": "",
+        "END": "后续剧情请自行下载原版体验"
+      }
+    ]
+  }
+]

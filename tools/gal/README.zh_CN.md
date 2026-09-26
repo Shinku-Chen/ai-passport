@@ -7,13 +7,12 @@
 这套工具把上游视觉小说 [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband)
 转换成 `main/gal/*` 读取的只读 `assets` flash 分区。
 
-该上游仓库未声明任何许可，因此它的美术与章节剧本从未进入本仓库。
-包格式、工具与生成的字库属于本仓库自己的成果;它们所消费的素材则不是。
+该上游仓库未声明任何许可。它的美术与章节剧本提交在本仓库的 `assets/gal-source/` 下;
+包格式、工具与生成的字库属于本仓库自己的成果。
 
 ## 素材放在哪里
 
-美术与章节剧本属于第三方内容,**本仓库不跟踪**。把上游项目 `src/common`
-目录（即 [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband)）的本地副本放到:
+美术与章节剧本属于第三方内容,按上游项目自己的路径跟踪在本仓库:
 
 ```text
 assets/gal-source/common/
@@ -23,9 +22,10 @@ assets/gal-source/common/
 └── text_bg.png, logo.png
 ```
 
-该路径已加入 git 忽略。目录结构与上游项目的 `src/common` 一致,可以直接原样拷进来。
+目录结构与上游项目的 `src/common` 一致,可以直接把该目录的更新副本拷进来;
+`--source` 也接受其它位置。
 
-目录缺失时打包器会改为生成一个小型占位包,因此全新 clone 依然能配置、构建并启动。
+目录缺失时打包器会改为生成一个小型占位包,因此没有素材的 clone 依然能配置、构建并启动。
 占位路径不需要图像库。
 
 ## 工具
@@ -46,7 +46,8 @@ python tools/gal/inspect_pack.py build/gal/gal_assets.bin --chapter 3 --lines 4
 python tools/gal/pack_assets.py --preview 8 --preview-out scene8.png
 ```
 
-打包真实美术需要 Pillow。请装进 ESP-IDF 构建所用的解释器,否则固件构建会在打包器这一步停下:
+打包真实美术需要 ESP-IDF 构建所用解释器里装有 Pillow,否则固件构建会在打包器这一步停下。
+固件的 CI 任务已安装,因此 CI 也会打包已提交的素材:
 
 ```bash
 "$IDF_PYTHON_ENV_PATH/Scripts/python.exe" -m pip install Pillow   # Windows

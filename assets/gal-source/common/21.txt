@@ -1,0 +1,862 @@
+[
+  {
+    "background": "bg00a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "一夜过后，今天也是个大晴天。"
+      },
+      {
+        "character": "",
+        "text": "要说没有烦恼肯定是假的，但我还是以比较积极的心态讴歌着一成不变的日常。"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「飞鸟请假？ 不不不……开玩笑吧？」"
+      },
+      {
+        "character": "",
+        "text": "但午休时传来的消息，让我的内心一下子不安起来。"
+      },
+      {
+        "character": "大卫",
+        "text": "「真少见呢。不如说，这大概是第一次吧」"
+      },
+      {
+        "character": "大卫",
+        "text": "「明明是那个从不迟到、从不缺席、毫无破绽的会长，我觉得她都能拿全勤奖的」"
+      },
+      {
+        "character": "梅林",
+        "text": "「喂喂，难道说……游马你做了什么奇怪的事吗？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「没……」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「……你这反应，是有什么头绪吧？ 呵呵，真是干了罪孽深重的事呢」"
+      },
+      {
+        "character": "大卫",
+        "text": "「喂，别开玩笑了。感觉他是真的在烦恼」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「嗯……但是啊，游马和会长的差距，就跟初级勇者和终极BOSS魔王一样大吧」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「我无法想象到底做什么事，对会长造成的伤害才能让她请假」"
+      },
+      {
+        "character": "大卫",
+        "text": "「那倒是，嗯……」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「游马，你干了啥啊，跟我们说说吧」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……也许是我说过头了」"
+      },
+      {
+        "character": "梅林",
+        "text": "「你说“喜欢她”说过头了吗？ 毕竟是勇者，也是做得出来的，哈哈哈」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「…………」"
+      },
+      {
+        "character": "梅林",
+        "text": "「你快笑一笑啊！ 啊难道说，莫非……也只有这种可能了吧。你跟那位会长吵架了吗？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不，我觉得应该……没有」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "“保持距离”这种话，能算是吵架吗……总觉得好像也能算。",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "",
+        "text": "吵完架后，我还说了些“要守护她”之类莫名其妙的话，也许让她更加烦躁了吧。",
+        "body": "ask_z1b0100",
+        "face": "b0001h"
+      },
+      {
+        "character": "",
+        "text": "就算真的想避开我……但想不到飞鸟她居然会不来上学……"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「等下，你真的没事吗……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「到底怎样呢，我也不知道啊。哈哈哈……」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「不要笑得这么无力啊……好啦，别这么失落啦！」"
+      },
+      {
+        "character": "梅林",
+        "text": "「魔王大人一定是打算进化为第二形态了。所以现在窝在领地中，慢慢地饰变呢」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「梅林，现在开这种玩笑可一点都没意思」"
+      },
+      {
+        "character": "梅林",
+        "text": "「你好烦！ 总、总之，先打起精神吧。放学后去卡拉OK吗？ 一起去吧！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯，谢啦」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "那喀索斯",
+        "text": "「我刚刚也是开玩笑的，会长请假一定不是因为吵架」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「只是感冒了吧。别想太多了」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「我同意那喀索斯的想法。现在你想再多也没用」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「是啊……总之，先不急不躁地观望一阵吧」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "说到底，昨天那件事还有待探讨，所以我决定先等待飞鸟的答复。"
+      },
+      {
+        "character": "",
+        "text": "想太多也没用。还是转换心情，好好享受午休的剩余时间吧。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「谢谢你们了！」"
+      },
+      {
+        "character": "",
+        "text": "虽然我们平时总是互开玩笑，但他们在我需要的时候也会坚定地支持我。"
+      },
+      {
+        "character": "",
+        "text": "从好友口中听到鼓励的话，我真的非常感激。"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "晚上，我仰躺在床上看着手机。"
+      },
+      {
+        "character": "",
+        "text": "虽然在学校时可以转换心情，但一旦孤身一人，我又会开始冥思苦想。"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "（飞鸟，到底是怎么了……）"
+      },
+      {
+        "character": "",
+        "text": "虽然可能会被朋友们笑话说没出息，但我还是止不住地这么想。"
+      },
+      {
+        "character": "隼斗",
+        "text": "（如果只是普通感冒，时机未免也太巧了吧……）"
+      },
+      {
+        "character": "隼斗",
+        "text": "（我觉得还是跟我有关……）"
+      },
+      {
+        "character": "隼斗",
+        "text": "（…………总、总之！ 为明天做准备吧！）"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我猛地爬起来，坐在书桌前。"
+      },
+      {
+        "character": "",
+        "text": "咯噔咯噔地把书桌的抽屉全部拉出来，仔细确认有没有漏带明天要带的东西。"
+      },
+      {
+        "character": "",
+        "text": "平时不会准备得那么认真，但偶尔这样也不错。"
+      },
+      {
+        "character": "隼斗",
+        "text": "（啊——）"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "随后，一本手帐映入眼帘。"
+      },
+      {
+        "character": "",
+        "text": "这是飞鸟的手帐。她一口认定我看过，最后决定交给我保管。"
+      },
+      {
+        "character": "",
+        "text": "可以被称作“起始道具”的手帐，出现在了眼前。"
+      },
+      {
+        "character": "",
+        "text": "当时，我告诫自己绝对不能看，才把手帐放在了抽屉深处……"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "而此刻，我却与内心想法相违，不由自主地拿起了手帐。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「…………」"
+      },
+      {
+        "character": "",
+        "text": "手指自然而然地动了起来，准备翻开手帐。"
+      },
+      {
+        "character": "",
+        "text": "不行不行不行——虽然这么想，但身体却不受控制。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟那么不想被人看到的手帐中，究竟写了什么呢。",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "",
+        "text": "说不定里面隐藏着重要的提示，能帮助我理解飞鸟的内心。"
+      },
+      {
+        "character": "",
+        "text": "一旦想到这一点，我就止不住自己的动作了。"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「飞鸟，对不起」"
+      },
+      {
+        "character": "",
+        "text": "我一边道歉，一边打开了手帐。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "那时的我尚能忍受，但现在的我已经不一样了。我想知道更多有关飞鸟的事，想要更加理解飞鸟。"
+      },
+      {
+        "character": "",
+        "text": "别说保持距离了，我反而想与她靠得再近一点。"
+      },
+      {
+        "character": "",
+        "text": "为了实现这一理想，为了成为能守护飞鸟的男人，我想竭尽全力。"
+      },
+      {
+        "character": "",
+        "text": "所以——"
+      }
+    ]
+  },
+  {
+    "background": "ev_com_s03_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "『能听见哦 啾啾啾 春天的声音』"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「……………………」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯？」"
+      }
+    ]
+  },
+  {
+    "background": "ev_com_s03_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "『可爱呀 可爱呀 可爱的小狗 你为什么这么可爱呢』"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「…………」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯嗯？？？」"
+      }
+    ]
+  },
+  {
+    "background": "ev_com_s03_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "『心跳啊 心跳啊 胸口的心跳 仿佛要爆炸般的心跳』"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「…………………………………………」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这、这是……飞鸟写的诗吗……」"
+      },
+      {
+        "character": "",
+        "text": "手帐上用与飞鸟风格完全不符的圆形可爱字体，写着一行又一行的fantasy诗歌(*ﾟﾛﾟ)。"
+      }
+    ]
+  },
+  {
+    "background": "ev_com_s03_01.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "『仿佛要融化在可可里的 棉花糖般的心情 又将行往何方？』"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……所以，这是怎样的心情？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "『阳光眩目 常夏天堂 蔚蓝之海 熠熠生辉』"
+      },
+      {
+        "character": "隼斗",
+        "text": "「是指夏威夷啊关岛之类的吗。如果有机会的话，真想和飞鸟一起去啊～哈哈哈」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "『飘啊飘 飘啊飘 飘啊飘啊飘～飘啊～飘啊飘』"
+      },
+      {
+        "character": "隼斗",
+        "text": "「轻飘飘的呢！ 嗯嗯。100%轻飘飘呢」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "『在灼目的阳光中醒来的早晨 但那阳光是让我忍不住闭上眼的闪耀 闪耀 闪耀……』"
+      },
+      {
+        "character": "飞鸟",
+        "text": "『放弃吧 到了明天 就有答案了 我啊……♪』"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哦哦哦哦哦哦哦哦！！！」"
+      },
+      {
+        "character": "",
+        "text": "我叫了出来。"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "给我安静点，你以为现在几点了？ 不必说，我马上就遭到了母亲的训斥。"
+      },
+      {
+        "character": "",
+        "text": "但是！ 但是啊！ 但是啊啊！"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「呜噢噢噢噢…………」"
+      },
+      {
+        "character": "",
+        "text": "对不起……飞鸟对不起……"
+      },
+      {
+        "character": "",
+        "text": "我不该看的啊……"
+      },
+      {
+        "character": "",
+        "text": "要是被人看到这些的话，那确实是会生气的。不如说会羞愧得想死。会死人的。"
+      },
+      {
+        "character": "",
+        "text": "我总算理解飞鸟为什么这么拘泥于这本手帐了。我不得不理解了。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「要不，就看到这吧……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不行，这样就没有看它的意义了……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……我必须得看。我不是还要守护飞鸟吗」"
+      }
+    ]
+  },
+  {
+    "background": "ev_com_s03_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我哗地翻了一页。"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「……噢噢噢」"
+      }
+    ]
+  },
+  {
+    "background": "ev_com_s03_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "翻页。"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「噢噢噢噢噢噢噢噢……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_com_s03_01.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "翻页……"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「噢噢噢噢噢噢噢噢噢噢噢噢噢噢噢噢噢……」"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "这本手帐的内容实在太cute了(Ｔ▽Ｔ）。每次翻开下一页，我就不断地在床上挣扎，几乎快要窒息。"
+      },
+      {
+        "character": "",
+        "text": "已经不行了放弃吧这是万万不能打开的潘多拉魔盒——"
+      }
+    ]
+  },
+  {
+    "background": "bg00c.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "『一个人 总是一个人 为何我总是孤单一人呢』"
+      },
+      {
+        "character": "",
+        "text": "——不知翻了多少页。"
+      },
+      {
+        "character": "",
+        "text": "我突然停止了扭动，凝视着这一页。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "『我啊 变得坦率一点吧 但为什么 总是无法变得坦率 像个笨蛋一样』"
+      },
+      {
+        "character": "飞鸟",
+        "text": "『一个人的房间 一个人的放学 一个人的假期』"
+      },
+      {
+        "character": "飞鸟",
+        "text": "『笨蛋 笨蛋 笨蛋』"
+      },
+      {
+        "character": "隼斗",
+        "text": "「…………」"
+      },
+      {
+        "character": "",
+        "text": "我静静地合上了记事本。"
+      }
+    ]
+  },
+  {
+    "background": "bg04c.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "将它放回原处，随后躺上了床。"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我仰望着天花板，轻轻闭上眼睛。"
+      },
+      {
+        "character": "",
+        "text": "脑中继续思考着该怎么办、该怎么做。"
+      }
+    ]
+  },
+  {
+    "background": "bg00a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "过了一天，又过了一天。"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "今天，飞鸟还是因感冒请了假。这也是理所当然的吧，感冒没有那么快痊愈的。"
+      },
+      {
+        "character": "",
+        "text": "希望她已经康复了，今天只是为保险起见才请的假……不过，我把握不了实情。"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我拿出手机，滑动联系人列表，在狮子堂飞鸟那一栏停下了手。"
+      },
+      {
+        "character": "",
+        "text": "要试着打个电话或者发个邮件吗？"
+      },
+      {
+        "character": "",
+        "text": "但是，该怎么开口才好呢。要是惹飞鸟生气的话……"
+      },
+      {
+        "character": "",
+        "text": "尽管在这里摆弄手机也无济于事，我还是一直挂念着她。"
+      }
+    ]
+  },
+  {
+    "background": "bg06a.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "『我讨厌热血笨蛋』",
+        "body": "ask_z1b0100",
+        "face": "b0005"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「哈啊……」"
+      },
+      {
+        "character": "梅林",
+        "text": "「噢噢，在思念会长吗？ 真是青春呐～」"
+      },
+      {
+        "character": "大卫",
+        "text": "「毕竟喜欢的人请了长假，会成这样也是无可厚非啊——」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「因相思病而叹息么……真是酸酸甜甜的，哼哼哼」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「别开我玩笑了。不过，我不否定我一直在想着飞鸟」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「坠入爱河了呀——好甜好甜」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「恋爱吗……」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我喜欢飞鸟。这份情感是千真万确的。",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "",
+        "text": "正因为喜欢，所以才会追求更多。如果这就是所谓的恋爱……嗯，承认吧。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这就是，真正的恋爱感情吧。尽管前段时间还朦朦胧胧的，但现在……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我已经彻底爱上飞鸟了」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「呀！ 喂喂游马，试试这样说！」"
+      },
+      {
+        "character": "大卫",
+        "text": "「“我爱着飞鸟”之类的」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我爱着飞鸟」"
+      },
+      {
+        "character": "大卫",
+        "text": "「唔哇哦……」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「……喂，怎么办啊那喀索斯，我感觉游马离我越来越远了」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「咕……那已经不是我们认识的勇者了……」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「既然懂得了何谓爱情，就意味着离神职者更近了。从现在开始，我们就把游马叫作圣骑士吧」"
+      },
+      {
+        "character": "梅林",
+        "text": "「居、居然是圣骑士……那是勇者的高配版还是低配版？」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "Img": "line21.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「给我闭嘴！！ 难得的酸甜气氛都被你们扰乱了！」"
+      },
+      {
+        "character": "梅林",
+        "text": "「对不起！！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哈哈哈！」"
+      },
+      {
+        "character": "",
+        "text": "望着一如既往的朋友们，我忍不住笑了出来。"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": ""
+      }
+    ]
+  }
+]

@@ -1,0 +1,470 @@
+[
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我跟在飞鸟后面走进了学生会室，像往常一样开始了工作。"
+      },
+      {
+        "character": "",
+        "text": "拿出文件资料准备开始审查……啊，在那之前，我要先向飞鸟确认一下。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「学生会在活动日之外也会有工作啊。平时是怎样运作的？」",
+        "body": "ask_z1b0100",
+        "face": "b0015h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我不想说」",
+        "body": "ask_z1b0100",
+        "face": "b0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「为什么不想说啊」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「…………」",
+        "body": "ask_z1b0100",
+        "face": "b0017h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「我说……」",
+        "body": "ask_z1b0100",
+        "face": "b0020h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「按理说今天是没有工作的！ 是我为了监视你而临时决定的！」",
+        "body": "ask_z1a0100",
+        "face": "a0006h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「也就是说……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯，我明白了。不好意思，不该问的」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「请不要向我道歉。赶紧工作吧」",
+        "body": "ask_z1a0100",
+        "face": "a0018h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「…………」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「…………」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那个……怎么说呢，是我自作主张了……刚才的事情，你没有生气吧？」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「刚刚也说过了，我并没有生气。所以你不用放在心上哦」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「但还是想说一下，如果你经常这么做我就有些为难了……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「当然我也能理解你不信赖我的心情。对飞鸟来说，我的一切都很陌生吧」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「所以为了让你信任我，我也有必要牺牲一点私人时间。我是这么想的」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是吗……」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「……不知道为什么有点生气」",
+        "body": "ask_z1b0100",
+        "face": "b0018h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「为什么！？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「什么嘛。你的想法这么积极的话，不就显得我像个任性的小孩一样吗」",
+        "body": "ask_z1a0100",
+        "face": "a0018h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「倒也不用这样钻牛角尖吧」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我知道的！ 好了好了赶紧工作吧！ 不做完这些是不会放你回去的」",
+        "body": "ask_z1a0100",
+        "face": "a0006h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我知道了。交给我吧」"
+      },
+      {
+        "character": "",
+        "text": "毕竟是学生会的一员，既然来了就要好好工作。"
+      },
+      {
+        "character": "",
+        "text": "我转换了一下心情，一头扎进了文件资料中，认真地做起工作来。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "结果……结束得比预想中要快，我有些吃惊。"
+      },
+      {
+        "character": "",
+        "text": "虽然有想过可能是今天特别专注，但实际上是因为工作量比较少。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「……辛苦了」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "",
+        "text": "毕竟今天的学生会活动是临时决定的，也当然没什么工作要做。"
+      },
+      {
+        "character": "",
+        "text": "不知道是不是这个缘故，飞鸟看起来一脸尴尬，以至于说话的时候都不敢看我的眼睛。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你可以回去了。还有，明天的学生会活动你可以不参加」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯——这样吗」"
+      },
+      {
+        "character": "",
+        "text": "虽然说因为很快就完成了工作，空出了不少时间，但就这样回家的话总觉得也有点不妥。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「飞鸟的工作也做完了吧？」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「当然。怎么了？」",
+        "body": "ask_z1b0100",
+        "face": "b0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「难得有机会，我们要不要一起去哪里玩玩」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……和我吗？」",
+        "body": "ask_z1a0100",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「当然啦，除了你还有谁啊」"
+      },
+      {
+        "character": "",
+        "text": "成为学生会成员之前，我估计根本无法想象自己会去邀请飞鸟吧。"
+      },
+      {
+        "character": "",
+        "text": "现在却不一样了。虽然和她还没有那么亲近，但正因如此，我觉得先把她当作朋友对待也挺好的。"
+      },
+      {
+        "character": "",
+        "text": "不过老实说，多半会被拒绝吧！"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「我为什么非要和你出去玩不可呢？」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不愿意吗？ 我不会勉强你的，不愿意的话直说就好了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「也不是不愿意……只是有点怀疑你的动机。而且我也没说我不去啊」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "",
+        "text": "尽管我已经做好了被冷眼以待的觉悟，但她并没有拒绝我。"
+      },
+      {
+        "character": "",
+        "text": "飞鸟视线游离不定，同时，又将手伸到后颈挑起了一绺长发。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「明明你有安排了，最后还是陪我一起工作，我很感谢你」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「所以，也可以和你一起去……就当作是我的回礼了」",
+        "body": "ask_z1b0100",
+        "face": "b0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这样的话我就不客气了。谢谢」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「啊！ 请你不要误会了。说到底只是回礼罢了，并不代表我对你放松警惕了哦！」",
+        "body": "ask_z1b0100",
+        "face": "b0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我知道啦——你愿意陪我我就很感激了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……唔」",
+        "body": "ask_z1a0100",
+        "face": "a0018h"
+      },
+      {
+        "character": "",
+        "text": "——虽然我表面上像这样若无其事的，但在心里已经摆出了胜利pose！"
+      },
+      {
+        "character": "",
+        "text": "和那位狮子堂飞鸟一起出去玩，这是我平时难以想象的事情啊。"
+      },
+      {
+        "character": "",
+        "text": "我想着要好好珍惜这般宝贵的时光，同时整理了一下着装。"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "虽然很期待之后两人一起外出，但我有一种微妙的直觉，即使有时间也不会玩很久。",
+        "body": "ask_z1b0100",
+        "face": "b0001h"
+      },
+      {
+        "character": "",
+        "text": "毕竟我们也不是能悠哉相处的关系啊。那么，该怎么安排呢。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟应该不讨厌甜食吧？ 我看你刚刚也吃了巧克力」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是的，我不讨厌」",
+        "body": "ask_z1b0100",
+        "face": "b0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那么，我们去吃甜筒吧」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「为什么突然说要去吃甜筒呢」",
+        "body": "ask_z1a0100",
+        "face": "a0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「之前大卫说过，有一家味道很好的冰淇淋专卖店开张了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「原来是这样，我知道你为什么会这么提议了。\\n话说你提到的大卫……是刚才你的朋友吗？」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「没错没错，刚刚不是有一个女生跟我们一起吗。大卫就类似于她的外号」"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「叫女孩子大卫吗……」",
+        "body": "ask_z1a0100",
+        "face": "a0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「果然很奇怪吗」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「当然啊」",
+        "body": "ask_z1b0100",
+        "face": "b0017h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「大卫，是以击败巨人歌利亚而闻名的、古以色列国王的名字」",
+        "body": "ask_z1b0100",
+        "face": "b0002h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「英文圈里的男性名大卫，就是来源于这位大卫王」",
+        "body": "ask_z1b0100",
+        "face": "b0015h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那个大卫雕像，就是大卫王吧？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯，就是那个大卫哦」",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "",
+        "text": "大卫雕像（大理石）和，我的朋友大卫（轻度辣妹）吗……"
+      },
+      {
+        "character": "隼斗",
+        "text": "「确实毫无共同之处啊。不过取那个外号是有原因的，我们边走边说吧」"
+      }
+    ]
+  },
+  {
+    "background": "bg07a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「话说回来，甜筒好像也有很多种味道。甚至有些口味会让人觉得根本无从下口」",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯，我开始有些期待了。要是喜欢吃的话，以后可能还会再去」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「要是那样的话，我作为推荐人也会很得意呢」"
+      },
+      {
+        "character": "",
+        "text": "之后，我一边向飞鸟解释大卫这个外号的由来，一边与她一起向甜品店走去。"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": ""
+      }
+    ]
+  }
+]

@@ -1,0 +1,958 @@
+[
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「勇者啊，这次的冒险怎么样了」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「国王？ 你不是宫廷魔术师么」"
+      },
+      {
+        "character": "梅林",
+        "text": "「哼哼哼，从今天开始老夫就是国王了——不是说这个！」"
+      },
+      {
+        "character": "梅林",
+        "text": "「你和会长的约会咋样」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「咋样，算是……挺开心的，飞鸟也很高兴」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「高兴……是指，哪方面的？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哪方面，是什么意思？」"
+      },
+      {
+        "character": "大卫",
+        "text": "「哎呀！ 就是说，你们有没有去该去的地方！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……那肯定还早着呢。我们就一起看电影呀，逛逛杂货店呀」"
+      },
+      {
+        "character": "大卫",
+        "text": "「哇——真无聊，约会无聊也要有个度啊。但这才像你的作风，呵呵」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "Img": "line21.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "那喀索斯",
+        "text": "「约会时有没有拍照留念？  你要是愿意的话，请务必给我看看」"
+      },
+      {
+        "character": "梅林",
+        "text": "「我也想看！ 想看你和会长卿卿我我！」"
+      },
+      {
+        "character": "大卫",
+        "text": "「真好啊真好啊，给我们看看吧」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「真是的，冷静点，别一拥而上啊！」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「呃……这张？」"
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "在杂货店前，拍的一张纪念照片。",
+        "body": "ask_z1a0200",
+        "face": "a0007h"
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "那喀索斯",
+        "text": "「啊，这家店啊。开业没多久，很受女性欢迎」"
+      },
+      {
+        "character": "梅林",
+        "text": "「哎，那喀索斯这么了解」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「算是吧。果然得时常寻找与我相称的东西啊」"
+      },
+      {
+        "character": "梅林",
+        "text": "「你……什么时候掌握了这种约会技能……」"
+      },
+      {
+        "character": "大卫",
+        "text": "「你们呀——不是看店，是看会长吧～」"
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「感觉会长，表情好僵硬啊」",
+        "body": "ask_z1a0200",
+        "face": "a0007h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「因为我是突然拍的……」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「但不也挺好的嘛？  很有初次约会的感觉」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「是啊……嗯——心情好复杂」"
+      },
+      {
+        "character": "梅林",
+        "text": "「帮你走到了这一步说实话我挺开心，但一想到你领先我好几步……」"
+      },
+      {
+        "character": "梅林",
+        "text": "「啊——勇者呀！ 国王好伤心，不要抛下我」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "那喀索斯",
+        "text": "「梅林，你角色崩坏了」"
+      },
+      {
+        "character": "大卫",
+        "text": "「不管怎么说，总之先恭喜你了！  一切顺利就再好不过了」"
+      },
+      {
+        "character": "梅林",
+        "text": "「恭喜你，避免了死亡结局」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「谢、谢谢……感觉有点不好意思」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "那喀索斯",
+        "text": "「能撑到几次约会呀？」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "梅林",
+        "text": "「三次吧」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "大卫",
+        "text": "「哎呀。要赌吗？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「好好地给我加油啊！」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "那喀索斯",
+        "text": "「抱歉抱歉。所以，进展到哪儿了？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……牵手了」"
+      },
+      {
+        "character": "梅林",
+        "text": "「牵手？ 至少得来个分别时的接吻吧——」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯，是吗。要在那个时候接吻呀，原来如此」"
+      },
+      {
+        "character": "大卫",
+        "text": "「哎？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯？」"
+      },
+      {
+        "character": "大卫",
+        "text": "「你那觉得接吻很轻松的反应是怎么回事」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「因为已经——」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "Img": "line21.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "那喀索斯",
+        "text": "「你说什么！？」"
+      },
+      {
+        "character": "大卫",
+        "text": "「骗人吧！？」"
+      },
+      {
+        "character": "梅林",
+        "text": "「喂喂喂真的吗真的吗！！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「冷静点脸靠得太近了！！」"
+      },
+      {
+        "character": "那喀索斯",
+        "text": "「好在意是什么情况！ 请详细道来！」"
+      },
+      {
+        "character": "大卫",
+        "text": "「是谁？ 谁是主动的？ 至今总共亲了多少次！」"
+      },
+      {
+        "character": "梅林",
+        "text": "「我们连女朋友都没，你已经亲上了是个什么意思！！」"
+      }
+    ]
+  },
+  {
+    "background": "bg08a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "被勇者小队一个劲地追着问，一大早就累得不行……"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "来到学生会室后，飞鸟已经在里面了。"
+      },
+      {
+        "character": "",
+        "text": "不对，飞鸟在学生会室里是理所当然的事，但飞鸟来不来迎接……更正，不来监视是我挺少见的。"
+      },
+      {
+        "character": "",
+        "text": "我正想着是怎么回事，飞鸟别开了视线。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「稍、稍微来得有些晚呀……」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯、嗯……抱歉……」"
+      },
+      {
+        "character": "",
+        "text": "看到她有些害羞的样子，我终于意识到了。"
+      },
+      {
+        "character": "",
+        "text": "这个空间只有自己和恋人两人。光是这么想想，心跳就快了一些。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我坐到平时的位置上，和往常一样开始工作。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「有些文件我想让你提前看一下。我放在那边了」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯，我看看。谢谢」"
+      },
+      {
+        "character": "",
+        "text": "这段对话平平无奇，但感觉哪儿有些生硬。"
+      },
+      {
+        "character": "",
+        "text": "并不是说不舒服，都有一种坐立不安的感觉……"
+      },
+      {
+        "character": "",
+        "text": "我偷偷瞥了眼飞鸟，与她对上了眼神。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那个……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「还有就是……游马君，你手上的活停下来了」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊啊，嗯、抱歉，我继续」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「拜托了」",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……………………」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「……哎呀，怎么了，又向我这边了」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟你不也是」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「虽然是这样……嗯嗯……我们，在干什么呀」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "",
+        "text": "什么都没做却往那方面想，弄得自己不好意思。"
+      },
+      {
+        "character": "",
+        "text": "让别人来看，肯定觉得很滑稽吧。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这样连工作都做不了，做学生会工作的时候还是集中精神吧」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「就算是恋人，也要公私分明。没问题吧？」",
+        "body": "ask_z1a0100",
+        "face": "a0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「OK。那就三下五除二搞定吧」"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "言出必行——我集中精神做完工作，踏上了回家的路。完成得比预期还要早，好极了。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「工作表现真不错。今后也请多多指教了」",
+        "body": "ask_z1b0100",
+        "face": "b0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「交给我吧！」"
+      },
+      {
+        "character": "",
+        "text": "看到我坦率地接受夸奖，飞鸟笑了笑。",
+        "body": "ask_z1b0100",
+        "face": "b0004h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那么，我先回去了」",
+        "body": "ask_z1b0100",
+        "face": "b0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「路上小心——」"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "虽说明天还能再见，但还是感觉有些不舍。"
+      },
+      {
+        "character": "",
+        "text": "每次在这儿目送飞鸟都这么觉得……"
+      },
+      {
+        "character": "隼斗",
+        "text": "（恋爱真是幸苦呀——）"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「对了。周六的约会，我很期待」",
+        "body": "ask_z1a0100",
+        "face": "a0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「…………」"
+      },
+      {
+        "character": "",
+        "text": "我回过头，呆呆地目送着留下这句话的飞鸟消失在车站里。"
+      },
+      {
+        "character": "",
+        "text": "之后，我摆了个小小的胜利pose，被路人投以诧异的目光。"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "周六——成为恋人后的第二次约会，地点在挺远的一家主题公园。"
+      },
+      {
+        "character": "",
+        "text": "虽然算不上是大型公园，但也开了二十多年，很有名气。"
+      },
+      {
+        "character": "",
+        "text": "我一大早与飞鸟会合，刚开门营业就进入了园内。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「好久没来这儿了」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「好像很久都没有来了呢。正因为偶尔来一次才会感觉特别好」"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「说起来，今天没穿高跟鞋了呢」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「如果你不摆出一副“这次我自己发现了”的表情，我可能就会夸你了」",
+        "body": "ask_z1a0200",
+        "face": "a0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「知道了，下次会改正的」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……我觉得要走很多路就穿了运动鞋来。穿高跟鞋更可爱吗？」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「没有的事，今天也很可爱！ 可爱满满喔！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是、是么……谢谢夸奖。感觉你说的日语有点怪异就是了」",
+        "body": "ask_z1b0200",
+        "face": "b0002h"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟淡淡地回答道，但我可没看漏她的嘴角微微翘起"
+      },
+      {
+        "character": "",
+        "text": "嘴角扭来扭去的，就像是在忍着不笑出来一样。"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「那么，先去哪儿呢」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「有好几个吸引人的游乐项目，先去哪儿好呢——」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「豪华绚丽的旋转木马。路线独特的过山车」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「富有传统气息的鬼屋。还有室内温水泳池」",
+        "body": "ask_z1a0200",
+        "face": "a0002h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「主要的游乐项目应该就是这些吧」",
+        "body": "ask_z1a0200",
+        "face": "a0013h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哦……提前调查得一清二楚啊」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「毕竟是约会。这点小事不提前查好可不行」",
+        "body": "ask_z1a0200",
+        "face": "a0016h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「总之先大致逛一圈，看看都要等多久吧」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「路线也很清楚啊。不愧是你」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那当然——虽然很想这么说……其实是小时候被带来过好几次」",
+        "body": "ask_z1b0200",
+        "face": "b0013h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「拜那时候所赐，现在坐过山车也没什么问题」",
+        "body": "ask_z1a0200",
+        "face": "a0013h"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "园内有两处过山车。"
+      },
+      {
+        "character": "",
+        "text": "第一个注重体验和风景，速度和坡度都很温和。另一个是以最高速度为卖点面向发烧友的。"
+      },
+      {
+        "character": "",
+        "text": "不知道她说的没问题是指哪一个，两处过山车可大不相同啊。不过，是飞鸟的话……"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「你是指以最高速度为卖点，很不得了的那个？」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯，那当然」",
+        "body": "ask_z1a0200",
+        "face": "a0013h"
+      },
+      {
+        "character": "",
+        "text": "看着得意洋洋的飞鸟，我算是弄明白了。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「冰之公主的心理素质，原来从小时候就开始培养了啊」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不是，那和这个没关系的……」",
+        "body": "ask_z1a0200",
+        "face": "a0018h"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我们聊着聊着，就把想要玩的游乐项目都逛了一圈。"
+      },
+      {
+        "character": "",
+        "text": "但，该说不愧是周六吗。哪儿都排着长队，要等好久。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「决定好去玩哪个了，我就去排队。飞鸟在附近的长椅上休息就好」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「难得的约会，别这么说呀。要排就一起」",
+        "body": "ask_z1a0200",
+        "face": "a0018h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「是么。那就一起吧——」"
+      },
+      {
+        "character": "",
+        "text": "我若无其事地回答道，心里却是非常高兴。"
+      },
+      {
+        "character": "",
+        "text": "感觉飞鸟就像是在说“想要在一起”一样，我拼命抑制住快要爆发出来的感情。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「先去哪儿玩呢……」",
+        "body": "ask_z1b0200",
+        "face": "b0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我说，飞鸟」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「难得的约会，要不要……牵手？」"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「原来、如此…………说、说的、也是。上次约会也牵手了」",
+        "body": "ask_z1b0200",
+        "face": "b0002h"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「那就……请吧」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯」"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟伸出手来，我毫不犹豫地牵了上去。"
+      },
+      {
+        "character": "",
+        "text": "能明显感受到她和我的手不一样，掌心和手指都很有女生味。"
+      },
+      {
+        "character": "",
+        "text": "那触感非常细腻，甚至让人怀疑真的能碰吗……我心里不由小鹿乱撞。"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「别发呆了，走吧」",
+        "body": "ask_z1b0200",
+        "face": "b0001h"
+      },
+      {
+        "character": "",
+        "text": "飞鸟大概也是害羞才催我的吧。"
+      },
+      {
+        "character": "",
+        "text": "感觉我们就像心意相通一样。我这么想着，高兴地向前走去。"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「不过，还真是热闹呀。每次来都感觉这儿充满了活力」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「是啊——不需要等的游乐项目，也就只有温水泳池了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「泳池实在是有些不方便呢。要是带了泳衣，说不定还能去玩玩……」",
+        "body": "ask_z1b0200",
+        "face": "b0007h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那边好像可以租泳衣」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是、是吗？」",
+        "body": "ask_z1b0200",
+        "face": "b0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「好像是的……你之前调查的时候，没看到哪儿有写吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不是，我没打算要去泳池，就没提前查……」",
+        "body": "ask_z1b0200",
+        "face": "b0008h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是么……这样的话，想去就可以去呢」",
+        "body": "ask_z1b0200",
+        "face": "b0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……想去吗？」"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「没有，不是那个意思。现在没打算去泳池」",
+        "body": "ask_z1a0200",
+        "face": "a0009h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「要穿泳衣的话，等我做好心理准备后再说」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊、嗯……是么……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是的……你要知道，女生露出肌肤时必须做好适当的准备」",
+        "body": "ask_z1b0200",
+        "face": "b0018h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「更不要说，是穿泳装给恋人……给喜欢的人看。这不可能说做就做得到的……」",
+        "body": "ask_z1b0200",
+        "face": "b0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊……抱歉，要是让你觉得不舒服我道歉」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不用，没关系。还是快走吧，不早点去排队可能又要浪费多余的时间了」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「赶紧走吧！」",
+        "body": "ask_z1b0200",
+        "face": "b0004h"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟拉起我的手，快步向前。"
+      },
+      {
+        "character": "",
+        "text": "我脑子里想着，这种时候原本应该由我好好带领飞鸟才对吧……"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "（给喜欢的人看泳装必须做准备么……）",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "（哎，我果然是，非常非常喜欢飞鸟啊）"
+      }
+    ]
+  },
+  {
+    "background": "bg03a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我在心中咀嚼着幸福的滋味，笑眯眯地任凭飞鸟牵着向前走去。"
+      }
+    ]
+  }
+]

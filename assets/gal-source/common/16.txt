@@ -1,0 +1,859 @@
+[
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「啊哈哈……真是有趣呀」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      },
+      {
+        "character": "",
+        "text": "飞鸟满脸愉悦地回顾着电影。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「虽然很有趣，但是个有些悲伤的故事啊」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是吗？ 但狮虎王纳姆不是很优秀吗」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「虽然是这样，但是它没有能信赖的对象……总觉得太可怜了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「正因如此，纳姆的强大才会如此耀眼。身为王者，内心也必须强大」",
+        "body": "ask_z1a0200",
+        "face": "a0013h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这我也明白……但是果然啊……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我还是认为它需要能理解自己的同伴」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「从刚才开始你就一直在这么说」",
+        "body": "ask_z1b0200",
+        "face": "b0004h"
+      },
+      {
+        "character": "",
+        "text": "飞鸟发出了一声轻笑。她的声音有些无奈，就像在说“真拿你没办法呀”。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我们的感想差得挺多呢」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「关于结局是不是HappyEnd，我们的意见有所分歧……但这可能正是这部电影有趣的地方」",
+        "body": "ask_z1b0200",
+        "face": "b0013h"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「那么，游马君，电影的价值超过一亿日元了吗？」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「当然！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「毫不犹豫呢。这是真的吗？」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「只要飞鸟在我身边，这段时间就弥足珍贵了。所以我觉得能和飞鸟一起看真是太好了」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这是我和喜欢的人看的第一部电影。今后也一定会成为难以忘怀的回忆」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「结论上来说，这是用金钱买不到的体验。所以价值在一亿日元以上！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「唔……你啊……一般来说，能一本正经地说出这种话吗？」",
+        "body": "ask_z1a0200",
+        "face": "a0009h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这是我不加修饰的真心话哦」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「真是的……你还是老样子呢」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「但是一亿日元以上的价值，究竟是怎样的呢。难道比用一亿日元看很多电影还要好吗？」",
+        "body": "ask_z1a0200",
+        "face": "a0020h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这么一想，比起看一次电影，我还是觉得一亿日元的价值更高」",
+        "body": "ask_z1a0200",
+        "face": "a0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你这想法也太理性了！？ 不如说这逻辑有些狡猾啊……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「“难以忘怀”吗。即使对你来说很特别，但对我来说却并非如此」",
+        "body": "ask_z1a0200",
+        "face": "a0017h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我对电影很满意。但是，要问和你一起看会不会让我更感动的话……」",
+        "body": "ask_z1b0200",
+        "face": "b0013h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「说实话，并不会呢」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「还真是实话实说啊……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不过，谢谢你直白地告诉我，我不讨厌直球」"
+      },
+      {
+        "character": "",
+        "text": "不如说很喜欢。但这话只能放在心里。"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「那么，可以给我一个挽回的机会吗？」",
+        "body": "ask_z1b0200",
+        "face": "b0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「正好到时间了，一起吃个饭怎么样」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯……你事先就想好了吧？」",
+        "body": "ask_z1b0200",
+        "face": "b0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「电影一结束就解散有点儿寂寞吧？」"
+      },
+      {
+        "character": "",
+        "text": "毕竟是约会嘛。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我在想，如果看完电影吃完饭后还能逛逛附近的商店就好了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那倒没有关系……我只有一个要求」",
+        "body": "ask_z1a0200",
+        "face": "a0015h"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「你要是打算请客的话，我就不去」",
+        "body": "ask_z1a0200",
+        "face": "a0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「咦咦！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「说中了吗……因为你说事先已经考虑过了，我就想可能是有谁给你出了主意」",
+        "body": "ask_z1b0200",
+        "face": "b0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「大卫告诉我，男人一定要展现出帅气的一面」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我不知道世间的人们是怎么谈恋爱的，但我有我的想法」",
+        "body": "ask_z1b0200",
+        "face": "b0018h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这样啊……这么说邀请你看电影时你也提醒过我。明白了！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那就干脆利落地AA吧。这样的话，你愿意和我一起吃饭吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「好。当然可以」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "简单吃完晚饭后，我和飞鸟开始了橱窗购物。"
+      },
+      {
+        "character": "",
+        "text": "我们漫无目的地在车站附近闲逛，看到有想逛的店的话就会进去看看。"
+      },
+      {
+        "character": "",
+        "text": "去了有飞鸟喜欢的小狗的宠物店，看了看可爱的小狗小猫……"
+      },
+      {
+        "character": "",
+        "text": "在好奇心驱使下进了一家很时髦的帽子店，试了试适合自己的帽子。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你和朋友们出来的时候也是这么玩的吗？」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「梅林他们？ 是啊，基本上是根据当天的心情决定去哪玩，然后玩个痛快」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「有时周末还会干脆住下来，在我家玩一整天游戏」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「住下来……大卫同学没关系吗？ 只有她一个女孩子吧」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「她完全不在乎。她说反正要留宿，一开始过来玩的时候就会穿着运动衫」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这个……对我来说有点难以想象」",
+        "body": "ask_z1b0200",
+        "face": "b0008h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你们一定是无需客气、亲密无间的朋友吧」",
+        "body": "ask_z1b0200",
+        "face": "b0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「是啊——大家都不会勉强自己，非常轻松自在」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这样的话，你邀请我一起去看电影的时候，告诉你“不用勉强自己”的我真是表现得很不错呢」",
+        "body": "ask_z1b0200",
+        "face": "b0013h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊哈哈，你说得没错！」"
+      },
+      {
+        "character": "",
+        "text": "和看电影时不同，我和飞鸟聊着一些无关紧要的话题。"
+      },
+      {
+        "character": "",
+        "text": "虽然平时在学生会室或者是其他场合时也能闲聊，但现在感觉到我们两人心的距离更近了。"
+      },
+      {
+        "character": "",
+        "text": "彼此说的话都比平时更多。"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「游马君有常去的店吗？ 比如平时购物的地方」",
+        "body": "ask_z1b0200",
+        "face": "b0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我一般都是看心情吧~大概没有固定要去的店。飞鸟呢？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我买衣服的时候经常会去一家店。不过这家店不在附近」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我有喜欢的品牌，但卖这个牌子的店都有些远，不跑一趟买不到」",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「服装的品牌吗~虽然我有喜欢的服装风格，但并不拘泥于品牌」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「大卫也很注重服装店与品牌，女生都会这样吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「女生喜欢服装品牌的情况挺普遍的。我想也会有男生在意品牌」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊，那喀索斯穿私服的时候也会精心挑选，连我看都一目了然」"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「他的话好像确实会注重打扮。但是，嗯……嗯……」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「虽然你说不拘泥于品牌，但整体搭配方面你也挺有品味——」",
+        "body": "ask_z1b0200",
+        "face": "b0002h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「咳咳。没什么」",
+        "body": "ask_z1b0200",
+        "face": "b0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「怎么啦？ 有什么事可以跟我说」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不，真的什么都没有。请不要放在心上」",
+        "body": "ask_z1a0200",
+        "face": "a0015h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「有些在意啊……」"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「对了对了，你有没有觉得口渴？」",
+        "body": "ask_z1a0200",
+        "face": "a0016h"
+      },
+      {
+        "character": "",
+        "text": "虽然感觉话题转变得有些突兀，但我确实有些口渴，所以点了点头。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「有点。今天比较热呢」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯……你喜欢时尚的饮品吗？ 电影院附近有家最近刚开的店」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「啊，我也知道。是那家与别家不同、饮品十分精致的咖啡店对吧」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你已经去过了吗」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不，虽然一直很感兴趣，但我一个人的话无法下定决心进店门……」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "",
+        "text": "我也多少能理解她的心情。"
+      },
+      {
+        "character": "",
+        "text": "如果没有大卫、梅林、那喀索斯陪着，我也有很多地方不会去、很多事情不会做。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「既然机会难得，我们一起去吧？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「确实，也许两个人一起进店要更轻松些。那么我们就去看看吧」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我和飞鸟同学在外带口排队，各自点了不同口味的饮料。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我要开心果奶茶」",
+        "body": "ask_z1b0200",
+        "face": "b0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「咦，那是啥」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你看菜单，这里不是写着吗？」",
+        "body": "ask_z1a0200",
+        "face": "a0002h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不……不会给你喝的哦？ 你想要的话就自己点」",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「没事，这口味实在有点……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「“实在有点”是什么意思？ 好了，游马君也赶紧点了吧」",
+        "body": "ask_z1a0200",
+        "face": "a0018h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我要芋羊羹奶昔」"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「不好意思，请再说一遍」",
+        "body": "ask_z1a0200",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「为什么飞鸟要再问一遍啊！ 芋羊羹奶昔！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「哪里有这种口味的啊！ 嗯、唔哇，真的有啊……」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「为什么要点芋羊羹奶昔啊？」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我觉得应该很好喝。你看看，菜单上的图片是美丽的金黄色噢」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「哈、哈啊……真是“勇者”呢。当然，我没在夸你」",
+        "body": "ask_z1b0200",
+        "face": "b0017h"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "好像被贬得很厉害，不过飞鸟也没资格说我吧。我一边这么想着，一边等着饮料送来 。"
+      },
+      {
+        "character": "",
+        "text": "不久后，我们拿到了精心制作的饮料，马上含上吸管。"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「我尝尝……嗯、呼……哈，口感非常丰富，很好喝」",
+        "body": "ask_z1b0200",
+        "face": "b0020h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「佐料里放了黄豆粉吗？ 味道也很浓郁，嗯……哈啊，都快欲罢不能了」",
+        "body": "ask_z1b0200",
+        "face": "b0013h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「颜色还是鲜明的绿色，光是看着就能让心情变得凉爽……」",
+        "body": "ask_z1b0200",
+        "face": "b0004h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「游马君的怎么样？」",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「别用那种眼神看我！一定很好喝的」"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我手里拿着的是鲜艳的黄色黏稠液体，恰似芋羊羹融化后的样子。"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「好喝吗？」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯，噢噢，很甜，芋头的味道也相当浓郁」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这正是能喝的芋羊羹啊！ 我还挺喜欢的」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「喝的芋羊羹……」",
+        "body": "ask_z1a0200",
+        "face": "a0019h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「很好喝哦？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是吗……那就好」",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……要尝尝吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不用了」",
+        "body": "ask_z1b0200",
+        "face": "b0008h"
+      }
+    ]
+  },
+  {
+    "background": "bg00a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我们单手拿着饮料，一边闲聊一边继续享受着橱窗购物的乐趣。"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「嗯…………话说……」",
+        "body": "ask_z1b0200",
+        "face": "b0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯？ 怎么了？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不，没什么」",
+        "body": "ask_z1a0200",
+        "face": "a0016h"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "（明明是难得的约会，他却和平时相比一点变化都没有呢……）",
+        "body": "ask_z1a0200",
+        "face": "a0018h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "（这可是约会，再稍微刷刷帅不也可以吗？）",
+        "body": "ask_z1b0200",
+        "face": "b0017h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "（不是请客、票钱这些有关金钱的事，而是，唔唔唔……）",
+        "body": "ask_z1b0200",
+        "face": "b0018h"
+      },
+      {
+        "character": "",
+        "text": "虽然午餐决定AA，但去的却是汉堡店。"
+      },
+      {
+        "character": "",
+        "text": "虽然许久没吃的汉堡吃起来既方便又轻松，也很美味。"
+      },
+      {
+        "character": "",
+        "text": "理应没什么可抱怨的，但总觉得……"
+      },
+      {
+        "character": "飞鸟",
+        "text": "（橱窗购物确实不错……但是不是应该多去一些适合女生的店铺呢？）",
+        "body": "ask_z1b0200",
+        "face": "b0018h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "（而且约会时喝芋羊羹是什么意思，芋羊羹诶）",
+        "body": "ask_z1b0200",
+        "face": "b0019h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "（在女性面前，应该点一些更加时尚的东西，点一些让我看得也想喝的饮料才对吧？）",
+        "body": "ask_z1b0200",
+        "face": "b0013h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "（虽然我说“不用了”，但起码也得加一句“真的很好喝，来尝一口试试“吧，这样的话……）",
+        "body": "ask_z1b0200",
+        "face": "b0007h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "（不对，我在想什么啊！ 我是笨蛋吗？简直就像我在期待着这种事一样）",
+        "body": "ask_z1b0200",
+        "face": "b0009h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "（总、总之……他都说了要让我喜欢上他，那就应该做些更能吸引我的事才对吧）",
+        "body": "ask_z1a0200",
+        "face": "a0018h"
+      },
+      {
+        "character": "",
+        "text": "比如说，就打个比方……去软乎乎的薄饼店之类的……"
+      },
+      {
+        "character": "",
+        "text": "或者是有新奇角色的周边店……又或者是能摸可爱小狗的狗狗咖啡厅……"
+      },
+      {
+        "character": "",
+        "text": "带我去那些地方的话，好感度肯定能提高——"
+      },
+      {
+        "character": "飞鸟",
+        "text": "（哈！？ 我在想什么呢！？）",
+        "body": "ask_z1a0200",
+        "face": "a0009h"
+      },
+      {
+        "character": "",
+        "text": "从刚才开始，我简直就像希望他能这么做一样。"
+      },
+      {
+        "character": "",
+        "text": "简直就像……在期待着游马君一样。不对，才不对，我才没有那么想。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "（这只是在客观角度上指出他的不足之处。仅仅只是普遍的意见而已哦……）",
+        "body": "ask_z1a0200",
+        "face": "a0018h"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「飞鸟？」",
+        "body": "ask_z1a0200",
+        "face": "a0020h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "（没错，我只是指出不足之处。决不是对游马君有所期待——）",
+        "body": "ask_z1a0200",
+        "face": "a0012h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟，没事吧？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「啊！？ 没没没、没事，什么事都没有」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「是吗？ 你的脸好像有点红……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「都说什么事也没有了。这只是因为阳光太强烈了吧？」",
+        "body": "ask_z1b0200",
+        "face": "b0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你有点走累了吧，抱歉我没注意到。要找个地方休息吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不用了」",
+        "body": "ask_z1b0200",
+        "face": "b0006h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "（我绝对没有在期待什么，真是的。从一开始我就对约会一点儿也没兴趣！）",
+        "body": "ask_z1a0200",
+        "face": "a0005h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "（姆姆姆姆姆姆姆姆姆……呜）",
+        "body": "ask_z1a0200",
+        "face": "a0018h"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": ""
+      }
+    ]
+  }
+]

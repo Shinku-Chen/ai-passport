@@ -1,0 +1,486 @@
+[
+  {
+    "background": "bg00a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "（既然下定决心要让飞鸟喜欢上我，那就必须得行动起来）"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "（所以——）"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "Img": "line21.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「请看，这里有两张电影票！」",
+        "body": "ask_z1a0100",
+        "face": "a0010h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「……是这样没错。这又怎么了呢？」",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这两张票是抽奖抽中的。也就是免费的」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「但物品的价值不仅仅是由价格决定的，更取决于它所带来的体验」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「原来如此，我同意你的看法」",
+        "body": "ask_z1a0100",
+        "face": "a0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「换句话说，如果能和飞鸟一起看这部电影，我一定可以发掘出它超过一亿元的价值！」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「那我和你一起去的话，你会给我一亿日元吗？」",
+        "body": "ask_z1a0100",
+        "face": "a0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「――――」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你突然沉默让我很为难。明明直到刚才还在兴致勃勃地讲个不停」",
+        "body": "ask_z1b0100",
+        "face": "b0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「所谓人类，就是被戳中要害或被正论说服时会哑口无言的生物」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不想无言以对的话，请你一开始就不要说些奇怪的话，真是的」",
+        "body": "ask_z1b0100",
+        "face": "b0008h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你想和我一起去看电影。我可以这样理解吧？」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「没错！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那请你一开始就老实地说出来」",
+        "body": "ask_z1a0100",
+        "face": "a0020h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不过，就算你老实说出来了，我也不一定会和你去」",
+        "body": "ask_z1b0100",
+        "face": "b0017h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "Img": "line21.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「咦咦咦！？ 不会吧，从刚才的对话来看这里不该答应下来吗！？」"
+      },
+      {
+        "character": "",
+        "text": "刚给人一点希望就……咕，这个魔女！"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「你说过，根据情况也是会陪我一起去的吧？」",
+        "body": "ask_z1b0100",
+        "face": "b0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯。所以根据情况也可能拒绝你」",
+        "body": "ask_z1b0100",
+        "face": "b0002h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「正如我之前所说，你对我来说并不是特别的人。既然票是免费得到的，那应该也没有什么损失吧？」",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「即使不是特别的人，我们也一起去吃过冰淇淋吧」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那个时候……只是一时兴起而已」",
+        "body": "ask_z1b0100",
+        "face": "b0001h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "Img": "line21.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「那么这次也一时兴起一下，跟我一起去吧！把这张票的价值提升到一亿日元吧！」",
+        "body": "ask_z1b0100",
+        "face": "b0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「想靠热情来强行说服我吗？ 我已经看穿了」",
+        "body": "ask_z1b0100",
+        "face": "b0020h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「说到底，如果物品的价值是由体验决定的，那么它也可能不值一亿元」",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「假如我和你一起去之后觉得这件事的价值很低，又该怎么办呢？」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「没关系！ 我坚信价值绝对不会低于一亿日元！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我不会让飞鸟感到无聊的，所以请给一次我机会！」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我深深地弯下了腰，额头甚至都快贴上桌子了。"
+      },
+      {
+        "character": "",
+        "text": "因为飞鸟已经知道了我的心意，所以我所能做的就只有向她表达诚意了。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯，我想想……」",
+        "body": "ask_z1a0100",
+        "face": "a0020h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「既然票是免费的，只要体验不是负分，对我来说就没有损失」",
+        "body": "ask_z1a0100",
+        "face": "a0020h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「仔细想想，也可以说获益的可能性远远更高……而风险则比较低呢」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「也好。我们就去电影院约会吧」",
+        "body": "ask_z1a0100",
+        "face": "a0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「咦！？ 约约约、约会！？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「为什么这么惊讶？是你邀请我的吧」",
+        "body": "ask_z1a0100",
+        "face": "a0017h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "和飞鸟约会！？"
+      },
+      {
+        "character": "",
+        "text": "不如说，光从飞鸟嘴中听到“约会”这个词就很不得了了……"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我是感受到你的热情才接受的……」",
+        "body": "ask_z1b0100",
+        "face": "b0008h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「但看到你一副出乎意料的样子，心情有些复杂呢。果然还是取消吧？」",
+        "body": "ask_z1b0100",
+        "face": "b0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不不不！ 没有的事！ 非常谢谢你！」"
+      },
+      {
+        "character": "",
+        "text": "我并没有对飞鸟会答应感到意外，而是因为她自然而然地把这当成了约会，所以才很高兴——"
+      },
+      {
+        "character": "",
+        "text": "但如果把这话说出来好像会自找麻烦，还是不说了吧。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「那么，和您的约会就安排在下一个休息日，您看如何！？」",
+        "body": "ask_z1b0100",
+        "face": "b0010h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「为什么语气变得这么僵硬？ 那天我没有安排，所以没关系」",
+        "body": "ask_z1b0100",
+        "face": "b0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「好耶！！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「请不要摆出胜利pose。你高兴过头了。不觉得害臊吗？」",
+        "body": "ask_z1a0100",
+        "face": "a0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不~毕竟你看——」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "本来还在想到底能不能成功，没想到飞鸟意外地有干劲，真是太好了。"
+      },
+      {
+        "character": "",
+        "text": "让这两张票的价值提到一亿日元……不，因为是和飞鸟的“约会”，所以它们的价值比这还要高！"
+      },
+      {
+        "character": "",
+        "text": "光这么想想就有些坐立不安了。真希望休息日早点到来啊……"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「话说回来，电影票真的是抽奖抽中的吗？」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「咦？ 为什么突然问这个？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「中奖的时机未免也太巧妙了。还是说你的运气很好呢……」",
+        "body": "ask_z1a0100",
+        "face": "a0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「就、就是这样的。老天也站在我这边啊」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「真的么？」",
+        "body": "ask_z1a0100",
+        "face": "a0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「唔唔唔……就当成这样不好吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我不喜欢被欺骗。如果你只是不想让我担心票价、出于顾虑才这么说的，就更不好了」",
+        "body": "ask_z1b0100",
+        "face": "b0017h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「所以，究竟是怎么回事」",
+        "body": "ask_z1b0100",
+        "face": "b0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……其实是买来的」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「果然。如果被我拒绝的话，你打算怎么办？」",
+        "body": "ask_z1b0100",
+        "face": "b0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯，和家人一起去看就好了吧……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊，真是的——飞鸟，你就别再深究了！我只是不由想耍个帅而已！这就是男人心啊！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这、这样啊。不好意思」",
+        "body": "ask_z1a0100",
+        "face": "a0010h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「但是，太过顾虑我反而不好，你不需要这么费心的。请好好记住了」",
+        "body": "ask_z1a0100",
+        "face": "a0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「知道了，我下次会注意的」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「约会当天也不许勉强自己」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯。我会放轻松的」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "（呼……太机灵也不是好事啊——）"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你说什么了吗？」",
+        "body": "ask_z1b0100",
+        "face": "b0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不，什么都没！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那么，差不多该集中精力做学生会工作了。今天就要全部做完哦」",
+        "body": "ask_z1b0100",
+        "face": "b0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「好！」"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": ""
+      }
+    ]
+  }
+]

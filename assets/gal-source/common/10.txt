@@ -1,0 +1,810 @@
+[
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "今天，也只有我们俩在学生会室里工作。"
+      },
+      {
+        "character": "",
+        "text": "以前飞鸟完全不让我做任何工作。而和当时相比，现在的飞鸟似乎已经相当信任我了。"
+      },
+      {
+        "character": "",
+        "text": "但终归只是作为学生会的一员而被信任。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这是文化祭的预算草案。拜托你检查一下，分配给各个班级、社团的金额是否有误」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这是非常重要的工作，做的时候请多加留意」",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「收到——」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊，对了。我刷到了可爱狗狗的视频，你要看吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「真的嘛？」",
+        "body": "ask_z1a0100",
+        "face": "a0004h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「等等，不对！ 刚给你分配了重要的工作，你这是在干什么」",
+        "body": "ask_z1b0100",
+        "face": "b0020h"
+      },
+      {
+        "character": "",
+        "text": "她只在一瞬间露出了兴高采烈的表情，随后一脸生气地瞪向了我。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「抱歉抱歉。不过让我趁着还没忘先问一下，飞鸟是喜欢狗的吧？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「喜欢是喜欢的……但算不上特别喜欢」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你家没有养狗吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「很遗憾，因为我妈妈对狗过敏，所以家里没法养。要是可以的话我也想养」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这确实很麻烦啊……抱歉，我说得有点轻率了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「没事，请不要在意」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「不过确实很可爱啊~狗狗」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不知道是不是受了飞鸟的影响，我最近也经常看狗狗的视频」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「请你不要说得像是我的责任一样……但是狗狗确实很可爱」",
+        "body": "ask_z1b0100",
+        "face": "b0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「像吉娃娃这种，小小的很可爱吧」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是的，不认生的博美也很好呢。还有泰迪，软乎乎的非常讨人喜欢……」",
+        "body": "ask_z1b0100",
+        "face": "b0012h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「啊，不过也不能漏了大型犬呢……就算只有一次也好，好想抱抱看金毛啊」",
+        "body": "ask_z1b0100",
+        "face": "b0007h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我懂」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你也能懂嘛」",
+        "body": "ask_z1a0100",
+        "face": "a0004h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「不对，现在不是谈论这个的时候！ 好了赶紧工作吧！」",
+        "body": "ask_z1b0100",
+        "face": "b0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哎呀！ 我现在就工作！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「请你说到做到……但是，之后把视频的链接分享给我。这是学生会长的命令」",
+        "body": "ask_z1b0100",
+        "face": "b0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「知道啦」"
+      },
+      {
+        "character": "",
+        "text": "我忍着笑这么答道。毕竟我也不希望再惹她生气了。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我一边工作，一边时不时往飞鸟那里瞟一眼。",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "",
+        "text": "虽然还没有到能让飞鸟依靠我的程度，但作为同事我已经取得了她的信任。"
+      },
+      {
+        "character": "",
+        "text": "一段时间前，我根本想不到我们能像现在这样相处。"
+      },
+      {
+        "character": "",
+        "text": "在飞鸟误以为老师叫了她名字的那个时候之前。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯……怎么了」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「抱歉。只是稍微看一眼」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是吗。工作怎么样了」",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「已经完成百分之三十了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这速度还不错嘛。不过这次比起速度，正确率更重要。请你多注意」",
+        "body": "ask_z1a0100",
+        "face": "a0002h"
+      },
+      {
+        "character": "",
+        "text": "我用行动示意我明白了，飞鸟的表情便稍稍柔和了一些。",
+        "body": "ask_z1a0100",
+        "face": "a0003h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "Img": "cinema11.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我也没想到，飞鸟竟然会露出这样的表情……",
+        "body": "ask_z1a0100",
+        "face": "a0003h"
+      },
+      {
+        "character": "",
+        "text": "既冷酷又难以接近的冰之公主。"
+      },
+      {
+        "character": "",
+        "text": "她的形象被塑造得完美无缺，能与陈列在美术馆的名画媲美。"
+      },
+      {
+        "character": "",
+        "text": "我一直坚信她是我触不可及的人，但实际上并非如此。"
+      },
+      {
+        "character": "",
+        "text": "飞鸟其实也拥有真情实感，和普通人一样有喜怒哀乐。"
+      },
+      {
+        "character": "",
+        "text": "只有我能看到她真实的一面，实在是太可惜了。"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「你看！ 就是这样！」",
+        "body": "ask_z1a0100",
+        "face": "a0006h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「怎、怎么了，这么突然」",
+        "body": "ask_z1a0100",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「既然你能情绪化地和我顶嘴，那么你只需要和现在一样，把真实的感情也发泄到别人身上就行了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「所以说啊……」",
+        "body": "ask_z1a0100",
+        "face": "a0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你要是平时也这么做就好了。真可惜啊」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「话真多……你好烦啊……」",
+        "body": "ask_z1a0100",
+        "face": "a0005h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「因为你可是特别的啊！」",
+        "body": "ask_z1a0100",
+        "face": "a0006h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「——哈？」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「…………」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「游马君？」",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「呜哇！？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「发生什么了，叫得那么响……难道说」",
+        "body": "ask_z1a0100",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「唔、嗯……抱歉，刚刚发了会儿呆」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「都说让你多加注意了吧。请你有点学生会成员的自觉好吗」",
+        "body": "ask_z1b0100",
+        "face": "b0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「抱歉抱歉」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「请你顺便把这些文件也处理好」",
+        "body": "ask_z1b0100",
+        "face": "b0015h"
+      },
+      {
+        "character": "",
+        "text": "我老老实实地接过文件，摇了摇头重新打起精神。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "你是特别的——这种话，我还是第一次被人当面这么说。"
+      },
+      {
+        "character": "",
+        "text": "也许正因如此，我只要稍微回想一下就会意识到。"
+      },
+      {
+        "character": "",
+        "text": "当时的的惊讶与失落之情，以及胸中那雷鸣般的心跳声。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "教师",
+        "text": "「打扰一下，我进来了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「老师？ 请问有什么事情吗」",
+        "body": "ask_z1a0100",
+        "face": "a0010h"
+      },
+      {
+        "character": "教师",
+        "text": "「抱歉打扰你们工作了，狮子堂同学能来一趟教师办公室吗」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我知道了。游马君，请你继续工作」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "",
+        "text": "我独自留在学生会室中，按照飞鸟的指示继续进行着文件检查工作。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "因为没有了交谈的对象，我只能默默地检查文件，工作进展神速。"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "…………"
+      },
+      {
+        "character": "隼斗",
+        "text": "（真安静啊……）"
+      },
+      {
+        "character": "",
+        "text": "没想到只有一个人的学生会室会这么安静。"
+      },
+      {
+        "character": "",
+        "text": "不管怎样，只要和飞鸟搭话便会得到回应。就算她只是坐在我身边，感觉都和现在完全不同。"
+      },
+      {
+        "character": "",
+        "text": "但是在我来之前，飞鸟应该一直都是一个人工作的。"
+      },
+      {
+        "character": "",
+        "text": "一直，独自一人待在这间学生会室里吗……"
+      },
+      {
+        "character": "隼斗",
+        "text": "「…………」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「我回来了」",
+        "body": "ask_z1a0100",
+        "face": "a0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「欢迎回来！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「唔……你的回答很有精神呢。不会因为我不在所以偷懒了吧？」",
+        "body": "ask_z1a0100",
+        "face": "a0018h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「没有，我有在认真工作。好了，你检查一下吧」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我把完成的文件交给飞鸟检查。",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "",
+        "text": "她点点头，来回扫视着接过来的文件。我则注视着她。"
+      },
+      {
+        "character": "",
+        "text": "她的容貌真是太美了——我不由得在心里感叹。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这里和这里，有错误。你需要重做一下」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「非常抱歉——」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「唉……」",
+        "body": "ask_z1b0100",
+        "face": "b0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不需要叹这么大一口气吧」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「啊、不是的，不好意思。不是因为你出错才叹气的」",
+        "body": "ask_z1b0100",
+        "face": "b0010h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟面带愁容，在椅子上坐了下来。",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「刚刚老师叫你有什么事吗」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不是需要你操心的事情」",
+        "body": "ask_z1b0100",
+        "face": "b0015h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……不会是考试不及格吧？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「请你不要随意揣测好吗。我又不是你，不可能考试不及格的」",
+        "body": "ask_z1a0100",
+        "face": "a0006h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我从进入这所学校开始，还没有不及格过哦！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「“从进入这所学校开始”……也就是说以前有过咯」",
+        "body": "ask_z1a0100",
+        "face": "a0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哎呀，谁没有不及格过一两次呢」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我就从来没有不及格过。你还真亏能考进这所学校啊……」",
+        "body": "ask_z1b0100",
+        "face": "b0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊哈哈哈……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「算了……呼……」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「你知道吗？ 叹气会让幸福溜走的」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「哼。会自己溜走的幸福，我不要也罢」",
+        "body": "ask_z1b0100",
+        "face": "b0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「让幸福随意溜走的话一定会为难的吧。得想办法阻止啊」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我本来就不幸福，所以才叹气」",
+        "body": "ask_z1a0100",
+        "face": "a0008h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我根本就没有可以溜走的幸福，所以无论怎么叹气都没关系」",
+        "body": "ask_z1a0100",
+        "face": "a0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「唔……那至少，告诉我叹气的原因就好。我在意到没法集中精力工作了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你的意思是我妨碍你工作了？ 算了，你这样说也有点道理……」",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「毕竟你也是学生会的一员，我就把能说的都告诉你吧」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「刚才老师叫我去办公室，谈的是关于足球社资金的事情」",
+        "body": "ask_z1b0100",
+        "face": "b0015h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「足球社的资金……」"
+      }
+    ]
+  },
+  {
+    "background": "bg00a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "也许是因为我们学校是大型学校，各社团的成员数量都相当多。"
+      },
+      {
+        "character": "",
+        "text": "而这之中足球社称得上是最拔尖的，是个十分活跃、强到可以参加全国大赛的社团。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「分配资金的是我们学生会。但如何去使用这笔资金则由各个社团独立决定」",
+        "body": "ask_z1b0100",
+        "face": "b0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「毕竟注重学生的自主性是学校的方针嘛」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「刚刚来的是足球社的顾问老师，他来找我确认有没有出问题」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「据说新来的经理把所有收据都弄丢了……」",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「并且，他们的社团费用开支尚不明确。好像每个月的收支报告书也没有好好做」",
+        "body": "ask_z1b0100",
+        "face": "b0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……莫非，是被私吞了？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我也不知道到底是什么情况，所以有必要调查一下」",
+        "body": "ask_z1b0100",
+        "face": "b0015h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「不仅要教他们如何管理账务，还必须要搞清楚有没有私吞行为……」",
+        "body": "ask_z1b0100",
+        "face": "b0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「毕竟是跟钱有关嘛……虽然必须得认真对待，但调查的一方和被调查的一方都不会太开心啊」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是的。要调查的话就必须调查到底。如果有不正当的行为，也会涉及到学生会的信誉问题」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「最坏的情况下，会被人认为学生会与他们串通一气。必须避免这种情况」",
+        "body": "ask_z1a0100",
+        "face": "a0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯……真是件麻烦事啊……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「没错……无论如何事态都会变得很敏感，所以我一想到之后的事就忍不住叹气」",
+        "body": "ask_z1a0100",
+        "face": "a0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「说得也是啊。连我都要叹气了」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不过，我们必须要做点什么……嗯，足球社吗」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯嗯嗯……」"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「怎么了，一副冥思苦想的表情」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「好！ 这个问题，就让我游马隼斗设法解决给你看吧」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「咦……」",
+        "body": "ask_z1a0100",
+        "face": "a0010h"
+      },
+      {
+        "character": "",
+        "text": "飞鸟听了我坚定的话语，惊讶地瞪大了眼睛。"
+      },
+      {
+        "character": "",
+        "text": "不过，这少见的表情马上就被疑惑的神情覆盖。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你打算干什么？请不要自作主张……」",
+        "body": "ask_z1a0100",
+        "face": "a0018h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不用担心。我会先悄悄地行动」",
+        "body": "ask_z1a0100",
+        "face": "a0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我也知道这种敏感的事情需要慎重处理……但是，我们不能浪费时间」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「暂且先交给我吧」",
+        "body": "ask_z1a0100",
+        "face": "a0015h"
+      }
+    ]
+  },
+  {
+    "background": "bg09a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「……你真的能做好吗？」",
+        "body": "ask_z1a0100",
+        "face": "a0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我有一个点子。你就好好期待结果吧」"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "."
+      }
+    ]
+  }
+]

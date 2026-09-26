@@ -1,0 +1,1138 @@
+[
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「虽说料到了剧情走向……但也还不错呢」",
+        "body": "ask_z1b0200",
+        "face": "b0013h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯，这就是所谓的王道剧情吧，挺好的」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「要是换做以前，我说不定会漠不关心地看完这电影……但现在，我觉得是个很不错的故事」",
+        "body": "ask_z1b0200",
+        "face": "b0007h"
+      },
+      {
+        "character": "",
+        "text": "而对我来说，能和飞鸟在一起才是最重要的。"
+      },
+      {
+        "character": "",
+        "text": "而且还能分享观后感，真是非常幸福的两个小时。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那，我想问下和上次约会相比怎么样？  其实这才是我的初衷」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「就电影来说，还是上次的比较精彩吧、但……果然，因为和你在一起……」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「虽然上次也是一起……要怎么说呢，算是……要好一点吧」",
+        "body": "ask_z1a0200",
+        "face": "a0007h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「比上次要好，嗯」",
+        "body": "ask_z1a0200",
+        "face": "a0013h"
+      },
+      {
+        "character": "",
+        "text": "飞鸟害羞地随口说着感想。那样子十分可爱，不禁让我舒缓了嘴角。"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「你又觉得怎么样呢？」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我觉得棒极了！ 因为和你在一起啊！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「什么！？ 我、我是说电影感想！  只是想问，电影和上次相比怎么样啦」",
+        "body": "ask_z1a0200",
+        "face": "a0009h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我想想……很难说哪部更好」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「上次是第一次和飞鸟一起看的电影，今天则是我们成为恋人后第一次看的电影——」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你这不完全没说电影，全在说我吗」",
+        "body": "ask_z1a0200",
+        "face": "a0009h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「没有什么事比和你一起看更重要吧？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「唔……唔唔……真是的……你这个人啊……」",
+        "body": "ask_z1b0200",
+        "face": "b0017h"
+      },
+      {
+        "character": "",
+        "text": "说实话我也有点，不对，是非常不好意思，但害羞的飞鸟太可爱了，幸亏硬撑着说出口了！"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「那么接下来，还是和上次一样去逛街吗？」",
+        "body": "ask_z1b0200",
+        "face": "b0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯……我能说一句吗」",
+        "body": "ask_z1b0200",
+        "face": "b0002h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你是不是有话还没跟我说？」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哎？ 什么……话？」"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "……飞鸟一言不发，直勾勾地盯着我。",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "",
+        "text": "她、她在说什么……虽然不知道详情，但飞鸟的眼神非常认真，万一想不出可能会发生不妙的事。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「稍等稍等，让我想想」"
+      },
+      {
+        "character": "",
+        "text": "是我看漏了什么吗？  还是说……有什么和平时不一样？"
+      },
+      {
+        "character": "",
+        "text": "看着眼前的飞鸟，我感受到了细微违和。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「奇怪……飞鸟的视线之前有这么高么」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……你看看下面」",
+        "body": "ask_z1a0200",
+        "face": "a0017h"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「高跟鞋，我为了今天新买的。啊，才、才不是为你……」",
+        "body": "ask_z1a0200",
+        "face": "a0002h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「也不能说不是…………我穿着合适吗？」",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「很合适！ 超级可爱！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我不提你都没发现，还好意思说……」",
+        "body": "ask_z1a0200",
+        "face": "a0018h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「唔，被戳到痛处了……」"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「但真的很适合你，和衣服颜色也很搭，我觉得选得很好。真不愧是你啊」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是、是么。你都这么说了，那我就没白穿了呢」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟平时是怎么选鞋子买的？  果然会看品牌吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯，我当然有喜欢的牌子。和买衣服一样，会先上网查查看」",
+        "body": "ask_z1b0200",
+        "face": "b0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哦～原来如此。仔细调查这点真有你的作风」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「光是看着各式各样的鞋子就很开心了，发现打扮的乐趣之后更是一下子沉迷其中了」",
+        "body": "ask_z1b0200",
+        "face": "b0013h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「但和选衣服不同的是，我很重视看鞋子的眼缘」",
+        "body": "ask_z1a0200",
+        "face": "a0002h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「比如在店里随便逛着，看到中意的就会试穿一下，如果合适就买下来」",
+        "body": "ask_z1a0200",
+        "face": "a0016h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这么说我也一样！  碰到喜欢的就会当场买下来」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不过我也很注重价格。一分价一分货，对吧」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「要是发现了既便宜、设计和材质又好的，我也会很开心」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我懂。过了这个村就没这个店，要是遇到了一见钟情的衣服或鞋子，会很幸福的」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「对了。最近我对杂货也挺有兴致的……哎呀，你应该对杂货不感兴趣吧」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「说给我听听，说不定就让我感兴趣了」"
+      },
+      {
+        "character": "",
+        "text": "我也想了解飞鸟喜欢什么。说不定我也会爱上呀。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是么，好……嗯～我觉得看着实物跟你讲会更好一些」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那逛街就一会再说，先去杂货店怎么样？」",
+        "body": "ask_z1b0200",
+        "face": "b0004h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「没多远就有一家我中意的店」",
+        "body": "ask_z1b0200",
+        "face": "b0016h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那走吧！」"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我岂能放过更多了解飞鸟的机会。我意气风发地迈着步子，飞鸟则稍稍落后，从后面跟了上来。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「啊。抱歉，能稍微走慢点吗？」",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      },
+      {
+        "character": "",
+        "text": "飞鸟带着些许歉意看向下方。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这样啊，毕竟是新买的鞋子」"
+      },
+      {
+        "character": "",
+        "text": "为了今天而穿上的高跟鞋。肯定，还没穿习惯吧。"
+      },
+      {
+        "character": "",
+        "text": "自己居然被提醒了才注意到，我反省着沉思了一会儿……"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「话虽如此，但也不用太在意，放松一点就好」",
+        "body": "ask_z1a0200",
+        "face": "a0007h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯，完全没问题……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯……怎么突然不说话了？」",
+        "body": "ask_z1a0200",
+        "face": "a0002h"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "也就是说，只要我和飞鸟走得一样快就好了。"
+      },
+      {
+        "character": "",
+        "text": "这样的话……我想到了个好主意，开口说道。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯……我说、那个。飞鸟」"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「要不要牵手？」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「哎……唔唔…………那个」",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你想牵吗？」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「大概、那个……大概是吧」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你要是不说清楚，我就拒绝」",
+        "body": "ask_z1b0200",
+        "face": "b0018h"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "Img": "line21.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「对不起！ 我想牵！」",
+        "body": "ask_z1b0200",
+        "face": "b0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你这不是很想么……」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不——这是，对了，是为了配合步调，不是想要触碰飞鸟的那种拈花弄柳的意思……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我又没让你解释这些」",
+        "body": "ask_z1b0200",
+        "face": "b0017h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「但既然你都说到了这个份上，就没办法了」",
+        "body": "ask_z1b0200",
+        "face": "b0016h"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟轻快地伸出手来。",
+        "body": "ask_z1b0200",
+        "face": "b0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……那就，失礼了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你在说什么呀……真是的，赶紧牵吧」",
+        "body": "ask_z1b0200",
+        "face": "b0007h"
+      },
+      {
+        "character": "",
+        "text": "我咽了咽口水伸出了手，两人的手相互触碰。"
+      },
+      {
+        "character": "",
+        "text": "飞鸟的手指不仅修长……而且很柔软！  她的体温比我略低一些，感觉凉凉的。"
+      },
+      {
+        "character": "",
+        "text": "指尖传来的些许凉意，使我更加意识到了自己的兴奋。"
+      }
+    ]
+  },
+  {
+    "background": "bg01a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "但好像不止我一个激动得不得了，飞鸟的嘴唇也微微颤动，好像想说些什么。",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那，走吧」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯、嗯。我来带路」",
+        "body": "ask_z1b0200",
+        "face": "b0004h"
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "没走多久，就看见了一家房前摆着一排小玩意的杂货店。"
+      },
+      {
+        "character": "",
+        "text": "不用进去就能拿到商品，飞鸟站在店前两眼放光。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「商品和上次来时相比变了不少。能看出店老板的努力呀」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「每次来都能有新发现，这就是为什么我喜欢这家店」",
+        "body": "ask_z1a0200",
+        "face": "a0016h"
+      },
+      {
+        "character": "",
+        "text": "确实，难怪飞鸟会喜欢。店面布置的非常精细，看上去应该很能招揽客人。"
+      },
+      {
+        "character": "",
+        "text": "陈列的商品会随着时间变化，也可以说是只有现在才能看到这幅光景。"
+      },
+      {
+        "character": "隼斗",
+        "text": "（此刻仅有的光景么……好！）"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我说飞鸟，能打扰一下吗？」"
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「怎么了……哎、为什么把手机对着我」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我想在把杂货店拍下来留作回忆。而且飞鸟也在，感觉会很有画面感」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊……你讨厌被拍照什么的吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「虽然不会感到抗拒……」",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      },
+      {
+        "character": "",
+        "text": "她嘴上这么说，但吞吞吐吐的，就说明其实不是很想吧。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「抱歉，还是算了吧。我只拍杂货店好了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不是，我不是那个意思，真的」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我不介意你拍我……只是那个，难得的机会，两人一起……」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「作、作为约会的回忆，拍一张两人的合照更好吧，我是这么想的……」",
+        "body": "ask_z1b0200",
+        "face": "b0008h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「算了，说了些奇怪的话。请忘掉吧」",
+        "body": "ask_z1b0200",
+        "face": "b0009h"
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "Img": "line21.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「好！ 一起拍吧！ 立刻马上！」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「哎、哎哎」",
+        "body": "ask_z1a0200",
+        "face": "a0009h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「来吧——开一下自动拍照模式……要拍咯——」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这么突然，啊稍等一下，我整理一下头发、……嗯嗯嗯，好了，拍吧」",
+        "body": "ask_z1b0200",
+        "face": "b0009h"
+      }
+    ]
+  },
+  {
+    "background": "white.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": ""
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「拍好了！ 哈哈哈」",
+        "body": "ask_z1a0200",
+        "face": "a0007h"
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「……唔，你是不是有点太强硬了？」",
+        "body": "ask_z1a0200",
+        "face": "a0018h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「抱歉抱歉。但实在太想和你一起拍了」"
+      },
+      {
+        "character": "",
+        "text": "在飞鸟改变主意之前，留下了回忆！  我不后悔这次的硬来。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我一会把照片发给你」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……知道了，麻烦你了。去看看杂货吧，你瞧」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "或许是因为害羞，飞鸟催促着我。我一边想着她这样也好可爱，一边跟了上去。"
+      },
+      {
+        "character": "",
+        "text": "她将每件商品都看过了一遍，我陪在她身边，也拿起中意的东西看一看。"
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "有一本好看的手账——我翻开一看，功能和设计也都很好，非常不错。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「日期什么的都是用英语写的……感觉挺华丽呀，还是漂亮的淡蓝色」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是勿忘草色呢。制造商是欧洲的，大概是参考了当地的植物吧」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「勿忘草是国外的草吗？  明明听名字很像是日本的呀——」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯……游马君，你发现了件好东西呀。说不定是意外收获」",
+        "body": "ask_z1b0200",
+        "face": "b0004h"
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟用饱含热情的视线翻看着手账。"
+      },
+      {
+        "character": "",
+        "text": "我一边想着她还真是喜欢这类东西，一边扫了一眼周围的东西。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「难道说其他的杂货也全是外国制造的吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「大概有八成是吧。这家店前几年才进入日本市场，正在慢慢增加分店」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「设计兼顾可爱和功能性，以女性顾客为主，人气正在不断上升。」",
+        "body": "ask_z1b0200",
+        "face": "b0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞鸟也是其中一人啊」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯，不仅是商品，包装也很精致，送礼用的包装也很受欢迎」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「看来你是真的喜欢——」"
+      },
+      {
+        "character": "",
+        "text": "虽说我不懂少女心，但也能理解飞鸟为什么特别喜欢。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「对了。飞鸟的手帐还在我那儿，买个新的吧。我出钱」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「哎……不用，不需要」",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你刚刚不是看起来很想要么。别客气」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不是客气，从那之后我就不带手帐了」",
+        "body": "ask_z1b0200",
+        "face": "b0008h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「说不定哪天又弄丢然后被别人捡到。所以不用了」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「这样啊……」"
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「话说回来，我的手帐」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「内容，你真的没看吧？」",
+        "body": "ask_z1a0200",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯？ 那个呀。嗯、没看」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……怎么了，你这是什么反应。真的没看吗」",
+        "body": "ask_z1a0200",
+        "face": "a0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「没没没、没看！ 我没看！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「感觉和之前相比，反应不一样啊？」",
+        "body": "ask_z1a0200",
+        "face": "a0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「错觉吧。看看其他杂货吧，好吗」"
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "刀子般的视线刺向了我。",
+        "body": "ask_z1a0200",
+        "face": "a0005h"
+      },
+      {
+        "character": "",
+        "text": "那份锐利和成为恋人前的如出一辙。"
+      },
+      {
+        "character": "",
+        "text": "我下意识就准备开口回答了，其实是看了。但那也是不可抗力……"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我，可是讨厌谎话的哦？」",
+        "body": "ask_z1a0200",
+        "face": "a0018h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我知道。讨厌谎话，嗯」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「没看吧？」",
+        "body": "ask_z1a0200",
+        "face": "a0005h"
+      }
+    ]
+  },
+  {
+    "background": "bg00a.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "怎么办。我该怎么办。"
+      },
+      {
+        "character": "",
+        "text": "感觉就像是，究极选择突然就找到我头上来了。"
+      },
+      {
+        "character": "",
+        "text": "我也不想说谎。但是……"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我……」"
+      },
+      {
+        "character": "",
+        "text": "人啊，总是有不想被知道的事情。"
+      },
+      {
+        "character": "",
+        "text": "其内容是害羞得要死的东西就更是如此。"
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「我没看。真的」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "",
+        "text": "我决定把那时候的记忆埋葬在黑暗中。为了飞鸟，我要把它带到坟墓里！"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是么。那就好」",
+        "body": "ask_z1a0200",
+        "face": "a0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯，那当然。哈哈哈……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……对了。那本手帐的封面，画着小鸟对吧」",
+        "body": "ask_z1b0200",
+        "face": "b0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯！ 真的啊！ 我回去看看！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「小鸟很可爱呢。啾啾啾地叫着」",
+        "body": "ask_z1b0200",
+        "face": "b0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「是春天的声音啊，嗯嗯！  小鸟的鸣叫真是可爱啊！」"
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「…………春天的声音？」",
+        "body": "ask_z1a0200",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「…………嗯？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「…………」",
+        "body": "ask_z1a0200",
+        "face": "a0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「能听见哦 啾啾啾」",
+        "body": "ask_z1a0200",
+        "face": "a0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「…………」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「啾 啾 啾」",
+        "body": "ask_z1a0200",
+        "face": "a0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那是春天的声音」"
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「游——马——君——」",
+        "body": "ask_z1a0200",
+        "face": "a0006h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「——啊啊啊！  对不起对不起对不起！！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你从一开始，就骗了我……」",
+        "body": "ask_z1a0200",
+        "face": "a0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不是的！ 捡到的时候我没看，是真的！」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你说要和我保持距离的那天晚上，我看到了收在桌子角落的手帐，于是就……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我想要更加了解飞鸟，于是就！  我没有恶意的！」"
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「是……么……是这样啊」",
+        "body": "ask_z1a0200",
+        "face": "a0018h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「唉……」",
+        "body": "ask_z1a0200",
+        "face": "a0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哎、咦……你不生气吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「反正我一直都以为你看过了，事到如今已经没这么生气了」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你愿意，原谅我吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「都说事到如今了，事到如今。而且原本也是因为我自己不谨慎才弄丢的」",
+        "body": "ask_z1b0200",
+        "face": "b0008h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「但你要向我保证。不许再说谎了，知道了吗」",
+        "body": "ask_z1a0200",
+        "face": "a0005h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「明白！ 我保证！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「还有，请我吃个芭菲什么的吧。不要普通的，要最贵的」",
+        "body": "ask_z1a0200",
+        "face": "a0017h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「什么！？」"
+      }
+    ]
+  },
+  {
+    "background": "bg02a.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「那我们走吧」",
+        "body": "ask_z1b0200",
+        "face": "b0003h"
+      },
+      {
+        "character": "",
+        "text": "飞鸟朝着让我请她吃芭菲的咖啡店走去。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊——等等！  我请你吃，稍微等等我」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我有东西想买，马上就好」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「没事。但是我感觉好热呀，好想早点吃芭菲凉一凉」",
+        "body": "ask_z1a0200",
+        "face": "a0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「说白了就是害羞得要死，请你快一点。拜托了」",
+        "body": "ask_z1a0200",
+        "face": "a0009h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「明白！！」"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": ""
+      }
+    ]
+  }
+]

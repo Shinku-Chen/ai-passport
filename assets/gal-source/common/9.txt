@@ -1,0 +1,244 @@
+[
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「哈啊……」",
+        "body": "ask_z1a0100",
+        "face": "a0008h"
+      },
+      {
+        "character": "",
+        "text": "我一边目送着他的背影，一边长舒了一口气，让自己冷静下来。"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "即使重新迈开步子，刚才发生的事却仍在脑海中不断地循环播放。"
+      },
+      {
+        "character": "",
+        "text": "说实话，我的心中乱糟糟的。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「唔……」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「想点别的事情吧」",
+        "body": "ask_z1a0100",
+        "face": "a0020h"
+      },
+      {
+        "character": "",
+        "text": "回家之后就写作业吧，然后预习……"
+      },
+      {
+        "character": "",
+        "text": "对了，还得顺路买些东西。橡皮擦和笔一定要换新的……"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「不对，昨天好像买了吧，嗯嗯嗯……」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "",
+        "text": "想一想，下周的学生会工作该怎么安排吧。"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「…………」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "",
+        "text": "越想这些事情，思绪就越是混乱。"
+      },
+      {
+        "character": "",
+        "text": "游马君的话语时不时便会回响在脑中。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……真是多管闲事、没事找事。只能用这些词来形容」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "",
+        "text": "我确实很讨厌他的那番话。"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "游马君做事太不考虑后果了，而我则会考虑风险、设想事情最坏的情况。",
+        "body": "ask_z1b0100",
+        "face": "b0020h"
+      },
+      {
+        "character": "",
+        "text": "即使和他争论了一遍，我依然确信自己才是对的。"
+      },
+      {
+        "character": "",
+        "text": "不过……他也有值得认可的地方。",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "",
+        "text": "如果他认为有些事不得不说，或是说出来更好，他就能坚定地说出来。我觉得这样的他很耀眼。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「呜————」",
+        "body": "ask_z1b0100",
+        "face": "b0008h"
+      },
+      {
+        "character": "",
+        "text": "所以我最后，像是试探一样说出了那句话。"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「那么，再见了——我这么说了」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "",
+        "text": "作为刚吵完架以后说的话，不知道合不合适。"
+      },
+      {
+        "character": "",
+        "text": "尽管和你吵了架，但我还是想与你当朋友——他有没有读懂这层意思呢。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「别逼我说出这么难为情的话啊……」",
+        "body": "ask_z1a0100",
+        "face": "a0008h"
+      },
+      {
+        "character": "",
+        "text": "再见啦！ 听见他那句爽朗的回答，我很清楚自己松了一口气，同时也变得更难为情了。"
+      },
+      {
+        "character": "",
+        "text": "真讨厌。",
+        "body": "ask_z1a0100",
+        "face": "a0020h"
+      },
+      {
+        "character": "",
+        "text": "这种情绪逐渐强烈起来，占据了我的大脑，让我根本没法想其他事情。"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「我和周围格格不入。这点我还是明白的啊」",
+        "body": "ask_z1b0100",
+        "face": "b0011h"
+      },
+      {
+        "character": "",
+        "text": "但我只能这样做。"
+      },
+      {
+        "character": "",
+        "text": "身边的人希求着身为冰之公主的我。既然如此，我这么做又有什么问题呢。"
+      },
+      {
+        "character": "",
+        "text": "被他人所憧憬的感觉并不坏。也许感受到那些艳羡的目光也会让我很愉快吧。"
+      },
+      {
+        "character": "",
+        "text": "至少，我没觉得自己有问题。"
+      },
+      {
+        "character": "",
+        "text": "现在的状态没有任何问题。完全没有。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「尽管如此他却……真是令人讨厌」"
+      },
+      {
+        "character": "",
+        "text": "无论是想让我变得坦率的他。"
+      },
+      {
+        "character": "",
+        "text": "还是无法拒绝他的我。"
+      }
+    ]
+  },
+  {
+    "background": "bg01b.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「所以，我真的不喜欢热血笨蛋」",
+        "body": "ask_z1b0100",
+        "face": "b0020h"
+      },
+      {
+        "character": "",
+        "text": "他行事冲动、直来直往、不考虑后果，又有什么资格对我指手画脚呢？"
+      },
+      {
+        "character": "",
+        "text": "说什么“太可惜了”，实在是多管闲事。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我觉得现在这样就可以了」",
+        "body": "ask_z1a0100",
+        "face": "a0011h"
+      },
+      {
+        "character": "",
+        "text": "狮子堂飞鸟，保持原状就好。"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "."
+      }
+    ]
+  }
+]

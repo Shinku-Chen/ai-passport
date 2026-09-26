@@ -1,0 +1,838 @@
+[
+  {
+    "background": "ev_ask_c01_06.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「………………………………」"
+      },
+      {
+        "character": "",
+        "text": "我接住了飞鸟，没让她摔到地板上。"
+      },
+      {
+        "character": "",
+        "text": "但实在没想到，会做成像拥抱一样的姿势……"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c01_06.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「对、对不起——啊」"
+      },
+      {
+        "character": "",
+        "text": "飞鸟睁开眼睛，注意到了我被她压在身下。"
+      },
+      {
+        "character": "",
+        "text": "要是换做以前，她肯定立马就跳开了吧。"
+      },
+      {
+        "character": "",
+        "text": "但现在，飞鸟就这样坐在我身上注视起我。保持着很近的距离……"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c01_06.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「没……没事吧？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「应该，没受什么伤吧」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「对不起。都怪我慌慌张张的……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你没事就好。有受伤吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「没有，也没有地方觉得痛。那个，谢谢你……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「……………………」"
+      },
+      {
+        "character": "",
+        "text": "用于紧贴着的姿势，女孩子特有的柔软触感传遍了我的全身上下。"
+      },
+      {
+        "character": "",
+        "text": "飞鸟顺着重力，紧紧地挨在我身上。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c01_06.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「以前也……有过，类似的事情呢……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我记得是，你第一次把我叫到学生会室的时候吧……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯……那时你也，接住了快要摔倒的我」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「隼斗君，意外地很可靠呀」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「是、是吗」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「…………那时候，我还不是很了解你，但现在我已经知道了许多」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「现在……已经知道了……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c01_06.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟没有继续说下去……取而代之的是，她向我靠得更紧了。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「飞……飞鸟……」"
+      },
+      {
+        "character": "",
+        "text": "我的心跳声像防空警报一样，喉咙却干巴巴的，挤不出一个字。"
+      },
+      {
+        "character": "",
+        "text": "而且，飞鸟的体香刺激着我的鼻腔，让我有些晕乎乎的。"
+      },
+      {
+        "character": "",
+        "text": "大脑温度急剧上升，已经无法思考了……"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c01_06.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「——啊！？」"
+      },
+      {
+        "character": "",
+        "text": "敲门的是飞鸟的母亲。"
+      },
+      {
+        "character": "",
+        "text": "我刚刚听到了好大的动静，你们没事吧——门外传来飞鸟母亲的询问。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「只是轻轻摔了一跤而已，那个，没事的，不要紧！」"
+      },
+      {
+        "character": "",
+        "text": "接下来是一片沉默……期间，我和飞鸟都紧闭着嘴。"
+      },
+      {
+        "character": "",
+        "text": "就像是做了坏事，屏住呼吸想不被发现的小孩子一样。"
+      },
+      {
+        "character": "",
+        "text": "终于……飞鸟的母亲留下了一句意味深长的“别玩得太欢了”后就离开了。"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c01_06.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「呼……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那个……对不起，一直躺在地上也不太好。我先起来」"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟从我身上离开，我也站了起来。"
+      },
+      {
+        "character": "",
+        "text": "之后，我们都沉默了一会儿。一想到刚刚的事情，脸就烫了起来。"
+      },
+      {
+        "character": "",
+        "text": "像是掩饰害羞一般，我看向时钟。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「啊……都这个点了，我得回去了」"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「确实，已经是这个时间了……太阳已经落山了，外面都漆黑一片……」",
+        "body": "ask_z1b0200",
+        "face": "b0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「再不回去的话，隼斗君的父母也会担心的」",
+        "body": "ask_z1b0200",
+        "face": "b0020h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「但知道你要走夜路回家，他们是不是也会担心呢」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「如果我是女生，他们说不定会担心，但我可是男生啊」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这和性别没有关系，对父母来说孩子都是这样的存在，一定是这么想的」",
+        "body": "ask_z1a0200",
+        "face": "a0005h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「所以、那个……为了安全起见……」",
+        "body": "ask_z1a0200",
+        "face": "a0002h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你在这里住下来不就好了？」",
+        "body": "ask_z1b0200",
+        "face": "b0011h"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「……………………」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「抱歉，你说什么？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你还想让我再说一遍吗！？」",
+        "body": "ask_z1a0200",
+        "face": "a0009h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「没有没有，我是怕我听错了！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「～～～～～～我是说！ 反正明天是周日，你要不要在这里留宿！」",
+        "body": "ask_z1a0200",
+        "face": "a0009h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「留宿？」"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「留宿……在飞鸟家？」"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「在飞鸟家、留宿！？」"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "Img": "line21.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「为什么要说两遍呀！  让我说两遍，然后你还说两遍，太不正常了」",
+        "body": "ask_z1a0200",
+        "face": "a0009h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「真是的，你打算怎么办，请赶紧决定吧」",
+        "body": "ask_z1a0200",
+        "face": "a0006h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「但是啊，得先去征求一下飞鸟母亲的意见……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「放心。按我妈妈的性格，反倒会高兴地帮你收拾床铺」",
+        "body": "ask_z1a0200",
+        "face": "a0013h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……可……可以吗？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「啊啊啊！？ 当然不是和我睡一个房间！ 可别误会了！」",
+        "body": "ask_z1a0200",
+        "face": "a0009h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「可能要在客厅里打地铺了，你不介意吧？」",
+        "body": "ask_z1a0200",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「完全不介意。让我睡地板都行」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你是客人，被褥肯定是要给的。那我先去和妈妈说一声」",
+        "body": "ask_z1b0200",
+        "face": "b0002h"
+      },
+      {
+        "character": "",
+        "text": "说着，飞鸟快步离开房间。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「…………在恋人家里留宿么？」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「感觉，事情变得不得了了……」"
+      }
+    ]
+  },
+  {
+    "background": "ev_ask_c01_06.png",
+    "Img": "reco.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "我不由得又想起了刚刚的事情。"
+      },
+      {
+        "character": "",
+        "text": "从近处看，飞鸟果然好漂亮，身上的味道也很香。"
+      },
+      {
+        "character": "隼斗",
+        "text": "（和飞鸟一起，做更多恋人间会做的事情……）"
+      },
+      {
+        "character": "隼斗",
+        "text": "（……不行不行，我不能操之过急）"
+      },
+      {
+        "character": "",
+        "text": "我赶忙抑制住即将喷涌而出的爱意。"
+      },
+      {
+        "character": "",
+        "text": "我可不想一时冲动伤害到她。必须得可靠一点。"
+      }
+    ]
+  },
+  {
+    "background": "bg00c.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "飞鸟父母很轻松就答应了让我留宿。"
+      },
+      {
+        "character": "",
+        "text": "还把飞鸟父亲的睡衣借给了我，真是无微不至。"
+      },
+      {
+        "character": "",
+        "text": "我也和家里说了一声。怕被家里人追着问我奇怪的问题，就糊弄说是去朋友家留宿了。"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "承蒙飞鸟一家的厚恩，我第一个洗了澡……出了浴室，我心怀感激地在房间里等飞鸟洗完回来。"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「久等了」",
+        "body": "ask_z1a0300",
+        "face": "a0003h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「哦哦！」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「怎么了？」",
+        "body": "ask_z1a0300",
+        "face": "a0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「因为我还是第一次看到飞鸟穿睡衣。不过这也是理所当然的就是了」"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "虽然她的便服身姿很有个人风采，但穿着睡衣看着有机可乘的样子，也给人一种新鲜感。",
+        "body": "ask_z1a0300",
+        "face": "a0001h"
+      },
+      {
+        "character": "",
+        "text": "这副打扮比起平时的冷酷风，更能凸显她的女生气质。"
+      },
+      {
+        "character": "",
+        "text": "我切身感受到我们之间的关系更近了，不禁看入了神。"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「不要一直盯着看呀……」",
+        "body": "ask_z1b0300",
+        "face": "b0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「抱歉，但你穿睡衣也很好看。很可爱哦」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我选睡衣也算比较讲究的……你能这么说，我很开心」",
+        "body": "ask_z1a0300",
+        "face": "a0016h"
+      },
+      {
+        "character": "",
+        "text": "飞鸟脸蛋微微泛红，坐到了我身旁。"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「给，你的那份冰淇淋。你妈妈给我的」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「谢谢……可能是看我第一次带朋友回来留宿，他们有些激动」",
+        "body": "ask_z1a0300",
+        "face": "a0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「澡泡得舒服吗？ 进去之前有放入浴剂吧？」",
+        "body": "ask_z1a0300",
+        "face": "a0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不能再舒服了！ 有股温泉的香味」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「真是机灵，入浴剂确实含有温泉精华，微微的硫磺香味很好闻呢」",
+        "body": "ask_z1a0300",
+        "face": "a0013h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「泡澡水还泛着白色，很好看」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你能开心就好。这入浴剂其实是我选的」",
+        "body": "ask_z1a0300",
+        "face": "a0004h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不愧是飞鸟」"
+      },
+      {
+        "character": "",
+        "text": "我们一边聊着有的没的，一边吃着冰淇淋。"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……感觉我们这样很有恋人味啊」"
+      },
+      {
+        "character": "",
+        "text": "我不经意地就把想到的说出了口，让飞鸟吓了一跳。"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "dialogues": [
+      {
+        "character": "飞鸟",
+        "text": "「或、或许是吧，但你说得也太突然了，我有点吓到了」",
+        "body": "ask_z1a0300",
+        "face": "a0009h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「……今天真是谢谢你。愿意包容我的任性」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「任性吗。也确实，不愿意松开手什么的，真是任性得让人困扰」",
+        "body": "ask_z1b0300",
+        "face": "b0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「但你认真地为我着想，把我招待到了家中。不仅如此，甚至还让我住了下来」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「多亏了你，我们才能像现在这样一直在一起。我真是无比感谢，真的」"
+      },
+      {
+        "character": "",
+        "text": "第一次来女朋友家，第一次留宿。"
+      },
+      {
+        "character": "",
+        "text": "虽说不是睡一间房，但这体验比主题公园里的任何项目都要刺激。"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「说起来，飞鸟父母给人的感觉原来是那样的啊」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我还以为会像飞鸟平时那样，更加冷静一些」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「你之前以为我的父母是那种，对别人对自己都很严格，总是很守规矩的人吗？」",
+        "body": "ask_z1b0300",
+        "face": "b0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「差不多吧。但见到后觉得他们都很好相处，人也很好」"
+      },
+      {
+        "character": "",
+        "text": "还有传闻说飞鸟是住在别墅里的大小姐，飞鸟的父母是怎样的就更不用说了。"
+      },
+      {
+        "character": "",
+        "text": "我甚至都有想过，他们会是那种和我们老百姓截然不同、非常厉害的人，但其实完全不是。"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「他们都自称平凡是自己的长处。还有，只有狮子堂这个姓听起来厉害，名字就显得相形见绌了」",
+        "body": "ask_z1b0300",
+        "face": "b0007h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「他们很温柔，虽然偶尔会吵架，但总会和好……就是这样的父母。很普通」",
+        "body": "ask_z1b0300",
+        "face": "b0013h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「没有有叫你去学习啊、训斥你什么的？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是有批评过我，但叫我去学习……我印象中好像是没有的」",
+        "body": "ask_z1b0300",
+        "face": "b0008h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「叫孩子去学习的父母都是都市传说吧？」",
+        "body": "ask_z1b0300",
+        "face": "b0010h"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「什么！？ 我父母就经常说的啊」",
+        "body": "ask_z1b0300",
+        "face": "b0001h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「哎哎！？ 实际存在的吗！？」",
+        "body": "ask_z1a0300",
+        "face": "a0010h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「怎么说呢，我觉得我父母都很豁达……感觉就算我不学习他们也不会啰嗦」",
+        "body": "ask_z1a0300",
+        "face": "a0020h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「是吗，这样啊……」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「那或者，他们不仅不会叫你学习，反而还会阻止你学过头？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「这个嘛……偶尔？ 说不定有吧？」",
+        "body": "ask_z1a0300",
+        "face": "a0011h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「原来有啊……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「偶尔而已，偶尔。也不能让他们经常说呀」",
+        "body": "ask_z1a0300",
+        "face": "a0010h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「总之，我觉得他们是很棒的父母」",
+        "body": "ask_z1a0300",
+        "face": "a0016h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「你喜欢你的父母啊」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「是啊。我很珍视他们」",
+        "body": "ask_z1a0300",
+        "face": "a0003h"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "Img": "cinema01.png",
+    "ImgTop": 0,
+    "ImgLeft": 0,
+    "dialogues": [
+      {
+        "character": "",
+        "text": "伴随着简短的话语，飞鸟十分自然地露出了微笑。"
+      },
+      {
+        "character": "",
+        "text": "从这小小的举动中，我能感受到飞鸟的心意。"
+      }
+    ]
+  },
+  {
+    "background": "bg05c.png",
+    "dialogues": [
+      {
+        "character": "隼斗",
+        "text": "「也不早了……差不多该睡觉了吧」",
+        "body": "ask_z1a0300",
+        "face": "a0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「别忘了睡前刷牙喔」",
+        "body": "ask_z1a0300",
+        "face": "a0002h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「我知道的。你说得都有点像我妈了」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「我可不记得生了你这么个儿子」",
+        "body": "ask_z1b0300",
+        "face": "b0017h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「嗯……」",
+        "body": "ask_z1b0300",
+        "face": "b0001h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「怎么了？」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「没事……只是突然想到，总有一天我也会成为母亲……」",
+        "body": "ask_z1b0300",
+        "face": "b0011h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「等我成为母亲的时候，会有怎样的心情呢。一想到这里就有些好奇……」",
+        "body": "ask_z1b0300",
+        "face": "b0008h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「原来如此……母亲和孩子么」"
+      },
+      {
+        "character": "隼斗",
+        "text": "「嗯……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「怎么了？」",
+        "body": "ask_z1b0300",
+        "face": "b0010h"
+      },
+      {
+        "character": "隼斗",
+        "text": "「不是，这种时候谁都会想想孩子的父亲是谁吧……」"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「那当然是——」",
+        "body": "ask_z1b0300",
+        "face": "b0003h"
+      },
+      {
+        "character": "飞鸟",
+        "text": "「啊、什么都没发生，我走了」",
+        "body": "ask_z1b0300",
+        "face": "b0009h"
+      },
+      {
+        "character": "",
+        "text": "我赶忙去追快步离开的飞鸟。"
+      },
+      {
+        "character": "",
+        "text": "一想到“那当然是——”的后半句，我就有种难以言喻的心情……"
+      },
+      {
+        "character": "",
+        "text": "最后还被飞鸟训斥了一句“你要傻笑到什么时候呀”。"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": "之后，我洗漱了一下，钻进了客厅里为我准备的被褥中。"
+      },
+      {
+        "character": "",
+        "text": "睡魔很快袭来，我幸福地闭上了双眼。"
+      }
+    ]
+  },
+  {
+    "background": "black.png",
+    "dialogues": [
+      {
+        "character": "",
+        "text": ""
+      }
+    ]
+  }
+]

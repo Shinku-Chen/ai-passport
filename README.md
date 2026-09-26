@@ -47,23 +47,21 @@ corner and degrades to `--%` when the gauge cannot be read.
 
 The artwork and chapter scripts come from
 [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) and are
-**third-party content**. That repository declares no license, so none of it is
-redistributed here — attribution is the whole of what this branch can offer in
-return, and it is why the material lives outside the repository.
+**third-party content**. That repository declares no license; the material is
+committed under `assets/gal-source/common/` so a clone can build the complete
+game, and the upstream project is credited as its only source.
 
-It is kept in a local, git-ignored `assets/gal-source/` tree; the build packs it
-into a dedicated 4 MiB `assets` data partition through
+The build packs that tree into a dedicated 4 MiB `assets` data partition through
 [`tools/gal/`](tools/gal/README.md), which is the reusable part of this branch:
 a documented pack format, a packer with a visual preview, an inspector, and the
 CJK font subset generator.
 
 Two consequences are worth knowing before building or releasing:
 
-- A clone without `assets/gal-source/` still configures, builds and boots — the
-  packer emits a small placeholder pack instead. That firmware shows a placeholder
-  script and no artwork.
-- **A CI-built release therefore does not contain the game.** Release this branch
-  from a locally built merged image, not from the tag-triggered CI artifact.
+- Packing the artwork needs Pillow in the Python environment ESP-IDF builds with.
+  The firmware workflows install it; a local build without it stops at the packer.
+- Remove `assets/gal-source/common/` and the packer emits a small placeholder pack
+  instead, so a build without the material still configures, builds and boots.
 
 ## Firmware / build
 

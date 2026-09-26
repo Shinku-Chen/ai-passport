@@ -9,11 +9,6 @@ managed_components/
 __pycache__/
 *.pyc
 
-# Local copy of the upstream galgame material. It is third-party content and is
-# deliberately not tracked; tools/gal/pack_assets.py turns it into the `assets`
-# flash partition image. See tools/gal/README.md.
-/assets/gal-source/
-
 # Generated repository-local links; canonical skill sources live in skills/.
 /.agents/skills/passport-develop
 /.agents/skills/passport-setup
