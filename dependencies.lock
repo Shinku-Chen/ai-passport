@@ -33,6 +33,16 @@ dependencies:
       registry_url: https://components.espressif.com/
       type: service
     version: 1.6.2
+  espressif/esp_jpeg:
+    component_hash: defb83669293cbf86d0fa86b475ba5517aceed04ed70db435388c151ab37b5d7
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.3.1
   espressif/esp_lvgl_port:
     component_hash: d3c020b45c3dfc0d1706a83b63a1c34a6eb444a6e935f9afff79f92b7b94dcef
     dependencies:
@@ -50,20 +60,45 @@ dependencies:
   idf:
     source:
       type: idf
-    version: 5.5.3
+    version: 5.5.5
   lvgl/lvgl:
-    component_hash: 184e532558c1c45fefed631f3e235423d22582aafb4630f3e8885c35281a49ae
-    dependencies: []
+    component_hash: d5e723db3a3feca71e34e333a6598b7624e3822577d374e1d44f0e18374952e1
+    dependencies:
+    - name: espressif/freetype
+      registry_url: https://components.espressif.com
+      require: private
+      rules:
+      - if: idf_version >=5.5 && $CONFIG{LV_USE_FREETYPE} == True
+      version: ^2.14.3
+    - name: espressif/libjpeg-turbo
+      registry_url: https://components.espressif.com
+      require: private
+      rules:
+      - if: idf_version >=5.5 && $CONFIG{LV_USE_LIBJPEG_TURBO} == True
+      version: ^3.1.1
+    - name: espressif/libpng
+      registry_url: https://components.espressif.com
+      require: private
+      rules:
+      - if: idf_version >=5.5 && $CONFIG{LV_USE_LIBPNG} == True
+      version: ^1.6.58
+    - name: espressif/lz4
+      registry_url: https://components.espressif.com
+      require: private
+      rules:
+      - if: idf_version >=5.5 && $CONFIG{LV_USE_LZ4} == True && $CONFIG{LV_USE_LZ4_INTERNAL} == False
+      version: ^1.10.0
     source:
       registry_url: https://components.espressif.com/
       type: service
-    version: 9.5.0
+    version: 9.6.0
 direct_dependencies:
 - espressif/button
 - espressif/esp_codec_dev
+- espressif/esp_jpeg
 - espressif/esp_lvgl_port
 - idf
 - lvgl/lvgl
-manifest_hash: db5703744958b4654342908988a87f1da9cac5e5612d3aceb0191f6bec59ba49
+manifest_hash: dc5bbbf30e11f6c518e13e2ae57fdf271310954bdc2592e577c5b863693846f7
 target: esp32c3
 version: 2.0.0

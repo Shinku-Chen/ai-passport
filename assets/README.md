@@ -17,6 +17,27 @@ Store reusable font files and generated font sources in `fonts/`.
 - Check Flash and internal-RAM impact before adding a font; the ESP32-C3 has no PSRAM.
 - Do not commit fonts whose license does not permit redistribution.
 
+### ATRI reader — `fonts/atri_cjk_16.c`
+
+One generated LVGL subset (16 px, 4 bpp, uncompressed) used by the visual-novel
+reader on the ATRI branch; `fonts/atri_cjk_symbols.txt` is the character inventory
+it must cover.
+
+| Item | Value |
+| --- | --- |
+| Source | Noto Sans SC Regular (OFL-1.1), instantiated at `wght=400` from the variable font and kept out of the repository; the source file is **not** committed |
+| Inventory | 2,771 code points = every UI string in `main/*.c` plus every character of the script pack |
+| Converter | `tools/atri_font.py` (Pillow/FreeType rasterisation, emits the LVGL 9 plain 4 bpp bitmap format directly). It re-parses the C file it just wrote and compares every glyph against the rasterisation pixel by pixel. |
+| Regenerate | `python tools/atri_font.py --font <NotoSansSC-Regular.ttf> --pack main/atri_data/atri_pack.bin --out-dir assets/fonts` |
+| Verify | `python tools/atri_font.py --check --pack main/atri_data/atri_pack.bin --out-dir assets/fonts` (runs in `tools/validate.sh --static`) |
+| Integration | compiled into the `main` component through `target_sources()` in `main/CMakeLists.txt` |
+| Impact | about 0.39 MB of Flash; no static RAM (glyphs stay in Flash) |
+
+Not generated with `lv_font_conv`: its last release (1.5.3, 2021) writes corrupt
+glyph bitmaps under current Node.js, which shows up on the device as a screen of
+noise. The in-repo generator avoids the Node dependency and fails loudly instead
+of emitting bad glyphs.
+
 ## Images
 
 Store reusable source images and generated display assets in `images/`.

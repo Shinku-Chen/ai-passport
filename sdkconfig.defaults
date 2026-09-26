@@ -8,6 +8,7 @@ CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
 # 固定 8MB 镜像头，关闭 detect，便于 idf.py merge-bin。
 CONFIG_ESPTOOLPY_HEADER_FLASHSIZE_UPDATE=n
 # 默认模板只保留 NVS、PHY data 和占用剩余空间的 factory app；用户可按需修改。
+# 阅读器的资源包(约 1.8MB)通过 EMBED_FILES 编进 app,所以不需要额外数据分区。
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
@@ -24,21 +25,26 @@ CONFIG_LV_COLOR_DEPTH_16=y
 CONFIG_LV_DEF_REFR_PERIOD=20
 CONFIG_LV_FONT_MONTSERRAT_14=y
 CONFIG_LV_FONT_MONTSERRAT_20=y
-# LVGL 内置 malloc 池大小(KB)。它是独立静态区、不与系统堆共享,配大了会白白占用 RAM。
-# 本 demo UI 简单,24KB 足够;若自建复杂界面出现绘制卡死/看门狗,调大此值。
-CONFIG_LV_MEM_SIZE_KILOBYTES=24
+# LVGL 内置 malloc 池大小。它是独立静态区、不与系统堆共享,配大了会白白占用 RAM。
+# 注意 LVGL 9.6 把键名从 LV_MEM_SIZE_KILOBYTES(已弃用)换成 LV_MEM_SIZE(字节);
+# 两个都定义时以 LV_MEM_SIZE 为准,所以这里必须给字节值,否则旧键会被忽略并回落到
+# LVGL 默认的 64KB。40KB 够本应用的多页面/多列表界面(约 70 个对象)。
+CONFIG_LV_MEM_SIZE=40960
 
 # --- 系统 ---
 CONFIG_FREERTOS_HZ=1000
 
-# --- Bluetooth LE / NimBLE ---
-# ESP32-C3 仅支持 BLE；示例只启用单连接 peripheral 所需的最小 host 配置。
-CONFIG_BT_ENABLED=y
-CONFIG_BT_NIMBLE_ENABLED=y
-CONFIG_BT_NIMBLE_ROLE_CENTRAL=n
-CONFIG_BT_NIMBLE_ROLE_PERIPHERAL=y
-CONFIG_BT_NIMBLE_ROLE_BROADCASTER=y
-CONFIG_BT_NIMBLE_ROLE_OBSERVER=n
-CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
-CONFIG_BT_NIMBLE_HOST_BASED_PRIVACY=n
-CONFIG_BT_NIMBLE_NVS_PERSIST=n
+# --- 蓝牙 ---
+# 阅读器不需要蓝牙:NimBLE 的 host 会白占 RAM 与 Flash,直接关掉。
+CONFIG_BT_ENABLED=n
+# CONFIG_BT_NIMBLE_ENABLED is not set
+
+# --- 深度休眠:关掉唤醒 IO 的内部上拉 ---
+# 本板 GPIO0 按键唤醒靠【外部 10kΩ 上拉】,内部上拉纯属冗余且会在外部上拉之上
+# 叠加一条泄漏路径。该配置默认 y,这里显式关闭。
+CONFIG_ESP_SLEEP_GPIO_ENABLE_INTERNAL_RESISTORS=n
+
+# --- 按键(espressif/button)消抖/采样调优:去抖动、减少误触 ---
+# 扫描周期 5ms + 消抖 4 tick = 20ms 确认;ADC 3 次采样平均滤噪声。
+CONFIG_BUTTON_DEBOUNCE_TICKS=4
+CONFIG_ADC_BUTTON_SAMPLE_TIMES=3

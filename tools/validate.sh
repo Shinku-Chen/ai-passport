@@ -54,6 +54,15 @@ run_static_checks() {
         tests/test_bsp_audio_recovery.c components/bsp/src/bsp_es8311_sleep_check.c \
         -o "${test_dir}/test_bsp_audio_recovery"
     "${test_dir}/test_bsp_audio_recovery"
+    # 《ATRI -My Dear Moments-》阅读器:纯逻辑(资源包解析 + 剧情推进 + 分页 + 存档)
+    # 跑真实资源包。
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
+        tests/test_atri_model.c main/atri_model.c main/atri_pack.c \
+        -o "${test_dir}/test_atri_model"
+    "${test_dir}/test_atri_model" main/atri_data/atri_pack.bin
+    # 界面文案 + 剧本正文用到的字必须在生成好的字体子集里(缺字就是显示成方块)。
+    PYTHONDONTWRITEBYTECODE=1 python3 tools/atri_font.py --check \
+        --pack main/atri_data/atri_pack.bin --out-dir assets/fonts
     for demo in audio low_power ble wifi; do
         "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
             -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \
@@ -62,6 +71,7 @@ run_static_checks() {
         "${test_dir}/test_demo_${demo}_runtime"
     done
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_deep_sleep_contract.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_atri_app_static.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_check_repo.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_verify_firmware.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_archive_firmware.py

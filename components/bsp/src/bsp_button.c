@@ -2,12 +2,15 @@
 // 移植自 trae_card/components/platform/platform_esp32/src/btn_iot_button.c
 #include "bsp_button.h"
 #include "bsp_pins.h"
+#include "driver/gpio.h"
 #include "iot_button.h"
 #include "esp_adc/adc_oneshot.h"
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 static const char *TAG = "bsp_btn";
 
@@ -76,6 +79,7 @@ static void on_event(void *arg, void *usr_data, bsp_btn_ev_t ev) {
     s_cb((bsp_btn_t)(intptr_t)usr_data, ev, s_user);
 }
 static void cb_press (void *a, void *u) { on_event(a, u, BSP_BTN_PRESS);  }
+static void cb_release(void *a, void *u) { on_event(a, u, BSP_BTN_RELEASE); }
 static void cb_click (void *a, void *u) { on_event(a, u, BSP_BTN_CLICK);  }
 static void cb_double(void *a, void *u) { on_event(a, u, BSP_BTN_DOUBLE); }
 static void cb_long  (void *a, void *u) { on_event(a, u, BSP_BTN_LONG);   }
@@ -117,6 +121,8 @@ static void button_cleanup(void) {
 
 static esp_err_t register_callbacks(button_handle_t button, void *index) {
     esp_err_t e = iot_button_register_cb(button, BUTTON_PRESS_DOWN, NULL, cb_press, index);
+    // 抬起事件:游戏类应用靠它做“按住加速、松手停”。
+    if (e == ESP_OK) e = iot_button_register_cb(button, BUTTON_PRESS_UP, NULL, cb_release, index);
     if (e == ESP_OK) e = iot_button_register_cb(button, BUTTON_SINGLE_CLICK, NULL, cb_click, index);
     if (e == ESP_OK) e = iot_button_register_cb(button, BUTTON_DOUBLE_CLICK, NULL, cb_double, index);
     if (e == ESP_OK) e = iot_button_register_cb(button, BUTTON_LONG_PRESS_START, NULL, cb_long, index);
@@ -176,7 +182,10 @@ esp_err_t bsp_button_init(bsp_btn_cb_t cb, void *user) {
             .base = { .get_key_level = button_level, .del = button_driver_delete },
             .index = (unsigned)i,
         };
-        const button_config_t bc = { 0 };
+        const button_config_t bc = {
+            .long_press_time = BSP_BTN_LONG_MS,
+            .short_press_time = BSP_BTN_SHORT_MS,
+        };
         esp_err_t e = iot_button_create(&bc, &s_drivers[i].base, &s_btn[i]);
         if (e != ESP_OK || !s_btn[i]) {
             ESP_LOGE(TAG, "按键 %d 创建失败 (%s) —— 检查 GPIO%d 的 ADC 配置与分压电阻",
@@ -196,7 +205,32 @@ esp_err_t bsp_button_init(bsp_btn_cb_t cb, void *user) {
 
     s_sample_valid = false;
     s_ready = true;
-    ESP_LOGI(TAG, "按键就绪:ADC1_CH%d 三键分压", BSP_BTN_ADC_CHANNEL);
+    ESP_LOGI(TAG, "按键就绪:ADC1_CH%d 三键分压,短按>=%dms 长按>=%dms", BSP_BTN_ADC_CHANNEL,
+             BSP_BTN_SHORT_MS, BSP_BTN_LONG_MS);
+    return ESP_OK;
+}
+
+esp_err_t bsp_button_prepare_deep_sleep(int *level)
+{
+    // ① 先停按键驱动,再放 ADC —— 反过来会让 timer 回调碰到已释放的句柄。
+    button_cleanup();
+
+    // ② 按键脚交回普通数字输入 + 上拉。ADC 接管的脚数字读回是 0,而深睡低电平唤醒
+    //    正是比这个值;不恢复的话唤醒条件在入睡瞬间就成立。
+    const gpio_num_t pin = (gpio_num_t)BSP_BTN_GPIO;
+    esp_err_t err = gpio_set_direction(pin, GPIO_MODE_INPUT);
+    if (err == ESP_OK) err = gpio_set_pull_mode(pin, GPIO_PULLUP_ONLY);
+    if (err != ESP_OK) {
+        // 失败时不写 level:调用方以返回码为准,不要读到陈旧电平。
+        ESP_LOGE(TAG, "按键脚切回数字输入失败: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    // 上拉建立需要一点时间,再回读。
+    vTaskDelay(pdMS_TO_TICKS(20));
+    if (level) *level = gpio_get_level(pin);
+    ESP_LOGI(TAG, "按键已释放,深度休眠唤醒脚 GPIO%d 电平=%d", (int)pin,
+             level ? *level : -1);
     return ESP_OK;
 }
 

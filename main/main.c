@@ -1,242 +1,237 @@
-// main/main.c —— FoloToy AI Passport BSP 驱动参考示例:初始化 + 菜单 + 按键分发。
+// main/main.c —— 《ATRI -My Dear Moments-》AI Passport 移植:开机直接进阅读器(竖屏 240x320)。
 //
-// 按键语义(全局统一):
-//   上/下 短按   菜单中=移动选中项;演示页中=该页自定义
-//   确定  短按   菜单中=进入选中项;演示页中=该页自定义
-//   确定  长按   演示页中=返回菜单(由本文件统一拦截)
-#include "bsp_i2c.h"
-#include "bsp_display.h"
-#include "bsp_button.h"
+// 按键语义:
+//   标题/列表页 上、下移动光标,确定进入,长按确定返回上一层
+//   正文页      确定/上/下 推进(打字中=立即显示全文),长按确定打开菜单
+//   选项页      上、下选择,确定确认
+//
+// 线程模型:按键回调只入队;输入任务串行处理事件并驱动应用状态机;
+// LVGL 对象只在持有 bsp_lvgl_lock() 时改写(由本文件负责加锁)。
+#include "atri_app.h"
 #include "bsp_audio.h"
 #include "bsp_battery.h"
-#include "bsp_pins.h"      // 错误日志里要打印 BSP_LCD_* 引脚号
-#include "demo.h"
-#include "demo_navigation.h"
-#include "ui_pixel.h"
-#include "lvgl.h"
+#include "bsp_button.h"
+#include "bsp_display.h"
+#include "bsp_i2c.h"
+#include "bsp_pins.h"
+
+#include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_sleep.h"
+#include "esp_timer.h"
+#include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
+#include "lvgl.h"
 
 static const char *TAG = "main";
 
-static const demo_entry_t DEMOS[] = {
-    { .name = "Display", .enter = demo_display_enter, .exit = demo_display_exit,
-      .key = demo_display_key },
-    { .name = "Button", .enter = demo_button_enter, .exit = demo_button_exit,
-      .key = demo_button_key },
-    { .name = "Audio", .enter = demo_audio_enter, .exit = demo_audio_exit,
-      .key = demo_audio_key, .start = demo_audio_start, .stop = demo_audio_stop },
-    { .name = "Battery", .enter = demo_battery_enter, .exit = demo_battery_exit,
-      .key = demo_battery_key },
-    { .name = "Wi-Fi", .enter = demo_wifi_enter, .exit = demo_wifi_exit,
-      .key = demo_wifi_key, .start = demo_wifi_start, .stop = demo_wifi_stop },
-    { .name = "BLE", .enter = demo_ble_enter, .exit = demo_ble_exit,
-      .key = demo_ble_key, .start = demo_ble_start, .stop = demo_ble_stop },
-    { .name = "Low Power", .enter = demo_low_power_enter, .exit = demo_low_power_exit,
-      .key = demo_low_power_key, .start = demo_low_power_start, .stop = demo_low_power_stop },
-};
-#define DEMO_COUNT (sizeof(DEMOS) / sizeof(DEMOS[0]))
+// 资源包由 main/CMakeLists.txt 的 EMBED_FILES 注入(见 tools/atri_pack.py)。
+extern const uint8_t atri_pack_bin_start[] asm("_binary_atri_pack_bin_start");
+extern const uint8_t atri_pack_bin_end[] asm("_binary_atri_pack_bin_end");
+// 中文字体子集(assets/fonts/atri_cjk_16.c,由 tools/atri_font.py 生成)。
+LV_FONT_DECLARE(atri_cjk_16);
+
 #define INPUT_QUEUE_DEPTH 8
+#define INPUT_TICK_MS 50
 
-typedef struct {
-    bsp_btn_t btn;
-    bsp_btn_ev_t event;
-} input_event_t;
+// 空闲策略:先调暗,再熄屏,最后 deep sleep(任意键唤醒后回到标题页继续读)。
+#define ATRI_DIM_MS 45000u
+#define ATRI_SCREEN_OFF_MS 150000u
+#define ATRI_SLEEP_MS 420000u
+#define BACKLIGHT_FULL 100
+#define BACKLIGHT_DIM 30
 
-// 各外设初始化结果:失败的项在菜单里标 [FAIL] 且不允许进入。
-static bool s_ok[DEMO_COUNT];
+// 画面区 240x210 RGB565;叠加解码缓冲由 atri_image 按需动态分配。
+static uint16_t s_art_pixels[ATRI_ART_W * ATRI_ART_H];
+static atri_app_t s_app;
 
-static lv_obj_t *s_menu_scr;
-static lv_obj_t *s_cards[DEMO_COUNT];
-static lv_obj_t *s_rows[DEMO_COUNT];
-static lv_obj_t *s_mascot;
-static demo_navigation_t s_navigation;
 static QueueHandle_t s_input_queue;
 static TaskHandle_t s_input_task;
 static volatile bool s_input_ready;
+static uint8_t s_backlight = BACKLIGHT_FULL;
 
-static void menu_refresh(void) {
-    for (size_t i = 0; i < DEMO_COUNT; i++) {
-        lv_label_set_text_fmt(s_rows[i], "%s%s",
-                              DEMOS[i].name,
-                              s_ok[i] ? "" : "  [FAIL]");
-        ui_pixel_set_selected(s_cards[i], i == s_navigation.selected, s_ok[i]);
-        lv_obj_set_style_text_color(s_rows[i],
-            s_ok[i] ? lv_color_hex(UI_INK) : lv_color_hex(0x7A2020), 0);
-    }
+static void set_backlight(uint8_t percent)
+{
+    if (s_backlight == percent) return;
+    s_backlight = percent;
+    bsp_display_backlight(percent);
 }
 
-static void menu_build(void) {
-    s_menu_scr = ui_pixel_screen_create("FoloToy");
-
-    for (size_t i = 0; i < DEMO_COUNT; i++) {
-        int x = 11 + (int)(i % 2) * 112;
-        int y = 52 + (int)(i / 2) * 47;
-        s_cards[i] = ui_pixel_panel_create(s_menu_scr, x, y, 102, 40, UI_PAPER);
-        s_rows[i] = lv_label_create(s_cards[i]);
-        lv_obj_set_style_text_font(s_rows[i], &lv_font_montserrat_14, 0);
-        lv_obj_set_style_text_align(s_rows[i], LV_TEXT_ALIGN_CENTER, 0);
-        lv_obj_center(s_rows[i]);
-    }
-
-    s_mascot = ui_pixel_mascot_create(s_menu_scr, 101, 242);
-
-    menu_refresh();
-    lv_screen_load(s_menu_scr);
+// 按键回调跑在 button 组件的共享 esp_timer 任务里:只入队,立刻返回。
+static void on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user)
+{
+    (void)user;
+    if (!s_input_ready || !s_input_queue) return;
+    const atri_key_t key = { .btn = (uint8_t)btn, .ev = (uint8_t)ev };
+    (void)xQueueSend(s_input_queue, &key, 0);
 }
 
-static void enter_menu(void) {
-    menu_build();
-}
+// deep sleep:先摘掉会漏电的外设,再把唤醒脚交回数字输入,最后停屏入睡。
+// 顺序与 demo/connect-four 在真机上验证过的一致。
+static void enter_sleep(void)
+{
+    ESP_LOGI(TAG, "空闲 %u ms,进入 deep sleep(任意按键唤醒)",
+             (unsigned)atri_app_idle_ms(&s_app));
 
-static demo_nav_input_t navigation_input(bsp_btn_t btn, bsp_btn_ev_t event) {
-    if (event == BSP_BTN_LONG && btn == BSP_BTN_OK) return DEMO_NAV_INPUT_OK_LONG;
-    if (event != BSP_BTN_CLICK) return DEMO_NAV_INPUT_OTHER;
-    if (btn == BSP_BTN_UP) return DEMO_NAV_INPUT_UP_CLICK;
-    if (btn == BSP_BTN_DOWN) return DEMO_NAV_INPUT_DOWN_CLICK;
-    if (btn == BSP_BTN_OK) return DEMO_NAV_INPUT_OK_CLICK;
-    return DEMO_NAV_INPUT_OTHER;
-}
-
-static void process_input(const input_event_t *input) {
-    demo_nav_input_t nav_input = navigation_input(input->btn, input->event);
-
-    if (s_navigation.active >= 0) {
-        demo_nav_result_t result = demo_navigation_handle(&s_navigation, nav_input, true);
-        const demo_entry_t *demo = &DEMOS[result.index];
-        if (result.action == DEMO_NAV_ACTION_EXIT) {
-            esp_err_t e = demo->stop ? demo->stop() : ESP_OK;
-            if (e != ESP_OK) {
-                ESP_LOGE(TAG, "%s 页面停止失败: %s", demo->name, esp_err_to_name(e));
-                return;
-            }
-            if (!bsp_lvgl_lock(500)) return;
-            demo->exit();
-            demo_navigation_complete_exit(&s_navigation);
-            enter_menu();
-            bsp_lvgl_unlock();
-        } else if (result.action == DEMO_NAV_ACTION_FORWARD) {
-            demo->key(input->btn, input->event);
-        }
+    const esp_err_t wake_err =
+        esp_deep_sleep_enable_gpio_wakeup(1ULL << BSP_BTN_GPIO, ESP_GPIO_WAKEUP_GPIO_LOW);
+    if (wake_err != ESP_OK) {
+        // 配不上唤醒源就绝不睡下去,否则醒不过来。
+        ESP_LOGE(TAG, "按键唤醒配置失败(%s),保持唤醒", esp_err_to_name(wake_err));
         return;
     }
 
-    if (nav_input == DEMO_NAV_INPUT_OTHER || nav_input == DEMO_NAV_INPUT_OK_LONG) return;
-    if (!bsp_lvgl_lock(500)) return;
-    demo_nav_result_t result = demo_navigation_handle(
-        &s_navigation, nav_input, s_ok[s_navigation.selected]);
-    if (result.action == DEMO_NAV_ACTION_REFRESH) {
-        menu_refresh();
-        ui_pixel_mascot_jump(s_mascot);
-    } else if (result.action == DEMO_NAV_ACTION_ENTER) {
-        const demo_entry_t *demo = &DEMOS[result.index];
-        ui_pixel_mascot_jump(s_mascot);
-        lv_obj_delete(s_menu_scr);
-        s_menu_scr = NULL;
-        s_mascot = NULL;
-        demo->enter();
+    if (bsp_lvgl_lock(300)) {
+        atri_app_before_sleep(&s_app);
+        atri_app_show_sleeping(&s_app);
         bsp_lvgl_unlock();
+    }
+    vTaskDelay(pdMS_TO_TICKS(400));
 
-        esp_err_t e = demo->start ? demo->start() : ESP_OK;
-        if (e != ESP_OK) {
-            ESP_LOGE(TAG, "%s 页面启动失败: %s", demo->name, esp_err_to_name(e));
-        }
+    // CW2017 与 ES8311 共用 I2C:先让电量计收尾,再停 codec 与 I2S。
+    (void)bsp_battery_sleep();
+    (void)bsp_audio_sleep();
+    (void)bsp_audio_prepare_deep_sleep();
+
+    // 按键脚交回数字输入并上拉,顺便回读电平:按着不放时宁愿重启也不要刚睡就醒。
+    int wake_level = 0;
+    if (bsp_button_prepare_deep_sleep(&wake_level) != ESP_OK) {
+        ESP_LOGE(TAG, "按键释放失败,重启恢复外设");
+        esp_restart();
+    }
+    (void)bsp_i2c_prepare_deep_sleep();
+    if (wake_level == 0) {
+        ESP_LOGW(TAG, "唤醒脚仍为低电平,放弃本次休眠并重启");
+        esp_restart();
+    }
+
+    if (!bsp_lvgl_lock(-1)) {
+        ESP_LOGE(TAG, "deep sleep 前无法停止 LVGL 刷屏,重启恢复外设");
+        esp_restart();
+    }
+    (void)bsp_display_prepare_deep_sleep();
+
+    esp_deep_sleep_start();
+    ESP_LOGE(TAG, "esp_deep_sleep_start 意外返回,重启恢复外设");
+    esp_restart();
+}
+
+static void handle_key(const atri_key_t *key)
+{
+    if (!bsp_lvgl_lock(500)) {
+        ESP_LOGW(TAG, "拿不到 LVGL 锁,丢弃本次按键");
         return;
     }
+    atri_app_key(&s_app, key);
     bsp_lvgl_unlock();
 }
 
-static void input_task(void *arg) {
+static void handle_tick(uint32_t elapsed_ms)
+{
+    if (!bsp_lvgl_lock(500)) return;
+    atri_app_tick(&s_app, elapsed_ms);
+    const bool want_sleep = atri_app_take_sleep_request(&s_app);
+    bsp_lvgl_unlock();
+    if (want_sleep) enter_sleep();
+}
+
+static void input_task(void *arg)
+{
     (void)arg;
-    input_event_t input;
+    atri_key_t key;
+    int64_t last_us = esp_timer_get_time();
+
     for (;;) {
-        if (xQueueReceive(s_input_queue, &input, portMAX_DELAY) == pdTRUE) {
-            process_input(&input);
+        const bool got = xQueueReceive(s_input_queue, &key, pdMS_TO_TICKS(INPUT_TICK_MS)) == pdTRUE;
+        const int64_t now_us = esp_timer_get_time();
+        const uint32_t elapsed_ms = (uint32_t)((now_us - last_us) / 1000);
+        last_us = now_us;
+
+        if (got) {
+            set_backlight(BACKLIGHT_FULL);
+            handle_key(&key);
+        }
+        handle_tick(elapsed_ms);
+
+        const uint32_t idle = atri_app_idle_ms(&s_app);
+        if (idle >= ATRI_SLEEP_MS) {
+            enter_sleep();
+        } else if (idle >= ATRI_SCREEN_OFF_MS) {
+            set_backlight(0);
+        } else if (idle >= ATRI_DIM_MS) {
+            set_backlight(BACKLIGHT_DIM);
         }
     }
 }
 
-static esp_err_t input_dispatch_init(void) {
-    s_input_queue = xQueueCreate(INPUT_QUEUE_DEPTH, sizeof(input_event_t));
-    if (!s_input_queue) return ESP_ERR_NO_MEM;
-    if (xTaskCreate(input_task, "demo_input", 4096, NULL, 5, &s_input_task) != pdPASS) {
-        vQueueDelete(s_input_queue);
-        s_input_queue = NULL;
-        return ESP_ERR_NO_MEM;
-    }
-    return ESP_OK;
-}
+void app_main(void)
+{
+    ESP_LOGI(TAG, "AI Passport《ATRI -My Dear Moments-》阅读器启动");
 
-static void input_dispatch_deinit(void) {
-    s_input_ready = false;
-    if (s_input_task) {
-        vTaskDelete(s_input_task);
-        s_input_task = NULL;
-    }
-    if (s_input_queue) {
-        vQueueDelete(s_input_queue);
-        s_input_queue = NULL;
-    }
-}
-
-// button callbacks run on the shared esp_timer task; enqueue only and return immediately.
-static void on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user) {
-    (void)user;
-    if (!s_input_ready || !s_input_queue) return;
-    const input_event_t input = { .btn = btn, .event = ev };
-    (void)xQueueSend(s_input_queue, &input, 0);
-}
-
-void app_main(void) {
-    ESP_LOGI(TAG, "FoloToy AI Passport BSP demo 启动");
-    esp_sleep_wakeup_cause_t wakeup = esp_sleep_get_wakeup_cause();
-    if (wakeup != ESP_SLEEP_WAKEUP_UNDEFINED) {
-        ESP_LOGI(TAG, "休眠唤醒原因: %d", wakeup);
+    // deep sleep 唤醒会重启整个应用,把原因打出来便于确认"按键真能唤醒"。
+    const esp_sleep_wakeup_cause_t wakeup = esp_sleep_get_wakeup_cause();
+    if (wakeup == ESP_SLEEP_WAKEUP_GPIO) {
+        ESP_LOGI(TAG, "按键唤醒,回到阅读器");
+    } else if (wakeup != ESP_SLEEP_WAKEUP_UNDEFINED) {
+        ESP_LOGI(TAG, "从休眠唤醒(原因 %d)", (int)wakeup);
     }
 
-    bsp_i2c_init();
-    bsp_i2c_scan();
+    esp_err_t nvs_err = nvs_flash_init();
+    if (nvs_err == ESP_ERR_NVS_NO_FREE_PAGES || nvs_err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_LOGW(TAG, "NVS 需要重建(%s)", esp_err_to_name(nvs_err));
+        (void)nvs_flash_erase();
+        nvs_err = nvs_flash_init();
+    }
+    if (nvs_err != ESP_OK) ESP_LOGW(TAG, "NVS 不可用: %s", esp_err_to_name(nvs_err));
 
-    // 屏幕是本 demo 的 UI 载体,失败就没有菜单可言 —— 打清楚日志后退出,
-    // 不做"串口菜单"降级(那会让本文件复杂一倍,违背参考示例的初衷)。
+    // 电量计是软依赖:读不到就显示 "--"。
+    if (bsp_i2c_init() != ESP_OK) ESP_LOGW(TAG, "I2C 初始化失败,电量显示 --");
+    if (bsp_battery_init() != ESP_OK) ESP_LOGW(TAG, "电量计初始化失败,电量显示 --");
+
+    // 显示是硬依赖:没有屏幕就没法阅读。
     if (bsp_display_init() != ESP_OK || !bsp_lvgl_init()) {
-        ESP_LOGE(TAG, "显示/LVGL 初始化失败,demo 无法继续。"
-                      "检查 SPI 接线(MOSI=%d SCLK=%d CS=%d DC=%d BL=%d)",
+        ESP_LOGE(TAG, "显示/LVGL 初始化失败。检查 SPI 接线(MOSI=%d SCLK=%d CS=%d DC=%d BL=%d)",
                  BSP_LCD_MOSI, BSP_LCD_SCLK, BSP_LCD_CS, BSP_LCD_DC, BSP_LCD_BL);
         return;
     }
-    bsp_display_backlight(100);
+    bsp_display_backlight(BACKLIGHT_FULL);
 
-    demo_navigation_init(&s_navigation, DEMO_COUNT);
-
-    // 其余外设单项失败不阻塞:菜单里标 [FAIL],其他项照常可测。
-    s_ok[0] = true;                                   // Display 已确认可用
-    esp_err_t input_err = input_dispatch_init();
-    esp_err_t button_err = input_err == ESP_OK
-                         ? bsp_button_init(on_key, NULL)
-                         : ESP_ERR_INVALID_STATE;
-    s_ok[1] = input_err == ESP_OK && button_err == ESP_OK;
-    if (input_err != ESP_OK) {
-        ESP_LOGE(TAG, "按键事件任务创建失败: %s", esp_err_to_name(input_err));
-    } else if (button_err != ESP_OK) {
-        ESP_LOGE(TAG, "按键初始化失败: %s", esp_err_to_name(button_err));
-        input_dispatch_deinit();
-    }
-    s_ok[2] = (bsp_audio_init() == ESP_OK);
-    s_ok[3] = (bsp_battery_init() == ESP_OK);
-    s_ok[4] = true;                                    // 页面内按需初始化并显示错误
-    s_ok[5] = true;
-    s_ok[6] = true;
-
-    if (bsp_lvgl_lock(1000)) {
-        enter_menu();
+    const uint32_t pack_size = (uint32_t)(atri_pack_bin_end - atri_pack_bin_start);
+    if (bsp_lvgl_lock(-1)) {
+        if (!atri_app_init(&s_app, atri_pack_bin_start, pack_size, s_art_pixels, &atri_cjk_16)) {
+            ESP_LOGE(TAG, "阅读器初始化失败(资源包 %u 字节)", (unsigned)pack_size);
+            bsp_lvgl_unlock();
+            return;
+        }
         bsp_lvgl_unlock();
-        s_input_ready = true;
+    } else {
+        ESP_LOGE(TAG, "拿不到 LVGL 锁,无法建界面");
+        return;
     }
 
-    ESP_LOGI(TAG, "就绪:Display=%d Button=%d Audio=%d Battery=%d",
-             s_ok[0], s_ok[1], s_ok[2], s_ok[3]);
+    s_input_queue = xQueueCreate(INPUT_QUEUE_DEPTH, sizeof(atri_key_t));
+    if (!s_input_queue) {
+        ESP_LOGE(TAG, "输入队列创建失败");
+        return;
+    }
+    if (xTaskCreate(input_task, "atri_input", 4096, NULL, 5, &s_input_task) != pdPASS) {
+        ESP_LOGE(TAG, "输入任务创建失败");
+        vQueueDelete(s_input_queue);
+        s_input_queue = NULL;
+        return;
+    }
+    if (bsp_button_init(on_key, NULL) != ESP_OK) {
+        ESP_LOGE(TAG, "按键初始化失败,无法翻页");
+        return;
+    }
+    s_input_ready = true;
+
+    ESP_LOGI(TAG, "空闲堆 %u 字节,最大连续块 %u 字节", (unsigned)esp_get_free_heap_size(),
+             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
+    ESP_LOGI(TAG, "就绪:竖屏阅读器;确定推进 / 长按确定菜单;"
+                  "空闲 %us 调暗,%us 熄屏,%us 休眠",
+             (unsigned)(ATRI_DIM_MS / 1000), (unsigned)(ATRI_SCREEN_OFF_MS / 1000),
+             (unsigned)(ATRI_SLEEP_MS / 1000));
 }

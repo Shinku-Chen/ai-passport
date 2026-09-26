@@ -15,6 +15,23 @@
 - 添加字库前评估 Flash 与内部 RAM 影响；ESP32-C3 无 PSRAM。
 - 不提交许可不允许分发的字库。
 
+### 《ATRI -My Dear Moments-》阅读器 —— `fonts/atri_cjk_16.c`
+
+ATRI 分支的视觉小说阅读器使用的一个 LVGL 子集（16px、4bpp、未压缩）；
+`fonts/atri_cjk_symbols.txt` 是它必须覆盖的字符清单。
+
+| 项 | 值 |
+| --- | --- |
+| 来源 | Noto Sans SC Regular（OFL-1.1），由可变字体按 `wght=400` 实例化得到；源字体文件**不**提交 |
+| 字符范围 | 2,771 个码位 = `main/*.c` 的全部界面文案 + 资源包里的全部剧本字符 |
+| 转换工具 | `tools/atri_font.py`（Pillow/FreeType 栅格化，直接输出 LVGL 9 plain 4bpp 位图格式）。生成后会回读自己写出的 C 文件，与栅格化结果逐像素比对，不合格就报错。 |
+| 重新生成 | `python tools/atri_font.py --font <NotoSansSC-Regular.ttf> --pack main/atri_data/atri_pack.bin --out-dir assets/fonts` |
+| 校验 | `python tools/atri_font.py --check --pack main/atri_data/atri_pack.bin --out-dir assets/fonts`（由 `tools/validate.sh --static` 执行） |
+| 集成方式 | 通过 `main/CMakeLists.txt` 的 `target_sources()` 编进 `main` 组件 |
+| 影响 | 约 0.39 MB Flash；不占静态 RAM（字形常驻 Flash） |
+
+**不用 `lv_font_conv` 的原因**：该工具最后一版是 1.5.3（2021），在当前 Node.js 下写出的字形位图是坏的，设备上的表现就是“整屏噪点”。改用仓库内生成器后不再依赖 Node，且生成阶段就会失败报错，不会默默产出坏字形。
+
 ## 图片（images）
 
 可复用的源图与生成的显示资产放在 `images/`。

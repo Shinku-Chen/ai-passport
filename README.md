@@ -100,6 +100,92 @@ computer modes differ only in who moves first.
 - **Serial screenshots** — the `FAP_SCREENSHOT_V1` command returns the real
   320 × 240 frame, which is how the release cover was captured.
 
+### ATRI Reader
+
+A portrait visual-novel reader that ports the Mi Band 9 fan port of
+*ATRI -My Dear Moments-* ([`liuyuze61/ATRI-miband`](https://github.com/liuyuze61/ATRI-miband))
+to the AI Passport: **34 chapters, 1,069 scenes, 12,188 lines of dialogue and
+three endings**, fully offline. The original is a touch app for Xiaomi's Vela OS;
+this branch re-implements the reading engine in C on LVGL and drives it with the
+three keys.
+
+- Branch: this branch. Release not cut yet.
+
+```text
+┌──────────────────────────────────┐  240 x 320, native portrait; the canvas is
+│  art area 240 x 320              │  the whole screen
+│  [ch. 3]                  [batt] │  chapter label / battery
+│                                  │
+│ ┌────────┐                       │  speaker name plate
+│ │ Atri   │                       │
+│ └────────┴───────────────────────┤  the source's translucent text band
+│  body text, 5 lines x 13 CJK     │  is painted into the canvas, so sprites
+│                                  │  show through it
+└──────────────────────────────────┘
+```
+
+**Controls:** on lists UP / DOWN move the cursor, **OK** selects and **OK (hold)**
+goes back. While reading, **UP / DOWN** advance line by line and **UP (hold) /
+DOWN (hold)** fast-forwards through whole lines until you let go; **OK** opens the
+menu (continue, save, load, skip chapter, back to title). Skipping a chapter runs to
+the next chapter and stops at any choice or ending. Choices use UP / DOWN + OK.
+The text speed setting cycles through instant / slow / medium / fast, and the about
+page scrolls with UP / DOWN. The art area shows the current chapter in the top-left
+corner and the page counter in the bottom-right when a line spills over.
+
+**Save slots:** five manual slots plus one automatic slot written on every scene
+change, so the title screen can offer "continue". On the slots screen **OK** saves
+or loads and **OK (hold)** deletes a manual slot. Idle behaviour: 45 s dims the
+backlight, 2.5 min turns it off, 7 min enters deep sleep; any key wakes the device.
+
+**Endings:** the happy and the bad ending are reached through the three choices in
+the script; once both are seen the title screen unlocks **the true ending** chapter,
+which is how the original Mi Band app gates its extra episode.
+
+**Offline data pipeline.** Nothing is downloaded at runtime; two tools generate
+everything the firmware needs and their output is committed, so a plain checkout
+builds:
+
+| Step | Tool | Output |
+| --- | --- | --- |
+| Script + images | `tools/atri_pack.py` | `main/atri_data/atri_pack.bin` (3.59 MB): 34 chapters, 1,069 scenes, 12,188 dialogues, 73 full-screen backgrounds, 16 overlays, plus source metadata |
+| Font subset | `tools/atri_font.py` | `assets/fonts/atri_cjk_16.c` + `assets/fonts/atri_cjk_symbols.txt` (2,771 code points) |
+
+**Highlights:**
+
+- **Portrait, like the source** — the Mi Band frame (336 x 480) is scaled by
+  240/336 to 240 x 343 and cropped to the full 240 x 320 screen, so backgrounds,
+  sprites and the text band sit where the original puts them.
+- **No runtime JSON parsing** — the pack is a flat little-endian binary read
+  straight out of flash; text is addressed by `(offset, length)` and the reader
+  walks chapter/scene/dialogue tables.
+- **~19 KB backgrounds** — backgrounds are cover-scaled, cropped and re-encoded as
+  JPEG (q88) at build time; the 72 scene backgrounds plus the title art cost
+  1.36 MB, against 4.7 MB of source PNGs.
+- **Overlays that cost no RAM** — the 16 character/effect overlays are stored
+  losslessly as RGB565 plus a 4 bpp alpha mask, cropped to their alpha bounding
+  box, and composited row by row straight from flash into the canvas. The board
+  has no PSRAM and only a few tens of KB of heap left once the canvas and LVGL
+  are up, so a JPEG decode buffer for a 240 x 320 overlay would simply not fit;
+  this path never allocates.
+- **Text band painted in the canvas** — the source draws a translucent blue
+  `text_bg` over its full-screen art; here the same band is alpha-blended into the
+  canvas rows (with its top-to-bottom ramp and the source's colour), so a sprite
+  that reaches the bottom of the screen stays visible through it instead of being
+  cut off by an opaque box.
+- **Own font generator** — `lv_font_conv` writes corrupt glyph bitmaps under
+  current Node.js (the device showed a screen of noise); the in-repo generator
+  rasterises with FreeType, emits the LVGL 9 plain 4 bpp format and re-parses its
+  own output pixel by pixel before accepting it.
+- **Host-testable story logic** — `tests/test_atri_model.c` walks the real pack:
+  pack integrity, the happy / bad / true endings, the choice branch, paging rules
+  and save round-trips all run on the host in `tools/validate.sh --static`.
+
+**Credits and rights:** the script, images and translation come from the fan port
+`liuyuze61/ATRI-miband` and from *ATRI -My Dear Moments-*
+(ANIPLEX.EXE / Frontwing / Makura). This firmware is a personal, non-commercial
+port; support the original release.
+
 ## Notes
 
 - Each application is a separate `feature/*` branch off the upstream baseline.
