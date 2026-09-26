@@ -664,7 +664,6 @@ void saya_app_key(saya_app_t *app, const saya_key_t *key)
         if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
             // 没读到底不许进游戏:此时确定只往下翻一屏。
             const bool ready = saya_ui_warning_ready(&app->ui);
-            ESP_LOGI(TAG, "警告页按确定: 已读到底=%d", (int)ready);
             if (!ready) {
                 saya_ui_warning_page(&app->ui, 1);
                 break;
@@ -703,15 +702,19 @@ void saya_app_tick(saya_app_t *app, uint32_t elapsed_ms)
         }
     }
 
-    // 自动模式:每 900ms 推进一步。advance_reading(false) 会先把打字机未完成的
-    // 文本补全再返回,所以每一句都能完整显示至少一个间隔。
+    // 自动模式:打字机把当前页打完之后才开始计时,每 900 ms 推进一步。
     if (app->auto_mode && app->page == SAYA_PAGE_GAME && !app->player.at_choice) {
-        app->auto_accum_ms += elapsed_ms;
-        if (app->auto_accum_ms >= SAYA_AUTO_ADVANCE_MS) {
+        if (saya_ui_typing(&app->ui)) {
+            // 正在打字:不计时、也不强制补全,等它自然打完。
             app->auto_accum_ms = 0;
-            if (bsp_lvgl_lock(100)) {
-                advance_reading(app, false);
-                bsp_lvgl_unlock();
+        } else {
+            app->auto_accum_ms += elapsed_ms;
+            if (app->auto_accum_ms >= SAYA_AUTO_ADVANCE_MS) {
+                app->auto_accum_ms = 0;
+                if (bsp_lvgl_lock(100)) {
+                    advance_reading(app, false);
+                    bsp_lvgl_unlock();
+                }
             }
         }
         // 自动播放期间不算空闲:不调暗、不息屏、不进 deep sleep。
