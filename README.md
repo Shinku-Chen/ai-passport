@@ -206,6 +206,48 @@ the original Mi Band app uses. Idle behaviour: 45 s dims the backlight, 2.5 min 
 - **Offline data pipeline** — nothing is downloaded at runtime; the output of `tools/atri_pack.py` and `tools/atri_font.py` is committed, so a plain checkout builds.
 - **Serial debugging channel** — `ATRISHOT <chapter> <scene>` renders any scene into the art area and streams the raw 240 × 320 frame back, which is how this release's cover and every layout check were captured; `ATRIJUMP` jumps straight to a chapter.
 
+### Starry Sky Railroad and Shiro's Journey
+
+A portrait visual novel ported from the Mi Band fan port of *Hoshizora Tetsudou to
+Shiro no Tabi* and its Chinese fan translation: **39 chapters, 1,260 scenes, 13,787
+lines of dialogue, one choice and one ending**, fully offline. The script, art and
+translation come from
+[`liuyuze61/Starry_Sky_Railroad_and_Shiro-s_Journey_miband9P`](https://github.com/liuyuze61/Starry_Sky_Railroad_and_Shiro-s_Journey_miband9P)
+(a Mi Band 9 Pro quick app); this branch re-implements the reader on the ATRI
+reader's LVGL page system and drives it with the three keys. Status: **released** —
+tag `v0.1.0-starry-sky-railroad`, and submitted to the AI Passport community market
+as `community-0d8223f7` (under review).
+
+- Branch: [`feature/starry-sky-railroad`](https://github.com/Shinku-Chen/ai-passport/tree/feature/starry-sky-railroad)
+- Release: [`v0.1.0-starry-sky-railroad`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-starry-sky-railroad) — merged image `FoloToy-AI-Passport-full.bin`, 4,627,696 bytes
+- Upstream work: [`liuyuze61/Starry_Sky_Railroad_and_Shiro-s_Journey_miband9P`](https://github.com/liuyuze61/Starry_Sky_Railroad_and_Shiro-s_Journey_miband9P) — the fan port this branch derives from. It declares no licence; its script, backgrounds and sprites ship with the branch and are packed into the firmware, with the upstream project credited as the source.
+- Asset toolchain: [`tools/starry_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/starry-sky-railroad/tools/starry_pack.py) (script and images into `main/starry_data/starry_pack.bin`, 3.44 MB) and [`tools/starry_lvgl_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/starry-sky-railroad/tools/starry_lvgl_font.py) (16 px Chinese subset, 2,708 code points)
+
+**Controls (three keys):** on lists UP / DOWN move the cursor, **OK** selects and
+**OK (hold)** goes back. While reading, **UP / DOWN** advance one line (while text is
+still typing, one press shows the whole page) and **UP (hold)** fast-forwards while
+held and stops the moment you release it; **DOWN (hold)** toggles auto-reading, which
+advances 0.9 s after a page finishes typing and stops on any other key; **OK** opens
+the menu (continue, save, load, skip chapter, back to title). Choices use UP / DOWN +
+OK, and skipping a chapter plays the chapter-transition card into the next chapter.
+Short presses register at 180 ms and long presses at 500 ms, passed to the button
+component explicitly by the BSP.
+
+**Saves, endings and idle:** five manual slots plus one automatic slot written on every
+scene change, which the title screen offers as "continue"; on the slots screen **OK**
+saves or loads and **OK (hold)** deletes a manual slot. The story has a single choice and
+a single ending. Idle behaviour: 60 s dims the backlight, 3 min turns it off, 7 min enters
+deep sleep, and any key wakes the device; auto-reading and fast-forward do not count as
+idle time.
+
+**Highlights:**
+
+- **A sprite appears only while its own character is speaking** — the packer derives each sprite's owner from which named speaker references it, so 3,444 of 11,777 dialogue steps draw one; event illustrations and solid-colour scenes are flagged to never get a face composited on top.
+- **The sprite sits under the text band** — the translucent blue text box is composited over the character, exactly like the source port, so the lower body stays inside the panel while everything above the band remains untouched.
+- **Full-screen compositing without PSRAM** — backgrounds are decoded straight into the 240 × 320 canvas, sprites use lossless RGB565 with a 4 bpp mask blitted row by row from Flash (no sprite decode buffer at all), and the panel is fed from a 40-line partial buffer.
+- **Offline data pipeline** — nothing is downloaded at runtime; the output of `tools/starry_pack.py` and `tools/starry_lvgl_font.py` is committed, so a plain checkout builds.
+- **Serial debugging channel** — `STARRYPAGE [title | <chapter> <scene>]` captures a frame from the LVGL flush path and streams it back as raw RGB565, which is how every layout check in this project was made; `STARRYJUMP` jumps straight to a chapter.
+
 ## Notes
 
 - Each application is a separate `feature/*` branch off the upstream baseline.

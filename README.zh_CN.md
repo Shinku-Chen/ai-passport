@@ -153,6 +153,39 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 - **离线数据管线** —— 运行时不下载任何东西，`tools/atri_pack.py` 与 `tools/atri_font.py` 的产物提交进仓库，普通 checkout 直接能编。
 - **串口调试通道** —— `ATRISHOT <章> <幕>` 把任意一幕渲染进画面区并回传原始 240 × 320 帧，本版封面与历次版面验证靠的就是它；`ATRIJUMP` 可直接跳章。
 
+### 星空列车与白的旅行（Starry Sky Railroad and Shiro's Journey）
+
+把小米手环上的《星空鉄道とシロの旅》同人移植（含中文译文）搬到 AI Passport 上的**竖屏视觉小说阅读器**：
+**39 章、1,260 幕、13,787 句对白、一处选项、一个结局**，完全离线。剧本、素材与译文取自
+[`liuyuze61/Starry_Sky_Railroad_and_Shiro-s_Journey_miband9P`](https://github.com/liuyuze61/Starry_Sky_Railroad_and_Shiro-s_Journey_miband9P)
+（小米手环 9 Pro 快应用）；本分支在 ATRI 阅读器的 LVGL 页面系统上重写阅读引擎，改成三键操作。
+状态：**已发布** —— tag `v0.1.0-starry-sky-railroad`，并已投稿到 AI Passport 社区市场
+（作品 `community-0d8223f7`，审核中）。
+
+- 分支：[`feature/starry-sky-railroad`](https://github.com/Shinku-Chen/ai-passport/tree/feature/starry-sky-railroad)
+- 发布：[`v0.1.0-starry-sky-railroad`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-starry-sky-railroad) —— 合并镜像 `FoloToy-AI-Passport-full.bin`，4,627,696 字节
+- 上游作品：[`liuyuze61/Starry_Sky_Railroad_and_Shiro-s_Journey_miband9P`](https://github.com/liuyuze61/Starry_Sky_Railroad_and_Shiro-s_Journey_miband9P) —— 本次移植所依据的同人版本，未声明许可；其剧本、背景与立绘随分支提交并打包进固件，来源以上游项目标注。
+- 素材工具链：[`tools/starry_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/starry-sky-railroad/tools/starry_pack.py)（剧本 + 图像打包成 `main/starry_data/starry_pack.bin`，3.44 MB）与 [`tools/starry_lvgl_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/starry-sky-railroad/tools/starry_lvgl_font.py)（16px 中文字体子集，2,708 个码位）
+
+**操作方式（三键）：** 列表页上 / 下移动光标、**确定**进入、**长按确定**返回上一层；正文里
+**上 / 下短按**推进一步（打字中按一下先显示全文）、**长按上**是快进（松手即停）、
+**长按下**开关自动阅读（每页显示完整后 0.9 秒翻页，按其它键停止）、**确定**打开菜单
+（继续阅读、保存进度、读取存档、跳过章节、返回标题）；选项页上 / 下选择、确定确认，
+跳过章节会播放章节过场卡并进下一章。短按判定 180 ms、长按判定 500 ms，由 BSP 显式
+下发给按键组件。
+
+**存档、结局与空闲：** 五个手动槽 + 一个自动槽（每次换场景自动写入，标题页的「继续阅读」读它），
+存档页短按确定存 / 读、长按确定删除手动槽；剧本只有一处选择、一个结局。空闲 60 秒调暗、
+3 分钟熄屏、7 分钟深睡，任意键唤醒，自动阅读与快进不计入空闲。
+
+**亮点：**
+
+- **立绘只在该角色本人说话时出现** —— 打包器按「哪个有名字的说话人引用了这张立绘」统计归属，全剧本 11,777 个对白步里有 3,444 步会画出立绘；事件插画与纯色幕额外打标，永远不会被贴上人脸。
+- **立绘压在半透明正文带下面** —— 蓝色文本框叠在人物之上，与源移植版一致：下半身落在面板里，带子以上的部分不受影响。
+- **无 PSRAM 也扛得住整屏合成** —— 背景直接解码进 240 × 320 画布，立绘用无损 RGB565 + 4bpp 遮罩从 Flash 逐行 blit（完全不需要立绘解码缓冲），面板由 40 行分部缓冲推送。
+- **离线数据管线** —— 运行时不下载任何东西，`tools/starry_pack.py` 与 `tools/starry_lvgl_font.py` 的产物提交进仓库，普通 checkout 直接能编。
+- **串口调试通道** —— `STARRYPAGE [title | <章> <幕>]` 从 LVGL 刷屏路径取帧并回传原始 RGB565，本项目的历次版面核对靠的就是它；`STARRYJUMP` 可直接跳章。
+
 ## 说明
 
 - 每个应用都是基于上游基线的一个独立 `feature/*` 分支。不要把 demo 分支整支合入
