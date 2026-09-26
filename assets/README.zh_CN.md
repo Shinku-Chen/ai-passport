@@ -23,7 +23,7 @@
 | 项 | 值 |
 | --- | --- |
 | 来源 | Noto Sans SC Regular（OFL-1.1），2026-09-26 经 jsDelivr 取自 `googlefonts/noto-cjk` 镜像；8.3 MB 源 OTF **不**提交 |
-| 字符范围 | 2,787 个码位 = `main/*.c` 的全部界面文案 + 资源包里的全部剧本字符 |
+| 字符范围 | 2,839 个码位 = `main/*.c` 的全部界面文案 + 两个变体资源包（社区版与含补丁的 release 版）的全部剧本字符（含剧本用于首行缩进的全角空格 U+3000） |
 | 转换工具 | `tools/saya_font.py`（Pillow/FreeType 栅格化，直接输出 LVGL 9 位图字体格式）。生成后会回读自己写出的 C 文件，与栅格化结果逐像素比对，不合格就报错。 |
 | 重新生成 | `python tools/saya_font.py --font <NotoSansSC-Regular.otf> --pack main/saya_data/saya_pack.bin --out-dir assets/fonts` |
 | 校验 | `python tools/saya_font.py --check --pack … --out-dir …`（由 `tools/validate.sh --static` 执行） |

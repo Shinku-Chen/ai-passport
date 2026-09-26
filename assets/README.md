@@ -26,9 +26,9 @@ must cover.
 | Item | Value |
 | --- | --- |
 | Source | Noto Sans SC Regular (OFL-1.1), downloaded 2026-09-26 from the `googlefonts/noto-cjk` mirror through jsDelivr; the 8.3 MB source OTF is **not** committed |
-| Inventory | 2,787 code points = every UI string in `main/*.c` plus every character of the script pack |
+| Inventory | 2,839 code points = every UI string in `main/*.c` plus every character of both script-pack variants (community and the patched release build), including the full-width space (U+3000) the script uses for indentation |
 | Converter | `tools/saya_font.py` (Pillow/FreeType rasterization, emits the LVGL 9 bitmap format directly). It verifies itself by re-parsing the C file it just wrote and comparing every glyph against the rasterization pixel by pixel. |
-| Regenerate | `python tools/saya_font.py --font <NotoSansSC-Regular.otf> --pack main/saya_data/saya_pack.bin --out-dir assets/fonts` |
+| Regenerate | `python tools/saya_font.py --font <NotoSansSC-Regular.otf> --pack main/saya_data/saya_pack.bin --pack build/release/saya_pack.bin --out-dir assets/fonts` (the committed inventory keeps the patched variant's glyphs even when regenerating from the community pack alone) |
 | Verify | `python tools/saya_font.py --check --pack … --out-dir …` (runs in `tools/validate.sh --static`) |
 | Integration | compiled into the `main` component through `target_sources()` in `main/CMakeLists.txt` |
 | Impact | about 0.94 MB of Flash; no static RAM (glyphs stay in Flash) |

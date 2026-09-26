@@ -16,21 +16,32 @@ reading engine in C on LVGL and drives it with the three keys.
 
 ```text
 ┌──────────────────────────────────┐  320 x 240, held in landscape
-│  art area 320 x 136              │  background JPEG + character sprite
+│  art area 320 x 150              │  background JPEG + character sprite
 │                        [battery] │  battery chip in the top-right corner
+│  speaker name (bottom-left)      │  translucent chip above the dialogue box
 ├──────────────────────────────────┤
-│  speaker name                    │  dialogue box, 104 px, opaque
-│  up to 4 lines of body text      │  16 px font: 19 full-width chars per line
-└──────────────────────────────────┘  (20 px font: 15 chars, 3 lines)
+│  up to 4 lines of body text      │  dialogue box 82 px, 8 px bottom margin
+└──────────────────────────────────┘  (16 px font: 19 full-width chars per line)
+                                       (20 px font: 15 chars, 3 lines)
 ```
 
 ## Controls
 
-- **Title / lists** — UP / DOWN move the cursor, **OK** selects, **OK (hold)** goes back.
-- **Reading** — **OK** advances (while text is typing, one press shows the whole page),
-  **OK (hold)** opens the menu, UP / DOWN step between pages of a long line.
+- **Disclaimer screen** — UP / DOWN scroll the text (one line per press, a full screen when
+  held). The hint only turns into "press OK to continue" once the text has been read to
+  the end; before that OK just pages the text down instead of entering the game.
+- **Title / lists** — UP / DOWN move the cursor and stop at the ends (no wrap),
+  **OK** selects, **OK (hold)** goes back.
+- **Reading** — **OK** opens the menu; UP (short) advances one line of dialogue
+  (finishing the typewriter first), UP (hold 1 s or more) fast-forwards at 180 ms per
+  line until released, DOWN (short) steps back one page.
 - **Choices** — UP / DOWN select, **OK** confirms.
-- **Menu** — save, load, skip scene, back to title, close.
+- **Menu** — save, load, skip chapter, back to title, close. Skipping a chapter stops at
+  any choice it has not reached yet instead of deciding for you.
+- **Settings** — text speed (slow / medium / fast / instant), font size (16 px or
+  20 px), about, back.
+- **About** — UP / DOWN scroll the text (one line per press, four lines when held),
+  **OK** goes back.
 - **Save slots** — 5 manual slots plus one automatic slot written on every scene
   change, so "Continue" resumes where you left off. In save mode **OK (hold)** on a
   slot deletes it.
@@ -49,10 +60,10 @@ and their output is committed so a plain checkout builds:
 | Font subsets | `tools/saya_font.py` | `assets/fonts/saya_cjk_16.c`, `saya_cjk_20.c` and the character inventory `assets/fonts/saya_cjk_symbols.txt` |
 
 The pack is read straight out of Flash — there is no runtime JSON parsing and no
-decompression. Backgrounds are pre-cropped to 320 × 136 JPEG; sprites are scaled to
+decompression. Backgrounds are pre-cropped to 320 × 150 JPEG; sprites are scaled to
 screen height, pre-cropped to the visible band and stored as JPEG plus a 1bpp mask.
 The firmware `mmap`s the pack from the application partition, decodes one scene
-(background plus sprite) into a 320 × 136 RGB565 canvas only when the background or
+(background plus sprite) into a 320 × 150 RGB565 canvas only when the background or
 sprite actually changes, and composites the sprite with its mask.
 
 Regenerating requires a checkout of the source port and a licensed CJK font; see
@@ -65,6 +76,39 @@ provenance and license are recorded in [`assets/README.md`](assets/README.md).
 
 Flash budget (ESP-IDF 5.5, app partition 8,323,072 bytes): application 4.2 MB,
 49 % of the partition free.
+
+## Variants and the publishing rule
+
+The `main/saya_data/saya_pack.bin` and `assets/fonts/saya_cjk_*.c` committed here are
+the **community variant**: they contain nothing from the source port's patch
+directory (7 extended chapters plus 22 R18 CGs). Firmware published to the AI Passport
+Community market must use this variant.
+
+The **release variant** carries that patch and is for local flashing only:
+
+```bash
+python tools/saya_pack.py --source <Saya-miband10 checkout> \
+    --patch <checkout>/<patch directory> --commit <commit> \
+    --out build/release/saya_pack.bin
+SDKCONFIG_DEFAULTS=sdkconfig.defaults idf.py -B build/release/idf \
+    -D SAYA_PACK_FILE=build/release/saya_pack.bin build
+```
+
+Fonts are shared: `assets/fonts` holds the union of both variants' characters (including
+the glyphs only the patched text uses), and both firmware images embed it. If a new
+patch introduces new characters, regenerate that union from both packs:
+
+```bash
+python tools/saya_font.py --font <NotoSansSC-Regular.otf> \
+    --pack main/saya_data/saya_pack.bin --pack build/release/saya_pack.bin \
+    --out-dir assets/fonts
+```
+
+`build/` is git-ignored: the patched pack and any firmware built from it must **never be
+committed or published to the community**. The font is the union of both variants (glyphs
+only, no story content) and is committed; its inventory `assets/fonts/saya_cjk_symbols.txt`
+remembers the glyphs the patch used, so regenerating from the community pack alone does
+not drop them.
 
 ## Notes
 
