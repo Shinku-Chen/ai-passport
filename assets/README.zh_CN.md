@@ -42,6 +42,7 @@ ATRI 分支的视觉小说阅读器使用的一个 LVGL 子集（16px、4bpp、�
 | [`images/readme-hardware-specs.png`](images/readme-hardware-specs.png) | 2172 × 724，PNG RGBA | 保留为可选技术参考图，不再用于首页主视觉。于 2026-09-17 使用内置图像生成工具为本仓库生成；已根据文档中的硬件能力契约核对图中的六项标签与参数。 |
 | [`images/logo-wordmark.png`](images/logo-wordmark.png) | 1648 × 336，PNG RGBA | 从仓库原始 `images/logo.png` 中精确裁切并去除背景的黑色字标；用于中英文项目 README 的浅色主题。 |
 | [`images/logo-wordmark-dark.png`](images/logo-wordmark-dark.png) | 1648 × 336，PNG RGBA | 提取字标的白色版本；README 使用 `<picture>` 在 GitHub 深色主题下显示。 |
+| [`images/atri-reader-cover.png`](images/atri-reader-cover.png) | 1152 × 1536，PNG | ATRI 视觉小说阅读器的 3:4 社区封面：GitHub 发布配图，也是提交到社区市场时上传的封面。画面由移植自带的素材合成（背景 `bg013`、亚托莉全身立绘、Noto Sans SC 字体子集），来源与剧本资源包一致，版权说明见项目 README。 |
 
 - 使用描述性命名，并记录尺寸、像素格式、转换步骤与目标路径。
 - 优先采用适合 240 × 320 RGB565 显示的格式，并纳入 Flash 与内部 RAM 考量。

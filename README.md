@@ -132,7 +132,8 @@ re-implements the reading engine in C on LVGL and drives it with the three keys.
 goes back. While reading, **UP / DOWN** advance line by line and **UP (hold)**
 fast-forwards through whole lines until you let go; **DOWN (hold)** toggles
 auto-read (advances 0.7 s after each line finishes typing, shows a cyan auto marker
-bottom-right, any key stops it); **OK** opens the menu (continue, save,
+bottom-right, any key stops it, and keeps the screen awake while it runs); **OK**
+opens the menu (continue, save,
 load, skip chapter, back to title). Skipping a chapter runs to
 the next chapter and stops at any choice or ending. Choices use UP / DOWN + OK.
 The text speed setting cycles through instant / slow / medium / fast, and the about
@@ -143,6 +144,8 @@ corner and the page counter in the bottom-right when a line spills over.
 change, so the title screen can offer "continue". On the slots screen **OK** saves
 or loads and **OK (hold)** deletes a manual slot. Idle behaviour: 45 s dims the
 backlight, 2.5 min turns it off, 7 min enters deep sleep; any key wakes the device.
+Auto-read suspends all three timers and they start over once it stops; waiting on a
+choice or an ending is not activity, so the screen still turns itself off there.
 
 **Endings:** the happy and the bad ending are reached through the three choices in
 the script; once both are seen the title screen unlocks **the true ending** chapter,
