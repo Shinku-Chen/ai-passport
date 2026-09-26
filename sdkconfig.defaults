@@ -29,7 +29,9 @@ CONFIG_LV_FONT_MONTSERRAT_20=y
 # 注意 LVGL 9.6 把键名从 LV_MEM_SIZE_KILOBYTES(已弃用)换成 LV_MEM_SIZE(字节);
 # 两个都定义时以 LV_MEM_SIZE 为准,所以这里必须给字节值,否则旧键会被忽略并回落到
 # LVGL 默认的 64KB。40KB 够本应用的多页面/多列表界面(约 70 个对象)。
-CONFIG_LV_MEM_SIZE=40960
+# 56KB:本应用有 ~90 个对象(4 张列表页 × 7 行 × 2 个标签 + 各整屏页),
+# 40KB 时进"关于"页(长文本 + 滚动)会分配失败,L VGL 拿不到内存后整个界面花掉。
+CONFIG_LV_MEM_SIZE=57344
 
 # --- 系统 ---
 CONFIG_FREERTOS_HZ=1000

@@ -282,6 +282,12 @@ void app_main(void)
 
     ESP_LOGI(TAG, "空闲堆 %u 字节,最大连续块 %u 字节", (unsigned)esp_get_free_heap_size(),
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
+    lv_mem_monitor_t mon;
+    lv_mem_monitor(&mon);
+    ESP_LOGI(TAG, "LVGL 内存池 %u 字节:已用 %u,空闲 %u(最大块 %u,碎片 %u%%)",
+             (unsigned)mon.total_size, (unsigned)mon.total_size - mon.free_size,
+             (unsigned)mon.free_size, (unsigned)mon.free_biggest_size,
+             (unsigned)mon.frag_pct);
     ESP_LOGI(TAG, "就绪:竖屏阅读器;确定推进 / 长按确定菜单;"
                   "空闲 %us 调暗,%us 熄屏,%us 休眠",
              (unsigned)(ATRI_DIM_MS / 1000), (unsigned)(ATRI_SCREEN_OFF_MS / 1000),

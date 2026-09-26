@@ -508,6 +508,28 @@ esp_err_t bsp_audio_sleep(void) {
 
 esp_err_t bsp_audio_prepare_deep_sleep(void) {
     esp_err_t first_error = audio_disable_i2s_channels();
+
+    // 没用过喇叭的应用不会调 bsp_audio_init():ES8311 还停在【上电默认状态】,它的模拟输出
+    // 挂在常开的功放上;而下面马上要把 I2S 脚改高阻,浮空输入会被功放放大成"蜂鸣",
+    // 设备看似关了却一直在响。所以先只走 I2C 把 codec 置入低功耗(不建 I2S、
+    // 不占 DMA 内存),再去放高阻。已初始化过的应用同样再确认一次。
+    const bool temp_ctrl = (s_ctrl == NULL);
+    if (temp_ctrl && bsp_i2c_init() == ESP_OK) {
+        s_ctrl = audio_codec_new_i2c_ctrl(&(audio_codec_i2c_cfg_t){
+            .port = BSP_I2C_PORT,
+            .addr = BSP_I2C_ES8311_ADDR << 1,
+            .bus_handle = bsp_i2c_bus(),
+        });
+        if (!s_ctrl) ESP_LOGW(TAG, "ES8311 控制口创建失败,休眠前无法静音");
+    }
+    if (s_ctrl) {
+        esp_err_t e = es8311_force_sleep();
+        if (e != ESP_OK && first_error == ESP_OK) first_error = e;
+        if (temp_ctrl) {
+            audio_codec_delete_ctrl_if(s_ctrl);
+            s_ctrl = NULL;
+        }
+    }
     const int pins[] = {
         BSP_I2S_MCLK, BSP_I2S_BCLK, BSP_I2S_WS, BSP_I2S_DOUT, BSP_I2S_DIN,
     };

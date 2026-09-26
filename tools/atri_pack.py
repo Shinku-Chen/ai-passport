@@ -118,12 +118,20 @@ BG_ALIASES = {
 # 说完就收起 —— 旁白、主角、配角(校长/小西/野岛/路人……)的句子都不挂立绘。
 CHAR_NAMES = {
     "亚托莉": "img_atri",
+    # 同一角色的其他称呼 / 异体写法(用码位写,避免被编码问题改坏):
+    "\u673a\u5668\u4eba\u5c11\u5973": "img_atri",            # 机器人少女(自我介绍那几幕)
+    "\u5c11\u5973": "img_atri",                                # 少女(初遇那几幕)
+    "\u4e9a\u6258\u8389\u7684\u58f0\u97f3": "img_atri",          # 亚托莉的声音
     "水菜萌": "img_minamo",
     "龙司": "img_ryuji",
+    "\u7adc\u53f8": "img_ryuji",                               # 竜司(异体字)
     "凯瑟琳": "img_catherine",
-    # 剧本里同一个人有两种写法(后者是数据里的错字),都指到同一张立绘。
-    "\u51dc\u51dc\u82b1": "img_ririka",   # 凛凛花
-    "\u51dc\u51db\u82b1": "img_ririka",   # 凛凛花
+    "\u30ad\u30e3\u30b5\u30ea\u30f3": "img_catherine",           # キャサリン(片假名)
+    # 剧本里凛凛花有好几种写法(其中有些是数据里的错字),都指到同一张立绘。
+    "\u51dc\u51dc\u82b1": "img_ririka",                       # 凛凛花
+    "\u51dc\u51db\u82b1": "img_ririka",                       # 凛凛花
+    "\u51db\u51db\u82b1": "img_ririka",                       # 凛凛花
+    "\u51dc\u51dc\u82b1\u7684\u58f0\u97f3": "img_ririka",       # 凛凛花的声音
 }
 # 这几类背景(事件 CG、黑屏/闪光)里不叠立绘:CG 本身已经画了角色。
 NO_CHAR_BG_PREFIX = ("ev", "none", "mask", "hurt")
