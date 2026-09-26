@@ -88,6 +88,7 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 
 - 分支：[`feature/atri-reader`](https://github.com/Shinku-Chen/ai-passport/tree/feature/atri-reader)
 - 发布：[v1.0.1-atri-reader](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.1-atri-reader)
+- 社区：已提交到 AI Passport 社区市场（作品 `my-dear-moments`，审核中）。
 
 ```text
 ┌──────────────────────────────────┐  240 x 320,原生竖屏;画布铺满整屏

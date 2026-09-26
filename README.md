@@ -114,6 +114,7 @@ re-implements the reading engine in C on LVGL and drives it with the three keys.
 
 - Branch: [`feature/atri-reader`](https://github.com/Shinku-Chen/ai-passport/tree/feature/atri-reader)
 - Release: [v1.0.1-atri-reader](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.1-atri-reader)
+- Community: submitted to the AI Passport community market as `my-dear-moments` (under review).
 
 ```text
 ┌──────────────────────────────────┐  240 x 320, native portrait; the canvas is
