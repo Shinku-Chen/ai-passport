@@ -13,6 +13,7 @@
 #include "bsp_battery.h"
 #include "bsp_pins.h"      // 错误日志里要打印 BSP_LCD_* 引脚号
 #include "gal/gal_app.h"
+#include "gal/gal_screenshot.h"
 #include "lvgl.h"
 #include "esp_log.h"
 #include "esp_sleep.h"
@@ -104,6 +105,11 @@ void app_main(void) {
         s_input_ready = true;
     } else {
         ESP_LOGE(TAG, "LVGL 锁定失败,界面未建立");
+    }
+
+    // 社区上架要求固件能回一帧真实画面(FAP_SCREENSHOT_V1);失败只影响发布,不影响阅读。
+    if (gal_screenshot_start() != ESP_OK) {
+        ESP_LOGW(TAG, "串口截图不可用");
     }
 
     ESP_LOGI(TAG, "就绪");

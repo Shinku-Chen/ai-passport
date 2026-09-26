@@ -62,3 +62,5 @@
 - Added the Asunabi portrait visual-novel reader on `feature/asunabi-galgame`. The firmware boots into the title screen and provides line advance, pagination, chapter skip, six save slots, text speed and size, auto-play, and a single ending screen.
 - Added a 4 MiB `assets` data partition and the `tools/gal/` pack pipeline. The upstream artwork and chapter scripts are committed under `assets/gal-source/`, so the tag-triggered CI artifact carries the complete game; the packer falls back to a placeholder pack only when that tree is absent.
 - Added committed Noto Sans SC subset fonts for the reader UI.
+- Added the `FAP_SCREENSHOT_V1` console command: on request the firmware returns the current frame, which the community publisher requires before it accepts a submission.
+- Tuned the reading interaction: a long press registers at 300 ms, holding DOWN starts or stops auto-play (0.9 s per line, cancelled by any key), and the title backdrop, option list and dialogue panel are tinted over the artwork instead of covering it.
