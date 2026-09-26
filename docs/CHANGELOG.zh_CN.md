@@ -53,3 +53,13 @@
 - 同步更新索引：`docs/software-design/README.md`、`README.en_US.md` / `README.zh_CN.md` 的 `docs/` 目录说明。
 - 参考 cindy 仓库文档组织完善索引：新增 `docs/README.md` 根总索引；AGENTS.md 规则索引按触发场景改写（附触发条件）；`docs/contribution/` 与 `docs/development/` 的 README 补充收录标准。
 - 引入社区治理文档（参照 cindy 改写，放仓库根目录）：新增 `CONTRIBUTING.md` / `.zh_CN.md`（贡献指南，针对 ESP-IDF/AI agent/fork 场景改写）、`CODE_OF_CONDUCT.md` / `.zh_CN.md`（贡献者公约）、`SECURITY.md` / `.zh_CN.md`（安全报告流程）、`SUPPORT.md` / `.zh_CN.md`（支持渠道）；AGENTS.md 与 docs/README.md 同步引用。
+
+## v0.1.0-saya-no-uta - 2026-09-27
+
+- 《沙耶之歌》AI Passport 横屏阅读器首个版本：44 章、3,828 段对白、3 个结局（End / BadEnd / MadEnd），全程离线；资源包与中文字体子集随固件内置，开箱可玩。
+- 三键操作重做：**确定**打开菜单；**上**短按下一段（打字中先补全）、按住 1 秒以上快进、松手即停；**下**短按回看上一页。列表光标到顶/到底停住，不再绕圈。
+- 版面调整：画面区 320x150、文本框 82 px 且底部留 8 px 边距；说话人名字移到画面区左下角、文本框正上方。
+- 菜单把「跳过场景」改为「跳过章节」：本章后面还有未遇到的选项时停在该选项上，不替玩家做决定。设置新增「瞬间」文字速度；关于页正文可滚动。
+- 开机警告页需滚动读到最后才能继续，未读完时按确定只往下翻一屏。
+- 修复正文缺字方块：中文字体子集改为两个变体字符的并集（2,839 码位）并补上全角空格字形；剧本自带的音效指令在打包时剔除，不再显示在对话框里。
+- 发布规则：仓库内提交的资源包与字体是不含补丁的 community 变体；含补丁的 release 变体只作为本 Release 的附加附件提供，不得用于社区发布。

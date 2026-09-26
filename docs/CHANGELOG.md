@@ -56,3 +56,13 @@
 - Updated software-design and project README references for the new documentation structure.
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
+
+## v0.1.0-saya-no-uta - 2026-09-27
+
+- First release of the Saya no Uta landscape reader for AI Passport: 44 chapters, 3,828 dialogue lines and three endings (End / BadEnd / MadEnd), fully offline; the resource pack and the Chinese font subset ship inside the firmware, so the release is playable as-is.
+- Reworked three-key controls: **OK** opens the menu; **UP** (short) advances a segment (finishing the typewriter first), **UP** (hold for one second) fast-forwards until released, **DOWN** (short) steps back one page. List cursors stop at the ends instead of wrapping around.
+- Layout change: the art area is 320x150 and the dialogue box is 82 px with an 8 px bottom margin; the speaker name moved to the lower-left of the art area, just above the box.
+- The menu's skip-scene became skip-chapter: it stops at a choice the chapter has not reached yet instead of deciding for the player. Settings gained an instant text speed, and the about text scrolls.
+- The startup warning has to be scrolled to the end before OK continues; before that, OK pages the text down instead.
+- Fixed missing-glyph boxes in body text: the Chinese font subset is now the union of both pack variants (2,839 code points) and includes the full-width space; the script's sound-effect directives are stripped while packing and no longer appear in the dialogue box.
+- Publishing rule: the committed pack and fonts are the patch-free community variant; the patched release variant ships only as an extra asset on this release and must not be published to the community.
