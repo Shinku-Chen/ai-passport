@@ -56,7 +56,7 @@ bool saya_settings_load(saya_settings_t *out)
     if (err != ESP_OK || len < 4 || blob[0] != CFG_MAGIC || blob[1] != CFG_VERSION) {
         return false;
     }
-    out->text_speed = blob[2] > 2 ? 1 : blob[2];
+    out->text_speed = blob[2] > 3 ? 1 : blob[2];
     out->font_large = blob[3] ? 1 : 0;
     out->seen_warning = len >= 5 && blob[4] ? 1 : 0;
     return true;

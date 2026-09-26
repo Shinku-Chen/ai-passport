@@ -11,12 +11,19 @@
 
 static const char *TAG = "saya";
 
+// "上"长按后的自动推进间隔:180ms 一段,和常见视觉小说的快进速度接近。
+#define SAYA_FAST_FORWARD_MS 180u
+// 关于页每次滚动的像素数:一行正文的行高(见 SAYA_LINE_H);长按翻 4 行。
+#define SAYA_ABOUT_SCROLL_STEP 19
+// 开机警告页每次滚动的像素数(字号大一样够用);长按与没读完时按确定按整屏翻。
+#define SAYA_WARNING_SCROLL_STEP 24
+
 LV_FONT_DECLARE(saya_cjk_16);
 LV_FONT_DECLARE(saya_cjk_20);
 
 // 打字机速度:慢 / 中 / 快(毫秒/字)
-static const uint32_t SPEED_MS[3] = { 60, 40, 18 };
-static const char *const SPEED_LABEL[3] = { "慢", "中", "快" };
+static const uint32_t SPEED_MS[4] = { 60, 40, 18, 0 };   // 0 = 瞬间显示整页
+static const char *const SPEED_LABEL[4] = { "慢", "中", "快", "瞬间" };
 
 static const char *const ABOUT_TEXT =
     "《沙耶之歌》视觉小说移植\n"
@@ -24,9 +31,10 @@ static const char *const ABOUT_TEXT =
     "本移植:AI Passport 横屏版\n"
     "\n"
     "操作:\n"
-    "  确定     推进对白 / 打字中立即显示\n"
-    "  长按确定 打开菜单(存档、跳场景)\n"
-    "  上 / 下  翻页,选项里选择\n"
+    "  确定     打开菜单(存/读档、跳章节)\n"
+    "  上       短按:下一段;长按:快进,松手停\n"
+    "  下       短按:回看上一页\n"
+    "  上/下    菜单与选项里移动;本页滚动正文\n"
     "\n"
     "本作含有大量血腥描写,请谨慎阅读。\n"
     "有能力请支持正版。";
@@ -45,13 +53,13 @@ static const char *warning_text(void)
 // ---------------------------------------------------------------- 小工具
 static uint32_t speed_ms(const saya_app_t *app)
 {
-    const uint8_t idx = app->settings.text_speed > 2 ? 1 : app->settings.text_speed;
+    const uint8_t idx = app->settings.text_speed > 3 ? 1 : app->settings.text_speed;
     return SPEED_MS[idx];
 }
 
 static const char *speed_label(const saya_app_t *app)
 {
-    const uint8_t idx = app->settings.text_speed > 2 ? 1 : app->settings.text_speed;
+    const uint8_t idx = app->settings.text_speed > 3 ? 1 : app->settings.text_speed;
     return SPEED_LABEL[idx];
 }
 
@@ -163,7 +171,7 @@ static void render_current_page(saya_app_t *app)
         return;
     }
     case SAYA_PAGE_MENU: {
-        static const char *rows[5] = { "保存", "读取", "跳过场景", "返回标题", "关闭菜单" };
+        static const char *rows[5] = { "保存", "读取", "跳过章节", "返回标题", "关闭菜单" };
         saya_ui_show_page(&app->ui, SAYA_PAGE_MENU);
         saya_ui_set_menu_rows(&app->ui, rows, 5, app->menu_sel);
         return;
@@ -246,6 +254,7 @@ static void goto_page(saya_app_t *app, saya_page_t page)
 {
     app->page = page;
     app->idle_ms = 0;
+    app->fast_forward = false;
     // 换页可能让画面区画布被别的画面占用(标题图),下次进正文时按需重画。
     app->rendered_bg = SAYA_NONE;
     app->rendered_fg = SAYA_NONE;
@@ -282,14 +291,17 @@ static void handle_title(saya_app_t *app, const saya_key_t *key)
     const char *const *rows = app->have_auto ? rows_continue : rows_default;
     const int count = app->have_auto ? 4 : 3;
 
-    if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_UP) {
-        app->title_sel = app->title_sel > 0 ? app->title_sel - 1 : count - 1;
-        saya_ui_set_title_rows(&app->ui, rows, count, app->title_sel);
-        return;
-    }
-    if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_DOWN) {
-        app->title_sel = app->title_sel + 1 < count ? app->title_sel + 1 : 0;
-        saya_ui_set_title_rows(&app->ui, rows, count, app->title_sel);
+    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
+        const int delta = key->btn == BSP_BTN_UP ? -1 : 1;
+        // 列表不绕圈:到顶/到底就停住。绕圈时“在第一行按上”会跳到最下面,
+        // 看起来就像上下按反了。
+        int sel = app->title_sel + delta;
+        if (sel < 0) sel = 0;
+        if (sel >= count) sel = count - 1;
+        if (sel != app->title_sel) {
+            app->title_sel = sel;
+            saya_ui_set_title_rows(&app->ui, rows, count, sel);
+        }
         return;
     }
     if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
@@ -318,52 +330,13 @@ static void handle_title(saya_app_t *app, const saya_key_t *key)
     }
 }
 
-static void handle_game(saya_app_t *app, const saya_key_t *key)
+// 推进一段(自动/手动共用)。fast = 快进模式:跳过打字机动画,不做"按一下立即显示"。
+static void advance_reading(saya_app_t *app, bool fast)
 {
     saya_layout_t layout;
     layout_for(app, &layout);
 
-    if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
-        app->menu_sel = 0;
-        goto_page(app, SAYA_PAGE_MENU);
-        return;
-    }
-
-    if (app->player.at_choice) {
-        const int count = 2;
-        if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-            const int delta = key->btn == BSP_BTN_UP ? -1 : 1;
-            int sel = saya_ui_choice_selected(&app->ui) + delta;
-            if (sel < 0) sel = count - 1;
-            if (sel >= count) sel = 0;
-            saya_ui_set_choice_selected(&app->ui, sel);
-            return;
-        }
-        if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
-            const int sel = saya_ui_choice_selected(&app->ui);
-            if (saya_player_choose(&app->player, &app->pack, (uint8_t)sel, &layout)) {
-                render_scene(app);
-                autosave(app);
-            }
-        }
-        return;
-    }
-
-    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        // 上/下翻页:只在本句被切成多页时有意义。
-        if (key->btn == BSP_BTN_UP && app->player.page > 0) {
-            app->player.page--;
-            render_scene(app);
-        } else if (key->btn == BSP_BTN_DOWN && app->player.page + 1 < app->player.page_count) {
-            app->player.page++;
-            render_scene(app);
-        }
-        return;
-    }
-
-    if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
-
-    if (saya_ui_typing(&app->ui)) {
+    if (!fast && saya_ui_typing(&app->ui)) {
         saya_ui_show_full_text(&app->ui);
         return;
     }
@@ -379,18 +352,83 @@ static void handle_game(saya_app_t *app, const saya_key_t *key)
         autosave(app);
         return;
     case SAYA_STEP_CHOICE:
+        app->fast_forward = false;   // 选项处停下,交给玩家选
         render_scene(app);
         return;
     case SAYA_STEP_ENDING:
+        app->fast_forward = false;
         autosave(app);
         goto_page(app, SAYA_PAGE_ENDING);
         return;
     default:
         ESP_LOGW(TAG, "推进失败(数据异常)");
+        app->fast_forward = false;
         goto_page(app, SAYA_PAGE_ENDING);
         return;
     }
 }
+
+static void handle_game(saya_app_t *app, const saya_key_t *key)
+{
+    saya_layout_t layout;
+    layout_for(app, &layout);
+
+    // 选项目:上/下选择,确定确认(此时确定不打开菜单)。
+    if (app->player.at_choice) {
+        if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
+            const int delta = key->btn == BSP_BTN_UP ? -1 : 1;
+            int sel = saya_ui_choice_selected(&app->ui) + delta;
+            if (sel < 0) sel = 0;
+            if (sel > 1) sel = 1;
+            saya_ui_set_choice_selected(&app->ui, sel);
+            return;
+        }
+        if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
+            const int sel = saya_ui_choice_selected(&app->ui);
+            if (saya_player_choose(&app->player, &app->pack, (uint8_t)sel, &layout)) {
+                render_scene(app);
+                autosave(app);
+            }
+        }
+        return;
+    }
+
+    // OK:打开菜单(短按/长按都算)。
+    if (key->btn == BSP_BTN_OK && (key->ev == BSP_BTN_CLICK || key->ev == BSP_BTN_LONG)) {
+        app->fast_forward = false;
+        app->menu_sel = 0;
+        goto_page(app, SAYA_PAGE_MENU);
+        return;
+    }
+
+    if (key->btn == BSP_BTN_UP) {
+        if (key->ev == BSP_BTN_LONG) {              // 按住快进
+            app->fast_forward = true;
+            app->ff_accum_ms = 0;
+            saya_ui_show_full_text(&app->ui);
+            return;
+        }
+        if (key->ev == BSP_BTN_RELEASE) {           // 松手停止快进
+            app->fast_forward = false;
+            return;
+        }
+        if (key->ev == BSP_BTN_CLICK) {             // 下一段(打字中先补全)
+            app->fast_forward = false;
+            advance_reading(app, false);
+            return;
+        }
+    }
+
+    // 下:长句回看上一页(推进由"上"负责)。
+    if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_DOWN) {
+        if (app->player.page > 0) {
+            app->player.page--;
+            render_scene(app);
+        }
+        return;
+    }
+}
+
 
 static void handle_menu(saya_app_t *app, const saya_key_t *key)
 {
@@ -401,14 +439,17 @@ static void handle_menu(saya_app_t *app, const saya_key_t *key)
     }
     if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
         const int delta = key->btn == BSP_BTN_UP ? -1 : 1;
-        app->menu_sel = (app->menu_sel + delta + count) % count;
-        static const char *rows[5] = { "保存", "读取", "跳过场景", "返回标题", "关闭菜单" };
-        saya_ui_set_menu_rows(&app->ui, rows, count, app->menu_sel);
+        int sel = app->menu_sel + delta;
+        if (sel < 0) sel = 0;
+        if (sel >= count) sel = count - 1;
+        app->menu_sel = sel;
+        static const char *rows[5] = { "保存", "读取", "跳过章节", "返回标题", "关闭菜单" };
+        saya_ui_set_menu_rows(&app->ui, rows, count, sel);
         return;
     }
     if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
 
-    static const char *rows[5] = { "保存", "读取", "跳过场景", "返回标题", "关闭菜单" };
+    static const char *rows[5] = { "保存", "读取", "跳过章节", "返回标题", "关闭菜单" };
     const char *choice = rows[app->menu_sel];
     if (strcmp(choice, "保存") == 0) {
         app->slots_saving = true;
@@ -420,16 +461,17 @@ static void handle_menu(saya_app_t *app, const saya_key_t *key)
         app->slots_sel = 0;
         app->slots_return = SAYA_PAGE_MENU;
         goto_page(app, SAYA_PAGE_SLOTS);
-    } else if (strcmp(choice, "跳过场景") == 0) {
+    } else if (strcmp(choice, "跳过章节") == 0) {
         saya_layout_t layout;
         layout_for(app, &layout);
-        if (saya_player_skip_scene(&app->player, &app->pack, &layout)) {
+        // 章节内有未经过的选项时跳到那个选项,让玩家自己决定;否则整章跳过。
+        if (saya_player_skip_chapter(&app->player, &app->pack, &layout)) {
             autosave(app);
             goto_page(app, SAYA_PAGE_GAME);
         } else {
-            ESP_LOGI(TAG, "本场景不可跳过");
+            ESP_LOGI(TAG, "本章不可跳过(已是结局章或停在选项上)");
             goto_page(app, SAYA_PAGE_GAME);
-            show_notice(app, "本场景不可跳过");
+            show_notice(app, "本章不可跳过");
         }
     } else if (strcmp(choice, "返回标题") == 0) {
         goto_page(app, SAYA_PAGE_TITLE);
@@ -447,15 +489,18 @@ static void handle_settings(saya_app_t *app, const saya_key_t *key)
     }
     if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
         const int delta = key->btn == BSP_BTN_UP ? -1 : 1;
-        app->settings_sel = (app->settings_sel + delta + count) % count;
-        saya_ui_set_settings_selected(&app->ui, app->settings_sel);
+        int sel = app->settings_sel + delta;
+        if (sel < 0) sel = 0;
+        if (sel >= count) sel = count - 1;
+        app->settings_sel = sel;
+        saya_ui_set_settings_selected(&app->ui, sel);
         return;
     }
     if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
 
     switch (app->settings_sel) {
     case 0:
-        app->settings.text_speed = (uint8_t)((app->settings.text_speed + 1) % 3);
+        app->settings.text_speed = (uint8_t)((app->settings.text_speed + 1) % 4);
         saya_ui_set_setting_value(&app->ui, 0, speed_label(app));
         break;
     case 1:
@@ -491,8 +536,11 @@ static void handle_slots(saya_app_t *app, const saya_key_t *key)
     }
     if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
         const int delta = key->btn == BSP_BTN_UP ? -1 : 1;
-        app->slots_sel = (app->slots_sel + delta + count) % count;
-        saya_ui_set_slots_selected(&app->ui, app->slots_sel);
+        int sel = app->slots_sel + delta;
+        if (sel < 0) sel = 0;
+        if (sel >= count) sel = count - 1;
+        app->slots_sel = sel;
+        saya_ui_set_slots_selected(&app->ui, sel);
         return;
     }
     if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
@@ -529,6 +577,15 @@ static void handle_ending(saya_app_t *app, const saya_key_t *key)
 
 static void handle_about(saya_app_t *app, const saya_key_t *key)
 {
+    // 上/下滚动关于正文(短按一行,长按翻 4 行);OK 返回。
+    if ((key->ev == BSP_BTN_CLICK || key->ev == BSP_BTN_LONG) &&
+        (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
+        const int dir = key->btn == BSP_BTN_UP ? -1 : 1;
+        const int step = key->ev == BSP_BTN_LONG ? SAYA_ABOUT_SCROLL_STEP * 4
+                                                 : SAYA_ABOUT_SCROLL_STEP;
+        saya_ui_about_scroll(&app->ui, dir * step);
+        return;
+    }
     if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
         goto_page(app, SAYA_PAGE_TITLE);
         return;
@@ -538,17 +595,64 @@ static void handle_about(saya_app_t *app, const saya_key_t *key)
     }
 }
 
+// 真机按键映射核对用:把事件打进串口,便于确认物理三键与 BSP_BTN_MV_TABLE 一致。
+static const char *btn_name(uint8_t btn)
+{
+    switch (btn) {
+    case BSP_BTN_UP: return "上";
+    case BSP_BTN_DOWN: return "下";
+    case BSP_BTN_OK: return "确定";
+    default: return "?";
+    }
+}
+
+static const char *btn_ev_name(uint8_t ev)
+{
+    switch (ev) {
+    case BSP_BTN_PRESS: return "按下";
+    case BSP_BTN_CLICK: return "短按";
+    case BSP_BTN_DOUBLE: return "双击";
+    case BSP_BTN_LONG: return "长按";
+    case BSP_BTN_RELEASE: return "松开";
+    default: return "?";
+    }
+}
+
 void saya_app_key(saya_app_t *app, const saya_key_t *key)
 {
     if (!app || !key) return;
     app->idle_ms = 0;
+    if (key->ev != BSP_BTN_PRESS) {
+        ESP_LOGI(TAG, "按键 %s %s", btn_name(key->btn), btn_ev_name(key->ev));
+    }
+    // iot_button 会把窗口内的两次快速点击合并成 BUTTON_DOUBLE_CLICK,而且不补发单击:
+    // 阅读时连按“上”很常见,把它当一次单击处理,否则按了等于没按。
+    saya_key_t as_click;
+    if (key->ev == BSP_BTN_DOUBLE) {
+        as_click = *key;
+        as_click.ev = BSP_BTN_CLICK;
+        key = &as_click;
+    }
     if (!bsp_lvgl_lock(200)) {
         ESP_LOGW(TAG, "拿不到 LVGL 锁,忽略本次按键");
         return;
     }
     switch (app->page) {
     case SAYA_PAGE_WARNING:
+        // 上/下滚动警告正文:短按一行、长按整屏。
+        if ((key->ev == BSP_BTN_CLICK || key->ev == BSP_BTN_LONG) &&
+            (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
+            const int dir = key->btn == BSP_BTN_UP ? -1 : 1;
+            if (key->ev == BSP_BTN_LONG) saya_ui_warning_page(&app->ui, dir);
+            else saya_ui_warning_scroll(&app->ui, dir * SAYA_WARNING_SCROLL_STEP);
+            break;
+        }
         if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
+            // 没读到底不许进游戏:此时确定只往下翻一屏。
+            if (!saya_ui_warning_ready(&app->ui)) {
+                saya_ui_warning_page(&app->ui, 1);
+                break;
+            }
             app->settings.seen_warning = 1;
             saya_settings_store(&app->settings);
             app->title_sel = 0;
@@ -571,6 +675,17 @@ void saya_app_tick(saya_app_t *app, uint32_t elapsed_ms)
 {
     if (!app) return;
     app->idle_ms += elapsed_ms;
+
+    if (app->fast_forward && app->page == SAYA_PAGE_GAME && !app->player.at_choice) {
+        app->ff_accum_ms += elapsed_ms;
+        if (app->ff_accum_ms >= SAYA_FAST_FORWARD_MS) {
+            app->ff_accum_ms = 0;
+            if (bsp_lvgl_lock(100)) {
+                advance_reading(app, true);
+                bsp_lvgl_unlock();
+            }
+        }
+    }
 
     if (app->notice_ms > 0) {
         app->notice_ms = app->notice_ms > elapsed_ms ? app->notice_ms - elapsed_ms : 0;

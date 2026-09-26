@@ -1,7 +1,7 @@
 // tests/test_saya_model.c —— 用真实资源包验证阅读器逻辑(纯宿主机测试)。
 //
 // 用法: test_saya_model <path/to/saya_pack.bin>
-// 覆盖:包结构完整性、剧情图可达性(3 个结局)、分页规则、跳过场景、存档往返。
+// 覆盖:包结构完整性、剧情图可达性(3 个结局)、分页规则、跳过章节、存档往返。
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -100,7 +100,7 @@ static void test_pack_structure(const saya_pack_t *pack)
     // 标题画面固定在背景表 0 号,尺寸必须是画面区尺寸(标题页复用它)。
     saya_bg_t title;
     assert(saya_pack_bg(pack, SAYA_BG_TITLE, &title));
-    assert(title.w == 320 && title.h == 136);
+    assert(title.w == 320 && title.h == 150);
     assert(title.jpeg[0] == 0xFF && title.jpeg[1] == 0xD8);
 
     // 源脚本编号 -> 章节下标:第一章是 0 号,最后一章是 51,不存在的编号返回 -1。
@@ -113,7 +113,7 @@ static void test_pack_structure(const saya_pack_t *pack)
         saya_fg_t fg;
         assert(saya_pack_fg(pack, i, &fg));
         assert(fg.mask_len == (uint32_t)(((fg.w + 7) / 8) * fg.h));
-        assert(fg.h <= 136);   // 只保留画面区可见部分
+        assert(fg.h <= 150);   // 只保留画面区可见部分
     }
 }
 
@@ -223,11 +223,25 @@ static void test_scene_and_save(const saya_pack_t *pack, const saya_layout_t *la
     saya_player_t player;
     assert(saya_player_start(&player, pack, 0, layout));
 
-    // 跳过场景:第一幕可以跳,跳到下一幕后位置前进。
-    const uint16_t scene_before = player.scene;
-    assert(saya_player_skip_scene(&player, pack, layout));
-    assert(player.scene == scene_before + 1);
-    assert(player.dialogue == 0);
+    // 跳过章节:第 1 章没有选项,整章跳到下一章开头。
+    const uint16_t chapter_before = player.chapter;
+    assert(saya_player_skip_chapter(&player, pack, layout));
+    assert(player.chapter != chapter_before);
+    assert(player.scene == 0 && player.dialogue == 0 && !player.at_choice);
+
+    // 带选项的章节:停在选项上时跳过要被拒绝 —— 不能替玩家做选择。
+    for (uint16_t ci = 0; ci < pack->chapter_count; ++ci) {
+        saya_chapter_t ch;
+        saya_pack_chapter(pack, ci, &ch);
+        saya_scene_t sc;
+        saya_pack_scene(pack, ch.first_scene, &sc);
+        if (sc.choice_count == 0) continue;
+        saya_player_t choice_player;
+        assert(saya_player_start(&choice_player, pack, ci, layout));
+        assert(choice_player.at_choice);
+        assert(!saya_player_skip_chapter(&choice_player, pack, layout));
+        break;
+    }
 
     // 存档往返。
     player.fg = SAYA_FG_KEEP == player.fg ? SAYA_NONE : player.fg;

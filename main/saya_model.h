@@ -68,9 +68,10 @@ saya_step_t saya_player_advance(saya_player_t *player, const saya_pack_t *pack,
 bool saya_player_choose(saya_player_t *player, const saya_pack_t *pack, uint8_t index,
                         const saya_layout_t *layout);
 
-// 跳过当前场景(仅在"本场景还有下一幕且没有选项/结局/跳转"时允许)。
-bool saya_player_skip_scene(saya_player_t *player, const saya_pack_t *pack,
-                            const saya_layout_t *layout);
+// 跳过当前章节:本章还有未经过的选项就跳到那个选项(不替玩家做决定),
+// 否则跳到下一章开头。本章没有后续(结局章)或已停在选项上时返回 false。
+bool saya_player_skip_chapter(saya_player_t *player, const saya_pack_t *pack,
+                              const saya_layout_t *layout);
 
 // 从存档恢复到指定章节/场景/对白。失败(存档指向已失效的位置)返回 false。
 bool saya_player_load(saya_player_t *player, const saya_pack_t *pack, const saya_save_t *save,

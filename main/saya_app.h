@@ -1,9 +1,11 @@
 // main/saya_app.h —— 应用状态机:页面切换、按键语义、自动存档、电量刷新。
 //
 // 按键语义(三键):
-//   标题/列表页: 上/下 移动光标,确定 进入,长按确定 返回
-//   正文页:     确定 推进(打字中=立即显示全文),长按确定 打开菜单,上/下 翻页
-//   选项页:     上/下 选择,确定 确认
+//   标题/列表页: 上/下 移动光标(到顶/到底停住,不绕圈),确定 进入/确认,长按确定 返回
+//   正文页:     确定 打开菜单;上 短按=下一段(打字中先补全),上 长按=快进,松开=停;
+//               下 短按=回看上一页
+//   选项页:     上/下 选择(不绕圈),确定 确认
+//   关于页:     上/下 滚动正文(短按一行/长按四行),确定 返回
 #pragma once
 
 #include "bsp_button.h"
@@ -40,6 +42,8 @@ typedef struct {
     int battery_percent;
     uint32_t battery_accum_ms;
     uint32_t idle_ms;
+    bool fast_forward;        // "上"长按期间的自动推进
+    uint32_t ff_accum_ms;
     char notice[24];
     uint32_t notice_ms;
     bool have_auto;

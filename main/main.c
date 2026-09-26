@@ -1,9 +1,11 @@
 // main/main.c —— 《沙耶之歌》AI Passport 移植:开机直接进阅读器(横屏 320x240)。
 //
 // 按键语义:
-//   标题/列表页 上、下移动光标,确定进入,长按确定返回
-//   正文页      确定推进(打字中=立即显示全文),长按确定打开菜单,上、下翻页
+//   标题/列表页 上、下移动光标(到顶/到底停住),确定进入,长按确定返回
+//   正文页      确定打开菜单;上 短按=下一段(打字中先补全)、长按=快进、松手停;
+//               下 短按=回看上一页
 //   选项页      上、下选择,确定确认
+//   关于页      上、下滚动正文,确定返回
 //
 // 线程模型:按键回调只入队;输入任务串行处理事件并驱动应用状态机;
 // LVGL 对象只在持有 bsp_lvgl_lock() 时改写(由 saya_app 内部负责)。
@@ -210,14 +212,14 @@ void app_main(void)
         return;
     }
     if (bsp_button_init(on_key, NULL) != ESP_OK) {
-        ESP_LOGE(TAG, "按键初始化失败,无法翻页");
+        ESP_LOGE(TAG, "按键初始化失败,无法操作阅读器");
         return;
     }
     s_input_ready = true;
 
     ESP_LOGI(TAG, "空闲堆 %u 字节,最大连续块 %u 字节", (unsigned)esp_get_free_heap_size(),
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
-    ESP_LOGI(TAG, "就绪:横屏阅读器;确定推进 / 长按确定菜单 / 上下翻页;"
+    ESP_LOGI(TAG, "就绪:横屏阅读器;确定开菜单,上(短按/长按)下一段/快进,下回看上一页;"
                   "空闲 %us 调暗,%us 熄屏,%us 休眠",
              (unsigned)(SAYA_DIM_MS / 1000), (unsigned)(SAYA_SCREEN_OFF_MS / 1000),
              (unsigned)(SAYA_SLEEP_MS / 1000));

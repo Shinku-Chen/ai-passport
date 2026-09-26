@@ -292,21 +292,24 @@ bool saya_player_choose(saya_player_t *player, const saya_pack_t *pack, uint8_t 
     return load_scene(player, pack, target, 0, layout);
 }
 
-bool saya_player_skip_scene(saya_player_t *player, const saya_pack_t *pack,
-                            const saya_layout_t *layout)
+bool saya_player_skip_chapter(saya_player_t *player, const saya_pack_t *pack,
+                              const saya_layout_t *layout)
 {
     if (!player || !pack || !layout || player->at_choice || player->ended) return false;
     if (player->chapter >= pack->chapter_count) return false;
     saya_chapter_t ch;
     saya_pack_chapter(pack, player->chapter, &ch);
-    if (player->scene + 1 >= ch.scene_count) return false;
-    saya_scene_t sc;
-    saya_pack_scene(pack, (uint16_t)(ch.first_scene + player->scene), &sc);
-    if (sc.dlg_count == 0) return false;
-    saya_dialogue_t last;
-    saya_pack_dialogue(pack, (uint16_t)(sc.first_dlg + sc.dlg_count - 1), &last);
-    if (last.flags & (SAYA_DLG_TO_SCENE | SAYA_DLG_END | SAYA_DLG_BRANCH)) return false;
-    return load_scene(player, pack, player->chapter, (uint16_t)(player->scene + 1), layout);
+
+    // 本章后面还有选项场景:停在那个选项上,让玩家自己选,而不是替他决定。
+    for (uint16_t s = (uint16_t)(player->scene + 1); s < ch.scene_count; ++s) {
+        saya_scene_t sc;
+        saya_pack_scene(pack, (uint16_t)(ch.first_scene + s), &sc);
+        if (sc.choice_count > 0) return load_scene(player, pack, player->chapter, s, layout);
+    }
+
+    // 没有选项就整章跳过,从下一章开头继续。
+    if (ch.next == SAYA_NONE || ch.next >= pack->chapter_count) return false;
+    return load_scene(player, pack, ch.next, 0, layout);
 }
 
 bool saya_player_load(saya_player_t *player, const saya_pack_t *pack, const saya_save_t *save,
