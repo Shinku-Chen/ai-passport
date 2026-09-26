@@ -105,18 +105,21 @@ computer modes differ only in who moves first.
 A portrait visual novel ported from
 [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband), a Xiaomi
 Band release: **30 chapters, 4,649 dialogue lines and about 94,000 characters**,
-read straight through to a single ending. Status: **in development** — it builds
-and has been flashed for testing, but is not published as a release yet.
+read straight through to a single ending. Status: **released** as
+`v0.1.0-asunabi`, and submitted to the AI Passport community market.
 
 - Branch: [`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame)
-- Upstream work: [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) — the Xiaomi Band quick-app release this port is based on. No license is declared there, which is why its artwork and chapter scripts are not redistributed in this repository.
+- Release: [`v0.1.0-asunabi`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-asunabi) — merged image `FoloToy-AI-Passport-full.bin`, 7,917,142 bytes
+- Upstream work: [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) — the Xiaomi Band quick-app release this port is based on. No license is declared there; its artwork and chapter scripts ship with the branch under `assets/gal-source/`, with the upstream project credited as the source.
 - Asset pipeline: [`tools/gal/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame/tools/gal)
 
 **Controls (three keys):** **UP** advances a line, or reveals the rest of one that
 is still typing; **UP (hold)** fast-forwards while held and stops the moment you
 let go; **OK** opens the menu (resume, save, load, skip chapter, settings, back to
-title); **DOWN** scrolls a line that runs past the panel; **DOWN (hold)** hides the
-panel to look at the artwork.
+title); **DOWN** scrolls a line that runs past the panel; **DOWN (hold)** starts or
+stops auto-play, which advances 0.9 s after a line finishes and ends on any key
+press. A long press registers at 300 ms: the BSP passes the press timing
+explicitly instead of using the button component's 1,500 ms default.
 
 **Modes and persistence:** six manual save slots that include the position within a
 paginated line (hold confirm on a slot to delete it), an automatically remembered
@@ -127,13 +130,18 @@ resume point.
 
 **Highlights:**
 
-- **Third-party art stays out of the repository** — the artwork and scripts come
-  from the upstream project, which declares no license; they are packed at build
-  time into a dedicated 4 MiB `assets` data partition, read from a local and
-  untracked source tree. Without it the packer emits a placeholder pack,
-  so a fresh clone still configures, builds and boots — which also means a
-  CI-built release does not contain the game; release this branch from a locally
-  built merged image.
+- **Third-party art ships with the branch** — the artwork and scripts come from the
+  upstream project, which declares no license, and are committed under
+  `assets/gal-source/` so a clone builds the complete game. The packer turns them
+  into a dedicated 4 MiB `assets` data partition (3.55 MiB used) and fails the
+  build rather than emitting a truncated image; without that tree a build still
+  configures and boots, showing a placeholder pack instead of the story.
+- **Serial screenshots** — the `FAP_SCREENSHOT_V1` command returns the current
+  frame over the console as RGB565LE, which the community publisher requires
+  before it accepts a submission.
+- **Artwork-first UI** — the title backdrop, the option plate and the dialogue
+  panel are tinted (30% / 50% / 70%) instead of opaque, so the scene stays visible
+  while near-white text stays readable; the panel is never blanked.
 - **Full-screen art with no PSRAM** — backgrounds are LVGL indexed images drawn
   straight out of the memory-mapped partition and decoded one scan line at a time
   (about 960 bytes) instead of the 150 KB a frame buffer would need; 83 of the
@@ -147,10 +155,12 @@ resume point.
   as the reading leaves the documented voltage window for that key.
 - **Asset size cut twice** — character art is cropped to the region that can reach
   the panel and then trimmed to its alpha box (0.82 MiB to 0.24 MiB), and a
-  substituted asset is stored once instead of twice (4.41 MiB to 3.59 MiB).
+  substituted asset is stored once instead of twice (4.41 MiB to 3.55 MiB).
 - **Host-tested parser and typesetting** — the pack reader, the advance rules and
-  the pagination run without ESP-IDF or LVGL and are covered by 11 host tests,
-  including a guard for the 4-byte struct alignment the pack format requires.
+  the pagination run without ESP-IDF or LVGL and are covered by host tests,
+  including a guard for the 4-byte struct alignment the pack format requires and
+  one that keeps every packed asset name in step with the names the firmware looks
+  up.
 - **Eight upstream defects handled** — the source scripts reference eight images
   their own repository does not contain (five are obvious typos); each is
   substituted and reported at pack time instead of drawing a blank frame.
