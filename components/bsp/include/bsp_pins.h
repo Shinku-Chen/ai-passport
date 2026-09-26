@@ -51,9 +51,10 @@
 //   逐个按住三个键记下读数,取相邻两档的中点作为窗口边界,改下面的 BSP_BTN_MV 即可。
 // ============================================================================
 // 按键短按/长按门限(iot_button 的 TICKS_INTERVAL=10ms)。
-// 短按 < 120ms 视为抖动丢弃;按住 300ms 触发长按(BSP_BTN_LONG)。
+// 短按 < 120ms 视为抖动丢弃;按住 1000ms 触发长按(BSP_BTN_LONG),松开另有
+// BSP_BTN_RELEASE(用于"按住快进、松手停止"这类操作)。
 #define BSP_BTN_SHORT_MS     120
-#define BSP_BTN_LONG_MS      300
+#define BSP_BTN_LONG_MS      1000
 // 三键共用的那一个 GPIO。除了 ADC 读取,deep sleep 的按键唤醒也用它
 // (任一键都把该脚拉到低电平,故唤醒按低电平触发)。
 #define BSP_BTN_GPIO         0
