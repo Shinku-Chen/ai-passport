@@ -25,7 +25,7 @@ firmware (no decompression, no per-record parsing).  Layout:
     SEC_FG_LOW  { jpeg_off, jpeg_len, mask_off, mask_len(全 u32), w u16, h u16 }(与立绘表同下标;立绘下半段)
     SEC_META    UTF-8 key=value 文本(来源仓库 / commit / 转换参数)
 
-Image conversion (fixed screen layout 320x240, art area 320x150):
+Image conversion (fixed screen layout 320x240, drawn as two 1:1 canvases):
   背景 283x212 调色板 PNG -> cover 成 320x240 -> 上半 320x150 + 下半 320x90(均 1:1)-> JPEG
   标题画面(bg.png)       -> 同上,固定放在背景表 0 号(SAYA_BG_TITLE,脚本不引用它)
   立绘 212xN RGBA      -> 按屏幕高度 240 缩放(宽度上限 180)-> 上半 150 行 + 下半 90 行
@@ -506,7 +506,9 @@ def main() -> int:
         "generator": GEN_VERSION,
         "variant": "release" if args.patch else "community",
         "patch": os.path.basename(args.patch.rstrip("/\\")) if args.patch else "",
-        "art": f"{ART_W}x{ART_H}",
+        # 画面按整幅 320x240 打包,分上下两块画布显示(见 main/saya_image.h)。
+        "frame": f"{ART_W}x{SCREEN_H}",
+        "art": f"{ART_W}x{ART_H}",   # 上半块(画面区)
         "bg_quality": str(BG_QUALITY),
         "strip": f"{STRIP_W}x{STRIP_H}q{STRIP_QUALITY}",
         "fg_quality": str(FG_QUALITY),

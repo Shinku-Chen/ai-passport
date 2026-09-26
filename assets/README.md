@@ -49,15 +49,22 @@ committed verbatim (6.6 MB) so a clone can rebuild the resource pack without an 
 checkout. That upstream project declares no license; the material is kept as the single
 source of attribution, and the pack records the same provenance in its metadata section.
 
-The source port's patch directory (adult content) is **not** committed; the patch-free
-community variant is what the repository builds.
+The source port's patch directory (7 extended chapters and the 22 adult-content CGs) is
+committed separately as `saya-patch/` (30 files, 692 KB) so the local release variant is
+rebuildable from a clone alone. It must never be folded into the community pack or into
+firmware published to the community market.
 
 ```bash
-python tools/saya_pack.py --source assets/saya-source --commit 4d73ed0     --out main/saya_data/saya_pack.bin
+# community variant (what main/saya_data/saya_pack.bin contains)
+python tools/saya_pack.py --source assets/saya-source --commit 4d73ed0 \
+    --out main/saya_data/saya_pack.bin
+# release variant (local flashing only)
+python tools/saya_pack.py --source assets/saya-source --patch assets/saya-patch \
+    --commit 4d73ed0 --out build/release/saya_pack.bin
 ```
 
-Rebuilding with the same commit and defaults reproduces the committed
-`main/saya_data/saya_pack.bin` byte for byte.
+Rebuilding the community variant with the same commit and defaults reproduces the
+committed `main/saya_data/saya_pack.bin` byte for byte.
 
 ## Images
 

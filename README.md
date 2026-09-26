@@ -91,13 +91,15 @@ about 4.6 MB, leaving 43 %.
 The `main/saya_data/saya_pack.bin` and `assets/fonts/saya_cjk_*.c` committed here are
 the **community variant**: they contain nothing from the source port's patch
 directory (7 extended chapters plus 22 R18 CGs). Firmware published to the AI Passport
-Community market must use this variant.
+Community market must use this variant. The patch's own source files are committed under
+`assets/saya-patch/`, so the local release variant is rebuildable from a clone alone;
+only the *pack and firmware* built from them stay out of the repository.
 
 The **release variant** carries that patch and is for local flashing only:
 
 ```bash
-python tools/saya_pack.py --source <Saya-miband10 checkout> \
-    --patch <checkout>/<patch directory> --commit <commit> \
+python tools/saya_pack.py --source assets/saya-source \
+    --patch assets/saya-patch --commit 4d73ed0 \
     --out build/release/saya_pack.bin
 SDKCONFIG_DEFAULTS=sdkconfig.defaults idf.py -B build/release/idf \
     -D SAYA_PACK_FILE=build/release/saya_pack.bin build

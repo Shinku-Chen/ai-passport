@@ -61,7 +61,8 @@
 合进上下两块 RGB565 画布（下半块就在半透明文本框背后）。
 
 重新生成只需要仓库内的 `assets/saya-source/`（已提交剧本、背景与立绘全部基础素材）与一个
-许可允许分发的 CJK 字体；含补丁的 release 变体还需要上游仓库的 `补丁/` 目录（不提交）。
+许可允许分发的 CJK 字体；含补丁的 release 变体的补丁源文件已随仓库提交在
+`assets/saya-patch/`（30 个文件、692 KB），clone 后即可重建。
 具体命令见两个工具的文件头注释。字体由仓库内的小生成器产出，不用 `lv_font_conv` —— 该工具最后一版在当前 Node.js
 下写出的字形位图是坏的（同样输入、加不加 `--no-prefilter` 产出字节完全相同，按 LVGL 的
 PLAIN 4bpp 读法解不出字形）；生成器会把写出的 C 文件回读、逐像素与栅格化结果比对。
@@ -73,14 +74,17 @@ Flash 预算（ESP-IDF 5.5，应用分区 8,323,072 字节）：community 变体
 ## 变体与发布规则
 
 仓库里提交的 `main/saya_data/saya_pack.bin` 与 `assets/fonts/saya_cjk_*.c` 是
-**community 变体**：不含源移植仓库 `补丁/` 里的任何内容（7 个加长章节 + 22 张 R18 CG）。
+**community 变体**：不含源移植仓库 `补丁/` 里的任何内容（7 个加长章节 + 22 张 R18 CG）；
+补丁自身的源文件提交在 `assets/saya-patch/`，本机 release 变体因此可以直接从仓库重建，
+只有用它们构建的 *pack 与固件* 不进入仓库。
 发布到 AI Passport 社区市场的固件只能用它。
 
 自用的 **release 变体**才带补丁，只在本机刷机使用：
 
 ```bash
-python tools/saya_pack.py --source <Saya-miband10 checkout> \
-    --patch <checkout>/补丁 --commit <commit> --out build/release/saya_pack.bin
+python tools/saya_pack.py --source assets/saya-source \
+    --patch assets/saya-patch --commit 4d73ed0 \
+    --out build/release/saya_pack.bin
 SDKCONFIG_DEFAULTS=sdkconfig.defaults idf.py -B build/release/idf \
     -D SAYA_PACK_FILE=build/release/saya_pack.bin build
 ```

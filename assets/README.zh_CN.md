@@ -39,13 +39,21 @@
 立绘（`fg/`，90 张 PNG）美术，原样提交（6.6 MB），因此 clone 之后不需要外部 checkout 就能重建资源包。
 上游项目未声明许可；这里把该目录作为唯一的来源标注，资源包元数据里记录同一来源。
 
-源移植仓库的 `补丁/` 目录（成人内容）**不提交**；仓库构建的是不含补丁的 community 变体。
+源移植仓库的 `补丁/` 目录（7 个加长章节 + 22 张成人向 CG）单独提交在 `saya-patch/`
+（30 个文件、692 KB），这样 clone 之后无需外部 checkout 也能重建本机自用的 release 变体。
+它**不得**并入 community 资源包，也不得进入发布到社区市场的固件。
 
 ```bash
-python tools/saya_pack.py --source assets/saya-source --commit 4d73ed0     --out main/saya_data/saya_pack.bin
+# community 变体（main/saya_data/saya_pack.bin 就是这个）
+python tools/saya_pack.py --source assets/saya-source --commit 4d73ed0 \
+    --out main/saya_data/saya_pack.bin
+# release 变体（仅本机刷机使用）
+python tools/saya_pack.py --source assets/saya-source --patch assets/saya-patch \
+    --commit 4d73ed0 --out build/release/saya_pack.bin
 ```
 
-用同一 commit 与默认参数重建，可以逐字节复现仓库里提交的 `main/saya_data/saya_pack.bin`。
+community 变体用同一 commit 与默认参数重建，可以逐字节复现仓库里提交的
+`main/saya_data/saya_pack.bin`。
 
 ## 图片（images）
 
