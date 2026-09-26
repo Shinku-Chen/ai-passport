@@ -119,6 +119,40 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 - **顺带修掉上游 8 处素材缺失** —— 上游剧本引用了 8 张它自己仓库里没有的图（其中 5 处是笔误），
   现在打包时逐条替换并报告，而不是在设备上画出空白帧。
 
+### ATRI 阅读器（ATRI Reader）
+
+把小米手环上的《ATRI -My Dear Moments-》同人移植搬到 AI Passport 上的**竖屏视觉小说阅读器**：
+**34 章、1,069 幕、12,188 句对白、5 张全身立绘、三个结局**，完全离线。剧本与素材取自
+[`fywmjj/better-mb9p-ATRI`](https://github.com/fywmjj/better-mb9p-ATRI)（它在
+[`liuyuze61/ATRI-miband`](https://github.com/liuyuze61/ATRI-miband) 基础上重构，补上了原版没有的
+`src/common/character/*` 全身立绘）。原版是 Vela OS 的触屏应用，本分支用 C + LVGL 重写阅读引擎，
+改成三键操作。状态：**已发布** —— tag `v1.0.1-atri-reader`，并已投稿到 AI Passport 社区市场
+（作品 `my-dear-moments`，审核中）。
+
+- 分支：[`feature/atri-reader`](https://github.com/Shinku-Chen/ai-passport/tree/feature/atri-reader)
+- 发布：[`v1.0.1-atri-reader`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.1-atri-reader) —— 合并镜像 `FoloToy-AI-Passport-full.bin`，5,134,544 字节
+- 上游作品：[`fywmjj/better-mb9p-ATRI`](https://github.com/fywmjj/better-mb9p-ATRI) 与 [`liuyuze61/ATRI-miband`](https://github.com/liuyuze61/ATRI-miband) —— 本次移植所依据的同人版本，两个仓库都未声明许可；其剧本、背景与立绘随分支提交并打包进固件，来源以上游项目标注。
+- 素材工具链：[`tools/atri_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/atri-reader/tools/atri_pack.py)（剧本 + 图像打包成 `main/atri_data/atri_pack.bin`，3.83 MB）与 [`tools/atri_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/atri-reader/tools/atri_font.py)（16px 中文字体子集，2,771 个码位）
+
+**操作方式（三键）：** 列表页上 / 下移动光标、**确定**进入、**长按确定**返回上一层；正文里
+**上 / 下短按**是下一句、**长按上**是快进（松手即停，快进时整句直接显示）、
+**长按下**开关自动阅读（打字完停 0.7 秒自动翻页，右下角显示「自动」，任意键停止，期间屏幕不熄灭）、
+**确定**打开菜单（继续阅读、保存进度、读取存档、跳过章节、返回标题）；选项页上 / 下选择、确定确认，
+跳过章节会一直推进到下一章，遇到选项或结局停下。长按判定 300 ms、短按 120 ms；文字速度可选
+瞬间 / 慢 / 中 / 快，关于页用上 / 下滚动。
+
+**存档、结局与空闲：** 五个手动槽 + 一个自动槽（每次换幕自动写入，标题页的「继续阅读」读它），
+存档页短按确定存 / 读、长按确定删除手动槽；剧本里的三次选择通向圆满或悲剧结局，两者都达成后
+标题页解锁「真正的结局」，与原版手环应用的门槛一致。空闲 45 秒调暗、2.5 分钟熄屏、7 分钟深睡，
+任意键唤醒，自动阅读期间不计入空闲。
+
+**亮点：**
+
+- **立绘跟着说话人** —— 只有带人物名称的台词才出现全身立绘，说完即收；事件 CG、黑屏与男主视角不出镜，立绘按原作站位靠右。
+- **无 PSRAM 也扛得住整屏合成** —— 背景用 JPEG 直接解码进画布，立绘与特效叠加用无损 RGB565 + 4bpp alpha 遮罩（按 alpha 包围盒裁剪），空闲堆仍留 40 KB 以上。
+- **离线数据管线** —— 运行时不下载任何东西，`tools/atri_pack.py` 与 `tools/atri_font.py` 的产物提交进仓库，普通 checkout 直接能编。
+- **串口调试通道** —— `ATRISHOT <章> <幕>` 把任意一幕渲染进画面区并回传原始 240 × 320 帧，本版封面与历次版面验证靠的就是它；`ATRIJUMP` 可直接跳章。
+
 ## 说明
 
 - 每个应用都是基于上游基线的一个独立 `feature/*` 分支。不要把 demo 分支整支合入

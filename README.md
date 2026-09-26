@@ -165,6 +165,47 @@ resume point.
   their own repository does not contain (five are obvious typos); each is
   substituted and reported at pack time instead of drawing a blank frame.
 
+### ATRI Reader
+
+A portrait visual novel ported from the Mi Band fan port of *ATRI -My Dear Moments-*:
+**34 chapters, 1,069 scenes, 12,188 lines of dialogue, five full-body character sprites
+and three endings**, fully offline. The story and art come from
+[`fywmjj/better-mb9p-ATRI`](https://github.com/fywmjj/better-mb9p-ATRI) (the refactored
+port of [`liuyuze61/ATRI-miband`](https://github.com/liuyuze61/ATRI-miband)), which adds
+the full-body `src/common/character/*` sprites the earlier port lacked. The originals are
+touch apps for Xiaomi's Vela OS; this branch re-implements the reading engine in C on
+LVGL and drives it with the three keys. Status: **released** — tag `v1.0.1-atri-reader`,
+submitted to the AI Passport community market as `my-dear-moments` (under review).
+
+- Branch: [`feature/atri-reader`](https://github.com/Shinku-Chen/ai-passport/tree/feature/atri-reader)
+- Release: [`v1.0.1-atri-reader`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.1-atri-reader) — merged image `FoloToy-AI-Passport-full.bin`, 5,134,544 bytes
+- Upstream work: [`fywmjj/better-mb9p-ATRI`](https://github.com/fywmjj/better-mb9p-ATRI) and [`liuyuze61/ATRI-miband`](https://github.com/liuyuze61/ATRI-miband) — the fan ports this branch derives from. Neither repository declares a licence; their script, backgrounds and sprites are committed with the branch and packed into the firmware, with the upstream projects credited as the source.
+- Asset toolchain: [`tools/atri_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/atri-reader/tools/atri_pack.py) (script and images into `main/atri_data/atri_pack.bin`, 3.83 MB) and [`tools/atri_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/atri-reader/tools/atri_font.py) (16 px Chinese subset, 2,771 code points)
+
+**Controls:** on lists UP / DOWN move the cursor, **OK** selects and **OK (hold)** goes back.
+While reading, **UP / DOWN** advance line by line and **UP (hold)** fast-forwards through
+whole lines until you let go; **DOWN (hold)** toggles auto-read (advances 0.7 s after each
+line finishes typing, shows a cyan auto marker bottom-right, any key stops it, and keeps the
+screen awake while it runs); **OK** opens the menu (continue, save, load, skip chapter, back
+to title). Skipping a chapter runs to the next chapter and stops at any choice or ending.
+Choices use UP / DOWN + OK. Press timing is 120 ms for a short press and 300 ms for a long
+press; the text speed setting cycles through instant / slow / medium / fast, and the about
+page scrolls with UP / DOWN.
+
+**Saves, endings and idle:** five manual slots plus one automatic slot written on every
+scene change, which the title screen offers as "continue"; on the slots screen **OK** saves
+or loads and **OK (hold)** deletes a manual slot. The three choices in the script lead to the
+happy or the bad ending, and seeing both unlocks **the true ending** chapter — the same gate
+the original Mi Band app uses. Idle behaviour: 45 s dims the backlight, 2.5 min turns it off,
+7 min enters deep sleep, and any key wakes the device; auto-read does not count as idle time.
+
+**Highlights:**
+
+- **Sprites follow the speaker** — a full-body sprite appears only on a line that carries a speaker name and hides as soon as that character stops talking; event CGs, black screens and the viewpoint character never show one, and sprites stand at the right edge like the original artwork.
+- **Full-screen compositing without PSRAM** — backgrounds are decoded straight into the canvas, and sprites plus effect overlays use lossless RGB565 with a 4 bpp alpha mask cropped to the alpha bounding box, leaving more than 40 KB of free heap.
+- **Offline data pipeline** — nothing is downloaded at runtime; the output of `tools/atri_pack.py` and `tools/atri_font.py` is committed, so a plain checkout builds.
+- **Serial debugging channel** — `ATRISHOT <chapter> <scene>` renders any scene into the art area and streams the raw 240 × 320 frame back, which is how this release's cover and every layout check were captured; `ATRIJUMP` jumps straight to a chapter.
+
 ## Notes
 
 - Each application is a separate `feature/*` branch off the upstream baseline.
