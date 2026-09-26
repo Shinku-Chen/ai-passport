@@ -54,6 +54,25 @@ run_static_checks() {
         tests/test_bsp_audio_recovery.c components/bsp/src/bsp_es8311_sleep_check.c \
         -o "${test_dir}/test_bsp_audio_recovery"
     "${test_dir}/test_bsp_audio_recovery"
+    # 《星空列车与白的旅行》阅读器:纯逻辑(资源包解析 + 剧情推进 + 分页 + 存档)跑真实包。
+    # 旧逐条带渲染器(starry_gfx/starry_render/starry_font)已不参与构建,对应的像素
+    # 级宿主测试一并从门禁里移除。
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
+        tests/test_starry_model.c main/starry_model.c main/starry_pack.c \
+        -o "${test_dir}/test_starry_model"
+    "${test_dir}/test_starry_model" main/starry_data/starry_pack.bin
+    # 界面文案 + 剧本正文用到的字必须在生成好的 LVGL 字体子集里(缺字就是显示成方块)。
+    PYTHONDONTWRITEBYTECODE=1 python3 tools/starry_lvgl_font.py --check \
+        --pack main/starry_data/starry_pack.bin --out-dir assets/fonts
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_deep_sleep_contract.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_starry_app_static.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_starry_pack.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_check_repo.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_verify_firmware.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_archive_firmware.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_install_passport_skills.py
+    # demo 运行时测试依赖一整套 LVGL/像素 UI 链接桩(见 tests/demo_stubs),单独放最后:
+    # 在那套桩补齐之前,它失败也不该挡住前面的检查。
     for demo in audio low_power ble wifi; do
         "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
             -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \
@@ -61,11 +80,6 @@ run_static_checks() {
             -o "${test_dir}/test_demo_${demo}_runtime"
         "${test_dir}/test_demo_${demo}_runtime"
     done
-    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_deep_sleep_contract.py
-    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_check_repo.py
-    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_verify_firmware.py
-    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_archive_firmware.py
-    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_install_passport_skills.py
     rm -rf "${test_dir}"
     echo "Host tests: PASS"
 }
