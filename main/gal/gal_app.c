@@ -295,7 +295,13 @@ static void reveal_all(void)
 
 /* (Re)arm the auto-play delay for the line on screen. Auto-play is a delay after a
  * line has finished revealing, so this is the one place that starts it: the typing
- * timer finishing, an instant reveal, and switching auto-play on mid-line. */
+ * timer finishing, an instant reveal, and switching auto-play on mid-line.
+ *
+ * Auto-play must never be interrupted by a blank screen: nothing in this firmware
+ * turns the panel off today (no backlight call after boot, CONFIG_PM_ENABLE is off,
+ * and no light/deep sleep path is reachable from the reader). If an idle screen-off
+ * is ever added, auto-play has to suppress it or keep resetting the idle timer, and
+ * this is the place that knows a line is being read unattended. */
 static void auto_arm(void)
 {
     if (!s_save->auto_play || s_auto_timer == NULL) {

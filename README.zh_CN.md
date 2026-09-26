@@ -32,6 +32,8 @@
 | DOWN 短按 | 滚动超出面板的文字 | 选中项下移 |
 | DOWN 长按 | 切换自动阅读（每句 0.9 秒，任意键解除） | — |
 
+固件不会熄灭屏幕，自动阅读可以无人值守地一直读下去。
+
 ## 素材
 
 美术与章节剧本来自 [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband)，

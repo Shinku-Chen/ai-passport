@@ -43,6 +43,8 @@ corner and degrades to `--%` when the gauge cannot be read.
 | DOWN (short) | scroll a line that runs past the panel | move the selection down |
 | DOWN (hold) | toggle auto-play (next line 0.9 s later; any key cancels it) | — |
 
+The firmware never blanks the panel, so auto-play reads on without being interrupted.
+
 ## Assets
 
 The artwork and chapter scripts come from
