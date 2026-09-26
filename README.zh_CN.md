@@ -83,7 +83,7 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 从头读到唯一结局。状态：**开发中** —— 已能构建并已烧录测试，尚未作为 release 发布。
 
 - 分支：[`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame)
-- 素材工具链：[`tools/gal/`](tools/gal/README.md)
+- 素材工具链：[`tools/gal/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame/tools/gal)
 
 **操作方式（三键）：** **UP** 推进一句（打字中则立即全显）；**UP（长按）** 按住快进、松手即停；
 **OK** 呼出菜单（继续阅读、保存、读取、跳过本章、设置、返回标题）；**DOWN** 滚动超出面板的文字；

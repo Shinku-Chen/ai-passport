@@ -108,7 +108,7 @@ ending. Status: **in development** — it builds and has been flashed for testin
 but is not published as a release yet.
 
 - Branch: [`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame)
-- Asset pipeline: [`tools/gal/`](tools/gal/README.md)
+- Asset pipeline: [`tools/gal/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame/tools/gal)
 
 **Controls (three keys):** **UP** advances a line, or reveals the rest of one that
 is still typing; **UP (hold)** fast-forwards while held and stops the moment you
