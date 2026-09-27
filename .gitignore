@@ -11,3 +11,7 @@ managed_components/
 /.agents/skills/passport-build
 /.agents/skills/passport-device-test
 /.agents/skills/passport-debug
+
+# Python 字节码(工具脚本在本地跑时会生成)
+__pycache__/
+*.pyc
