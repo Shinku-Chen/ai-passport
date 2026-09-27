@@ -67,7 +67,7 @@ LV_FONT_DECLARE(limelight_cjk_16);
 //   剧本块缓存           = 20.5 KiB —— 实测单块解压上限 20,835 B
 static uint16_t s_art_pixels[LIME_ART_W * LIME_ART_H] __attribute__((aligned(4)));
 static uint8_t s_sprite_buffer[LIME_SPRITE_MAX_PIXELS * 2] __attribute__((aligned(4)));
-static uint8_t s_mask_buffer[3200] __attribute__((aligned(4)));
+static uint8_t s_mask_buffer[LIME_SPRITE_MAX_PIXELS / 8 + 32] __attribute__((aligned(4)));   // 1bpp 遮罩
 static uint8_t s_script_cache[20 * 1024 + 512] __attribute__((aligned(4)));
 static lime_app_t s_app;
 

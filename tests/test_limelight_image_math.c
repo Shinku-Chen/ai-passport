@@ -87,7 +87,7 @@ static void test_buffer_size(void)
     CHECK(lime_sprite_buffer_size(92, 251) == 92 * 251 * 2);
     CHECK(lime_sprite_buffer_size(0, 10) == 0);
     // 像素上限自检:上限之内最大面积对应的缓冲 < 46 KiB
-    CHECK(LIME_SPRITE_MAX_PIXELS * 2 < 48 * 1024);
+    CHECK(LIME_SPRITE_MAX_PIXELS * 2 <= 61440);   // 60KB 静态立绘缓冲
 }
 
 int main(void)

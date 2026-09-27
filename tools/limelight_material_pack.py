@@ -60,7 +60,7 @@ import sys
 from pathlib import Path
 
 try:
-    from PIL import Image, ImageFilter
+    from PIL import Image, ImageChops, ImageFilter
     _PIL_IMAGE = Image.Image
     _PIL_MISSING = None
 except ImportError:  # pragma: no cover - 纯逻辑(容器/裁剪规则)不需要 Pillow
@@ -79,7 +79,7 @@ VERSION = 1
 GEN_VERSION = "limelight_material_pack/1"
 
 SCREEN_W, SCREEN_H = 240, 320
-SPRITE_MAX_W, SPRITE_MAX_H = 168, 252
+SPRITE_MAX_W, SPRITE_MAX_H = 168, 300
 # 立绘取景:源立绘多是细高的全身站姿(实测约 238x924)。整张缩进 252 行时缩放比
 # 只有 0.27,脸部被压到十几像素,真机上就是"糊"。按 SPRITE_BUST_ASPECT 的比例裁到
 # 膝盖,把像素集中在头肩胸;本来就矮/半身的图(坐姿、特写)不裁。
@@ -100,12 +100,12 @@ SPRITE_EDGE_BLEED = 3
 # 取 22,000 px:上半身取景后立绘约 105x210 = 22k px(全身取景时约 65x252 = 16.4k)。
 # 实测(2026-09-27,q30/4:4:4)上半身 16k/18k/20k/22k 相对旧包只 +47/+42/+110/+162 KiB,
 # 因为裁掉下半身后总像素并没有增加,而字节率几乎不变(0.225 B/px)。
-SPRITE_MAX_PIXELS = 22000
+SPRITE_MAX_PIXELS = 30000
 DEFAULT_QUALITY = 30
 # 立绘单独一套参数:它是画面主体,和背景共用 q30/4:2:0 会明显发糊(色度被砍半、
 # 高频细节被量化掉)。背景大片色块对压缩不敏感,立绘细节敏感,所以分开。
 # 实测各配置的包体积见 tools/README 或 REPORT 注释。
-DEFAULT_SPRITE_QUALITY = 30
+DEFAULT_SPRITE_QUALITY = 70
 DEFAULT_SPRITE_SUBSAMPLING = 0        # 0 = 4:4:4;立绘色度细节比省下的几十 KB 值钱
 # 实测(2026-09-27,全部素材 + 名字表 + 1bpp RLE 遮罩,图片预算 5,590,384 B):
 #   q35/CG 320 行 = 5,533,336 B(仅余 57 KiB,太紧);q32 = 5,240,392 B(余 0.33 MiB);
@@ -321,14 +321,32 @@ def sharpen_sprite(rgba: Image.Image) -> Image.Image:
     return Image.merge("RGBA", (*rgb.split(), alpha))
 
 
-def bleed_edges(rgba: Image.Image, rounds: int = SPRITE_EDGE_BLEED) -> Image.Image:
-    """把不透明像素的颜色往透明区扩散,避免 JPEG 在轮廓上掺进黑色。"""
-    rgb = rgba.convert("RGB")
-    alpha = rgba.getchannel("A")
-    transparent = alpha.point(lambda v: 255 if v < 128 else 0)
-    for _ in range(rounds):
-        rgb = Image.composite(rgb.filter(ImageFilter.MaxFilter(3)), rgb, transparent)
-    return Image.merge("RGBA", (*rgb.split(), alpha))
+def bleed_edges(rgba: Image.Image, sigma: float = 4.0) -> Image.Image:
+    """把不透明像素的颜色按 alpha 加权扩散到透明区。
+
+    源图的透明处往往保留着调色板的标记色(实测是纯绿),用取最大值这类膨胀会把
+    标记色抹到轮廓上,真机上看就是一圈有色边。按 alpha 加权做归一化卷积才是
+    "把最近的可见颜色铺过去"。模糊用 8 位做(Pillow 的 F 模式不支持高斯),除法在
+    float 里做,精度足够。
+    """
+    if _numpy is None:
+        return rgba
+    rgb8 = rgba.convert("RGB")
+    a8 = rgba.getchannel("A")
+    premul = ImageChops.multiply(rgb8, Image.merge("RGB", (a8, a8, a8)))   # RGB * alpha
+    blurred_rgb = _numpy.asarray(
+        premul.filter(ImageFilter.GaussianBlur(sigma)), dtype=_numpy.float32)
+    blurred_a = _numpy.asarray(
+        a8.filter(ImageFilter.GaussianBlur(sigma)), dtype=_numpy.float32)
+    alpha = _numpy.asarray(a8, dtype=_numpy.float32) / 255.0
+    rgb = _numpy.asarray(rgb8, dtype=_numpy.float32)
+    weight = _numpy.maximum(blurred_a[..., None], 1.0)                     # 归一化
+    extended = blurred_rgb * 255.0 / weight
+    out_rgb = _numpy.where(alpha[..., None] > 254.0, rgb, extended)
+    merged = _numpy.concatenate(
+        [_numpy.clip(out_rgb, 0, 255),
+         (alpha[..., None] * 255.0)], axis=-1)
+    return Image.fromarray(merged.astype(_numpy.uint8), "RGBA")
 
 
 def encode_jpeg(im: Image.Image, quality: int, subsampling: int = 2) -> bytes:

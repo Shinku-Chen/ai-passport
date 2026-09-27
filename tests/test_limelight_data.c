@@ -466,25 +466,25 @@ static void test_real_assets(const char *path)
     // CG 与背景一样只存 214 行:画布就是 240x214(RAM 预算决定的,见 limelight_image_math.h)
     CHECK(entry.w == 240 && entry.h == 214);
 
-    // 立绘尺寸上限必须与固件的静态缓冲一致(LIME_SPRITE_MAX_PIXELS x 2 = 46KB)。
+    // 立绘尺寸上限必须与固件的静态缓冲一致(LIME_SPRITE_MAX_PIXELS x 2 = 60KB)。
     // 打包器把立绘夹在这个上限内,固件按它申请缓冲;这里守住这条契约。
     for (uint16_t i = 0; i < lime_assets_count(&assets); i++) {
         lime_asset_t item;
         if (!lime_assets_get(&assets, i, &item) || item.kind != LIME_ASSET_KIND_SPRITE) continue;
         CHECK((uint32_t)item.w * item.h <= (uint32_t)LIME_SPRITE_MAX_PIXELS);
-        CHECK(item.w <= 168 && item.h <= 252);
+        CHECK(item.w <= LIME_SPRITE_MAX_W && item.h <= LIME_SPRITE_MAX_H);
     }
 
     int sprite = lime_assets_find(&assets, "hz01_1");
     CHECK(sprite >= 0);
     CHECK(lime_assets_get(&assets, (uint16_t)sprite, &entry));
     CHECK(entry.kind == LIME_ASSET_KIND_SPRITE);
-    CHECK(entry.w <= 168 && entry.h <= 252 && entry.jpeg_len > 0);
+    CHECK(entry.w <= LIME_SPRITE_MAX_W && entry.h <= LIME_SPRITE_MAX_H && entry.jpeg_len > 0);
 
     uint32_t mask_len = 0;
     const uint8_t *mask = lime_assets_mask(&assets, &entry, &mask_len);
     CHECK(mask != NULL && mask_len > 0);
-    static uint8_t raw[168 * 252 / 8 + 8];
+    static uint8_t raw[LIME_SPRITE_MAX_W * LIME_SPRITE_MAX_H / 8 + 8];
     uint32_t raw_len = lime_mask_raw_len(entry.w, entry.h);
     CHECK(raw_len <= sizeof(raw));
     CHECK(lime_mask_decode(mask, mask_len, entry.w, entry.h, raw, raw_len));

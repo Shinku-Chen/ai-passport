@@ -22,8 +22,8 @@
 
 // 立绘上限,与 tools/limelight_material_pack.py 的 SPRITE_MAX_W/H/PIXELS 一致。
 #define LIME_SPRITE_MAX_W 168
-#define LIME_SPRITE_MAX_H 252
-#define LIME_SPRITE_MAX_PIXELS 23000   // 立绘静态解码缓冲 = 此值 x 2 字节
+#define LIME_SPRITE_MAX_H 300
+#define LIME_SPRITE_MAX_PIXELS 30000   // 立绘静态解码缓冲 = 此值 x 2 字节(60KB)
 #define LIME_SPRITE_EDGE_MARGIN 1      // 贴底/右边留一点边
 // 立绘至少要露出这么多行(在正文带上方)。矮立绘(实测有一批 168x100 的)如果也贴
 // 屏幕底,会整个落在对话框后面看不见,所以给它们一个上限。
