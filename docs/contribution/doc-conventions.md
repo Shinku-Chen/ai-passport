@@ -10,6 +10,7 @@ These rules apply equally to human contributors and AI agents. Documentation is 
 
 - English is mandatory at every maintained default Markdown path: `name.md`.
 - Simplified Chinese is provided at the paired path `name.zh_CN.md`.
+- The fork-owned root README pair is the documented exception: `README.md` holds Simplified Chinese and `README.en_US.md` holds the English text, with the same reciprocal links.
 - Both files begin with reciprocal language links. Keep their headings, facts, examples, safety warnings, and links aligned in the same change.
 - English default prose must not contain Chinese text. The `简体中文` switch label is the only allowed CJK text on an English page.
 - Code, commands, paths, URLs, identifiers, and data fields remain unchanged between translations where appropriate.

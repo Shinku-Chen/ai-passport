@@ -1,55 +1,43 @@
 <p align="right">
-  <a href="README.zh_CN.md">简体中文</a> · <strong>English</strong>
+  <strong>简体中文</strong> · <a href="README.en_US.md">English</a>
 </p>
 
-# Voice Keychain
+# 音效钥匙扣（Voice Keychain）
 
-A sound-effects keychain that turns the AI Passport into a pocket audio player.
-Open it and instantly play one of hundreds of Chinese voice clips from dozens of
-character packs — jojo, meme cat, Liu Huaqiang, Haji Mi, Nailong, Xiao Ming
-Jian Mo, and more.
+一个把 AI Passport 变成口袋音频播放器的音效钥匙扣。打开即可播放来自几十个角色包的数百条中文语音片段
+——jojo、meme cat、刘华强、哈吉米、奶龙、小明剪膜等等。
 
-This is the application built on this `feature/voice-keychain` branch. The
-firmware boots straight into the voice keychain app (no demo menu).
+这是本 `feature/voice-keychain` 分支承载的应用：固件启动后直接进入音效钥匙扣界面（无 demo 菜单）。
 
-## What it does
+## 功能
 
-- **Character directory**: browse all character packs as a scrollable list. Each
-  entry is a pack of voice clips (e.g. jojo, MC, meme cat, Liu Huaqiang,
-  Liu Haizhu, Kaqiu Mixue'er, Luyin, Indian A-san, Ji Yi Kawai, Haji Mi,
-  Nailong, Bao Bao Duda Leilei, Xiao TuanTuan, Xiao Ming Jian Mo).
-- **Clip list**: enter a pack to see its clips by name.
-- **One-tap playback**: press OK to play the selected clip; built-in decoding
-  plays 8 kHz mono IMA-ADPCM audio.
-- **Settings** (hold OK): show current battery percentage and voltage, and
-  adjust the playback volume.
+- **角色目录**：以可滚动列表浏览所有角色包。每个条目是一个语音包（如 jojo、MC、meme cat、刘华强、
+  刘海柱、卡丘美雪、路银、印度阿三、吉一卡哇伊、哈吉米、奶龙、抱抱嘟大磊磊、小团团、小明剪膜）。
+- **片段列表**：进入某个包查看其中的片段名。
+- **一键播放**：按 OK 播放选中的片段；内置解码播放 8 kHz 单声道 IMA-ADPCM 音频。
+- **设置**（长按 OK）：显示当前电量百分比与电压，调节播放音量。
 
-## Interaction
+## 交互
 
-Three keys drive the whole app. A top bar shows the title and, on the home
-screen, the battery percentage (e.g. `97%`).
+三个按键驱动整个应用。顶部栏显示标题，主界面显示电量百分比（如 `97%`）。
 
-- **UP / DOWN**: move selection (hold to scroll).
-- **OK**: enter a directory / select a clip / play.
-- **OK (hold)**: open settings, or go back.
+- **UP / DOWN**：移动选中项（长按滚动）。
+- **OK**：进入目录 / 选择片段 / 播放。
+- **OK（长按）**：打开设置，或返回。
 
-Long entries scroll horizontally so the full name is readable; the selected row
-is highlighted in blue.
+长条目横向滚动以便看清全名；选中行高亮为蓝色。
 
-## Firmware / build
+## 固件 / 构建
 
-This branch adds the voice keychain application as a replacement for the demo
-menu: `main/voice_app.c` / `main/voice_app.h`, a rewired `main/main.c`, a
-re-triggerable `HOLD` button event in `bsp_button`, a CJK subset font
-(`main/fonts/voice_cjk.c`) for Chinese names, and a dedicated SPIFFS data
-partition (`voicefs`, 3 MB) that holds the compressed clips.
+本分支把音效钥匙扣应用作为开机入口替代 demo 菜单：`main/voice_app.c` / `main/voice_app.h`、改写
+`main/main.c`、在 `bsp_button` 暴露可重复触发的 `HOLD` 按键事件、CJK 子集字体
+（`main/fonts/voice_cjk.c`）渲染中文，以及一个独立 SPIFFS 数据分区（`voicefs`，3 MB）存放压缩语音。
 
-The audio clips live in the `voicefs` SPIFFS data partition mounted at
-`/voices`, built via `tools/encode_voice.py` (decode → resample to 8 kHz mono →
-IMA-ADPCM 4-bit → build `main/voice_index.h` + `voicefs.img`). The app flashes
-the merged firmware image and that data partition separately.
+语音片段存放在挂载于 `/voices` 的 `voicefs` SPIFFS 数据分区，由 `tools/encode_voice.py` 生成
+（解码 → 重采样到 8 kHz 单声道 → IMA-ADPCM 4bit → 生成 `main/voice_index.h` + `voicefs.img`）。应用
+分别烧录合并固件镜像与该数据分区。
 
-## Source
+## 来源
 
-- **Branch**: [`feature/voice-keychain`](https://github.com/Shinku-Chen/ai-passport/tree/feature/voice-keychain)
-- Archive: [`plays/voice-keychain/`](plays/voice-keychain/README.md)
+- **分支**：[`feature/voice-keychain`](https://github.com/Shinku-Chen/ai-passport/tree/feature/voice-keychain)
+- 档案：[`plays/voice-keychain/`](plays/voice-keychain/README.zh_CN.md)
