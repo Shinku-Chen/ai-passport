@@ -1,8 +1,16 @@
-// main/tsxx_pack.c —— 资源包只读解析。不依赖 ESP-IDF / LVGL,可在宿主机上测试。
+// main/tsxx_pack.c —— 资源包只读解析。
+// 平坦模式(整块在内存)不依赖 ESP-IDF,可在宿主机上测试;分区模式用 esp_partition_mmap。
 #include "tsxx_pack.h"
 
 #include <stdio.h>
 #include <string.h>
+
+#ifdef ESP_PLATFORM
+#include "esp_err.h"
+#include "esp_log.h"
+#include "esp_partition.h"
+static const char *TAG = "tsxx_pack";
+#endif
 
 // 段类型,必须与 tools/tsxx_pack.py 的 SEC_* 一致。
 enum {
@@ -27,6 +35,15 @@ enum {
 
 // 资源包的检查点间隔,必须与 tools/tsxx_pack.py 的 CHECKPOINT_PAGES 一致。
 #define CHECKPOINT_PAGES 256u
+
+// 段表条目里的 位置/条数/长度。
+typedef struct {
+    uint32_t off;
+    uint32_t count;
+    uint32_t size;
+} tsxx_section_t;
+
+_Static_assert(SEC_COUNT == TSXX_PACK_SECTIONS, "段表条数必须与 tsxx_pack.h 一致");
 
 static uint16_t rd16(const uint8_t *p)
 {
@@ -56,41 +73,158 @@ static uint32_t bitmap_rank(const uint8_t *bits, uint32_t page)
     return rank;
 }
 
-// 段表项:{ type u32, offset u32, count u32, size u32 }
-static bool section_view(const uint8_t *blob, uint32_t size, uint32_t type,
-                         const uint8_t **out, uint32_t *count, uint32_t *bytes)
+// 段表项:{ type u32, offset u32, count u32, size u32 };核对它落在包内。
+static bool section_entry(const uint8_t *table, uint32_t pack_size, uint32_t type,
+                          tsxx_section_t *out)
 {
-    const uint8_t *table = blob + HEADER_SIZE;
-    const uint32_t sections = rd32(blob + 16);
-    if (type >= sections) {
+    if (table == NULL || out == NULL || type >= SEC_COUNT) {
         return false;
     }
     const uint8_t *entry = table + (type * SECTION_ENTRY);
     const uint32_t offset = rd32(entry + 4);
-    const uint32_t items = rd32(entry + 8);
-    const uint32_t length = rd32(entry + 12);
-    if (offset > size || length > size - offset) {
+    const uint32_t count = rd32(entry + 8);
+    const uint32_t size = rd32(entry + 12);
+    if (offset > pack_size || size > pack_size - offset) {
         return false;
     }
-    *out = blob + offset;
-    *count = items;
-    *bytes = length;
+    out->off = offset;
+    out->count = count;
+    out->size = size;
     return true;
 }
 
-// 带目录的段:[目录 count*stride][数据],目录项里的 off 相对数据区。
-static bool blob_section(const uint8_t *section, uint32_t count, uint32_t stride,
-                         const uint8_t **dir, const uint8_t **data, uint32_t *data_size,
-                         uint32_t section_size)
+// 校验段表与各段的长度关系,填出计数/长度与每段的绝对偏移;不建立任何指针。
+// 平坦模式与分区模式共用:两边都对"22 个段、各段长度、计数是否匹配"有同样的要求。
+static bool pack_layout(const uint8_t *table, uint32_t pack_size, tsxx_pack_t *view)
 {
-    const uint32_t header = count * stride;
-    if (section_size < header) {
+    tsxx_section_t secs[SEC_COUNT];
+    for (uint32_t type = 0; type < SEC_COUNT; ++type) {
+        if (!section_entry(table, pack_size, type, &secs[type])) {
+            return false;
+        }
+        view->sec_off[type] = secs[type].off;
+    }
+
+    // SYM:u32 x sym_count。
+    if (secs[SEC_SYM].count == 0 || secs[SEC_SYM].size % 4u != 0u ||
+        secs[SEC_SYM].count != secs[SEC_SYM].size / 4u) {
         return false;
     }
-    *dir = section;
-    *data = section + header;
-    *data_size = section_size - header;
+    view->sym_count = secs[SEC_SYM].count;
+    view->text_size = secs[SEC_TEXT].size;
+
+    // 页表:TLEN 每页 1 字节,TOFF 每 256 页一个 u32 检查点(外加结尾的一个)。
+    view->page_count = secs[SEC_TLEN].count;
+    if (view->page_count == 0 || secs[SEC_TLEN].size != view->page_count) {
+        return false;
+    }
+    if (secs[SEC_TOFF].count != (view->page_count + CHECKPOINT_PAGES - 1u) / CHECKPOINT_PAGES + 1u) {
+        return false;
+    }
+
+    const struct {
+        uint32_t type;
+        bool bitmap;
+    } arrays[] = {
+        { SEC_PBG, false },
+        { SEC_PSPK, false },
+        { SEC_PSPR, false },
+        { SEC_PFLAG, false },
+        { SEC_PCGB, true },
+    };
+    for (size_t i = 0; i < sizeof(arrays) / sizeof(arrays[0]); ++i) {
+        const tsxx_section_t *sec = &secs[arrays[i].type];
+        const uint32_t expect = arrays[i].bitmap ? (view->page_count + 7u) / 8u : view->page_count;
+        if (sec->count != expect || sec->size != expect) {
+            return false;
+        }
+    }
+
+    // PCG:u16 x 事件图页数(按页序排列的 CGDIR 下标)。
+    if (secs[SEC_PCG].size % 2u != 0u) {
+        return false;
+    }
+    view->cg_page_count = secs[SEC_PCG].count;
+    if (view->cg_page_count != secs[SEC_PCG].size / 2u) {
+        return false;
+    }
+
+    // 四个名字表都是 \n 分隔的裸字节串。
+    view->bg_name_size = secs[SEC_BGNAME].size;
+    view->spk_name_size = secs[SEC_SPKNAME].size;
+    view->spr_name_size = secs[SEC_SPRNAME].size;
+    view->cg_name_size = secs[SEC_CGNAME].size;
+
+    // 选项表项:{ page u32, count u8, pad u8, pad u16, first u32 }。
+    if (secs[SEC_CHOICE].size % ENTRY_CHOICE != 0u) {
+        return false;
+    }
+    view->choice_count = secs[SEC_CHOICE].count;
+    if (view->choice_count != secs[SEC_CHOICE].size / ENTRY_CHOICE) {
+        return false;
+    }
+    if (secs[SEC_CHOICEOPT].size % ENTRY_CHOICEOPT != 0u) {
+        return false;
+    }
+    view->choice_opt_count = secs[SEC_CHOICEOPT].count;
+    if (view->choice_opt_count != secs[SEC_CHOICEOPT].size / ENTRY_CHOICEOPT) {
+        return false;
+    }
+
+    // 带目录的段:[目录 count*stride][数据],目录项里的 off 相对数据区。
+    const struct {
+        uint32_t type;
+        uint32_t stride;
+        uint32_t *count;
+        uint32_t *data_size;
+    } blobs[] = {
+        { SEC_BG, ENTRY_BG, &view->bg_count, &view->bg_data_size },
+        { SEC_FG, ENTRY_FG, &view->fg_count, &view->fg_data_size },
+        { SEC_EVB, ENTRY_EVB, &view->evb_count, &view->evb_data_size },
+        { SEC_EVC, ENTRY_EVC, &view->evc_count, &view->evc_data_size },
+    };
+    for (size_t i = 0; i < sizeof(blobs) / sizeof(blobs[0]); ++i) {
+        const tsxx_section_t *sec = &secs[blobs[i].type];
+        if (sec->count > sec->size / blobs[i].stride) {   // 防 count * stride 溢出
+            return false;
+        }
+        *blobs[i].count = sec->count;
+        *blobs[i].data_size = sec->size - sec->count * blobs[i].stride;
+    }
+
+    // CGDIR:{ kind u8, pad u8, pad u16, base u32, x,y,w,h u16, img u32 }。
+    const tsxx_section_t *cgdir = &secs[SEC_CGDIR];
+    if (cgdir->count > cgdir->size / ENTRY_CGDIR) {
+        return false;
+    }
+    view->cg_count = cgdir->count;
+    if (view->cg_count * ENTRY_CGDIR != cgdir->size) {
+        return false;
+    }
+
+    view->meta_size = secs[SEC_META].size;
     return true;
+}
+
+// 常驻段(段表与类型 0..15)的指针:base 是包基址(平坦)或常驻映射基址(分区)。
+static void bind_resident(tsxx_pack_t *view, const uint8_t *base)
+{
+    view->syms = base + view->sec_off[SEC_SYM];
+    view->text = base + view->sec_off[SEC_TEXT];
+    view->toff = base + view->sec_off[SEC_TOFF];
+    view->tlen = base + view->sec_off[SEC_TLEN];
+    view->pbg = base + view->sec_off[SEC_PBG];
+    view->pspk = base + view->sec_off[SEC_PSPK];
+    view->pspr = base + view->sec_off[SEC_PSPR];
+    view->pflag = base + view->sec_off[SEC_PFLAG];
+    view->pcgb = base + view->sec_off[SEC_PCGB];
+    view->pcg = base + view->sec_off[SEC_PCG];
+    view->bg_names = base + view->sec_off[SEC_BGNAME];
+    view->spk_names = base + view->sec_off[SEC_SPKNAME];
+    view->spr_names = base + view->sec_off[SEC_SPRNAME];
+    view->cg_names = base + view->sec_off[SEC_CGNAME];
+    view->choices = base + view->sec_off[SEC_CHOICE];
+    view->choice_opts = base + view->sec_off[SEC_CHOICEOPT];
 }
 
 static bool meta_has_art(const uint8_t *meta, uint32_t size)
@@ -116,7 +250,7 @@ static bool meta_has_art(const uint8_t *meta, uint32_t size)
 
 bool tsxx_pack_open(tsxx_pack_t *pack, const uint8_t *data, uint32_t size)
 {
-    if (pack == NULL || data == NULL || size < HEADER_SIZE) {
+    if (pack == NULL || data == NULL || size < HEADER_SIZE + SEC_COUNT * SECTION_ENTRY) {
         return false;
     }
     if (memcmp(data, TSXX_PACK_MAGIC, 8) != 0) {
@@ -137,113 +271,170 @@ bool tsxx_pack_open(tsxx_pack_t *pack, const uint8_t *data, uint32_t size)
     view.blob = data;
     view.blob_size = size;
 
-    uint32_t count = 0;
-    uint32_t bytes = 0;
-    const uint8_t *section = NULL;
-
-    if (!section_view(data, size, SEC_SYM, &view.syms, &view.sym_count, &bytes)) {
+    if (!pack_layout(data + HEADER_SIZE, size, &view)) {
         return false;
     }
-    if (view.sym_count == 0 || bytes != view.sym_count * 4u) {
-        return false;
-    }
-    if (!section_view(data, size, SEC_TEXT, &view.text, &count, &view.text_size)) {
-        return false;
-    }
-    if (!section_view(data, size, SEC_TOFF, &view.toff, &count, &bytes)) {
-        return false;
-    }
-    if (!section_view(data, size, SEC_TLEN, &view.tlen, &view.page_count, &bytes)) {
-        return false;
-    }
-    if (view.page_count == 0 || bytes != view.page_count) {
-        return false;
-    }
-    if (count != (view.page_count + CHECKPOINT_PAGES - 1) / CHECKPOINT_PAGES + 1) {
-        return false;
-    }
-
-    const struct {
-        uint32_t type;
-        const uint8_t **slot;
-        uint32_t stride;
-        bool bitmap;
-    } arrays[] = {
-        { SEC_PBG, &view.pbg, 1, false },
-        { SEC_PSPK, &view.pspk, 1, false },
-        { SEC_PSPR, &view.pspr, 1, false },
-        { SEC_PFLAG, &view.pflag, 1, false },
-        { SEC_PCGB, &view.pcgb, 1, true },
-    };
-    for (size_t i = 0; i < sizeof(arrays) / sizeof(arrays[0]); ++i) {
-        if (!section_view(data, size, arrays[i].type, arrays[i].slot, &count, &bytes)) {
-            return false;
-        }
-        const uint32_t expect = arrays[i].bitmap ? (view.page_count + 7) / 8
-                                                 : view.page_count;
-        if (count != expect || bytes != expect) {
-            return false;
-        }
-    }
-    if (!section_view(data, size, SEC_PCG, &view.pcg, &view.cg_page_count, &bytes)) {
-        return false;
-    }
-    if (bytes != view.cg_page_count * 2u) {
-        return false;
-    }
-    if (!section_view(data, size, SEC_BGNAME, &view.bg_names, &count, &view.bg_name_size) ||
-        !section_view(data, size, SEC_SPKNAME, &view.spk_names, &count, &view.spk_name_size) ||
-        !section_view(data, size, SEC_SPRNAME, &view.spr_names, &count, &view.spr_name_size) ||
-        !section_view(data, size, SEC_CGNAME, &view.cg_names, &count, &view.cg_name_size)) {
-        return false;
-    }
-    if (!section_view(data, size, SEC_CHOICE, &view.choices, &view.choice_count, &bytes)) {
-        return false;
-    }
-    if (bytes != view.choice_count * ENTRY_CHOICE) {
-        return false;
-    }
-    if (!section_view(data, size, SEC_CHOICEOPT, &view.choice_opts, &view.choice_opt_count,
-                      &bytes)) {
-        return false;
-    }
-    if (bytes != view.choice_opt_count * ENTRY_CHOICEOPT) {
-        return false;
-    }
-
-    if (!section_view(data, size, SEC_BG, &section, &view.bg_count, &bytes) ||
-        !blob_section(section, view.bg_count, ENTRY_BG, &view.bg_dir, &view.bg_data,
-                      &view.bg_data_size, bytes)) {
-        return false;
-    }
-    if (!section_view(data, size, SEC_FG, &section, &view.fg_count, &bytes) ||
-        !blob_section(section, view.fg_count, ENTRY_FG, &view.fg_dir, &view.fg_data,
-                      &view.fg_data_size, bytes)) {
-        return false;
-    }
-    if (!section_view(data, size, SEC_EVB, &section, &view.evb_count, &bytes) ||
-        !blob_section(section, view.evb_count, ENTRY_EVB, &view.evb_dir, &view.evb_data,
-                      &view.evb_data_size, bytes)) {
-        return false;
-    }
-    if (!section_view(data, size, SEC_EVC, &section, &view.evc_count, &bytes) ||
-        !blob_section(section, view.evc_count, ENTRY_EVC, &view.evc_dir, &view.evc_data,
-                      &view.evc_data_size, bytes)) {
-        return false;
-    }
-    if (!section_view(data, size, SEC_CGDIR, &view.cg_dir, &view.cg_count, &bytes) ||
-        bytes != view.cg_count * ENTRY_CGDIR) {
-        return false;
-    }
-    if (!section_view(data, size, SEC_META, &view.meta, &count, &view.meta_size)) {
-        return false;
-    }
+    bind_resident(&view, data);
+    view.meta = data + view.sec_off[SEC_META];
+    // 图片段在平坦模式下也直接用包内偏移寻址(map_window 返回 blob + off),
+    // 这里把目录/数据指针留空,避免分区模式下出现第二套失效的地址。
     if (!meta_has_art(view.meta, view.meta_size)) {
         return false;
     }
 
     *pack = view;
     return true;
+}
+
+// 分区模式:把包内 [off, off+len) 放进滑动窗口,返回窗口内的指针。
+// 平坦模式直接返回 blob + off(不调 IDF)。
+// 返回的指针只在下一次 map_window() 之前有效 —— 调用方拿到就立刻解码。
+static const uint8_t *map_window(const tsxx_pack_t *pack, uint32_t off, uint32_t len)
+{
+    if (len == 0 || off > pack->blob_size || len > pack->blob_size - off) {
+        return NULL;
+    }
+#ifdef ESP_PLATFORM
+    if (pack->partitioned) {
+        const uint32_t end = off + len;
+        if (pack->window != NULL && off >= pack->window_off &&
+            end <= pack->window_off + pack->window_len) {
+            return pack->window + (off - pack->window_off);
+        }
+
+        // 窗口至少 64 KiB(一整页)、最多 256 KiB,且不越过包尾:
+        // 同一个目录/数据区里的连续访问能命中同一窗口。
+        uint32_t span = len;
+        if (span < TSXX_PACK_WINDOW_MIN) {
+            span = TSXX_PACK_WINDOW_MIN;
+        }
+        if (span > TSXX_PACK_WINDOW_SIZE) {
+            span = TSXX_PACK_WINDOW_SIZE;
+        }
+        if (span > pack->blob_size - off) {
+            span = pack->blob_size - off;
+        }
+
+        // 读接口都是 const:这里改的只是窗口缓存,不改包内容。
+        tsxx_pack_t *mutable_pack = (tsxx_pack_t *)(uintptr_t)pack;
+        if (mutable_pack->window != NULL) {
+            esp_partition_munmap(mutable_pack->window_map);
+            mutable_pack->window = NULL;
+            mutable_pack->window_len = 0;
+            mutable_pack->window_map = 0;
+        }
+        const void *mapped = NULL;
+        esp_partition_mmap_handle_t handle = 0;
+        const esp_err_t err = esp_partition_mmap(mutable_pack->partition, off, span,
+                                                 ESP_PARTITION_MMAP_DATA, &mapped, &handle);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "滑动窗口映射 [%u, %u) 失败(%s)", (unsigned)off,
+                     (unsigned)(off + span), esp_err_to_name(err));
+            return NULL;
+        }
+        mutable_pack->window = (const uint8_t *)mapped;
+        mutable_pack->window_off = off;
+        mutable_pack->window_len = span;
+        mutable_pack->window_map = handle;
+        return mutable_pack->window;
+    }
+#endif
+    return pack->blob + off;
+}
+
+bool tsxx_pack_open_partition(tsxx_pack_t *pack, const char *label)
+{
+#ifdef ESP_PLATFORM
+    if (pack == NULL || label == NULL) {
+        return false;
+    }
+    // 失败时 pack 处于"未打开"状态;调用方只看返回值,不会再用它。
+    memset(pack, 0, sizeof(*pack));
+
+    const esp_partition_t *part =
+        esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, label);
+    if (part == NULL) {
+        ESP_LOGE(TAG, "找不到资源分区 %s", label);
+        return false;
+    }
+
+    // 先读包头 512 字节:段表在 [20, 372),足够判完魔数/版本/总长/22 个段/各段长度,
+    // 不用等真正取图时才报错。
+    uint8_t header[512];
+    if (part->size < sizeof(header) ||
+        esp_partition_read(part, 0, header, sizeof(header)) != ESP_OK) {
+        ESP_LOGE(TAG, "读不到资源分区 %s 的包头", label);
+        return false;
+    }
+    if (memcmp(header, TSXX_PACK_MAGIC, 8) != 0 || rd32(header + 8) != TSXX_PACK_VERSION ||
+        rd32(header + 16) != SEC_COUNT) {
+        ESP_LOGE(TAG, "资源分区 %s 不是 TSXX 资源包", label);
+        return false;
+    }
+    const uint32_t pack_size = rd32(header + 12);
+    if (pack_size < sizeof(header) || pack_size > part->size) {
+        ESP_LOGE(TAG, "资源包 %u 字节与分区 %s(%u 字节)不符", (unsigned)pack_size, label,
+                 (unsigned)part->size);
+        return false;
+    }
+
+    pack->blob_size = pack_size;
+    if (!pack_layout(header + HEADER_SIZE, pack_size, pack)) {
+        ESP_LOGE(TAG, "资源分区 %s 的段表不自洽", label);
+        return false;
+    }
+
+    // 常驻映射只覆盖脚本区间 [0, SEC_BG 偏移);图片区间靠滑动窗口。
+    // 绝不整包映射 —— 那正是上一版让引导加载器映射 rodata 段时复位的根因。
+    const uint32_t resident_size = pack->sec_off[SEC_BG];
+    if (resident_size < sizeof(header) || resident_size > TSXX_PACK_RESIDENT_LIMIT) {
+        ESP_LOGE(TAG, "脚本区间 %u 字节超出常驻映射上限 %u", (unsigned)resident_size,
+                 (unsigned)TSXX_PACK_RESIDENT_LIMIT);
+        return false;
+    }
+
+    // META 在包末尾,不能常驻映射:拷一份进结构体,顺便补 NUL 方便当字符串用。
+    if (pack->meta_size == 0 || pack->meta_size > TSXX_PACK_META_MAX) {
+        ESP_LOGE(TAG, "META %u 字节超出上限 %u", (unsigned)pack->meta_size,
+                 (unsigned)TSXX_PACK_META_MAX);
+        return false;
+    }
+    if (esp_partition_read(part, pack->sec_off[SEC_META], pack->meta_buf, pack->meta_size) !=
+        ESP_OK) {
+        ESP_LOGE(TAG, "读不到资源分区 %s 的 META 段", label);
+        return false;
+    }
+    pack->meta_buf[pack->meta_size] = '\0';
+    if (!meta_has_art(pack->meta_buf, pack->meta_size)) {
+        ESP_LOGE(TAG, "资源包的 META 美术尺寸与固件不符");
+        return false;
+    }
+
+    const void *resident = NULL;
+    esp_partition_mmap_handle_t handle = 0;
+    const esp_err_t err = esp_partition_mmap(part, 0, resident_size, ESP_PARTITION_MMAP_DATA,
+                                             &resident, &handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "常驻映射 %u 字节失败(%s)", (unsigned)resident_size, esp_err_to_name(err));
+        return false;
+    }
+
+    pack->partitioned = true;
+    pack->partition = part;
+    pack->resident = (const uint8_t *)resident;
+    pack->resident_size = resident_size;
+    pack->resident_map = handle;
+    pack->blob = (const uint8_t *)resident;
+    pack->meta = pack->meta_buf;   // meta_buf 已在 pack 里,地址不会再变
+    bind_resident(pack, pack->blob);
+    ESP_LOGI(TAG, "资源包已挂载:常驻 %u 字节(脚本区间),图片走 %u KiB 滑动窗口",
+             (unsigned)resident_size, (unsigned)(TSXX_PACK_WINDOW_SIZE / 1024u));
+    return true;
+#else
+    (void)pack;
+    (void)label;
+    return false;
+#endif
 }
 
 uint32_t tsxx_pack_pages(const tsxx_pack_t *pack)
@@ -437,19 +628,30 @@ size_t tsxx_pack_name(const tsxx_pack_t *pack, uint8_t table, uint16_t id, char 
     return 0;
 }
 
-static bool image_at(const uint8_t *dir, uint32_t stride, const uint8_t *data,
-                     uint32_t data_size, uint32_t index, tsxx_image_t *out)
+// 带目录的段里的第 index 张图。目录与数据都用包内绝对偏移(分区模式算窗口)。
+// 返回的 jpeg 指针是 map_window() 的结果:调用方拿到就立刻解码。
+static bool image_at(const tsxx_pack_t *pack, uint32_t dir_off, uint32_t stride,
+                     uint32_t data_off, uint32_t data_size, uint32_t index, tsxx_image_t *out)
 {
-    const uint8_t *entry = dir + index * stride;
+    const uint8_t *entry = map_window(pack, dir_off + index * stride, stride);
+    if (entry == NULL) {
+        return false;
+    }
     const uint32_t offset = rd32(entry);
     const uint32_t length = rd32(entry + 4);
+    const uint16_t w = rd16(entry + 8);
+    const uint16_t h = rd16(entry + 10);
     if (length == 0 || offset > data_size || length > data_size - offset) {
         return false;
     }
-    out->jpeg = data + offset;
+    const uint8_t *jpeg = map_window(pack, data_off + offset, length);
+    if (jpeg == NULL) {
+        return false;
+    }
+    out->jpeg = jpeg;
     out->jpeg_len = length;
-    out->w = rd16(entry + 8);
-    out->h = rd16(entry + 10);
+    out->w = w;
+    out->h = h;
     return true;
 }
 
@@ -458,7 +660,9 @@ bool tsxx_pack_bg(const tsxx_pack_t *pack, uint8_t id, tsxx_image_t *out)
     if (id >= pack->bg_count) {
         return false;
     }
-    return image_at(pack->bg_dir, ENTRY_BG, pack->bg_data, pack->bg_data_size, id, out);
+    const uint32_t dir_off = pack->sec_off[SEC_BG];
+    return image_at(pack, dir_off, ENTRY_BG, dir_off + pack->bg_count * ENTRY_BG,
+                    pack->bg_data_size, id, out);
 }
 
 bool tsxx_pack_sprite(const tsxx_pack_t *pack, uint8_t id, tsxx_sprite_t *out)
@@ -466,36 +670,58 @@ bool tsxx_pack_sprite(const tsxx_pack_t *pack, uint8_t id, tsxx_sprite_t *out)
     if (id >= pack->fg_count) {
         return false;
     }
-    const uint8_t *entry = pack->fg_dir + (uint32_t)id * ENTRY_FG;
+    const uint8_t *entry = map_window(pack, pack->sec_off[SEC_FG] + (uint32_t)id * ENTRY_FG,
+                                      ENTRY_FG);
+    if (entry == NULL) {
+        return false;
+    }
     const uint32_t body_off = rd32(entry);
     const uint32_t body_len = rd32(entry + 4);
     const uint32_t mask_off = rd32(entry + 8);
     const uint32_t mask_len = rd32(entry + 12);
+    const uint16_t w = rd16(entry + 16);
+    const uint16_t h = rd16(entry + 18);
+    const uint16_t x = rd16(entry + 20);
+    const uint16_t y = rd16(entry + 22);
     if (body_len == 0 || body_off > pack->fg_data_size ||
         body_len > pack->fg_data_size - body_off) {
         return false;
     }
-    out->jpeg = pack->fg_data + body_off;
-    out->jpeg_len = body_len;
-    out->mask = pack->fg_data + mask_off;
-    out->mask_len = mask_len;
-    out->w = rd16(entry + 16);
-    out->h = rd16(entry + 18);
-    out->x = rd16(entry + 20);
-    out->y = rd16(entry + 22);
-    if (mask_len != ((uint32_t)(out->w + 7u) / 8u) * out->h ||
+    if (mask_len == 0 || mask_len != ((uint32_t)(w + 7u) / 8u) * h ||
         mask_off > pack->fg_data_size || mask_len > pack->fg_data_size - mask_off) {
         return false;
     }
+    // jpeg 与 mask 必须同时有效:一次窗口映射同时覆盖两者(它们只相差几 KiB)。
+    const uint32_t lo = body_off < mask_off ? body_off : mask_off;
+    const uint32_t body_end = body_off + body_len;
+    const uint32_t mask_end = mask_off + mask_len;
+    const uint32_t hi = body_end > mask_end ? body_end : mask_end;
+    const uint8_t *data = map_window(pack, pack->sec_off[SEC_FG] + pack->fg_count * ENTRY_FG + lo,
+                                     hi - lo);
+    if (data == NULL) {
+        return false;
+    }
+    out->jpeg = data + (body_off - lo);
+    out->jpeg_len = body_len;
+    out->mask = data + (mask_off - lo);
+    out->mask_len = mask_len;
+    out->w = w;
+    out->h = h;
+    out->x = x;
+    out->y = y;
     return true;
 }
 
 bool tsxx_pack_cg(const tsxx_pack_t *pack, uint16_t id, tsxx_cg_t *out)
 {
-    if (pack->cg_dir == NULL || id >= pack->cg_count) {
+    if (id >= pack->cg_count) {
         return false;
     }
-    const uint8_t *entry = pack->cg_dir + (uint32_t)id * ENTRY_CGDIR;
+    const uint8_t *entry =
+        map_window(pack, pack->sec_off[SEC_CGDIR] + (uint32_t)id * ENTRY_CGDIR, ENTRY_CGDIR);
+    if (entry == NULL) {
+        return false;
+    }
     out->kind = entry[0];
     out->base = rd32(entry + 4);
     out->x = rd16(entry + 8);
@@ -515,12 +741,14 @@ bool tsxx_pack_cg(const tsxx_pack_t *pack, uint16_t id, tsxx_cg_t *out)
 bool tsxx_pack_cg_image(const tsxx_pack_t *pack, const tsxx_cg_t *cg, tsxx_image_t *out)
 {
     if (cg->kind == TSXX_CG_FRAME) {
-        return image_at(pack->evb_dir, ENTRY_EVB, pack->evb_data, pack->evb_data_size,
-                        cg->img, out);
+        const uint32_t dir_off = pack->sec_off[SEC_EVB];
+        return image_at(pack, dir_off, ENTRY_EVB, dir_off + pack->evb_count * ENTRY_EVB,
+                        pack->evb_data_size, cg->img, out);
     }
     if (cg->kind == TSXX_CG_PATCH) {
-        return image_at(pack->evc_dir, ENTRY_EVC, pack->evc_data, pack->evc_data_size,
-                        cg->img, out);
+        const uint32_t dir_off = pack->sec_off[SEC_EVC];
+        return image_at(pack, dir_off, ENTRY_EVC, dir_off + pack->evc_count * ENTRY_EVC,
+                        pack->evc_data_size, cg->img, out);
     }
     return false;
 }

@@ -101,29 +101,18 @@ static void to_full_width_digits(const char *src, char *out, size_t capacity)
 
 // "[CHAPTER 3-3]" -> "CHAPTER ３－３":对玩家有意义的只有编号。方括号、半角连字符
 // 与半角数字都换掉(字体子集里没有 '-' / '5' / '9' 这几个码位),否则会画成方框。
+// 源标签形如 [CHAPTER5-3] / [CHAPTER 3-3];只保留编号部分 "5-3"。
 static void format_chapter(const char *raw, char *out, size_t capacity)
 {
-    static const char kFullWidthHyphen[] = "\xEF\xBC\x8D";   // U+FF0D
-    size_t n = 0;
     if (!raw || !out || capacity == 0) {
         if (out && capacity > 0) out[0] = '\0';
         return;
     }
-    for (const char *p = raw; *p != '\0'; ++p) {
-        if (*p == '[' || *p == ']') continue;
-        if (*p == '-') {
-            if (n + sizeof(kFullWidthHyphen) > capacity) break;
-            memcpy(out + n, kFullWidthHyphen, sizeof(kFullWidthHyphen) - 1);
-            n += sizeof(kFullWidthHyphen) - 1;
-            continue;
-        }
-        if (*p >= '0' && *p <= '9') {
-            if (n + 3 >= capacity) break;
-            out[n++] = (char)0xEF;
-            out[n++] = (char)0xBC;
-            out[n++] = (char)(0x90 + (*p - '0'));
-            continue;
-        }
+    const char *p = strstr(raw, "CHAPTER");
+    p = p ? (p + 7) : raw;   // 跳过 "CHAPTER" 前缀
+    size_t n = 0;
+    for (; *p != '\0' && *p != ']'; ++p) {
+        if (*p == ' ' || *p == '[') continue;
         if (n + 1 >= capacity) break;
         out[n++] = *p;
     }
@@ -895,19 +884,19 @@ static void key_about(tsxx_app_t *app, const tsxx_key_t *key)
 }
 
 // ---------------------------------------------------------------- 对外接口
-bool tsxx_app_init(tsxx_app_t *app, const uint8_t *pack_data, uint32_t pack_size,
-                   uint16_t *art_pixels, const lv_font_t *font_cjk)
+
+// 打开资源包之前把应用状态清干净(画面缓存、电量、美术层下标)。
+static void app_reset(tsxx_app_t *app)
 {
-    if (!app || !pack_data || !art_pixels || !font_cjk) return false;
     memset(app, 0, sizeof(*app));
     app->art_bg = TSXX_NONE8;
     app->art_sprite = TSXX_NONE8;
     app->battery_percent = -1;
+}
 
-    if (!tsxx_pack_open(&app->pack, pack_data, pack_size)) {
-        ESP_LOGE(TAG, "资源包解析失败(%u 字节)", (unsigned)pack_size);
-        return false;
-    }
+// 资源包已经挂载之后的初始化:存档/设置/界面/章节/首屏。
+static bool app_after_pack_open(tsxx_app_t *app, uint16_t *art_pixels, const lv_font_t *font_cjk)
+{
     if (!tsxx_save_init()) {
         ESP_LOGW(TAG, "NVS 不可用,本次运行不保存进度");
     }
@@ -924,6 +913,14 @@ bool tsxx_app_init(tsxx_app_t *app, const uint8_t *pack_data, uint32_t pack_size
     if (!tsxx_ui_create(&app->ui, art_pixels, font_cjk)) {
         ESP_LOGE(TAG, "界面创建失败");
         return false;
+    }
+    {
+        // 无 PSRAM 的板子上池子很紧,把建完界面后的余量留在日志里。
+        lv_mem_monitor_t mon;
+        lv_mem_monitor(&mon);
+        ESP_LOGI(TAG, "LVGL 池 %u B,建完界面空闲 %u B (最大连续 %u B,碎片 %u%%)",
+                 (unsigned)mon.total_size, (unsigned)mon.free_size,
+                 (unsigned)mon.free_biggest_size, (unsigned)mon.frag_pct);
     }
     if (!tsxx_art_prepare(&app->ui.art, &app->pack)) {
         ESP_LOGW(TAG, "立绘暂存区不可用,本次运行不画立绘");
@@ -960,6 +957,30 @@ bool tsxx_app_init(tsxx_app_t *app, const uint8_t *pack_data, uint32_t pack_size
              (unsigned)tsxx_pack_sprite_count(&app->pack), (unsigned)tsxx_pack_cg_count(&app->pack),
              (unsigned)app->pack.choice_count, app->chapter_count);
     return true;
+}
+
+bool tsxx_app_init(tsxx_app_t *app, const uint8_t *pack_data, uint32_t pack_size,
+                   uint16_t *art_pixels, const lv_font_t *font_cjk)
+{
+    if (!app || !pack_data || !art_pixels || !font_cjk) return false;
+    app_reset(app);
+    if (!tsxx_pack_open(&app->pack, pack_data, pack_size)) {
+        ESP_LOGE(TAG, "资源包解析失败(%u 字节)", (unsigned)pack_size);
+        return false;
+    }
+    return app_after_pack_open(app, art_pixels, font_cjk);
+}
+
+bool tsxx_app_init_partition(tsxx_app_t *app, const char *pack_partition, uint16_t *art_pixels,
+                             const lv_font_t *font_cjk)
+{
+    if (!app || !pack_partition || !art_pixels || !font_cjk) return false;
+    app_reset(app);
+    if (!tsxx_pack_open_partition(&app->pack, pack_partition)) {
+        ESP_LOGE(TAG, "资源分区 %s 解析失败", pack_partition);
+        return false;
+    }
+    return app_after_pack_open(app, art_pixels, font_cjk);
 }
 
 void tsxx_app_key(tsxx_app_t *app, const tsxx_key_t *key)

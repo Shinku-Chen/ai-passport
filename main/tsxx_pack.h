@@ -1,8 +1,14 @@
 // main/tsxx_pack.h —— 《天使☆騒々 RE-BOOT!》资源包的只读解析层。
 //
-// 包由 tools/tsxx_pack.py 生成,整体放在 Flash 里由固件直接读取:没有解压、没有
-// 运行时 JSON 解析。本文件只做"字节 -> 结构"的纯映射,不依赖 ESP-IDF 与 LVGL,
-// 因此可以在宿主机上跑单元测试(tests/test_tsxx_model.c 用真实包走完整条剧情线)。
+// 包由 tools/tsxx_pack.py 生成,烧在独立的 assets 分区里:没有解压、没有运行时
+// JSON 解析。本文件只做"字节 -> 结构"的纯映射,不依赖 ESP-IDF 与 LVGL(分区模式
+// 才用 esp_partition),因此可以在宿主机上用平坦模式跑单元测试
+// (tests/test_tsxx_model.c 用真实包走完整条剧情线)。
+//
+// 设备上包有 5.86 MiB,远超 ESP32-C3 的 Flash MMU 容量,不能整包映射(上一版把
+// 它编进 app 的 rodata 段,引导加载器一映射就复位)。所以拆成两层:
+//   * 常驻映射 [0, SEC_BG 偏移)  —— 约 1.9 MiB 的脚本区间,整个运行期不变;
+//   * 滑动窗口 256 KiB        —— 只为图片与 CGDIR 按需映射(见窗口契约)。
 //
 // 字节序与字段布局必须与 tools/tsxx_pack.py 的文件头说明一致:
 //   段表 { type u32, offset u32, count u32, size u32 },按 type 升序排列
@@ -31,6 +37,21 @@
 // 页面字段里的"没有"。
 #define TSXX_NONE8 0xFFu
 #define TSXX_NONE16 0xFFFFu
+
+// 段表条数,必须与 tools/tsxx_pack.py 的 SEC_COUNT 一致。
+#define TSXX_PACK_SECTIONS 22
+
+// 设备模式(tsxx_pack_open_partition)的两层映射:
+//   常驻映射覆盖 [0, 脚本区间末尾 = SEC_BG 的偏移),类型 0..15 的脚本段都指向它;
+//   图片与 CGDIR 用 256 KiB 的滑动窗口按需映射。
+// 常驻区间硬上限:脚本区间实际只有约 1.9 MiB,超过这个数说明包被重切过,
+// 不能再当作"两个连续区间"来读。
+#define TSXX_PACK_RESIDENT_LIMIT (2500u * 1024u)
+// 滑动窗口最小粒度与上限(ESP32-C3 的 Flash MMU 页正好是 64 KiB)。
+#define TSXX_PACK_WINDOW_MIN (64u * 1024u)
+#define TSXX_PACK_WINDOW_SIZE (256u * 1024u)
+// META 段(在包末尾,不能常驻映射)拷进结构体保存时的字节上限。
+#define TSXX_PACK_META_MAX 512u
 
 // page.flags
 #define TSXX_PAGE_ZOOM (1u << 0)   // 源数据带缩放提示(全库都是同一个值)
@@ -78,30 +99,41 @@ typedef struct {
     const uint8_t *choice_opts;   // { off u32, len u8, pad u8, pad u16, target u32 }
     uint32_t choice_opt_count;
 
-    const uint8_t *bg_dir;        // { off u32, len u32, w u16, h u16 }
-    const uint8_t *bg_data;
-    uint32_t bg_count;
+    // 带目录的图片段:目录 { ... } 与数据区都在包内靠 sec_off[SEC_*] + 计数寻址。
+    // 目录与数据指针不再常驻:分区模式下它们落在滑动窗口里,取图时才算地址。
+    uint32_t bg_count;            // BG 目录项 { off u32, len u32, w u16, h u16 }
     uint32_t bg_data_size;
 
-    const uint8_t *fg_dir;        // { off, len, mask_off, mask_len, w, h, x, y }
-    const uint8_t *fg_data;
-    uint32_t fg_count;
+    uint32_t fg_count;            // FG 目录项 { off, len, mask_off, mask_len, w, h, x, y }
     uint32_t fg_data_size;
 
-    const uint8_t *evb_dir;       // 整帧 JPEG
-    const uint8_t *evb_data;
-    uint32_t evb_count;
+    uint32_t evb_count;           // EVB 目录项,整帧 JPEG
     uint32_t evb_data_size;
 
-    const uint8_t *evc_dir;       // 补丁 JPEG
-    const uint8_t *evc_data;
-    uint32_t evc_count;
+    uint32_t evc_count;           // EVC 目录项,补丁 JPEG
     uint32_t evc_data_size;
 
-    const uint8_t *cg_dir;        // { kind u8, pad u8, pad u16, base u32, x,y,w,h u16, img u32 }
     uint32_t cg_count;            // CGDIR 条数 = 事件名表条数
+                                  // { kind u8, pad u8, pad u16, base u32, x,y,w,h u16, img u32 }
     const uint8_t *meta;
     uint32_t meta_size;
+
+    // ---- 存储方式 ----
+    // false:tsxx_pack_open() 的"整块在内存"平坦模式(宿主机测试)。
+    // true :tsxx_pack_open_partition() 的两层映射(设备),blob 指向常驻映射基址。
+    bool partitioned;
+    const uint8_t *resident;      // 常驻映射(覆盖 [0, resident_size))
+    uint32_t resident_size;
+    uint32_t resident_map;        // esp_partition_mmap_handle_t
+    const void *partition;        // 分区模式:const esp_partition_t *
+    const uint8_t *window;        // 当前滑动窗口基址(window_off 处)
+    uint32_t window_off;
+    uint32_t window_len;
+    uint32_t window_map;          // esp_partition_mmap_handle_t
+    // 每段在包内的绝对偏移:脚本段已被常驻映射覆盖,图片段靠它算窗口。
+    uint32_t sec_off[TSXX_PACK_SECTIONS];
+    // 分区模式下 META 的私有副本(meta 指向它);末尾留一个 NUL。
+    uint8_t meta_buf[TSXX_PACK_META_MAX + 1u];
 } tsxx_pack_t;
 
 typedef struct {
@@ -145,7 +177,21 @@ typedef struct {
 } tsxx_cg_t;
 
 // 校验魔数/版本/段自洽并建立各段视图;失败返回 false(不改动 pack)。
+// "平坦模式":整块资源包必须已经在内存里(宿主机测试走这条路)。
 bool tsxx_pack_open(tsxx_pack_t *pack, const uint8_t *data, uint32_t size);
+
+// 打开 label 分区里的资源包(设备模式):常驻映射脚本区间,图片与 CGDIR 用滑动窗口。
+// 校验与 tsxx_pack_open() 相同(魔数/版本/总长/22 个段/各段长度),只读包头 512 字节
+// 就能判完,不会等到真正取图时才报错。失败返回 false("未打开"状态,调用方不要再使用)。
+//
+// **窗口契约**:tsxx_pack_bg()/tsxx_pack_sprite()/tsxx_pack_cg_image() 返回的指针只在
+// 下一次图片或 CGDIR 访问之前有效 —— 再访问会重新映射滑动窗口,旧指针立刻失效。
+// 调用方必须"拿到就立刻解码",不要在两次访问之间同时保存多张图的指针。
+// (tsxx_pack_sprite() 例外:它一次返回同一张立绘的 jpeg 与 mask,两者保证同时有效。)
+//
+// 窗口是包结构体里的共享状态:这些读接口不能从两个任务并发调用。
+// 本应用的所有取图都在 bsp_lvgl_lock() 里串行执行。
+bool tsxx_pack_open_partition(tsxx_pack_t *pack, const char *label);
 
 uint32_t tsxx_pack_pages(const tsxx_pack_t *pack);
 uint8_t tsxx_pack_bg_count(const tsxx_pack_t *pack);

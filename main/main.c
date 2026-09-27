@@ -30,9 +30,9 @@
 
 static const char *TAG = "main";
 
-// 资源包由 main/CMakeLists.txt 的 EMBED_FILES 注入(见 tools/tsxx_pack.py)。
-extern const uint8_t tsxx_pack_bin_start[] asm("_binary_tsxx_pack_bin_start");
-extern const uint8_t tsxx_pack_bin_end[] asm("_binary_tsxx_pack_bin_end");
+// 资源包烧在 assets 分区里(见 main/CMakeLists.txt 的 esptool_py_flash_to_partition),
+// 由 tsxx_pack_open_partition() 常驻映射脚本区间 + 滑动窗口读图片。
+#define TSXX_PACK_PARTITION "assets"
 // 中文字体子集(assets/fonts/tsxx_cjk_16.c,由 tools/tsxx_font.py 生成)。
 LV_FONT_DECLARE(tsxx_cjk_16);
 
@@ -263,10 +263,9 @@ void app_main(void)
     }
     bsp_display_backlight(BACKLIGHT_FULL);
 
-    const uint32_t pack_size = (uint32_t)(tsxx_pack_bin_end - tsxx_pack_bin_start);
     if (bsp_lvgl_lock(-1)) {
-        if (!tsxx_app_init(&s_app, tsxx_pack_bin_start, pack_size, s_art_pixels, &tsxx_cjk_16)) {
-            ESP_LOGE(TAG, "阅读器初始化失败(资源包 %u 字节)", (unsigned)pack_size);
+        if (!tsxx_app_init_partition(&s_app, TSXX_PACK_PARTITION, s_art_pixels, &tsxx_cjk_16)) {
+            ESP_LOGE(TAG, "阅读器初始化失败(资源分区 %s)", TSXX_PACK_PARTITION);
             bsp_lvgl_unlock();
             return;
         }

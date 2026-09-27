@@ -79,8 +79,14 @@ typedef struct {
 
 // 初始化:打开资源包与 NVS、建界面、进入首个页面(警告页或标题页)。
 // art_pixels 必须是 TSXX_ART_W * TSXX_ART_H 的静态缓冲;调用时需持有 LVGL 锁。
+// pack_data/pack_size 指向已经整块在内存里的资源包(宿主机测试与平坦调试用)。
 bool tsxx_app_init(tsxx_app_t *app, const uint8_t *pack_data, uint32_t pack_size,
                    uint16_t *art_pixels, const lv_font_t *font_cjk);
+
+// 初始化(设备模式):资源包烧在 pack_partition 分区里,由 tsxx_pack_open_partition()
+// 常驻映射脚本区间 + 滑动窗口读图片。其余语义与 tsxx_app_init() 相同;需持有 LVGL 锁。
+bool tsxx_app_init_partition(tsxx_app_t *app, const char *pack_partition, uint16_t *art_pixels,
+                             const lv_font_t *font_cjk);
 
 // 处理一次按键。调用时需持有 LVGL 锁。
 void tsxx_app_key(tsxx_app_t *app, const tsxx_key_t *key);

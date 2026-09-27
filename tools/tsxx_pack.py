@@ -717,6 +717,7 @@ class PackBuilder:
 
         # ---- 立绘 ----
         fg_section = Section(SEC_FG, FG_ENTRY)
+        sprite_max_px = 0
         for name in sprite_names:
             body, mask, width, height, x, y = convert_sprite(
                 sprite_index[name], options.sprite_quality, options.sprite_height,
@@ -725,7 +726,13 @@ class PackBuilder:
             fg_section.add(struct.pack("<IIIIHHHH", body_offset, len(body),
                                        body_offset + len(body), len(mask),
                                        width, height, x, y), body + mask)
-        self.log(f"立绘 {fg_section.count} 张")
+            sprite_max_px = max(sprite_max_px, width * height)
+        self.log(f"立绘 {fg_section.count} 张(最大 {sprite_max_px} 像素)")
+        # 固件用一块「立绘与补丁取最大值」的暂存区解码。把补丁也卡在立绘预算以内,
+        # 暂存区就只由立绘决定(最大 157x160 = 50 KB,而不是补丁的 146x240 = 70 KB);
+        # 超限的补丁退化成整帧 —— 整帧解码直接进画布,根本不占暂存区。
+        patch_budget_px = sprite_max_px if options.patch_max_pixels <= 0 \
+            else min(options.patch_max_pixels, sprite_max_px)
 
         # ---- 事件图:整帧 + 差分补丁 ----
         # 事件图与美术层同尺寸,固件负责放大到整屏。补丁矩形与差异判定都在美术
@@ -782,7 +789,8 @@ class PackBuilder:
                     continue
                 patch_payload = encode_jpeg(variant.crop(rect), options.event_quality)
                 full_payload = encode_jpeg(variant, options.event_quality)
-                if len(patch_payload) >= len(full_payload):
+                rect_px = (rect[2] - rect[0]) * (rect[3] - rect[1])
+                if rect_px > patch_budget_px or len(patch_payload) >= len(full_payload):
                     stats["full"] += 1
                     index = event_section.add_image(full_payload, event_w, event_h)
                     records[member] = frame_record(index)
@@ -1160,6 +1168,26 @@ def compare_with_source(pack: dict, symbols, checkpoints, lengths, text,
 # 命令行
 # --------------------------------------------------------------------------- #
 
+def font_inventory(symbols: Sequence[str], speaker_names: Sequence[str]) -> List[str]:
+    """字体子集要覆盖的码位 = 正文/选项的符号表 ∪ 要显示的名字 ∪ ASCII 可打印区。
+
+    符号表只包含**正文与选项**的字符,但界面上还会显示:
+      - 说话人名(带【】与日语字形,例如 風実花);
+      - 章节标签的编号与连字符(源文里可能一次也没出现,例如 5、9、-);
+      - 菜单/提示等 UI 自己的串(由 tools/tsxx_ui_font_check.py 核对)。
+    ASCII 可打印区只有 95 个字形(16px 约 12 KB),一次补上比逐个碰运气便宜。
+    """
+    out: List[str] = []
+    seen = set()
+    for source in (symbols, [ch for name in speaker_names for ch in name],
+                   [chr(cp) for cp in range(0x20, 0x7F)]):
+        for ch in source:
+            if ch not in seen:
+                seen.add(ch)
+                out.append(ch)
+    return out
+
+
 def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="打包《天使☆騒々 RE-BOOT!》手环移植版素材。",
@@ -1194,6 +1222,8 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     layout.add_argument("--sprite-quality", type=int, default=72)
     layout.add_argument("--event-quality", type=int, default=72)
     layout.add_argument("--patch-tolerance", type=int, default=DEFAULT_PATCH_TOLERANCE)
+    layout.add_argument("--patch-max-pixels", type=int, default=0,
+                        help="补丁允许的最大像素数(0 = 取最大立绘的面积)")
     return parser.parse_args(argv)
 
 
@@ -1253,10 +1283,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         handle.write(blob)
 
     if options.symbols_out:
-        symbols = unpack_symbols(parse_pack(blob))
+        symbols = font_inventory(unpack_symbols(parse_pack(blob)),
+                                 decode_name_table(section_bytes(parse_pack(blob),
+                                                                 SEC_SPKNAME)))
         with open(options.symbols_out, "w", encoding="utf-8") as handle:
             handle.write("".join(symbols))
-        print(f"码位清单 {len(symbols)} 个 → {options.symbols_out}")
+        print(f"字体码位清单 {len(symbols)} 个 → {options.symbols_out}")
 
     print(f"资源包 {len(blob):,} B ({len(blob) / 1048576:.2f} MiB) → {options.out}")
     if options.report:

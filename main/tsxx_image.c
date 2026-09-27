@@ -121,6 +121,7 @@ bool tsxx_art_init(tsxx_art_t *img, struct _lv_obj_t *parent, uint16_t *pixels)
     // 关掉抗锯齿:放大是整数比 4/3 的最近邻,抗锯齿只会更糊,还更费 CPU。
     lv_image_set_pivot(img->canvas, 0, 0);
     lv_image_set_antialias(img->canvas, false);
+    // 美术层是 180x240,放大 4/3 铺满 240x320。
     lv_image_set_scale(img->canvas, TSXX_ART_SCALE);
     return true;
 }
