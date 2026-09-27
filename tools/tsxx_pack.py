@@ -112,8 +112,13 @@ def art_height(width: int) -> int:
 ART_H = art_height(ART_W)
 # 文本框顶边 = 画面区底边,坐标是美术层坐标(214 × 180/240 取整 = 160);
 # 必须与 main 侧布局常量一致。
-DEFAULT_BOX_Y = 160
-DEFAULT_SPRITE_HEIGHT = ART_H
+# 立绘裁切下界(美术坐标)。0 = 不裁:整身画到画面底,由文本框压住下半身 ——
+# 源工程就是这么画的(height:100% 全屏画 + 半透明文本框盖在底部)。
+DEFAULT_BOX_Y = 0
+# 立绘等比缩放到这个高度(美术坐标),底边贴 DEFAULT_SPRITE_BOTTOM。
+# 160:角色占画面下 2/3,身体一直延伸到底边被文本框压住 —— 源工程的版式。
+# 裁切下界 DEFAULT_BOX_Y = 0 表示不裁,整身存下来(下半身靠文本框盖住)。
+DEFAULT_SPRITE_HEIGHT = ART_H * 2 // 3
 DEFAULT_SPRITE_BOTTOM = ART_H
 # 差异判定阈值:JPEG 有损,低于它的差值按压缩噪声处理。
 DEFAULT_PATCH_TOLERANCE = 20
@@ -718,10 +723,12 @@ class PackBuilder:
         # ---- 立绘 ----
         fg_section = Section(SEC_FG, FG_ENTRY)
         sprite_max_px = 0
+        # box_y = 0 表示不裁切(整身到底);否则裁到该行。
+        sprite_visible_bottom = options.box_y if options.box_y > 0 else art_h
         for name in sprite_names:
             body, mask, width, height, x, y = convert_sprite(
                 sprite_index[name], options.sprite_quality, options.sprite_height,
-                options.sprite_bottom, options.box_y, art_w)
+                options.sprite_bottom, sprite_visible_bottom, art_w)
             body_offset = len(fg_section.data)
             fg_section.add(struct.pack("<IIIIHHHH", body_offset, len(body),
                                        body_offset + len(body), len(mask),
@@ -822,7 +829,7 @@ class PackBuilder:
             f"choices={len(choices)}",
             f"screen={SCREEN_W}x{SCREEN_H}",
             f"art={art_w}x{art_h}",
-            f"box_y={options.box_y}",
+            f"box_y={sprite_visible_bottom}",
             f"sprite_height={options.sprite_height}",
             f"bg_quality={options.bg_quality}",
             f"sprite_quality={options.sprite_quality}",

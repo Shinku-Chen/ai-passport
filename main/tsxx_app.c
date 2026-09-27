@@ -867,6 +867,11 @@ static void key_game(tsxx_app_t *app, const tsxx_key_t *key)
         }
         return;
     }
+    // 短按 OK = 打开菜单;上/下 推进正文。
+    if (key->btn == BSP_BTN_OK) {
+        open_menu(app);
+        return;
+    }
     advance_reading(app, false);
 }
 

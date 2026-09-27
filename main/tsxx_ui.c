@@ -256,8 +256,8 @@ static void build_game_layers(tsxx_ui_t *ui, lv_obj_t *screen)
     lv_label_set_long_mode(ui->body, LV_LABEL_LONG_WRAP);
     lv_obj_set_style_text_line_space(ui->body, TSXX_LINE_H - 16, 0);
 
-    // 左上角:当前章节;右上角:电量;正文带上方右侧:自动/快进状态。
-    ui->chapter = new_box(screen, 6, 6, 60, 22, COL_BG, LV_OPA_70);
+    // 左上角:当前章节(无底纹,纯文字);右上角:电量;正文带上方右侧:自动/快进状态。
+    ui->chapter = new_box(screen, 6, 6, 60, 22, COL_BG, LV_OPA_TRANSP);
     lv_obj_set_style_radius(ui->chapter, 5, 0);
     lv_obj_t *chapter_text = new_label(ui->chapter, ui->font_cjk, COL_GOLD, "");
     lv_obj_align(chapter_text, LV_ALIGN_CENTER, 0, 0);
@@ -268,7 +268,7 @@ static void build_game_layers(tsxx_ui_t *ui, lv_obj_t *screen)
     lv_obj_align(ui->battery, LV_ALIGN_TOP_RIGHT, -8, 10);
     set_hidden(ui->battery, true);
 
-    ui->mode = new_box(screen, 0, TSXX_TAG_Y, 52, 24, COL_BG, LV_OPA_80);
+    ui->mode = new_box(screen, 0, TSXX_TAG_Y, 52, 24, COL_BG, LV_OPA_TRANSP);
     lv_obj_set_style_radius(ui->mode, 5, 0);
     lv_obj_align(ui->mode, LV_ALIGN_TOP_RIGHT, -8, 0);
     lv_obj_set_y(ui->mode, TSXX_TAG_Y);
@@ -517,17 +517,17 @@ void tsxx_ui_set_mode(tsxx_ui_t *ui, bool auto_on, bool fast_on)
     ui->fast_on = fast_on;
     lv_obj_t *text = (lv_obj_t *)lv_obj_get_user_data(ui->mode);
     if (fast_on) {
-        // 快进:金底深字,和自动阅读的深底金字区分开。
-        box_set_color(ui->mode, COL_GOLD, LV_OPA_COVER, COL_GOLD);
+        // 快进:金色文字;自动阅读:白一点的字。两者都不加底纹。
+        box_set_color(ui->mode, COL_BG, LV_OPA_TRANSP, COL_BG);
         if (text) {
             lv_label_set_text(text, "快进");
-            lv_obj_set_style_text_color(text, COL_BG, 0);
+            lv_obj_set_style_text_color(text, COL_GOLD, 0);
         }
     } else {
-        box_set_color(ui->mode, COL_BG, LV_OPA_80, COL_ROW_EDGE);
+        box_set_color(ui->mode, COL_BG, LV_OPA_TRANSP, COL_BG);
         if (text) {
             lv_label_set_text(text, "自动");
-            lv_obj_set_style_text_color(text, COL_GOLD, 0);
+            lv_obj_set_style_text_color(text, COL_DIM, 0);
         }
     }
     game_mode_apply(ui);
