@@ -758,6 +758,25 @@ const char *tsxx_pack_meta(const tsxx_pack_t *pack)
     return (const char *)pack->meta;
 }
 
+uint8_t tsxx_pack_title_bg(const tsxx_pack_t *pack)
+{
+    static const char key[] = "title_bg=";
+    const char *meta = (const char *)pack->meta;
+    for (uint32_t i = 0; i + sizeof(key) - 1u <= pack->meta_size; ++i) {
+        if (memcmp(meta + i, key, sizeof(key) - 1u) != 0) {
+            continue;
+        }
+        uint32_t value = 0;
+        uint32_t j = i + sizeof(key) - 1u;
+        while (j < pack->meta_size && meta[j] >= '0' && meta[j] <= '9') {
+            value = value * 10u + (uint32_t)(meta[j] - '0');
+            ++j;
+        }
+        return (uint8_t)value;
+    }
+    return 0;
+}
+
 // 选项表按页升序排列,用二分查找。
 static const uint8_t *find_choice(const tsxx_pack_t *pack, uint32_t page)
 {

@@ -719,6 +719,16 @@ class PackBuilder:
                 frame = cover_crop(raw.convert("RGB"), art_w, art_h)
             bg_section.add_image(encode_jpeg(frame, options.bg_quality), art_w, art_h)
         self.log(f"背景 {bg_section.count} 张 ({art_w}×{art_h})")
+        # 标题背景:追加到背景表末尾,名字固定为 __title__,下标写进 META。
+        # 源素材里没有可用的标题画,所以由 --title-image 另外给一张。
+        title_bg = 0
+        if options.title_image:
+            with Image.open(options.title_image) as raw:
+                title_frame = cover_crop(raw.convert("RGB"), art_w, art_h)
+            title_bg = bg_section.add_image(
+                encode_jpeg(title_frame, options.bg_quality), art_w, art_h)
+            bg_names = list(bg_names) + ["__title__"]
+            self.log(f"标题背景 #{title_bg} ← {os.path.basename(options.title_image)}")
 
         # ---- 立绘 ----
         fg_section = Section(SEC_FG, FG_ENTRY)
@@ -827,6 +837,7 @@ class PackBuilder:
             f"event_frames={event_section.count}",
             f"event_patches={patch_section.count}",
             f"choices={len(choices)}",
+            f"title_bg={title_bg}",
             f"screen={SCREEN_W}x{SCREEN_H}",
             f"art={art_w}x{art_h}",
             f"box_y={sprite_visible_bottom}",
@@ -1209,6 +1220,8 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
                         help="写进 META 的来源描述")
 
     target = parser.add_argument_group("输出")
+    target.add_argument("--title-image", default="",
+                        help="标题背景图(任意尺寸,按美术层尺寸 cover 裁切后追加到背景表末尾)")
     target.add_argument("--out", help="资源包输出路径")
     target.add_argument("--symbols-out", help="码位清单输出路径(给字体子集工具)")
     target.add_argument("--report", action="store_true", help="打印分段体积")

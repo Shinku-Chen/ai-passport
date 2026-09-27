@@ -63,6 +63,10 @@ static void set_page(tsxx_app_t *app, tsxx_page_id_t page)
     }
 }
 
+// 前置声明:后文的按键处理与标题页选择互相调用。
+static void show_warning(tsxx_app_t *app);
+static void title_select(tsxx_app_t *app);
+
 static void notify(tsxx_app_t *app, const char *text)
 {
     snprintf(app->notice, sizeof(app->notice), "%s", text ? text : "");
@@ -142,15 +146,9 @@ static void chapter_label_for(const tsxx_app_t *app, uint32_t page, char *out, s
 // 标题页背景:优先黄昏的天空,其次白昼,都没有就用第一张背景。
 static uint8_t title_bg_id(const tsxx_pack_t *pack)
 {
-    char name[64];
-    uint8_t fallback = 0;
-    const uint8_t count = tsxx_pack_bg_count(pack);
-    for (uint8_t i = 0; i < count; ++i) {
-        if (tsxx_pack_name(pack, TSXX_TABLE_BG, i, name, sizeof(name)) == 0) continue;
-        if (strcmp(name, "\xE7\xA9\xBA\x5F\xE5\xA4\x95") == 0) return i;   // 空_夕
-        if (strcmp(name, "\xE7\xA9\xBA\x5F\xE6\x98\xBC") == 0) fallback = i;   // 空_昼
-    }
-    return fallback;
+    // 标题背景是打包时追加到背景表末尾的那一张(--title-image),
+    // 下标记在 META 的 title_bg=;源素材里没有可用的标题画。
+    return tsxx_pack_title_bg(pack);
 }
 
 // ---------------------------------------------------------------- 画面渲染
@@ -573,6 +571,14 @@ static void key_warning(tsxx_app_t *app, const tsxx_key_t *key)
     }
     app->settings.seen_warning = 1;
     (void)tsxx_settings_store(&app->settings);
+    // 从标题页"开始/继续"过来的:确认后直接把那一项走完。
+    const uint8_t pending = app->pending_start;
+    app->pending_start = 0;
+    if (pending != 0) {
+        app->title_sel = (pending == 1) ? 0 : 1;
+        title_select(app);   // seen_warning 已置位,不会再被拦
+        return;
+    }
     show_title(app);
 }
 
@@ -582,6 +588,12 @@ static void title_select(tsxx_app_t *app)
     // 顺序与 title_refresh() 一致。
     int index = 0;
     if (app->title_sel == index++) {
+        // 首次进正文前先过一次同人移植提示;确认后回到这里继续。
+        if (!app->settings.seen_warning) {
+            app->pending_start = 1;
+            show_warning(app);
+            return;
+        }
         (void)tsxx_slot_clear(TSXX_AUTO_SLOT);   // 新游戏:旧进度的自动存档不再有意义
         app->have_auto = false;
         (void)start_reading(app, 0);
@@ -589,6 +601,11 @@ static void title_select(tsxx_app_t *app)
     }
     if (app->have_auto) {
         if (app->title_sel == index++) {
+            if (!app->settings.seen_warning) {
+                app->pending_start = 2;
+                show_warning(app);
+                return;
+            }
             tsxx_save_t save;
             if (tsxx_slot_load(TSXX_AUTO_SLOT, &save) &&
                 tsxx_player_start(&app->player, &app->pack, save.page, &app->layout)) {
@@ -624,6 +641,26 @@ static void title_select(tsxx_app_t *app)
         open_about(app);
         return;
     }
+}
+
+static void show_warning(tsxx_app_t *app)
+{
+    static const char warning[] =
+        "同人移植提示\n\n"
+        "本机运行的是《天使☆骚骚 RE－BOOT!》阅读器,"
+        "剧本、立绘与背景来自小米手环的同人移植工程"
+        "(hezdaaa 的手环版)。\n\n"
+        "本工程只做转换与重制,不再分发源素材。"
+        "剧本、图像与译文版权归柚子社(Yuzusoft)与移植作者所有,"
+        "仅供个人学习交流,请支持正版。\n\n"
+        "操作 上/下或确定 短按翻页,长按确定 打开菜单,"
+        "长按上 快进,长按下 自动阅读。\n\n"
+        "按确定开始阅读。";
+    tsxx_ui_set_warning(&app->ui, warning, NULL);
+    // 正文没超过一屏时不需要"滚到底",提示直接给放行文案。
+    const bool bottom = tsxx_ui_scrolled_to_bottom(&app->ui, TSXX_PAGE_WARNING);
+    tsxx_ui_set_warning(&app->ui, NULL, bottom ? "确定 开始阅读" : "上/下 滚动阅读到底部");
+    set_page(app, TSXX_PAGE_WARNING);
 }
 
 static int title_row_count(const tsxx_app_t *app)
@@ -936,26 +973,9 @@ static bool app_after_pack_open(tsxx_app_t *app, uint16_t *art_pixels, const lv_
     tsxx_save_t save;
     app->have_auto = tsxx_slot_load(TSXX_AUTO_SLOT, &save);
 
-    if (!app->settings.seen_warning) {
-        static const char warning[] =
-            "同人移植提示\n\n"
-            "本机运行的是《天使☆骚骚 RE－BOOT!》阅读器,"
-            "剧本、立绘与背景来自小米手环的同人移植工程"
-            "(hezdaaa 的手环版)。\n\n"
-            "本工程只做转换与重制,不再分发源素材。"
-            "剧本、图像与译文版权归柚子社(Yuzusoft)与移植作者所有,"
-            "仅供个人学习交流,请支持正版。\n\n"
-            "操作 上/下或确定 短按翻页,长按确定 打开菜单,"
-            "长按上 快进,长按下 自动阅读。\n\n"
-            "按确定开始阅读。";
-        tsxx_ui_set_warning(&app->ui, warning, NULL);
-        // 正文没超过一屏时不需要"滚到底",提示直接给放行文案。
-        const bool bottom = tsxx_ui_scrolled_to_bottom(&app->ui, TSXX_PAGE_WARNING);
-        tsxx_ui_set_warning(&app->ui, NULL, bottom ? "确定 开始阅读" : "上/下 滚动阅读到底部");
-        set_page(app, TSXX_PAGE_WARNING);
-    } else {
-        show_title(app);
-    }
+    // 开机直接进标题页;同人移植提示推迟到第一次真的要进正文之前
+    // (见 title_select 与 key_warning)。
+    show_title(app);
 
     ESP_LOGI(TAG, "就绪:页 %u / 背景 %u / 立绘 %u / 事件图 %u / 选择支 %u / 章节点 %d",
              (unsigned)tsxx_pack_pages(&app->pack), (unsigned)tsxx_pack_bg_count(&app->pack),

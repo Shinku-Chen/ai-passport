@@ -72,6 +72,7 @@ Store reusable source images and generated display assets in `images/`.
 | [`images/readme-hardware-specs.png`](images/readme-hardware-specs.png) | 2172 × 724, PNG RGBA | Optional technical infographic retained as a reference asset; it is no longer used as the homepage hero. Generated for this repository with the built-in image generation tool on 2026-09-17; the six labels and values were checked against the documented hardware contract. |
 | [`images/logo-wordmark.png`](images/logo-wordmark.png) | 1648 × 336, PNG RGBA | Transparent black wordmark extracted from the repository's original `images/logo.png`; embedded in both project README files for light backgrounds. |
 | [`images/logo-wordmark-dark.png`](images/logo-wordmark-dark.png) | 1648 × 336, PNG RGBA | White version of the extracted wordmark, used by the README `<picture>` element when GitHub is in dark mode. |
+| [`images/tsxx-reboot-cover.png`](images/tsxx-reboot-cover.png) | 420 × 582, PNG | Cover of the *Tenshi☆Sousou RE-BOOT!* reader on `feature/tsxx-reboot`, also used as its title background. Third-party key visual from the original Yuzusoft release, supplied by the author for the fan port. |
 
 - Use descriptive names and document dimensions, pixel format, conversion steps, and destination.
 - Prefer formats suitable for the 240 × 320 RGB565 display and account for Flash and internal RAM.

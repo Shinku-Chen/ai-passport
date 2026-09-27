@@ -228,6 +228,10 @@ bool tsxx_pack_cg_image(const tsxx_pack_t *pack, const tsxx_cg_t *cg, tsxx_image
 // META 文本(key=value 逐行),便于日志与诊断。
 const char *tsxx_pack_meta(const tsxx_pack_t *pack);
 
+// 标题背景在背景表里的下标(META 的 title_bg=)。源素材没有可用的标题画,
+// 由打包器的 --title-image 单独提供;没有标题图时返回 0。
+uint8_t tsxx_pack_title_bg(const tsxx_pack_t *pack);
+
 // 第 page 页是不是选项点;是则返回选项数(1..5),否则 0。
 uint8_t tsxx_pack_choice_count(const tsxx_pack_t *pack, uint32_t page);
 // 读第 slot(0 起)个选项的文案与目标页。成功返回 true。
