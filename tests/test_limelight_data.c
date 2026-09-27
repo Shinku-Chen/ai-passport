@@ -10,6 +10,7 @@
 // 用法: test_limelight_data [script_pack.bin] [material_pack.bin]
 
 #include "limelight_assets.h"
+#include "limelight_image_math.h"   // LIME_SPRITE_MAX_PIXELS:立绘上限契约
 #include "limelight_script.h"
 
 #include <stdio.h>
@@ -465,12 +466,12 @@ static void test_real_assets(const char *path)
     // CG 与背景一样只存 214 行:画布就是 240x214(RAM 预算决定的,见 limelight_image_math.h)
     CHECK(entry.w == 240 && entry.h == 214);
 
-    // 立绘尺寸上限必须与固件的静态缓冲一致(SPRITE_MAX_PIXELS x 2 = 40KB)。
+    // 立绘尺寸上限必须与固件的静态缓冲一致(LIME_SPRITE_MAX_PIXELS x 2 = 46KB)。
     // 打包器把立绘夹在这个上限内,固件按它申请缓冲;这里守住这条契约。
     for (uint16_t i = 0; i < lime_assets_count(&assets); i++) {
         lime_asset_t item;
         if (!lime_assets_get(&assets, i, &item) || item.kind != LIME_ASSET_KIND_SPRITE) continue;
-        CHECK((uint32_t)item.w * item.h <= 20000);
+        CHECK((uint32_t)item.w * item.h <= (uint32_t)LIME_SPRITE_MAX_PIXELS);
         CHECK(item.w <= 168 && item.h <= 252);
     }
 

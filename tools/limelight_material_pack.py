@@ -75,11 +75,21 @@ GEN_VERSION = "limelight_material_pack/1"
 
 SCREEN_W, SCREEN_H = 240, 320
 SPRITE_MAX_W, SPRITE_MAX_H = 168, 252
-# 立绘像素上限:固件给立绘解码留了静态缓冲(20,000 px x 2 = 40 KB),
-# 必须放得下。取 20,000 px(40,000 B);实测只有宽幅场景立绘会碰到这条限制,
-# 高瘦的角色立绘(约 62x252 = 15.6k px)本来就远低于上限。
-SPRITE_MAX_PIXELS = 20000
+# 立绘取景:源立绘多是细高的全身站姿(实测约 238x924)。整张缩进 252 行时缩放比
+# 只有 0.27,脸部被压到十几像素,真机上就是"糊"。按"宽:高 = 1:2"的比例只保留
+# 上半身,把同样的像素预算集中在头肩胸;本来就矮/半身的图(坐姿、特写)不裁。
+SPRITE_BUST_ASPECT = 2.0
+# 立绘像素上限:固件按 LIME_SPRITE_MAX_PIXELS(23,000)申请静态解码缓冲,必须放得下。
+# 取 22,000 px:上半身取景后立绘约 105x210 = 22k px(全身取景时约 65x252 = 16.4k)。
+# 实测(2026-09-27,q30/4:4:4)上半身 16k/18k/20k/22k 相对旧包只 +47/+42/+110/+162 KiB,
+# 因为裁掉下半身后总像素并没有增加,而字节率几乎不变(0.225 B/px)。
+SPRITE_MAX_PIXELS = 22000
 DEFAULT_QUALITY = 30
+# 立绘单独一套参数:它是画面主体,和背景共用 q30/4:2:0 会明显发糊(色度被砍半、
+# 高频细节被量化掉)。背景大片色块对压缩不敏感,立绘细节敏感,所以分开。
+# 实测各配置的包体积见 tools/README 或 REPORT 注释。
+DEFAULT_SPRITE_QUALITY = 30
+DEFAULT_SPRITE_SUBSAMPLING = 0        # 0 = 4:4:4;立绘色度细节比省下的几十 KB 值钱
 # 实测(2026-09-27,全部素材 + 名字表 + 1bpp RLE 遮罩,图片预算 5,590,384 B):
 #   q35/CG 320 行 = 5,533,336 B(仅余 57 KiB,太紧);q32 = 5,240,392 B(余 0.33 MiB);
 #   q30 = 5,050,124 B(余 0.50 MiB)。q30~q35 相对 Lanczos 参考的 PSNR 只差约 0.5 dB,
@@ -240,6 +250,9 @@ def sprite_canvas(im: Image.Image, max_pixels: int = SPRITE_MAX_PIXELS) -> Image
     box = rgba.getchannel("A").getbbox()
     if box:
         rgba = rgba.crop(box)
+    bust_h = min(rgba.height, max(1, round(rgba.width * SPRITE_BUST_ASPECT)))
+    if bust_h < rgba.height:
+        rgba = rgba.crop((0, 0, rgba.width, bust_h))
     scale = min(SPRITE_MAX_W / rgba.width, SPRITE_MAX_H / rgba.height)
     size = (max(1, round(rgba.width * scale)), max(1, round(rgba.height * scale)))
     rgba = rgba.resize(size, Image.LANCZOS)
@@ -255,9 +268,11 @@ def sprite_canvas(im: Image.Image, max_pixels: int = SPRITE_MAX_PIXELS) -> Image
     return rgba
 
 
-def encode_jpeg(im: Image.Image, quality: int) -> bytes:
+def encode_jpeg(im: Image.Image, quality: int, subsampling: int = 2) -> bytes:
+    """subsampling: 0 = 4:4:4(保留色度细节,立绘用), 2 = 4:2:0(默认,省体积)。"""
     buf = io.BytesIO()
-    im.convert("RGB").save(buf, format="JPEG", quality=quality, optimize=True, subsampling=2)
+    im.convert("RGB").save(buf, format="JPEG", quality=quality, optimize=True,
+                           subsampling=subsampling)
     return buf.getvalue()
 
 
@@ -378,7 +393,9 @@ def collect_sources(source: Path) -> list[tuple[str, str, Path]]:
 # --------------------------------------------------------------------------
 
 def build_pack(source: Path, quality: int, bg_rows: int, cg_rows: int,
-               keep_all: bool, max_pixels: int = SPRITE_MAX_PIXELS) -> tuple[bytes, dict]:
+               keep_all: bool, max_pixels: int = SPRITE_MAX_PIXELS,
+               sprite_quality: int = DEFAULT_SPRITE_QUALITY,
+               sprite_subsampling: int = DEFAULT_SPRITE_SUBSAMPLING) -> tuple[bytes, dict]:
     if Image is None:
         raise RuntimeError(_PIL_MISSING)
     refs = scan_references(source)
@@ -401,7 +418,7 @@ def build_pack(source: Path, quality: int, bg_rows: int, cg_rows: int,
             im.load()
             if family == "sprite":
                 canvas = sprite_canvas(im, max_pixels)
-                jpeg = encode_jpeg(canvas, quality)
+                jpeg = encode_jpeg(canvas, sprite_quality, sprite_subsampling)
                 mask = encode_mask_1bpp_rle(
                     canvas.getchannel("A").point(lambda v: 255 if v >= 128 else 0))
                 blob_ids = (store.put(key + ":sprite", jpeg + mask, family),)
@@ -513,6 +530,11 @@ def main() -> int:
                         help=f"背景保留行数(默认 {DEFAULT_BG_ROWS},下面被文本框压住)")
     parser.add_argument("--cg-rows", type=int, default=DEFAULT_CG_ROWS,
                         help=f"CG 保留行数(默认 {DEFAULT_CG_ROWS},鉴赏要整屏)")
+    parser.add_argument("--sprite-quality", type=int, default=DEFAULT_SPRITE_QUALITY,
+                        help="立绘 JPEG 质量(默认 %d;立绘是画面主体,比背景给得高)"
+                             % DEFAULT_SPRITE_QUALITY)
+    parser.add_argument("--sprite-subsampling", type=int, default=DEFAULT_SPRITE_SUBSAMPLING,
+                        choices=(0, 1, 2), help="立绘色度抽样:0=4:4:4(默认),2=4:2:0")
     parser.add_argument("--keep-all", action="store_true",
                         help="不做引用裁剪(默认丢弃脚本与鉴赏都没引用的素材)")
     parser.add_argument("--report", action="store_true", help="打印分家族体积")
@@ -527,7 +549,9 @@ def main() -> int:
         parser.error(f"--source 下找不到 src/common: {args.source}")
 
     blob, report = build_pack(args.source, args.quality, args.bg_rows,
-                              args.cg_rows, args.keep_all)
+                              args.cg_rows, args.keep_all,
+                              sprite_quality=args.sprite_quality,
+                              sprite_subsampling=args.sprite_subsampling)
     head = self_check(blob)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_bytes(blob)
