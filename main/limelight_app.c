@@ -906,22 +906,14 @@ bool lime_app_init(lime_app_t *app, const uint8_t *script_data, uint32_t script_
     lime_save_t auto_save_state;
     app->have_auto = lime_auto_load(&auto_save_state);
 
-    if (app->settings.seen_tips) {
-        show_title(app);
-    } else {
-        lime_ui_set_warning(&app->ui,
-                            "limelight lemonade jam\n"
-                            "竖屏阅读器\n\n"
-                            "上 / 下：下一句\n"
-                            "长按上：快进\n"
-                            "长按下：自动阅读\n"
-                            "确定：菜单\n"
-                            "长按确定：返回上一层",
-                            "按确定继续");
-        set_page(app, LIME_PAGE_WARNING);
-    }
+    // 开机直接进标题页:不再拦一层首次说明。操作说明在「系统设置 → 关于本作」里。
+    // settings.seen_tips 字段保留以兼容旧存档,但不再决定首屏显示什么。
+    show_title(app);
     return true;
 }
+
+// 首屏说明页已不再随开机显示(操作说明在「系统设置 → 关于本作」里)。
+// LIME_PAGE_WARNING 的界面与按键处理保留,以后要加“帮助”入口可直接复用。
 
 bool lime_app_debug_start(lime_app_t *app, uint32_t id)
 {
