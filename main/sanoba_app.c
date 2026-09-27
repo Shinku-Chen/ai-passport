@@ -123,12 +123,63 @@ static void render_title_art(sanoba_app_t *app)
 }
 
 // 把当前这一步正文/选项画出来(画面区 + 正文带 + 浮层)。
+// 脚本里的章节标题形如 "chapter　4-8"(全角空格)/ "chapter 210" / "エンディング"。
+// 画面上习惯只显示编号,所以去掉前缀与空白,留下 "4-8";没编号就原样显示(截到 8 字宽)。
+static void chapter_short_label(const char *title, char *out, size_t capacity)
+{
+    if (out == NULL || capacity == 0) {
+        return;
+    }
+    out[0] = '\0';
+    if (title == NULL || title[0] == '\0') {
+        return;
+    }
+    const char *cursor = title;
+    if (strncmp(cursor, "chapter", 7) == 0 || strncmp(cursor, "CHAPTER", 7) == 0) {
+        cursor += 7;
+    }
+    while (*cursor == ' ' || *cursor == '\t') {
+        cursor++;
+    }
+    while ((unsigned char)cursor[0] == 0xE3 && (unsigned char)cursor[1] == 0x80 &&
+           (unsigned char)cursor[2] == 0x80) {   // 全角空格 U+3000
+        cursor += 3;
+    }
+    if (*cursor == '\0') {
+        cursor = title;   // 只有 "chapter" 没编号:回退整串
+    }
+    const size_t length = strlen(cursor);
+    size_t cut = 0;
+    int units = 0;
+    while (cut < length && units < 16) {
+        const size_t next = sanoba_utf8_next_boundary(cursor, length, cut);
+        const int width = sanoba_char_units(sanoba_utf8_decode(cursor, length, cut, NULL));
+        if (units + width > 16) {
+            break;
+        }
+        units += width;
+        cut = next;
+    }
+    if (cut == 0) {
+        cut = sanoba_utf8_next_boundary(cursor, length, 0);
+    }
+    if (cut >= capacity) {
+        cut = capacity - 1;
+    }
+    memcpy(out, cursor, cut);
+    out[cut] = '\0';
+}
+
 static void render_scene(sanoba_app_t *app)
 {
     render_art(app);
 
     char progress[SANOBA_TITLE_MAX] = { 0 };
-    scenario_label(app, app->player.scenario, 0, progress, sizeof(progress));
+    if (app->chapter_short[0] != '\0') {
+        snprintf(progress, sizeof(progress), "%s", app->chapter_short);
+    } else {
+        scenario_label(app, app->player.scenario, 0, progress, sizeof(progress));
+    }
     sanoba_ui_set_progress(&app->ui, progress, (int)app->player.page_index + 1,
                            (int)app->player.page_count);
 
@@ -151,13 +202,13 @@ static void render_scene(sanoba_app_t *app)
     sanoba_ui_set_text(&app->ui, speaker, text, app->fast_forward ? 0 : speed_ms(app));
 }
 
-// 章节卡:显示脚本里的章节标题(源数据形如 "chapter 4-8"),等任意键或过场计时结束再往下读。
-static void show_chapter_card(sanoba_app_t *app, const char *title)
+// 章节卡:显示源数据里的章节编号(形如 "4-8"),等任意键或过场计时结束再往下读。
+static void show_chapter_card(sanoba_app_t *app, const char *label)
 {
     sanoba_ui_hide_choices(&app->ui);
     sanoba_ui_set_progress(&app->ui, NULL, 0, 0);
     render_art(app);
-    sanoba_ui_set_text(&app->ui, "", title != NULL ? title : "", 0);
+    sanoba_ui_set_text(&app->ui, "", label != NULL ? label : "", 0);
     set_page(app, SANOBA_PAGE_GAME);
     app->transition_pending = true;
     app->transition_ms = SANOBA_TRANSITION_MS;
@@ -202,13 +253,13 @@ static void advance_reading(sanoba_app_t *app, bool skip_typing)
             return;
         case SANOBA_STEP_CHAPTER: {
             // 本作脚本里 CHAPTER 节点就是章节卡(源数据没有显示/隐藏标记)。
-            // 源数据形如 "chapter 4-8" / "エンディング",直接当标题画。
-            const char *title = app->player.chapter_title[0] != '\0' ? app->player.chapter_title
-                                                                     : "";
+            // 源数据形如 "chapter　4-8" / "エンディング":画面上只显示 "4-8"。
+            chapter_short_label(app->player.chapter_title, app->chapter_short,
+                                sizeof(app->chapter_short));
             app->at_choice = false;
             auto_save(app);
             // 换章过场不关自动模式:过场计时结束后自动接着读下一章。
-            show_chapter_card(app, title);
+            show_chapter_card(app, app->chapter_short);
             return;
         }
         case SANOBA_STEP_ENDING:
@@ -380,6 +431,7 @@ static bool start_reading(sanoba_app_t *app)
         notify(app, "剧本数据异常");
         return false;
     }
+    app->chapter_short[0] = '\0';   // 从头读:章节标签等第一个 CHAPTER 节点
     app->started = true;
     app->at_choice = false;
     app->ended = false;
@@ -396,6 +448,7 @@ static bool load_save(sanoba_app_t *app, const sanoba_save_t *save)
     if (!sanoba_player_load(&app->player, &app->scn, save, &app->layout_hint)) {
         return false;
     }
+    app->chapter_short[0] = '\0';   // 存档里没存章节编号:读到下一个 CHAPTER 节点就有了
     app->started = true;
     app->at_choice = false;
     app->ended = false;
@@ -734,7 +787,10 @@ bool sanoba_app_init(sanoba_app_t *app, const uint8_t *pack_data, uint32_t pack_
                      sanoba_inflate_last_error(), (unsigned)esp_get_free_heap_size(),
                      (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
         }
-        sanoba_player_reset(&app->player);   // 自检的进度不要留给阅读页
+        // 自检的进度不要留给阅读页;顺带把块缓冲(4 KB)还回堆 —— 后面创建的串口截图
+        // 任务要 8 KB 连续栈,而最大连续空闲块只有 7.6 KB 左右,不放回就建不出来。
+        // 阅读开始时会重新申请(同样 4 KB,届时的空闲块够用)。
+        sanoba_player_release(&app->player);
     } else {
         ESP_LOGE(TAG, "剧本包自检失败:无法从场景 0 开始");
     }
@@ -903,6 +959,10 @@ static bool debug_seek(sanoba_app_t *app, uint16_t scenario, uint16_t step)
     for (uint32_t guard = 0; guard < 400000u; ++guard) {
         switch (sanoba_player_advance(&app->player, &app->scn, &app->layout_hint)) {
         case SANOBA_STEP_CHAPTER:
+            // 与正常阅读路径一致:记下章节短标签(源数据 "chapter　4-8" → "4-8"),
+            // 否则调试定位出来的画面左上角会退回显示场景名。
+            chapter_short_label(app->player.chapter_title, app->chapter_short,
+                                sizeof(app->chapter_short));
             break;
         case SANOBA_STEP_TEXT:
             if (texts == step) {

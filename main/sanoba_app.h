@@ -51,6 +51,8 @@ typedef struct {
 
     bool transition_pending;   // 章节卡:等按键或过场计时结束
     uint32_t transition_ms;
+    // 当前章节的短标签(源数据里的 "chapter　4-8" → "4-8");画面左上角显示这个
+    char chapter_short[SANOBA_TITLE_MAX];
     bool fast_forward;         // 长按上快进中(松手即停)
     uint32_t fast_forward_ms;
     bool auto_play;            // 自动阅读模式(长按下开关;任意键停止)

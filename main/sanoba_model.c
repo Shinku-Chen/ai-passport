@@ -401,11 +401,11 @@ bool sanoba_scn_scenario(const sanoba_scn_t *scn, uint16_t index, uint16_t *firs
     }
     if (title_out != NULL && title_capacity > 0) {
         uint16_t length = rd16(entry + 6);
+        title_out[0] = '\0';
         if (entry + 8 + (uint32_t)length * 2 <= end) {
-            cursor_text(&(cursor_t){ (uint8_t *)entry + 8, (uint8_t *)entry + 8 + (uint32_t)length * 2 },
-                        scn, title_out, title_capacity, NULL);
-        } else {
-            title_out[0] = '\0';
+            // 游标要包含长度字段本身:cursor_text 自己读 u16 长度再读码表下标
+            cursor_t cursor = { (uint8_t *)entry + 6, (uint8_t *)entry + 8 + (uint32_t)length * 2 };
+            (void)cursor_text(&cursor, scn, title_out, title_capacity, NULL);
         }
     }
     return true;

@@ -68,6 +68,7 @@ static volatile bool s_capture_frame;
 
 static QueueHandle_t s_input_queue;
 static TaskHandle_t s_input_task;
+static volatile bool s_debug_ready;
 static volatile bool s_input_ready;
 static uint8_t s_backlight = BACKLIGHT_FULL;
 
@@ -202,6 +203,19 @@ static void debug_task(void *arg)
             vTaskDelay(pdMS_TO_TICKS(200));
             continue;
         }
+        // 任务在 app_main 最早创建(那时堆最空,才拿得到 8 KB 连续栈),
+        // 界面还没建好时收到命令就回 ERR,不要去碰未初始化的应用状态。
+        if (!s_debug_ready) {
+            if (strncmp(line, "SANOBAPAGE", 10) == 0 || strncmp(line, "SANOBASHOT", 10) == 0) {
+                printf("SANOBAPAGE-ERR\n");
+            } else if (strncmp(line, "SANOBAJUMP", 10) == 0) {
+                printf("SANOBAJUMP-ERR -1 -1\n");
+            } else {
+                continue;
+            }
+            fflush(stdout);
+            continue;
+        }
         int chapter = -1;
         int scene = -1;
 
@@ -324,7 +338,15 @@ static void input_task(void *arg)
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "AI Passport《千恋＊万花》阅读器启动");
+    // 调试图任务在最早创建:它要 8 KB 连续栈,而读器初始化完以后最大连续空闲块只剩
+    // 7.6 KB 左右(实测创建失败),只能抢在 LVGL/画布/UI 之前要内存。
+    // 4 KB 的栈不够一次整屏重画(LVGL 绘图层会递归到绘制原语,实测触发 Stack
+    // protection fault 重启),所以给 8 KB。
+    if (xTaskCreate(debug_task, "sanoba_debug", 8192, NULL, 4, NULL) != pdPASS) {
+        ESP_LOGW(TAG, "串口截图任务创建失败(不影响阅读)");
+    }
+
+    ESP_LOGI(TAG, "AI Passport《魔女的夜宴》阅读器启动");
 
     // deep sleep 唤醒会重启整个应用,把原因打出来便于确认"按键真能唤醒"。
     const esp_sleep_wakeup_cause_t wakeup = esp_sleep_get_wakeup_cause();
@@ -411,11 +433,8 @@ void app_main(void)
     }
 #endif
 
-    // 调试图任务:4096 字节的栈不够 SANOBAPAGE 走一次整屏重画(LVGL 绘图层会递归到
-    // 绘制原语里,实测会触发 Stack protection fault 而整机重启),所以给足 8KB。
-    if (xTaskCreate(debug_task, "sanoba_debug", 8192, NULL, 4, NULL) != pdPASS) {
-        ESP_LOGW(TAG, "串口截图任务创建失败(不影响阅读)");
-    }
+    // 调试图任务已在 app_main 开头创建(那时堆最空),这里只把就绪标志拉起来。
+    s_debug_ready = true;
 
     ESP_LOGI(TAG, "空闲堆 %u 字节,最大连续块 %u 字节", (unsigned)esp_get_free_heap_size(),
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
