@@ -25,8 +25,15 @@ ROOT_MARKDOWN_ALLOWLIST = {
     "CLAUDE.md",
     "CLAUDE.zh_CN.md",
     "README.md",
+    "README.en_US.md",
     "README.zh_CN.md",
 }
+
+# The fork owns the repository-root README pair and publishes it Chinese-first:
+# `README.md` is Simplified Chinese and `README.en_US.md` is its English peer.
+# Every other maintained document keeps English at the default `.md` path.
+CHINESE_DEFAULT_DOCUMENTS = {"README.md"}
+ENGLISH_PEER_SUFFIX = ".en_US.md"
 # Vendored third-party components are shipped with their own documentation and are
 # not governed by the repository doc convention (English default .md + linked
 # .zh_CN.md peer). Repo-local components (bs*) and the app itself still are.
@@ -125,6 +132,39 @@ def check_document_languages(files: list[Path], errors: list[str]) -> None:
         name = path.name
         text = path.read_text(encoding="utf-8")
         opening = "\n".join(text.splitlines()[:8])
+
+        if path.parent == ROOT and name in CHINESE_DEFAULT_DOCUMENTS:
+            english_name = f"{path.stem}{ENGLISH_PEER_SUFFIX}"
+            english_path = path.with_name(english_name).resolve()
+            if english_path not in markdown:
+                errors.append(
+                    f"{path.relative_to(ROOT)}: missing English peer {english_name}"
+                )
+            elif english_name not in opening:
+                errors.append(
+                    f"{path.relative_to(ROOT)}: missing top language link to {english_name}"
+                )
+            continue
+
+        if name.endswith(ENGLISH_PEER_SUFFIX):
+            chinese_name = f"{name[:-len(ENGLISH_PEER_SUFFIX)]}.md"
+            chinese_path = path.with_name(chinese_name).resolve()
+            if chinese_path not in markdown:
+                errors.append(
+                    f"{path.relative_to(ROOT)}: missing Simplified Chinese default {chinese_name}"
+                )
+            elif chinese_name not in opening:
+                errors.append(
+                    f"{path.relative_to(ROOT)}: missing top language link to {chinese_name}"
+                )
+            english_prose = text.replace("简体中文", "")
+            match = CJK_RE.search(english_prose)
+            if match:
+                line = english_prose.count("\n", 0, match.start()) + 1
+                errors.append(
+                    f"{path.relative_to(ROOT)}:{line}: English peer Markdown must use English prose"
+                )
+            continue
 
         if name.endswith(".zh_CN.md"):
             default_name = f"{name[:-len('.zh_CN.md')]}.md"
