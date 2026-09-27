@@ -86,6 +86,10 @@ void atri_app_tick(atri_app_t *app, uint32_t elapsed_ms);
 // 自动阅读是否正在自行翻页(停在选项或结局上时不算),供空闲熄灭豁免使用。
 bool atri_app_auto_reading(const atri_app_t *app);
 
+// 屏幕是否必须保持常亮:自动阅读开着(哪怕正停在选项/结局上)、快进中、章节卡过场中
+// 都算。玩家的硬要求是「自动模式不息屏、不暗屏」,所以这里的判断要比 auto_reading 宽。
+bool atri_app_wants_screen_on(const atri_app_t *app);
+
 // 空闲时长(毫秒),供 main 决定变暗/熄屏/深睡。
 uint32_t atri_app_idle_ms(const atri_app_t *app);
 

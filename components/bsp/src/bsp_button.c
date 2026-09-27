@@ -40,6 +40,31 @@ static int64_t s_sample_time;
 static int s_sample_mv = -1;
 static bool s_sample_valid;
 
+// ---- ADC 阶梯键盘的键位锁 --------------------------------------------------
+// 三个键共用一个 ADC 引脚,靠电压窗口区分。实测的真问题:长按某个键时触点轻微
+// 失联,节点电压会瞬间冲向松开态(3300mV),途中正好扫过别的键的窗口;而且"确定"
+// 的窗口 447~1900mV 最宽,一掠而过就会被组件当成"确定按了一下" —— 用户的表现就是
+// 长按上快进时莫名其妙弹出菜单。所以在这里加一层锁:
+//   1) 首次按下要连续稳定 CONFIRM 时间才认(跳过按下瞬间扫过的中间档位);
+//   2) 锁定期间扫到别的档先忽略,要持续 SWITCH 时间才当作真的换键;
+//   3) 电压回到松开区也要待够 SWITCH 时间才算松手(短暂失联不打断长按)。
+#define BSP_BTN_LOCK_CONFIRM_US  40000u    // 40ms 确认按下
+#define BSP_BTN_LOCK_SWITCH_US  120000u    // 120ms 才承认换键/松手
+
+static int     s_lock_index = -1;   // 当前锁定的键;-1 = 没有按下
+static int     s_candidate = -1;    // 待确认的键
+static int64_t s_candidate_us;      // 待确认键首次稳定的时刻
+static int64_t s_other_us;          // 锁定期间首次扫到别的档的时刻
+static int64_t s_in_window_us;      // 最近一次"电压落在某个档里"的时刻
+
+static int button_window_of(int mv) {
+    for (int i = 0; i < BSP_BTN_COUNT; ++i) {
+        // Half-open windows prevent two keys from matching a shared boundary.
+        if (mv >= BTN_MV[i][0] && mv < BTN_MV[i][1]) return i;
+    }
+    return -1;
+}
+
 static uint8_t button_level(button_driver_t *driver) {
     if (!s_ready) return BUTTON_INACTIVE;
     const bsp_adc_button_t *button = (const bsp_adc_button_t *)driver;
@@ -62,9 +87,49 @@ static uint8_t button_level(button_driver_t *driver) {
             s_sample_mv = -1;
         }
     }
-    // Half-open windows prevent two keys from matching a shared boundary.
-    return s_sample_mv >= BTN_MV[button->index][0] &&
-           s_sample_mv < BTN_MV[button->index][1] ? BUTTON_ACTIVE : BUTTON_INACTIVE;
+    const int matched = s_sample_mv >= 0 ? button_window_of(s_sample_mv) : -1;
+
+    // 键位锁(为什么需要见 s_lock_index 的注释):
+    // - 电压不在任何装里 = 真正松开:要在这里待够 SWITCH 时间才算,短暂失联不算;
+    // - 锁定后扫到别的装:先按原键继续报,持续 SWITCH 时间才当作真的换键。
+    if (matched < 0) {
+        if (s_lock_index < 0) {
+            s_candidate = -1;
+            return BUTTON_INACTIVE;
+        }
+        if (now - s_in_window_us >= BSP_BTN_LOCK_SWITCH_US) {
+            s_lock_index = -1;
+            s_candidate = -1;
+            return BUTTON_INACTIVE;
+        }
+        return button->index == (unsigned)s_lock_index ? BUTTON_ACTIVE : BUTTON_INACTIVE;
+    }
+    s_in_window_us = now;   // 只要还在某一装里,就不算松开
+
+    if (s_lock_index < 0) {
+        // 首次按下:同一装要连续稳定 CONFIRM 时间才算(跳过按下瞬间扫过的中间装)
+        if (matched != s_candidate) {
+            s_candidate = matched;
+            s_candidate_us = now;
+        } else if (now - s_candidate_us >= BSP_BTN_LOCK_CONFIRM_US) {
+            s_lock_index = matched;
+            s_other_us = 0;
+        }
+        return BUTTON_INACTIVE;
+    }
+    if (matched == s_lock_index) {
+        s_other_us = 0;                                  // 回到锁定键
+    } else if (s_other_us == 0) {
+        s_other_us = now;                                // 扫到别的装:先按住原键不放
+    } else if (now - s_other_us >= BSP_BTN_LOCK_SWITCH_US) {
+        s_lock_index = matched;                          // 真的换了键
+        s_other_us = 0;
+    }
+    return button->index == (unsigned)s_lock_index ? BUTTON_ACTIVE : BUTTON_INACTIVE;
+}
+
+int bsp_button_last_mv(void) {
+    return s_sample_valid ? s_sample_mv : -1;
 }
 
 static esp_err_t button_driver_delete(button_driver_t *driver) {

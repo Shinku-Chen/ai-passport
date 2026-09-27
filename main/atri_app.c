@@ -792,7 +792,7 @@ void atri_app_tick(atri_app_t *app, uint32_t elapsed_ms)
     // 自动阅读/快进是应用自己在推进画面,玩家不需要碰机器,这段时间不能算空闲 ——
     // 否则会读到一半自己变暗、熄屏甚至休眠。停在选项或结局上时两者都已停下,
     // 照旧按时限熄灭。
-    if (atri_app_auto_reading(app) || app->fast_forward) {
+    if (atri_app_wants_screen_on(app)) {
         app->idle_ms = 0;
     } else {
         app->idle_ms += elapsed_ms;
@@ -846,6 +846,16 @@ bool atri_app_auto_reading(const atri_app_t *app)
 {
     if (!app) return false;
     return app->auto_play && app->page == ATRI_PAGE_GAME && !app->at_choice && !app->ended;
+}
+
+// 屏幕该不该保持亮着。玩家的明确要求:自动模式下不停屏、不暗屏 —— 所以只要自动阅读
+// 开着(不管当下是正文、章节卡过场,还是碰巧停在选项/结局上)就不能计时;快进和换章
+// 过场同理,那是应用在推画面,玩家并没有离开。
+bool atri_app_wants_screen_on(const atri_app_t *app)
+{
+    if (!app) return false;
+    if (app->auto_play || app->fast_forward || app->transition_pending) return true;
+    return false;
 }
 
 uint32_t atri_app_idle_ms(const atri_app_t *app)
@@ -957,10 +967,13 @@ bool atri_app_debug_save(atri_app_t *app, int slot)
 int atri_app_debug_info(atri_app_t *app, char *out, size_t capacity)
 {
     if (!app || !out || capacity == 0) return 0;
-    return snprintf(out, capacity, "chunk=%u node=%u chapter=%u title='%s' bg='%s' ev='%s' sprite='%s'",
+    return snprintf(out, capacity,
+                    "chunk=%u node=%u chapter=%u title='%s' bg='%s' ev='%s' sprite='%s'"
+                    " idle=%ums auto=%d ff=%d page=%d",
                     (unsigned)app->player.chunk, (unsigned)app->player.node,
                     (unsigned)app->player.chapter, app->player.chapter_title, app->player.bg,
-                    app->player.ev, app->player.sprite);
+                    app->player.ev, app->player.sprite, (unsigned)app->idle_ms,
+                    app->auto_play ? 1 : 0, app->fast_forward ? 1 : 0, (int)app->page);
 }
 
 bool atri_app_debug_start(atri_app_t *app, uint16_t chapter, uint16_t step)

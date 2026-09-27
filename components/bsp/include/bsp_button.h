@@ -42,3 +42,8 @@ esp_err_t bsp_button_prepare_deep_sleep(int *level);
 // ★ 换了分压/上拉阻值后,用它测出自己的三档电压,再改 bsp_pins.h 的 BSP_BTN_MV_TABLE。
 // 读取失败返回 -1。
 int bsp_button_read_mv(void);
+
+// 按键轮询最近一次采样得到的电压(mV)。和 bsp_button_read_mv() 的区别:它读的是
+// 驱动判定时真正用的那份共享采样(1ms 周期,三个键共用),所以能用来坐实"这个事件
+// 是在哪个电压窗口里报出来的"。没有有效采样时返回 -1。可在任意上下文调用。
+int bsp_button_last_mv(void);
