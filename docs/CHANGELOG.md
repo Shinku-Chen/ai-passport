@@ -56,3 +56,13 @@
 - Updated software-design and project README references for the new documentation structure.
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
+
+## v0.1.0-tsxx-reboot - 2026-09-27
+
+- Added the *Tenshi☆Sousou RE-BOOT!* portrait visual-novel reader on `feature/tsxx-reboot`. The whole 61,436-page script (61,289 dialogue lines, 1,165,911 characters, 45 chapter points, 13 choice points) runs offline from a dedicated `assets` partition, with title, body, choices, chapter jump, menu, settings, five manual save slots plus one automatic slot, and 15 ending points.
+- Added the original branching system as data: 15 ending points (six heroine routes, two bad ends, one plain end and six return-to-title screens), five flag gates (11 rules, 54 conditions), 18 forward jumps and 38 back jumps, all driven by `assets/tsxx-source/branch.json`. The packer validates every gate against a real choice point and stores the branch tables inside the same pack, so a configuration edit cannot silently change the story routes.
+- Added the pack pipeline and the committed pack (`main/tsxx_data/tsxx_pack.bin`, 6.26 MiB): the art layer is 1:1 with the panel, sprites are stored in canvas coordinates, and backgrounds, event frames, patches and sprites are decoded chunk by chunk straight into the canvas through the tjpgd callback interface instead of using a full-image scratch buffer. The pack is a conversion of the public Mi Band fan port of this commercial title, credited in the branch README together with the rights holder.
+- Added the two-layer partition mapping: the script region of the pack is mapped read-only for the whole runtime and images are read through a 256 KB sliding `esp_partition_mmap` window, which keeps a 6.26 MiB pack usable without PSRAM.
+- Added a three-key reader interaction for a single-threaded story: any of UP, DOWN and a short OK advances a line, holding UP fast-forwards and stops on release, holding DOWN toggles auto-reading, and holding OK opens the menu, so no key is spent on a controls layer.
+- Added the generated 16 px Chinese subset font (3,417 code points, from the pack's own symbol table) plus `tools/tsxx_ui_font_check.py`, which fails the static gate when any displayed UI literal has no glyph.
+- Host tests walk the entire page table of the real pack, check the 45 chapter points, resolve every gate, play all six heroine routes to their endings, and round-trip saves that include the choice history.

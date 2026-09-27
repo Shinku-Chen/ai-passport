@@ -53,3 +53,13 @@
 - 同步更新索引：`docs/software-design/README.md`、`README.en_US.md` / `README.zh_CN.md` 的 `docs/` 目录说明。
 - 参考 cindy 仓库文档组织完善索引：新增 `docs/README.md` 根总索引；AGENTS.md 规则索引按触发场景改写（附触发条件）；`docs/contribution/` 与 `docs/development/` 的 README 补充收录标准。
 - 引入社区治理文档（参照 cindy 改写，放仓库根目录）：新增 `CONTRIBUTING.md` / `.zh_CN.md`（贡献指南，针对 ESP-IDF/AI agent/fork 场景改写）、`CODE_OF_CONDUCT.md` / `.zh_CN.md`（贡献者公约）、`SECURITY.md` / `.zh_CN.md`（安全报告流程）、`SUPPORT.md` / `.zh_CN.md`（支持渠道）；AGENTS.md 与 docs/README.md 同步引用。
+
+## v0.1.0-tsxx-reboot - 2026-09-27
+
+- 新增《天使☆騒々 RE-BOOT!》竖屏视觉小说阅读器（分支 `feature/tsxx-reboot`）。全部 61,436 页剧本（61,289 句对白 / 1,165,911 字 / 45 个章节点 / 13 个选择点）离线跑在独立的 `assets` 分区：标题页、正文页、选项、章节跳转、阅读菜单、设置、5 个手动存档位 + 1 个自动存档位，以及 15 个结局点。
+- 新增以数据驱动原作的分支系统：15 个结局点（6 条女主线 + 2 个 BAD END + 1 个 END + 6 个回主页）、5 个 flag 闸门（11 条规则 / 54 个条件）、18 个禁进与 38 个禁退跳转，全部由 `assets/tsxx-source/branch.json` 生成。打包器会逐条校验闸门是否指向真实选项，并把分支表存进同一个资源包，因此改配置不会静默改变剧情走向。
+- 新增资源包流水线与随仓库提交的资源包（`main/tsxx_data/tsxx_pack.bin`，6.26 MiB）：美术层与屏幕 1:1，立绘按画布坐标系存放，背景 / 事件图 / 补丁 / 立绘全部走 tjpgd 回调接口逐块解码进画布，不再需要整图暂存区。资源包是该商业作品公开手环移植版的素材转换产物，来源与权利归属已在分支 README 中注明。
+- 新增资源包的两层映射：包的脚本区间在运行期常驻只读映射，图片段改用 256 KB 滑动 `esp_partition_mmap` 窗口读取，使 6.26 MiB 的资源包在无 PSRAM 的板子上也能用。
+- 新增面向单线剧情的三键交互：上 / 下 / 确定短按都推进一句，长按上快进且松手即停，长按下开关自动阅读，长按确定打开菜单 —— 不占用任何按键做操作层。
+- 新增生成的 16px 中文字体子集（3,417 个码位，取自资源包自带的码位表）与 `tools/tsxx_ui_font_check.py`：任一界面文案缺字形时静态门禁直接失败。
+- Host 测试用真实资源包逐页走完整张页表，校验 45 个章节点、解析每个闸门、把 6 条女主线都走到结局，并覆盖含选择历史的存档往返。
