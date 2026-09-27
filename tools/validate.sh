@@ -67,6 +67,11 @@ run_static_checks() {
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_archive_firmware.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_install_passport_skills.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_tsxx_pack.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tools/tsxx_ui_font_check.py
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
+        tests/test_tsxx_model.c main/tsxx_pack.c main/tsxx_model.c \
+        -o "${test_dir}/test_tsxx_model"
+    "${test_dir}/test_tsxx_model" main/tsxx_data/tsxx_pack.bin
     rm -rf "${test_dir}"
     echo "Host tests: PASS"
 }

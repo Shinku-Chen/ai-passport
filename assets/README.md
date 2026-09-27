@@ -50,14 +50,17 @@ layout `tools/tsxx_pack.py` accepts directly:
 ```bash
 # what main/tsxx_data/tsxx_pack.bin contains
 python tools/tsxx_pack.py --source assets/tsxx-source --out main/tsxx_data/tsxx_pack.bin \
-    --bg-quality 65 --sprite-quality 68 --event-quality 62 --event-width 180 \
+    --bg-quality 65 --sprite-quality 68 --event-quality 62 \
     --symbols-out assets/fonts/tsxx_symbols.txt
 ```
 
 Rebuilding with the same command reproduces the committed
-`main/tsxx_data/tsxx_pack.bin` byte for byte. The pack is 6.58 MiB; the 180 px event
-width is what keeps it inside the 8 MB Flash budget, and the firmware scales event
-frames up to 240 × 320 when it draws them.
+`main/tsxx_data/tsxx_pack.bin` byte for byte. The pack is 5.86 MiB. Backgrounds, sprites
+and event frames all render at 180 × 240 (the `--art-width` default), the firmware scales
+that art layer up to the 240 × 320 panel, and it still draws the text layer at the native
+240 × 320. Storing the art layer at 180 px wide is what keeps the pack inside the 8 MB
+Flash budget, and it halves the firmware canvas: 180 × 240 × 2 = 84 KB instead of
+240 × 320 × 2 = 150 KB.
 
 ## Images
 

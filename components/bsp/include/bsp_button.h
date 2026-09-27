@@ -16,7 +16,8 @@ typedef enum {
     BSP_BTN_PRESS = 0,   // 按下瞬间(低延迟,适合游戏类即时响应)
     BSP_BTN_CLICK,       // 单击(按下并抬起)
     BSP_BTN_DOUBLE,      // 双击
-    BSP_BTN_LONG,        // 长按
+    BSP_BTN_LONG,        // 长按(按住到达门限时触发一次)
+    BSP_BTN_RELEASE,     // 抬起(与 PRESS 成对;长按后只会有 RELEASE,不会有 CLICK)
 } bsp_btn_ev_t;
 
 // 按键事件回调。运行于 button 组件使用的共享 esp_timer 任务,只能入队或执行同等级
@@ -31,3 +32,13 @@ esp_err_t bsp_button_init(bsp_btn_cb_t cb, void *user);
 // ★ 换了分压/上拉阻值后,用它测出自己的三档电压,再改 bsp_pins.h 的 BSP_BTN_MV_TABLE。
 // 读取失败返回 -1。
 int bsp_button_read_mv(void);
+
+// deep sleep 专用:停掉三个按键设备、释放共享 ADC unit,再把按键脚交回普通数字输入
+// 并开启上拉(与板上 10k 外部上拉并联)。成功时 level 回填当时该脚电平,1 = 松开;
+// 失败时返回错误且不写 level。
+//
+// 为什么必须这样做:ADC 接管后该脚的【数字】电平读回是 0 —— 而 deep sleep 的低电平
+// 唤醒比的就是这个数字值。不恢复数字输入,唤醒条件在入睡瞬间就成立,设备会立刻醒回来。
+//
+// 调用后按键在本次运行中不再可用,必须立即进入 deep sleep 或重启。
+esp_err_t bsp_button_prepare_deep_sleep(int *level);

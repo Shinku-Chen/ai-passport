@@ -63,10 +63,11 @@ def build_min_pack(pages_text) -> bytes:
         tsxx.Section(tsxx.SEC_EVB, tsxx.EV_ENTRY),
         tsxx.Section(tsxx.SEC_EVC, tsxx.EV_ENTRY),
         tsxx.Section(tsxx.SEC_CGDIR, tsxx.CGD_ENTRY),
-        tsxx.plain_section(tsxx.SEC_META, b"generator=test\n", 1),
+        tsxx.plain_section(tsxx.SEC_META,
+                           f"generator=test\nart={tsxx.ART_W}x{tsxx.ART_H}\n".encode("utf-8"), 2),
     ]
     background = tsxx.Section(tsxx.SEC_BG, tsxx.BG_ENTRY)
-    background.add(struct.pack("<IIHH", 0, 2, tsxx.SCREEN_W, tsxx.SCREEN_H), b"\xff\xd8")
+    background.add(struct.pack("<IIHH", 0, 2, tsxx.ART_W, tsxx.ART_H), b"\xff\xd8")
     sections.append(background)
     sections.sort(key=lambda section: section.kind)
     return tsxx.write_pack(sections)
