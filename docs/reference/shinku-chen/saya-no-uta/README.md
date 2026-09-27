@@ -24,7 +24,7 @@ love story between Fuminori and Saya.
 
 ## Publish information
 
-- **Title**: Saya no Uta (Community)
+- **Title**: Saya no Uta Galgame
 - **Description** (submitted copy):
 
   > Story:
@@ -55,15 +55,13 @@ love story between Fuminori and Saya.
   > 8. Settings (entered from the title screen): Text speed switches between slow / medium / fast / instant (instant shows the whole page at once), Font size switches 16 px and 20 px, About is a scrollable page, and Back returns to the title screen.
   > 9. Battery and power: the battery percentage sits in the top-right corner. After a long idle period the screen dims (about 60 s), turns off (about 180 s) and the device sleeps (about 420 s); any key wakes it and resumes from the automatic save.
 
-- **Submission record**: project 672, slug `community-10803507`. The base edition (revision
-  1413, published as 1425) was approved on 2026-09-27, and the listing was then updated to the
-  complete edition with the source port's patch (revision 1435, awaiting review).
+- **Submission record**: project 672, slug `community-10803507`. The patch-free base edition was
+  approved as revision 1425 and the complete edition with the source port's patch as revision
+  1434; on 2026-09-27 a title and copy update was submitted (revision 1436, awaiting review).
 
   Release notes:
 
-  > This revision swaps in the complete asset set: seven extended chapters and 22 extra CGs beyond the base edition (4,078 dialogue lines and 215 backgrounds in total; still 44 chapters and three endings).
-  >
-  > It also carries the earlier visual and interaction fixes: the art fills the whole screen as two 1:1 canvases with no cropping or stretching, the translucent dialogue panel sits on real art and runs flush with the bottom edge, the fourth title-screen row stays on screen, and auto-play starts its interval only after a segment has finished typing.
+  > This revision only updates the title and copy to "Saya no Uta Galgame" at the author request; the firmware is unchanged from the previous revision (complete asset set: seven extended chapters and 22 extra CGs, 4,078 dialogue lines, 215 backgrounds).
 
 - **Category**: games
 - **Cover**: `saya-no-uta-cover.png` (PNG, 1152 × 1536, 3:4) — this archive stays text-only and

@@ -111,10 +111,9 @@ python tools/saya_font.py --font <NotoSansSC-Regular.otf> \
   （显示名「沙耶之歌 (Saya no Uta) v0.1.1」），挂两份附件：`FoloToy-AI-Passport-full.bin`
   （tag 触发的 CI 构建，community 变体，sha256 `e90476a5…`）与
   `FoloToy-AI-Passport-full-patched.bin`（同一 commit 的本地构建，含补丁，仅自用）。
-- **社区市场**：以「沙耶之歌（社区版） / Saya no Uta (Community)」重新提交（新建项目，
-  项目 672、修订 1413、slug `community-10803507`，待审核），上传的是不含补丁的 community
-  合并镜像（含标题页菜单修复，已上机验证）；上一份提交已不在创作中心列表中，因此按新作品提交。
-  发布信息与简介原文记录在
+- **社区市场**：项目 672、slug `community-10803507`，当前标题为「沙耶之歌 Galgame」（英文 Saya no
+  Uta Galgame）。不含补丁的基础版（修订 1425）与含补丁的完整版（修订 1434）已先后审核上架；
+  2026-09-27 提交了标题与文案更新（修订 1436，待审核）。发布信息与简介原文记录在
   [`docs/reference/shinku-chen/saya-no-uta/`](docs/reference/shinku-chen/saya-no-uta/README.zh_CN.md)。
 - 发布流程与检查项见 [`docs/development/release/publish-to-community.md`](docs/development/release/publish-to-community.md)。
 
