@@ -190,6 +190,8 @@ typedef struct {
     char bg[SENREN_NAME_MAX];
     char ev[SENREN_NAME_MAX];
     char sprite[SENREN_NAME_MAX];
+    // 当前章的标题:读档后"跳过章节"要靠它认出「下一章」是哪一个标记
+    char chapter_title[SENREN_NAME_MAX];
     uint8_t sprite_action;
     bool sprite_visible;
 } senren_save_t;

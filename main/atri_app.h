@@ -109,3 +109,13 @@ bool atri_app_debug_start(atri_app_t *app, uint16_t chapter, uint16_t step);
 
 // 调试:切到标题页(串口截图用)。
 bool atri_app_debug_title(atri_app_t *app);
+
+// 调试:走一次「跳过章节」的完整路径(与菜单里那一条相同),串口命令 SENRENSKIP 用。
+bool atri_app_debug_skip_chapter(atri_app_t *app);
+
+// 调试:存/读档。slot >= 0 为手动档位,slot < 0 为自动档。串口命令 SENRENSAVE / SENRENLOAD 用。
+bool atri_app_debug_save(atri_app_t *app, int slot);
+bool atri_app_debug_load(atri_app_t *app, int slot);
+
+// 调试:把当前阅读位置写成一行文本,串口命令 SENRENINFO 用。
+int atri_app_debug_info(atri_app_t *app, char *out, size_t capacity);

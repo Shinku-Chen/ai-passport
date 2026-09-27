@@ -795,6 +795,33 @@ bool senren_player_next_page(senren_player_t *player)
     return true;
 }
 
+static bool chapter_title_is_card(const char *title);
+
+// 从 "CHAPTER<章>-<节>" 里取章号;取不到返回 0
+static uint16_t chapter_number_from_title(const char *title)
+{
+    if (!chapter_title_is_card(title)) {
+        return 0;
+    }
+    uint32_t value = 0;
+    for (const char *cursor = title + 7; *cursor >= '0' && *cursor <= '9'; cursor++) {
+        value = value * 10u + (uint32_t)(*cursor - '0');
+        if (value > 0xFFFFu) {
+            return 0;
+        }
+    }
+    return (uint16_t)value;
+}
+
+// 章节卡:标题形如 "CHAPTER<数字>..."(源数据里还有 CHAPTERshow / CHAPTERhide 标记)
+static bool chapter_title_is_card(const char *title)
+{
+    if (title == NULL || strncmp(title, "CHAPTER", 7) != 0) {
+        return false;
+    }
+    return title[7] >= '0' && title[7] <= '9';
+}
+
 // 在当前块里找页号对应的 LABEL 节点(逐小块扫)
 static bool find_label(senren_player_t *player, const senren_scn_t *scn, uint16_t chunk, uint32_t page,
                        uint32_t *node_out)
@@ -1008,7 +1035,14 @@ senren_step_t senren_player_advance(senren_player_t *player, const senren_scn_t 
         case SENREN_NODE_LABEL:
             break;
         case SENREN_NODE_CHAPTER:
-            player->chapter_title[0] = '\0';
+            // 只有「章节卡」(标题形如 CHAPTER<数字>)且换了章才算一章:CHAPTERshow/hide
+            // 这类显示开关、以及同一章的重复标记都不该弹卡(否则跳过章节会像没动)。
+            if (!chapter_title_is_card(player->text)) {
+                break;
+            }
+            if (strcmp(player->text, player->chapter_title) == 0) {
+                break;
+            }
             memcpy(player->chapter_title, player->text, sizeof(player->chapter_title));
             player->chapter_title[sizeof(player->chapter_title) - 1] = '\0';
             return SENREN_STEP_CHAPTER;
@@ -1129,9 +1163,23 @@ static bool skip_to(senren_player_t *player, const senren_scn_t *scn, bool chapt
         }
         uint8_t kind = cursor.p < cursor.end ? *cursor.p : 0xFF;
         if (kind == SENREN_NODE_CHAPTER) {
-            return true;
-        }
-        if (!chapter_break && (kind == SENREN_NODE_BG || kind == SENREN_NODE_EV)) {
+            // 读出标题:同章的重复标记(以及 CHAPTERshow/hide)要跨过去,
+            // 停在下一个「不同章节」的卡上,否则贴着章节开头按跳过就像没动。
+            cursor_t probe = cursor;
+            probe.p++;
+            char title[SENREN_NAME_MAX];
+            if (!cursor_text(&probe, scn, title, sizeof(title), NULL)) {
+                return false;
+            }
+            if (chapter_title_is_card(title)) {
+                // 「跳过章节」= 跳到下一章,所以按章号比:同一章里的 1-2 / 1-3 这些节卡要踏过去,
+                // 停在第一个章号不同的卡上(1 章中途直接跳 → 2 章开头)。
+                const uint16_t number = chapter_number_from_title(title);
+                if (number != 0 && number != player->chapter) {
+                    return true;
+                }
+            }
+        } else if (!chapter_break && (kind == SENREN_NODE_BG || kind == SENREN_NODE_EV)) {
             return true;
         }
         player->node++;
@@ -1143,11 +1191,8 @@ bool senren_player_skip_chapter(senren_player_t *player, const senren_scn_t *scn
                                 const senren_layout_t *layout)
 {
     (void)layout;
-    if (!skip_to(player, scn, true)) {
-        return false;
-    }
-    player->chapter++;
-    return true;
+    // 章号由下一步执行的那张章节卡按标题更新,这里不要自己加(会多算一章)。
+    return skip_to(player, scn, true);
 }
 
 bool senren_player_skip_scene(senren_player_t *player, const senren_scn_t *scn,
@@ -1173,6 +1218,7 @@ bool senren_player_load(senren_player_t *player, const senren_scn_t *scn, const 
     memcpy(player->bg, save->bg, sizeof(player->bg));
     memcpy(player->ev, save->ev, sizeof(player->ev));
     memcpy(player->sprite, save->sprite, sizeof(player->sprite));
+    memcpy(player->chapter_title, save->chapter_title, sizeof(player->chapter_title));
     player->sprite_action = save->sprite_action;
     player->sprite_visible = save->sprite_visible;
     return true;
@@ -1224,7 +1270,7 @@ size_t senren_player_speaker(const senren_player_t *player, char *out, size_t ca
 // 存档
 // --------------------------------------------------------------------------
 
-#define SENREN_SAVE_VERSION 1u
+#define SENREN_SAVE_VERSION 2u
 
 static size_t put_name(uint8_t *out, size_t capacity, const char *value)
 {
@@ -1268,6 +1314,7 @@ void senren_save_from_player(const senren_player_t *player, senren_save_t *out)
     memcpy(out->bg, player->bg, sizeof(out->bg));
     memcpy(out->ev, player->ev, sizeof(out->ev));
     memcpy(out->sprite, player->sprite, sizeof(out->sprite));
+    memcpy(out->chapter_title, player->chapter_title, sizeof(out->chapter_title));
     out->sprite_action = player->sprite_action;
     out->sprite_visible = player->sprite_visible;
 }
@@ -1295,6 +1342,7 @@ size_t senren_save_encode(const senren_save_t *save, uint8_t *out, size_t capaci
     offset += put_name(out + offset, capacity - offset, save->bg);
     offset += put_name(out + offset, capacity - offset, save->ev);
     offset += put_name(out + offset, capacity - offset, save->sprite);
+    offset += put_name(out + offset, capacity - offset, save->chapter_title);
     return offset;
 }
 
@@ -1317,5 +1365,6 @@ bool senren_save_decode(senren_save_t *save, const uint8_t *data, size_t len)
     offset += take_name(data, len, offset, save->bg, sizeof(save->bg));
     offset += take_name(data, len, offset, save->ev, sizeof(save->ev));
     offset += take_name(data, len, offset, save->sprite, sizeof(save->sprite));
+    offset += take_name(data, len, offset, save->chapter_title, sizeof(save->chapter_title));
     return true;
 }

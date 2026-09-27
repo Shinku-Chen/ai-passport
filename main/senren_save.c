@@ -11,7 +11,9 @@ static const char *TAG = "senren_save";
 #define KEY_CFG "cfg"
 #define CFG_MAGIC 0x53u
 #define CFG_VERSION 1u
-#define SAVE_BLOB_MAX 32u
+// 存档 blob 上限:10 字节头 + 64 字节标志位 + 2 字节立绘状态 + 4 个带长度前缀的名字(每个最多 64 + 1),
+// 满打满算约 340 字节。之前这里是 32,导致编码直接返回 0、存读档静默失败。
+#define SAVE_BLOB_MAX 384u
 
 static nvs_handle_t s_handle;
 static bool s_ready;

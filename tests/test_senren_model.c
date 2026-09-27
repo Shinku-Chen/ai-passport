@@ -165,6 +165,9 @@ static void test_reading(const senren_scn_t *scn)
           (unsigned)saved.chunk, (unsigned)saved.node);
     CHECK(restored.chapter == saved.chapter, "存档章节不一致");
     CHECK(strcmp(restored.bg, saved.bg) == 0, "存档背景名不一致");
+    // 章节标题必须跟着存档走:读档后「跳过章节」要靠它认出下一章(否则只停在本章的下一张卡上)
+    CHECK(strcmp(restored.chapter_title, saved.chapter_title) == 0,
+          "存档章节标题不一致: '%s' vs '%s'", restored.chapter_title, saved.chapter_title);
     CHECK(memcmp(restored.flags, saved.flags, sizeof(saved.flags)) == 0, "存档标志位不一致");
 }
 

@@ -471,6 +471,23 @@ static void key_title(atri_app_t *app, const atri_key_t *key)
     }
 }
 
+static bool skip_chapter_action(atri_app_t *app)
+{
+    // 跳到下一个「不同章节」的章节卡;菜单与串口调试命令走同一条路径
+    const uint16_t before_chunk = app->player.chunk;
+    const uint32_t before_node = app->player.node;
+    if (!senren_player_skip_chapter(&app->player, &app->scn, &app->layout_hint)) {
+        ESP_LOGI(TAG, "跳过章节: 没有下一章(%s)", senren_get_error());
+        return false;
+    }
+    ESP_LOGI(TAG, "跳过章节: chunk %u 节点 %u -> chunk %u 节点 %u", (unsigned)before_chunk,
+             (unsigned)before_node, (unsigned)app->player.chunk, (unsigned)app->player.node);
+    set_page(app, ATRI_PAGE_GAME);
+    advance_reading(app, true);
+    auto_save(app);   // 把新位置写进自动存档(章节卡里已经写过一次)
+    return true;
+}
+
 static void key_menu(atri_app_t *app, const atri_key_t *key)
 {
     const int count = 5;
@@ -491,11 +508,7 @@ static void key_menu(atri_app_t *app, const atri_key_t *key)
             open_slots(app, false, ATRI_PAGE_MENU);
             break;
         case 3:   // 跳过章节:直接跳到下一章的章节卡
-            if (senren_player_skip_chapter(&app->player, &app->scn, &app->layout_hint)) {
-                set_page(app, ATRI_PAGE_GAME);
-                advance_reading(app, true);
-                auto_save(app);   // 把新位置写进自动存档(章节卡里已经写过一次)
-            } else {
+            if (!skip_chapter_action(app)) {
                 notify(app, "已经是最后一章");
             }
             break;
@@ -898,6 +911,39 @@ bool atri_app_debug_title(atri_app_t *app)
     // 和真实的标题页走同一条路:先把标题画渲染进画面区,再切页——否则截图会是黑底。
     show_title(app);
     return true;
+}
+
+bool atri_app_debug_skip_chapter(atri_app_t *app)
+{
+    if (!app) return false;
+    return skip_chapter_action(app);
+}
+
+bool atri_app_debug_load(atri_app_t *app, int slot)
+{
+    if (!app) return false;
+    senren_save_t save;
+    const bool ok = slot < 0 ? senren_auto_load(&save) : senren_slot_load((uint8_t)slot, &save);
+    return ok && load_save(app, &save);
+}
+
+bool atri_app_debug_save(atri_app_t *app, int slot)
+{
+    if (!app) return false;
+    senren_save_t save;
+    senren_save_from_player(&app->player, &save);
+    const bool ok = slot < 0 ? senren_auto_store(&save) : senren_slot_store((uint8_t)slot, &save);
+    if (ok && slot < 0) app->have_auto = true;
+    return ok;
+}
+
+int atri_app_debug_info(atri_app_t *app, char *out, size_t capacity)
+{
+    if (!app || !out || capacity == 0) return 0;
+    return snprintf(out, capacity, "chunk=%u node=%u chapter=%u title='%s' bg='%s' ev='%s' sprite='%s'",
+                    (unsigned)app->player.chunk, (unsigned)app->player.node,
+                    (unsigned)app->player.chapter, app->player.chapter_title, app->player.bg,
+                    app->player.ev, app->player.sprite);
 }
 
 bool atri_app_debug_start(atri_app_t *app, uint16_t chapter, uint16_t step)

@@ -250,6 +250,52 @@ static void debug_task(void *arg)
             continue;
         }
 
+        // 调试命令:SENRENINFO / SENRENSAVE <槽> / SENRENLOAD <槽>(槽 -1 = 自动档)。
+        if (strncmp(line, "SENRENINFO", 10) == 0) {
+            char info[256] = { 0 };
+            if (bsp_lvgl_lock(1000)) {
+                atri_app_debug_info(&s_app, info, sizeof(info));
+                bsp_lvgl_unlock();
+            }
+            printf("SENRENINFO %s\n", info);
+            fflush(stdout);
+            continue;
+        }
+
+        int slot = 0;
+        if (sscanf(line, "SENRENSAVE %d", &slot) == 1) {
+            bool saved = false;
+            if (bsp_lvgl_lock(1000)) {
+                saved = atri_app_debug_save(&s_app, slot);
+                bsp_lvgl_unlock();
+            }
+            printf("SENRENSAVE-%s %d\n", saved ? "OK" : "ERR", slot);
+            fflush(stdout);
+            continue;
+        }
+        if (sscanf(line, "SENRENLOAD %d", &slot) == 1) {
+            bool loaded = false;
+            if (bsp_lvgl_lock(1000)) {
+                loaded = atri_app_debug_load(&s_app, slot);
+                bsp_lvgl_unlock();
+            }
+            printf("SENRENLOAD-%s %d\n", loaded ? "OK" : "ERR", slot);
+            fflush(stdout);
+            continue;
+        }
+
+        // SENRENSKIP:走一次「跳过章节」(与菜单里那条路径相同),打印跳前跳后的位置。
+        if (strncmp(line, "SENRENSKIP", 10) == 0) {
+            bool skipped = false;
+            if (bsp_lvgl_lock(1000)) {
+                skipped = atri_app_debug_skip_chapter(&s_app);
+                bsp_lvgl_unlock();
+            }
+            printf("SENRENSKIP-%s\n", skipped ? "OK" : "ERR");
+            fflush(stdout);
+            continue;
+        }
+
         // SENRENJUMP <章号> [<句号>]:把阅读进度直接拨过去(正常落盘)。
         if (sscanf(line, "SENRENJUMP %d %d", &chapter, &scene) >= 1) {
             bool jumped = false;
@@ -325,6 +371,14 @@ static void input_task(void *arg)
 void app_main(void)
 {
     ESP_LOGI(TAG, "AI Passport《千恋＊万花》阅读器启动");
+
+    // 调试图任务必须在这里就建:它的 8KB 栈要一整段连续内存,等剧本/图片加载完再建
+    // 时堆已经碎到只剩 7.6KB 可用(实测会静默创建失败,导致串口命令无人应答)。
+    // 它平时阻塞在 fgets 上,开机阶段不会碰 s_app:只有收到命令时才动,
+    // 而命令总是应用就绪后手动发的。
+    if (xTaskCreate(debug_task, "senren_debug", 8192, NULL, 4, NULL) != pdPASS) {
+        ESP_LOGW(TAG, "串口调试任务创建失败(不影响阅读)");
+    }
 
     // deep sleep 唤醒会重启整个应用,把原因打出来便于确认"按键真能唤醒"。
     const esp_sleep_wakeup_cause_t wakeup = esp_sleep_get_wakeup_cause();
@@ -412,12 +466,6 @@ void app_main(void)
         bsp_lvgl_unlock();
     }
 #endif
-
-    // 调试图任务:4096 字节的栈不够 SENRENPAGE 走一次整屏重画(LVGL 绘图层会递归到
-    // 绘制原语里,实测会触发 Stack protection fault 而整机重启),所以给足 8KB。
-    if (xTaskCreate(debug_task, "senren_debug", 8192, NULL, 4, NULL) != pdPASS) {
-        ESP_LOGW(TAG, "串口截图任务创建失败(不影响阅读)");
-    }
 
     ESP_LOGI(TAG, "空闲堆 %u 字节,最大连续块 %u 字节", (unsigned)esp_get_free_heap_size(),
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
