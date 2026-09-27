@@ -1,0 +1,326 @@
+<template>
+    <div class="page">
+    <img class="bcg" src="/common/bg/空_夕.jpg"></img>
+
+        <scroll id="mainScroll" class="scroll" scroll-y="{{true}}">
+            <!-- 共通线（序幕 + 本編全部章节） -->
+            <div class="page1" if="{{page === 1}}">
+                <div class="content1">
+                    <text class="mid1">共通线</text>
+                </div>
+                <div for="{{commonChapters}}" tid="line" class="content" onclick="loadStart($item.line)">
+                    <text class="mid">{{$item.label}}</text>
+                <text class="mid2">↓</text>
+                </div>
+                <text class="mid">◆</text>
+                <text class="mid2"></text>
+            </div>
+
+            <!-- 梓线 -->
+            <div class="page1" if="{{page === 3}}">
+                <div class="content1">
+                    <text class="mid1">梓</text>
+                </div>
+                <div for="{{azuChapters}}" tid="line" class="content" onclick="loadStart($item.line)">
+                    <text class="mid">{{$item.label}}</text>
+                <text class="mid2">↓</text>
+                </div>
+                <text class="mid" onclick="loadStart(51942)">后日谈</text>
+                <text class="mid2"></text>
+            </div>
+
+            <!-- 美羽线 -->
+            <div class="page1" if="{{page === 2}}">
+                <div class="content1">
+                    <text class="mid1">美羽</text>
+                </div>
+                <div for="{{miuChapters}}" tid="line" class="content" onclick="loadStart($item.line)">
+                    <text class="mid">{{$item.label}}</text>
+                <text class="mid2">↓</text>
+                </div>
+                <text class="mid" onclick="loadStart(41801)">后日谈</text>
+                <text class="mid2"></text>
+            </div>
+
+            <!-- 莉音线 -->
+            <div class="page1" if="{{page === 4}}">
+                <div class="content1">
+                    <text class="mid1">莉音</text>
+                </div>
+                <div for="{{rioChapters}}" tid="line" class="content" onclick="loadStart($item.line)">
+                    <text class="mid">{{$item.label}}</text>
+                <text class="mid2">↓</text>
+                </div>
+                <text class="mid" onclick="loadStart(31426)">后日谈</text>
+                <text class="mid2"></text>
+            </div>
+
+            <!-- 艾莉娜线 -->
+            <div class="page1" if="{{page === 5}}">
+                <div class="content1">
+                    <text class="mid1">艾莉娜</text>
+                </div>
+                <div for="{{eriChapters}}" tid="line" class="content" onclick="loadStart($item.line)">
+                    <text class="mid">{{$item.label}}</text>
+                <text class="mid2">↓</text>
+                </div>
+                <text class="mid" onclick="loadStart(18039)">后日谈</text>
+                <text class="mid2"></text>
+            </div>
+
+            <!-- 尼古拉线 -->
+            <div class="page1" if="{{page === 6}}">
+                <div class="content1">
+                    <text class="mid1">尼古拉</text>
+                </div>
+                <div for="{{nicChapters}}" tid="line" class="content" onclick="loadStart($item.line)">
+                    <text class="mid">{{$item.label}}</text>
+                <text class="mid2">↓</text>
+                </div>
+                <text class="mid" onclick="loadStart(21698)">后日谈</text>
+                <text class="mid2"></text>
+            </div>
+        </scroll>
+            <img class="bt" src="/common/bt.png"></img>
+            <img class="hd" src="/common/hd.png"></img>
+
+            <text class="title1">点击跳转至对应进度</text>
+            <div class="header">
+                <text class="title">流程图</text>
+            </div>
+        <img class="back-btn" src="/common/back.png" onclick="back"></img>
+        <img class="last-btn" src="/common/back.png" onclick="last"></img>
+        <img class="enter-btn" src="/common/go.png" onclick="enter"></img>
+
+    </div>
+</template>
+
+<script>
+import storage from '@system.storage'
+import router from '@system.router'
+
+export default {
+  "data": {
+    "page": 1,
+    "commonChapters": [
+      {"line": 1, "label": "序幕a 开始"},
+      {"line": 945, "label": "序幕b 决意"},
+      {"line": 1358, "label": "本篇1 住所"},
+      {"line": 2054, "label": "本篇2 觉醒"},
+      {"line": 2795, "label": "本篇3 初次事件"},
+      {"line": 3409, "label": "本篇4"},
+      {"line": 4195, "label": "本篇5 事件的真相"},
+      {"line": 4376, "label": "本篇6 与市长的相遇"},
+      {"line": 4837, "label": "本篇7 莉音与艾莉娜"},
+      {"line": 5515, "label": "本篇8 第一部完"},
+      {"line": 5780, "label": "本篇9 强化期间"},
+      {"line": 6085, "label": "本篇10 直太再临"},
+      {"line": 6396, "label": "本篇11 豪华EV"},
+      {"line": 7321, "label": "本篇12 药物再临"},
+      {"line": 7754, "label": "本篇13 卧底"},
+      {"line": 8325, "label": "本篇14 卧底"},
+      {"line": 8823, "label": "本篇15 第二部完"},
+      {"line": 8981, "label": "本篇15-2 路线分歧"}
+    ],
+    "azuChapters": [
+      {"line": 42333, "label": "梓 第1话"},
+      {"line": 43327, "label": "梓 第2话"},
+      {"line": 44248, "label": "梓 第3话"},
+      {"line": 44999, "label": "梓 第4话"},
+      {"line": 45688, "label": "梓 第4话续"},
+      {"line": 46123, "label": "梓 第5话"},
+      {"line": 48179, "label": "梓 第6话"},
+      {"line": 50234, "label": "梓 第7话"},
+      {"line": 51763, "label": "梓 第8话"}
+    ],
+    "miuChapters": [
+      {"line": 32071, "label": "美羽 第1话 意识"},
+      {"line": 33046, "label": "美羽 第2话 亲吻"},
+      {"line": 33622, "label": "美羽 第3话 亲吻正戏"},
+      {"line": 34349, "label": "美羽 第4话 初体验"},
+      {"line": 35615, "label": "美羽 第5话 药物"},
+      {"line": 36340, "label": "美羽 第6话 诱饵"},
+      {"line": 37142, "label": "美羽 第7话 绑架"},
+      {"line": 38658, "label": "美羽 第8话 约会"},
+      {"line": 39299, "label": "美羽 第9话 最后"},
+      {"line": 41221, "label": "美羽 第10话 尾声"}
+    ],
+    "rioChapters": [
+      {"line": 22712, "label": "莉音 第1话 微热"},
+      {"line": 23514, "label": "莉音 第2话 意识"},
+      {"line": 24206, "label": "莉音 第3话 讨厌"},
+      {"line": 24920, "label": "莉音 第4话 第一次的"},
+      {"line": 26614, "label": "莉音 第5话 献身"},
+      {"line": 27820, "label": "莉音 第6话 急转"},
+      {"line": 28263, "label": "莉音 第7话 能力"},
+      {"line": 29123, "label": "莉音 第8话 失踪"},
+      {"line": 29980, "label": "莉音 第9话 真相"},
+      {"line": 30878, "label": "莉音 第10话 命运重叠"}
+    ],
+    "eriChapters": [
+      {"line": 9028, "label": "艾莉娜 第0.5话 秘密"},
+      {"line": 9340, "label": "艾莉娜 第1话 变化"},
+      {"line": 10306, "label": "艾莉娜 第2话 恋人"},
+      {"line": 11311, "label": "艾莉娜 第3话 去医院"},
+      {"line": 11854, "label": "艾莉娜 第4话 初体验"},
+      {"line": 13005, "label": "艾莉娜 第5话 来访者"},
+      {"line": 14163, "label": "艾莉娜 第6话 邂逅"},
+      {"line": 15347, "label": "艾莉娜 第7话 约会与突变"},
+      {"line": 16377, "label": "艾莉娜 第8话 逃亡者"},
+      {"line": 17780, "label": "艾莉娜 第9话 尾声"}
+    ],
+    "nicChapters": [
+      {"line": 18437, "label": "尼古拉 第1话 事实"},
+      {"line": 18893, "label": "尼古拉 第2话 出道"},
+      {"line": 19258, "label": "尼古拉 第3话 答谢"},
+      {"line": 20011, "label": "尼古拉 第4话 既成事实"},
+      {"line": 21029, "label": "尼古拉 第5话 说服"}
+    ]
+  },
+    async loadStart(a) {
+    try {
+        await new Promise((resolve, reject) => {
+            storage.set({
+                key: 'readProgress',
+                value: a.toString(),          // 直接用字符串即可
+                success: resolve,
+                fail: reject
+            });
+        });
+        console.log('进度设置成功');
+        router.push({ uri: 'pages/detail' });
+    } catch (error) {
+        console.error('进度设置失败:', error);
+    }
+    },
+    back(){
+        router.back({
+            uri:'pages/more',
+        })
+    },
+    last() {
+        if (this.page > 1) {
+            this.page -= 1;
+        } else {
+            this.page = 6;
+        }
+    },
+    enter() {
+        if (this.page < 6) {
+            this.page += 1;
+        } else {
+            this.page = 1;
+        }
+    },
+};
+</script>
+
+<style>
+.page {
+    background-color: #bbbbbb;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+}
+.page1 {
+    background-color: #ffffff00;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    padding:10px;
+}
+.bcg{
+    position: absolute;
+    width: 336px;
+    height: 480px;
+    top: 0;
+    left: 0;
+    z-index: -1;
+}
+.mid {
+    font-size: 24px;
+    color: #000;
+    background-color: rgba(255, 255, 255, 0.726);
+    width: 250px;
+    border-radius: 15px;
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    text-align: center;
+}
+.mid1{
+  font-size: 35px;
+  color: #ffffff;
+  font-weight: 800;
+}
+.mid2{
+  font-size: 35px;
+  color: rgba(255, 255, 255, 0.726);
+  font-weight: 800;
+}
+.bt{
+    position: absolute;
+    bottom: 0;
+}
+.hd{
+    position: absolute;
+    top: 0;
+}
+.header {
+    position: absolute;
+    top:0px;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin: 20px;
+}
+.scroll{
+    background-color: #ffffff00;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    flex:1;
+}
+.title {
+    font-size: 36px;
+    color: #ebebeb;
+    font-weight: bold;
+}
+.title1 {
+    bottom: 5px;
+    position: absolute;
+    font-size: 22px;
+    color: #757575;
+    font-weight: bold;
+}
+.back-btn {
+    position:absolute;
+    left:15px;
+    top: 15px;
+}
+.last-btn {
+    position: absolute;
+    left: 15px;
+    bottom: 15px;
+}
+.enter-btn {
+    position: absolute;
+    right: 15px;
+    bottom: 15px;
+}
+.content {
+    flex-direction: column;
+    align-items: center;
+}
+.content1{
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.315);
+    border-radius: 15px;
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    margin-top:75px;
+    margin-bottom:15px;
+}
+</style>

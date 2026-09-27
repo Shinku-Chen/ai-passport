@@ -1,0 +1,407 @@
+<template>
+    <div class="page">
+        <img class="bcg" src="/common/bg/空_夕.jpg"></img>
+        <img class="bt" src="/common/bt.png"></img>
+        <img class="hd" src="/common/hd.png"></img>
+
+        <scroll id="mainScroll" class="scroll" scroll-y="{{true}}" if="{{!showAS}}">
+            <div class="header">
+                <text class="title">更多</text>
+            </div>
+            <div class="content" onclick="lctruote">
+                <text class="mid">流程图</text>
+            </div>
+            <div class="content" onclick="cgruote">
+                <text class="mid">鉴赏模式</text>
+            </div>
+            <div class="content" onclick="afterstoryshow">
+                <text class="mid">后日谈</text>
+            </div>
+        </scroll>
+
+        <!-- 后日谈选择界面（含女主立绘） -->
+        <div class="page1" if="{{showAS}}">
+            <img class="bcg" src="/common/bg/空_夕.jpg"></img>
+            <img class="bt" src="/common/bt.png"></img>
+            <img class="hd" src="/common/hd.png"></img>
+            <!-- 立绘图层（实时拼装：身体 + 表情） -->
+            <div class="character-container" if="{{characterimg}}">
+                <div class="char-wrap" style="left: {{bodyLeft}}px; top: {{bodyTop}}px; width: {{bodyW}}px; height: {{bodyH}}px;">
+                    <image class="characterimg" src="{{characterimg}}"></image>
+                    <image class="faceimg" src="{{faceimg}}" if="{{faceimg}}"
+                           style="left: {{facex}}px; top: {{facey }}px; width: {{facew}}px; height: {{faceh}}px;"></image>
+                </div>
+            </div>
+
+            <div class="header1">
+                <text class="title">后日谈</text>
+            </div>
+            <text class="mid1">{{currentName}}</text>
+            <div class="startBtn">
+                <text class="startText" onclick="loadStart(currentStart)">开始</text>
+            </div>
+
+            <!-- 导航按钮 -->
+            <img class="last-btn" src="/common/back.png" onclick="last"></img>
+            <img class="enter-btn" src="/common/go.png" onclick="enter"></img>
+        </div>
+
+        <!-- 返回按钮 -->
+        <img class="back-btn" src="/common/back.png" onclick="back"></img>
+    </div>
+</template>
+
+<script>
+import storage from '@system.storage'
+import router from '@system.router'
+import file from '@system.file'
+
+export default {
+    data: {
+        showAS: false,
+        character: 1,
+        // 各女主立绘信息（立绘引用 → char_data 合成）+ 后日谈起始页
+        heroineData: {
+            2: { name: '梓',      ref: '梓?dress=私服&pose=1&face=01',    startPage: 51942 },
+            1: { name: '美羽',    ref: '美羽?dress=私服&pose=1&face=01',   startPage: 41801 },
+            3: { name: '莉音',    ref: '莉音?dress=私服&pose=1&face=01',   startPage: 31426 },
+            4: { name: '艾莉娜',  ref: 'エリナ?dress=私服&pose=1&face=01', startPage: 18039 },
+            5: { name: '尼古拉',  ref: 'ニコラ?dress=制服&pose=1&face=01', startPage: 21698 }
+        },
+        characterData: null,
+        currentName: '梓',
+        currentStart: 51941,
+        characterimg: '',
+        faceimg: '',
+        facex: 0, facey: 0, facew: 0, faceh: 0,
+        bodyW: 100, bodyH: 480, bodyLeft: 0, bodyTop: 60
+    },
+
+    onInit() {
+        this.loadCharacterData();
+    },
+
+    // 载入立绘合成数据（char_data.txt）
+    loadCharacterData() {
+        file.readText({
+            uri: '/common/char_data.txt',
+            success: (data) => {
+                try {
+                    this.characterData = JSON.parse(typeof data === 'string' ? data : (data.text || '{}'));
+                    console.log('立绘数据加载成功:', Object.keys(this.characterData).length, '角色');
+                    this.updateSprite();
+                } catch (e) {
+                    console.error('立绘数据解析失败:', e);
+                }
+            },
+            fail: (err) => console.error('立绘数据加载失败:', err)
+        });
+    },
+
+    // 按当前角色刷新立绘 + 名称 + 起始页
+    updateSprite() {
+        const h = this.heroineData[this.character];
+        if (!h) return;
+        this.currentName = h.name;
+        this.currentStart = h.startPage;
+        this.applyCharacter(h.ref);
+    },
+
+    // 立绘实时拼装（身体 + 表情），逻辑与 detail 播放器一致
+    applyCharacter(cField) {
+        if (!cField) { this.characterimg = ''; this.faceimg = ''; return; }
+        if (!this.characterData) return;
+        const parts = cField.split('?');
+        const charName = parts[0];
+        const ch = this.characterData[charName];
+        if (!ch) { this.characterimg = ''; this.faceimg = ''; return; }
+        const opts = {};
+        if (parts[1]) {
+            parts[1].split('&').forEach(kv => {
+                const i = kv.indexOf('=');
+                if (i > 0) opts[kv.slice(0, i)] = kv.slice(i + 1);
+            });
+        }
+        // 姿势 → 立绘数据中的姿势块
+        const poseNum = opts.pose || '1';
+        const poseData = ch[poseNum] || ch[Object.keys(ch)[0]] || ch;
+        // 身体（dress）
+        const dress = opts.dress;
+        const bodyInfo = (dress && poseData.bodies && poseData.bodies[dress]) || poseData.body;
+        this.characterimg = `/common/cimg/${bodyInfo.img}`;
+        this.bodyW = bodyInfo.w || (poseData.body && poseData.body.w) || 100;
+        this.bodyH = bodyInfo.h || (poseData.body && poseData.body.h) || 480;
+
+        // 表情（face 编号 → 表情层）
+        const faceVal = (opts.face || '').split('@')[0].trim();
+        const faceMap = poseData.face_map || {};
+        let layerId = faceMap[faceVal] || faceMap['01'] || faceMap['1'];
+        let fi = layerId && poseData.faces ? poseData.faces[layerId] : null;
+        if (!fi && faceMap['01']) fi = poseData.faces[faceMap['01']];
+        if (fi) {
+            this.faceimg = `/common/cimg/${fi.img}`;
+            const dressScale = bodyInfo.scale || poseData.scale || 0.3;
+            const bl = bodyInfo.left || 0, bt = bodyInfo.top || 0;
+            this.facex = Math.round((fi.left - bl) * dressScale);
+            this.facey = Math.round((fi.top - bt) * dressScale);
+            this.facew = Math.max(1, Math.round(fi.w * dressScale));
+            this.faceh = Math.max(1, Math.round(fi.h * dressScale));
+            if (this.bodyH < this.facey + this.faceh) this.bodyH = this.facey + this.faceh;
+        } else {
+            this.faceimg = '';
+            this.facex = 0; this.facey = 0;
+        }
+        // 立绘水平居中 + 垂直对齐（脸在屏幕~130）
+        this.bodyLeft = Math.max(0, (336 - this.bodyW) / 2);
+        this.bodyTop = Math.round(130 - this.facey);
+        console.log('[后日谈立绘]', charName, 'pose='+poseNum, 'dress='+dress,
+            'body='+bodyInfo.img, 'face='+(this.faceimg ? this.faceimg.split('/').pop() : '无'));
+    },
+
+    // 上一个角色
+    last() {
+        this.character = this.character > 1 ? this.character - 1 : 5;
+        this.updateSprite();
+    },
+
+    // 下一个角色
+    enter() {
+        this.character = this.character < 5 ? this.character + 1 : 1;
+        this.updateSprite();
+    },
+
+    // 返回逻辑
+    back() {
+        if (!this.showAS) {
+            router.back({
+                uri: 'pages/index',
+            });
+        } else {
+            this.showAS = false;
+        }
+    },
+
+    // 跳转到流程图页面
+    lctruote() {
+        router.push({
+            uri: 'pages/lct',
+        });
+    },
+
+    // 跳转到CG鉴赏页面
+    cgruote() {
+        router.push({
+            uri: 'pages/cgs',
+        });
+    },
+
+    // 显示后日谈选择界面
+    afterstoryshow() {
+        this.showAS = true;
+        this.updateSprite();
+    },
+
+    // 开始后日谈
+    async loadStart(a) {
+        try {
+            await new Promise((resolve, reject) => {
+                storage.set({
+                    key: 'readProgress',
+                    value: a.toString(),
+                    success: resolve,
+                    fail: reject
+                });
+            });
+            console.log('进度设置成功');
+            router.push({ uri: 'pages/detail' });
+        } catch (error) {
+            console.error('进度设置失败:', error);
+        }
+    },
+};
+</script>
+
+<style>
+/* 页面基础样式 */
+.page {
+    background-color: #bbbbbb;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    width: 336px;
+    height: 480px;
+    position: relative;
+}
+
+/* 后日谈页面容器 */
+.page1 {
+    background-color: #bbbbbb;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 背景图片 */
+.bcg {
+    position: absolute;
+    width: 336px;
+    height: 480px;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    object-fit: cover;
+}
+
+/* 底部装饰 */
+.bt {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    z-index: 1;
+}
+
+/* 顶部装饰 */
+.hd {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    z-index: 1;
+}
+
+/* 滚动区域 */
+.scroll {
+    height: 400px;
+    text-align: left;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    z-index: 0;
+    flex: 1;
+    width: 90%;
+    margin-top: 20px;
+}
+
+/* 头部标题 */
+.header {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 20px;
+}
+.header1 {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+/* 主标题样式 */
+.title {
+    font-size: 36px;
+    color: #ebebeb;
+    font-weight: bold;
+}
+/* 内容区域 */
+.content {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.726);
+    border-radius: 15px;
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    margin: 15px;
+}
+.mid {
+    font-size: 35px;
+    color: #000;
+    font-weight: 800;
+}
+.mid1 {
+    text-align: center;
+    display: flex;
+    width: 336px;
+    background-color: #fff6e6;
+    font-size: 45px;
+    color: #645f15;
+    font-weight: 800;
+    position: absolute;
+    bottom: 100px;
+}
+
+/* 开始按钮 */
+.startBtn {
+    position: absolute;
+    bottom: 15px;
+    margin-top: 60px;
+    padding: 15px 40px;
+    background-color: rgba(255, 255, 255, 0.85);
+    border-radius: 30px;
+    border: 2px solid #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 2;
+}
+
+.startText {
+    font-size: 28px;
+    color: #333;
+    font-weight: 600;
+    letter-spacing: 2px;
+}
+
+/* 立绘图层（与 detail 播放器一致） */
+.character-container {
+    position: absolute;
+    width: 336px;
+    height: 480px;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    top: 0;
+    left: 0;
+    z-index: 0;
+}
+.char-wrap {
+    position: absolute;
+}
+.characterimg {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+.faceimg {
+    position: absolute;
+    z-index: 1;
+}
+
+/* 导航按钮 */
+.last-btn {
+    position: absolute;
+    left: 15px;
+    bottom: 15px;
+    z-index: 3;
+}
+
+.enter-btn {
+    position: absolute;
+    right: 15px;
+    bottom: 15px;
+    z-index: 3;
+}
+
+/* 返回按钮 */
+.back-btn {
+    position: absolute;
+    left: 15px;
+    top: 15px;
+    z-index: 3;
+}
+</style>

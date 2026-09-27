@@ -915,7 +915,7 @@ def check_pack(path: Path) -> int:
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="构建 DRACU-RIOT 图片包")
-    parser.add_argument("--source", type=Path, default=Path("build/dracu-source"),
+    parser.add_argument("--source", type=Path, default=Path("assets/dracu-source"),
                         help="dracu-riot-miband 的 checkout(tools/dracu_fetch_source.py)")
     parser.add_argument("--out", type=Path, default=Path("build/dracu-pack/dracu_pack.bin"))
     parser.add_argument("--check", type=Path, help="只做结构自检")
