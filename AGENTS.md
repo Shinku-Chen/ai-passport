@@ -17,7 +17,7 @@ This file is the only mandatory entry point for AI-assisted work in this reposit
 - A demo must stop every task, timer, callback, and event handler that can access its UI before deleting the screen.
 - Keep testable state machines, protocols, timing, and layout calculations independent from ESP-IDF/LVGL and cover them with host tests.
 - Never commit credentials, device QR secrets, private keys, personal data, or unsanitized logs.
-- Every maintained Markdown document uses English at its default `.md` path and Simplified Chinese in a paired `.zh_CN.md` file. Keep both versions aligned and retain reciprocal language links.
+- Every maintained Markdown document uses English at its default `.md` path and Simplified Chinese in a paired `.zh_CN.md` file. Keep both versions aligned and retain reciprocal language links. The fork-owned root README is the one exception: `README.md` holds Simplified Chinese and its English peer is `README.en_US.md`, with the same reciprocal links.
 
 ## Task-specific context routing
 
