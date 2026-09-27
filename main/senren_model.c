@@ -822,6 +822,45 @@ static bool chapter_title_is_card(const char *title)
     return title[7] >= '0' && title[7] <= '9';
 }
 
+bool senren_chapter_label(const char *title, char *out, size_t capacity)
+{
+    if (out == NULL || capacity == 0) {
+        return false;
+    }
+    out[0] = '\0';
+    if (!chapter_title_is_card(title)) {
+        return false;
+    }
+    const char *cursor = title + 7;
+    size_t written = 0;
+    for (uint8_t part = 0; part < 2; ++part) {
+        if (*cursor < '0' || *cursor > '9') {
+            break;
+        }
+        if (part > 0) {
+            if (written + 1 >= capacity) {
+                return false;
+            }
+            out[written++] = '-';
+        }
+        while (*cursor >= '0' && *cursor <= '9') {
+            if (written + 1 >= capacity) {
+                return false;
+            }
+            out[written++] = *cursor++;
+        }
+        if (*cursor != '-') {
+            break;   // 没有节号
+        }
+        ++cursor;    // 跳过连字符,接着取节号
+    }
+    if (written == 0) {
+        return false;
+    }
+    out[written] = '\0';
+    return true;
+}
+
 // 在当前块里找页号对应的 LABEL 节点(逐小块扫)
 static bool find_label(senren_player_t *player, const senren_scn_t *scn, uint16_t chunk, uint32_t page,
                        uint32_t *node_out)

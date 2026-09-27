@@ -212,6 +212,10 @@ size_t senren_scn_ending(const senren_scn_t *scn, uint16_t index, char *out, siz
 // ---- 阅读状态机 -----------------------------------------------------------
 void senren_player_reset(senren_player_t *player);
 
+// 把章节卡标题 "CHAPTER<章>-<节>" 整理成画面上要显示的 "<章>-<节>"(例如 "1-2")。
+// 没有节号时就只给章号;不是章节卡(CHAPTERshow/hide、空标题)时返回 false。
+bool senren_chapter_label(const char *title, char *out, size_t capacity);
+
 // 从 (chunk, node) 开始读,chapter 是展示用的章号(与存档一致)。
 bool senren_player_start(senren_player_t *player, const senren_scn_t *scn, uint16_t chapter,
                          uint16_t chunk, uint32_t node, const senren_layout_t *layout);

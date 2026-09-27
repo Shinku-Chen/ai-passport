@@ -60,6 +60,14 @@ static uint16_t chapter_display(uint16_t chapter)
     return chapter > 0 ? chapter : 1;
 }
 
+// 画面上显示的章节文案:源数据是 "CHAPTER1-2",画面上要 "1-2";拿不到就用兜底章号。
+static void chapter_label(const char *title, uint16_t fallback, char *out, size_t capacity)
+{
+    if (!senren_chapter_label(title, out, capacity)) {
+        snprintf(out, capacity, "%u", (unsigned)chapter_display(fallback));
+    }
+}
+
 // 章节卡的章号。源数据里 CHAPTER 节点的标题是 "CHAPTER<章>-<节>";另有
 // CHAPTERshow / CHAPTERhide 两个显示开关标记,它们不是章节卡(不要画在屏幕上)。
 static bool chapter_card_number(const char *title, uint16_t *number)
@@ -109,7 +117,10 @@ static void render_scene(atri_app_t *app)
 {
     render_art(app);
 
-    atri_ui_set_progress(&app->ui, (int)app->player.chapter, (int)app->player.page_index + 1,
+    // 章节浮层显示 X-X(与章节卡、存档列表一致)。
+    char label[24];
+    chapter_label(app->player.chapter_title, app->player.chapter, label, sizeof(label));
+    atri_ui_set_progress(&app->ui, label, (int)app->player.page_index + 1,
                          (int)app->player.page_count);
 
     if (app->at_choice) {
@@ -131,13 +142,13 @@ static void render_scene(atri_app_t *app)
     atri_ui_set_text(&app->ui, speaker, text, app->fast_forward ? 0 : speed_ms(app));
 }
 
-// 章节卡:显示 `第 N 章`,等任意键或过场计时结束再往下读。
-static void show_chapter_card(atri_app_t *app, uint16_t number)
+// 章节卡:显示 `第 X-X 章`,等任意键或过场计时结束再往下读。
+static void show_chapter_card(atri_app_t *app, const char *label)
 {
     char text[32];
-    snprintf(text, sizeof(text), "第 %u 章", (unsigned)number);
+    snprintf(text, sizeof(text), "第 %s 章", label);
     atri_ui_hide_choices(&app->ui);
-    atri_ui_set_progress(&app->ui, (int)number, 0, 0);
+    atri_ui_set_progress(&app->ui, label, 0, 0);
     render_art(app);
     atri_ui_set_text(&app->ui, "", text, 0);
     set_page(app, ATRI_PAGE_GAME);
@@ -192,7 +203,9 @@ static void advance_reading(atri_app_t *app, bool skip_typing)
             app->at_choice = false;
             auto_save(app);
             // 换章过场不关自动模式:过场计时结束后自动接着读下一章。
-            show_chapter_card(app, number);
+            char label[24];
+            chapter_label(app->player.chapter_title, number, label, sizeof(label));
+            show_chapter_card(app, label);
             return;
         }
         case SENREN_STEP_ENDING:
@@ -270,7 +283,9 @@ static void slots_refresh(atri_app_t *app)
 
     snprintf(labels[n], sizeof(labels[n]), "自动存档");
     if (senren_auto_load(&save)) {
-        snprintf(values[n], sizeof(values[n]), "第 %u 章", (unsigned)chapter_display(save.chapter));
+        char label[16];
+        chapter_label(save.chapter_title, save.chapter, label, sizeof(label));
+        snprintf(values[n], sizeof(values[n]), "第 %s 章", label);
         value_ptrs[n] = values[n];
     } else {
         value_ptrs[n] = "空";
@@ -281,8 +296,9 @@ static void slots_refresh(atri_app_t *app)
     for (int slot = 0; slot < SENREN_SAVE_SLOTS; ++slot) {
         snprintf(labels[n], sizeof(labels[n]), "存档 %d", slot + 1);
         if (senren_slot_load((uint8_t)slot, &save)) {
-            snprintf(values[n], sizeof(values[n]), "第 %u 章",
-                     (unsigned)chapter_display(save.chapter));
+            char label[16];
+            chapter_label(save.chapter_title, save.chapter, label, sizeof(label));
+            snprintf(values[n], sizeof(values[n]), "第 %s 章", label);
             value_ptrs[n] = values[n];
         } else {
             value_ptrs[n] = "空";
@@ -325,8 +341,9 @@ static void title_refresh(atri_app_t *app)
     // "继续阅读"指向自动存档(每次换章/选选项/睡前写入)。没有就显示"空"。
     senren_save_t save;
     if (app->have_auto && senren_auto_load(&save)) {
-        snprintf(auto_value, sizeof(auto_value), "第 %u 章",
-                 (unsigned)chapter_display(save.chapter));
+        char label[16];
+        chapter_label(save.chapter_title, save.chapter, label, sizeof(label));
+        snprintf(auto_value, sizeof(auto_value), "第 %s 章", label);
     } else {
         app->have_auto = false;
         snprintf(auto_value, sizeof(auto_value), "空");

@@ -422,12 +422,13 @@ bool atri_ui_typing(const atri_ui_t *ui)
 }
 
 // 画面区浮层:章节与页码用中文(“第N章”),电量用半角数字。
-void atri_ui_set_progress(atri_ui_t *ui, int chapter, int page, int pages)
+void atri_ui_set_progress(atri_ui_t *ui, const char *chapter, int page, int pages)
 {
     if (!ui) return;
     char buf[24];
-    if (chapter > 0) {
-        lv_snprintf(buf, sizeof(buf), "第%d章", chapter);
+    // 章节文案由调用方给(源数据是 CHAPTERx-y,画面上要显示 x-y)。
+    if (chapter != NULL && chapter[0] != '\0') {
+        lv_snprintf(buf, sizeof(buf), "%s", chapter);
         lv_label_set_text(ui->progress, buf);
         set_hidden(ui->progress, false);
     } else {

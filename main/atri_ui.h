@@ -137,8 +137,8 @@ void atri_ui_set_text(atri_ui_t *ui, const char *speaker, const char *text,
 void atri_ui_finish_typing(atri_ui_t *ui);
 bool atri_ui_typing(const atri_ui_t *ui);
 
-// 画面区浮层:章节(1 起,0 = 不显示)与页码;电量 -- 用 -1 表示未知。
-void atri_ui_set_progress(atri_ui_t *ui, int chapter, int page, int pages);
+// 画面区浮层:章节文案(形如 "1-2";NULL 或空串则不显示)与页码;电量 -- 用 -1 表示未知。
+void atri_ui_set_progress(atri_ui_t *ui, const char *chapter, int page, int pages);
 
 // 自动阅读模式的常驻指示("自动"两个字,画面区左下角)。
 void atri_ui_set_auto(atri_ui_t *ui, bool on);

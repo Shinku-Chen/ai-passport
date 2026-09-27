@@ -195,6 +195,17 @@ static void test_layout(void)
     }
     int pages = senren_text_pages(long_text, 26, 5, offsets, 16);
     CHECK(pages == 2, "70 个字按 13 字/行 5 行/页应为 2 页,实际 %d", pages);
+
+    // 章节文案:源数据是 "CHAPTERx-y",画面上要显示 "x-y"
+    char label[16];
+    CHECK(senren_chapter_label("CHAPTER1-2", label, sizeof(label)) && strcmp(label, "1-2") == 0,
+          "章节文案应为 1-2,实际 '%s'", label);
+    CHECK(senren_chapter_label("CHAPTER12-3", label, sizeof(label)) && strcmp(label, "12-3") == 0,
+          "两位数章号应为 12-3,实际 '%s'", label);
+    CHECK(senren_chapter_label("CHAPTER4", label, sizeof(label)) && strcmp(label, "4") == 0,
+          "没有节号时只显示章号,实际 '%s'", label);
+    CHECK(!senren_chapter_label("CHAPTERshow", label, sizeof(label)), "CHAPTERshow 不是章节卡");
+    CHECK(!senren_chapter_label("", label, sizeof(label)), "空标题不算章节卡");
 }
 
 int main(void)
