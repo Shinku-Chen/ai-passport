@@ -20,11 +20,14 @@ under "与 SENRSCN1 的差异" below.
     SEC_CHAR     u32 count + count × u16 code point。按全局字频降序(同频按码点升序),
                  码值即字符表下标;同一张表同时充当固件字库的字形号 —— 字库子集按本表
                  顺序生成即可零缺字。
-    SEC_NAME     字典块连排,顺序固定:speaker, sprite_key, sprite_position,
-                 sprite_expression, sprite_outfit, background, event, flag, label。
-                 每块 u16 count,随后每条 u16 长度 + u16[长度] 字符码(与 SEC_CHAR 同码表)。
-    SEC_SCENARIO u16 count,每项 { first_chunk u16, chunk_count u16, title text }。
-                 title 取源文件名去掉 .ks.txt,供固件章节列表显示。
+    SEC_NAME     字典块连排(顺序固定,段表的 count 即块数,读到段尾为止):speaker,
+                 sprite_key, sprite_position, sprite_expression, sprite_outfit,
+                 background, event, flag, label。每块 u16 count,随后每条 u16 长度 +
+                 u16[长度] 字符码(与 SEC_CHAR 同码表)。
+    SEC_SCENARIO u16 count,每项 { first_chunk u16, chunk_count u16, next_scenario u16,
+                 title text }。next_scenario 由打包器按 game.txt 分组算好(同组内下一个,
+                 0xFFFF = 本组走完即通关),固件因此不需要知道分组规则;title 取源文件名
+                 去掉 .ks.txt,供固件章节列表显示。
     SEC_CHUNK    u16 count,每块 { data_off u32, data_len u32, raw_len u32, node_count u32 }
                  (u16 count 之后按 16 字节对齐存放)。data_off 相对 SEC_BLOB 数据区,
                  每块 4 字节对齐。
@@ -53,8 +56,8 @@ under "与 SENRSCN1 的差异" below.
                      per condition { u8 flag_id, u8 op, u16 value }
         7 SPRITE_OFF 无参(源剧本未用到,格式保留)
     text = u16 字符数 + 该数量的 u16 字符码
-    target_kind : 0=标签(label_id 有效)、1=源里本场景未定义的标签(保持当前进度,与源
-                  引擎"未找到标签"分支一致)、2=结局
+    target_kind : 0=标签(label_id 指向 SEC_LABEL,落点可能属于另一个场景)、
+                  1=源里哪都没定义的标签(保持当前进度)、2=结局
     op          : 0=赋值(=)、1=累加(+= / ++,value 为增量)
   section.count: SEC_CHAR=字符数,SEC_NAME=块数,SEC_SCENARIO=场景数,SEC_CHUNK=块数,
                  SEC_BLOB=块数,SEC_LABEL=标签数,SEC_ROUTE=目标数,SEC_META=0
@@ -71,11 +74,14 @@ under "与 SENRSCN1 的差异" below.
   [6, target]                    跳转(本作用不到条件字段,格式保留)
 文本必须双射:解出来的 UTF-8 与原文逐字节一致,不做归一化、不漏字。
 
-场景推进(与源引擎一致,固件照此实现):
-  - 场景内跳转只认本场景的标签;源里本场景未定义的标签(每章结尾的 *com_part_N、
-    *gameend_title 等)按"忽略"处理,由场景顺序继续。
-  - 一个场景的节点走完 → 命中 SEC_ROUTE 规则时按旗标选线,否则按 SEC_SCENARIO 的
-    分组顺序推进;最后一个场景走完即通关。
+场景推进(固件照此实现):
+  - 场景内跳转优先取本场景标签;本场景没有则按名字找全局唯一定义(跨场景链:019 的
+    选项指向 020_*,020_* 的末跳指向 101/201/301/401/500 的首标签)。落点在哪个场景
+    由 SEC_LABEL 的 scenario 字段给出,固件据此换场景。
+  - 一个场景的节点走完 → 命中 SEC_ROUTE 规则时按旗标选线(最高分优先,全 0 或并列
+    走兜底),否则跳到该场景的 next_scenario;next_scenario 是 0xFFFF 就通关。
+  - 源数据的 *gameend_title / *endrecollection 是「场景结束」标记(源引擎忽略后靠场景
+    顺序继续),打包器也编成「忽略」,通关由 next_scenario = 0xFFFF 触发。
 
 与 SENRSCN1 的差异:
   - SEC_FLAG 换成 SEC_LABEL(本作旗标是具名变量且只出现在赋值里,不需要单独的表),
@@ -150,6 +156,7 @@ U8_BLOCKS = (
 )
 ENDING_LABELS = ("*gameend_title", "*endrecollection")
 
+CHAIN_LABEL = re.compile(r"^\*[a-z]+_part_\d+$")
 SCN_FILE = re.compile(r"^(?P<id>[^.]*)\.(?P<name>.+)\.ks\.txt$")
 ASSIGN_RE = re.compile(r"^\s*f\.([A-Za-z0-9_]+)\s*(=|==|!=|<=|>=|\+=|-=|\+\+|--)\s*(-?\d+)?\s*$")
 COND_RE = re.compile(r"^\s*f\.([A-Za-z0-9_]+)\s*(==|!=|<=|>=|<|>)\s*(-?\d+)\s*$")
@@ -303,8 +310,10 @@ class Story:
     flag_index: dict[str, int] = field(default_factory=dict)
     label_defs: list[tuple[str, int]] = field(default_factory=list)     # id → (名字, 场景)
     label_index: dict[tuple[int, str], int] = field(default_factory=dict)
+    label_first_def: dict[str, int] = field(default_factory=dict)       # 名字 → 第一个定义 id
     label_pos: list[tuple[int, int]] = field(default_factory=list)      # id → (chunk, node)
     route: dict | None = None
+    scenario_next: list[int] = field(default_factory=list)
     counts: collections.Counter = field(default_factory=collections.Counter)
     unknown_events: list[str] = field(default_factory=list)
 
@@ -506,6 +515,16 @@ def scan_source(source: Path) -> tuple[Story, list[str]]:
     for label_id, (name, scenario_index) in enumerate(labels_defined):
         story.label_defs.append((name, scenario_index))
         story.label_index[(scenario_index, name)] = label_id
+        story.label_first_def.setdefault(name, label_id)
+
+    # 场景表的分组取自 game.txt:同组内按顺序往后走,本组最后一个场景的 next_scenario
+    # = 0xFFFF(通关)。源数据在组尾靠「忽略跳转 + 场景顺序」续播,把分组写进包里后,
+    # 固件不需要知道 game.txt 的分组规则。
+    groups = [scenario.group for scenario in story.scenarios]
+    story.scenario_next = [
+        index + 1 if index + 1 < len(groups) and groups[index + 1] == groups[index] else 0xFFFF
+        for index in range(len(story.scenarios))
+    ]
 
     # 字表:全局字频降序,同频按码点升序,保证可复现。字典名也要进表 ——
     # SEC_NAME 里的名字用同一张码表存储
@@ -567,18 +586,33 @@ def scan_source(source: Path) -> tuple[Story, list[str]]:
 # --------------------------------------------------------------------------
 
 
-def resolve_target(story: Story, scenario_index: int, target: str) -> tuple[int, int]:
-    """目标解析:只认本场景标签(与源引擎 choose() 的分支一致)。"""
-    if target in ENDING_LABELS:
-        return TARGET_ENDING, ENDING_LABELS.index(target)
+def resolve_target(story: Story, scenario_index: int, target: str, allow_cross: bool = True) -> tuple[int, int]:
+    """目标解析:本场景优先;跨场景只认「文件末跳的分章链」;其余忽略。
+
+    源数据里非本场景的目标有两类:
+      - 文件末跳的分章链(*com_part_2 / *nen_part_1 …):每个剧本文件的最后一个 NEXT 指向
+        下一个文件(020_* → 101/201/301/401/500 也是这条链)。源引擎只认本场景标签,
+        那样链就断了 —— allow_cross 为真时按名字做全局回退(这类名字全局唯一)。
+      - 其它(中段的分支残留 *wak_part_0、*dummyselect1、*chapter99、*gameend_title …):
+        源引擎一律 toast 忽略后继续,按名字回退反而会跑到别的线去(实测 018 中段的
+        *wak_part_0 会把玩家直接扔进和奏线、006 的 *dummyselect1 会造成 005↔006 死循环),
+        所以一律编成「忽略」。
+    通关由 SEC_SCENARIO 的 next_scenario = 0xFFFF 表达(选线发生在 019 场景结束时,
+    由 SEC_ROUTE 按旗标决定)。"""
     label_id = story.label_index.get((scenario_index, target))
-    if label_id is None:
-        return TARGET_IGNORED, 0
-    return TARGET_LABEL, label_id
+    if label_id is not None:
+        return TARGET_LABEL, label_id
+    if allow_cross and CHAIN_LABEL.match(target):
+        first = story.label_first_def.get(target)
+        if first is not None:
+            return TARGET_LABEL, first
+    return TARGET_IGNORED, 0
 
 
 def encode_node(writer: Writer, node: list, scenario: ScenarioPlan, story: Story, keep_sprites: bool) -> None:
     kind = node[0]
+    # 只有每个剧本文件的最后一个 NEXT 才能跨文件跳(见 resolve_target)
+    allow_cross = bool(scenario.nodes) and node is scenario.nodes[-1]
     writer.u8(kind)
     if kind == K_LABEL:
         writer.u32(story.label_index[(scenario.index, str(node[1]))])
@@ -618,7 +652,7 @@ def encode_node(writer: Writer, node: list, scenario: ScenarioPlan, story: Story
             name = str(name)
             writer.u16((event_kind(name) << 14) | story.pool("event", name))
     elif kind == K_NEXT:
-        target_kind, label_id = resolve_target(story, scenario.index, str(node[1]))
+        target_kind, label_id = resolve_target(story, scenario.index, str(node[1]), allow_cross)
         writer.u8(target_kind)
         writer.u32(label_id)
         conditions = parse_condition(str(node[2])) if len(node) > 2 and node[2] else []
@@ -789,7 +823,6 @@ def serialize(story: Story, meta_lines: list[str], raw_limit: int, keep_sprites:
         char_writer.u16(code)
 
     name_writer = Writer()
-    name_writer.u16(len(NAME_BLOCKS))
     for block in NAME_BLOCKS:
         names = story.pools[block]
         name_writer.u16(len(names))
@@ -798,9 +831,10 @@ def serialize(story: Story, meta_lines: list[str], raw_limit: int, keep_sprites:
 
     scenario_writer = Writer()
     scenario_writer.u16(len(story.scenarios))
-    for scenario in story.scenarios:
+    for index, scenario in enumerate(story.scenarios):
         scenario_writer.u16(scenario.first_chunk)
         scenario_writer.u16(scenario.chunk_count)
+        scenario_writer.u16(story.scenario_next[index])
         scenario_writer.text(story.text_codes(scenario.title))
 
     label_writer = Writer()
@@ -880,7 +914,9 @@ def build_meta(story: Story, source: Path, ref: str, keep_sprites: bool, raw_lim
         f"event_clear={story.counts['ev_clear']}",
         f"bg={story.counts['bg']}",
         f"chapters={story.counts['chapters']}",
-        f"target_enum=0=label,1=ignored,2=ending",
+        f"target_enum=0=label,1=ignored,2=ending(unused: this title ends by scenario table)",
+        f"scenario_next=per-scenario pointer in SEC_SCENARIO (0xFFFF = story end)",
+        f"story_end_scenarios={sum(1 for value in story.scenario_next if value == 0xFFFF)}",
         f"op_enum=0=set,1=add",
         f"event_enum=0=EV,1=SD,2=unsupported;0xFFFF=clear",
         "name_blocks=" + ",".join(NAME_BLOCKS),
@@ -926,17 +962,18 @@ class Pack:
         if len(self.char_table) != char_count:
             raise ValueError("字符表长度不符")
 
-        pool_off, _block_count, _ = self.sections[SEC_NAME]
-        reader = Reader(raw[pool_off:pool_off + self.sections[SEC_NAME][2]])
-        block_count = reader.u16()
+        pool_off, block_count, pool_size = self.sections[SEC_NAME]
         if block_count != len(NAME_BLOCKS):
             raise ValueError(f"字典块数 {block_count} != {len(NAME_BLOCKS)}")
+        reader = Reader(raw[pool_off:pool_off + pool_size])
         self.pools: dict[str, list[str]] = {}
         for block in NAME_BLOCKS:
             names = []
             for _ in range(reader.u16()):
                 names.append(decode_text(reader.text(), self.char_table))
             self.pools[block] = names
+        if not reader.done():
+            raise ValueError(f"字典段还剩 {pool_size - reader.pos} 字节未消费")
 
         scenario_off, scenario_count, _ = self.sections[SEC_SCENARIO]
         reader = Reader(raw[scenario_off:scenario_off + self.sections[SEC_SCENARIO][2]])
@@ -946,8 +983,10 @@ class Pack:
         for _ in range(scenario_count):
             first_chunk = reader.u16()
             chunk_count = reader.u16()
+            next_scenario = reader.u16()
             title = decode_text(reader.text(), self.char_table)
-            self.scenarios.append({"first_chunk": first_chunk, "chunk_count": chunk_count, "title": title})
+            self.scenarios.append({"first_chunk": first_chunk, "chunk_count": chunk_count,
+                                   "next_scenario": next_scenario, "title": title})
 
         chunk_off, chunk_count, _ = self.sections[SEC_CHUNK]
         reader = Reader(raw[chunk_off:chunk_off + self.sections[SEC_CHUNK][2]])
@@ -1034,10 +1073,15 @@ class Pack:
         if sum(scenario["chunk_count"] for scenario in self.scenarios) != len(self.chunks):
             problems.append("场景块数与总块数不一致")
         expected = 0
-        for scenario in self.scenarios:
+        for index, scenario in enumerate(self.scenarios):
             if scenario["first_chunk"] != expected:
                 problems.append(f"场景块区间不连续: {scenario['title']}")
             expected += scenario["chunk_count"]
+            following = scenario["next_scenario"]
+            if following != 0xFFFF and following >= len(self.scenarios):
+                problems.append(f"{scenario['title']}: next_scenario {following} 越界")
+            if following == index:
+                problems.append(f"{scenario['title']}: next_scenario 指向自己")
         for index, entry in enumerate(self.chunks):
             if entry["data_off"] % 4:
                 problems.append(f"块 {index} 起点未 4 字节对齐")
@@ -1150,8 +1194,9 @@ def build(args: argparse.Namespace) -> int:
             "meta": pack.meta,
             "scenarios": [
                 {"id": scenario.scn_id, "group": scenario.group, "title": scenario.title,
-                 "first_chunk": scenario.first_chunk, "chunk_count": scenario.chunk_count}
-                for scenario in story.scenarios
+                 "first_chunk": scenario.first_chunk, "chunk_count": scenario.chunk_count,
+                 "next_scenario": story.scenario_next[index]}
+                for index, scenario in enumerate(story.scenarios)
             ],
             "labels": [
                 {"id": label_id, "name": name, "scn": story.scenarios[scenario_index].scn_id, "chunk": chunk, "node": node}

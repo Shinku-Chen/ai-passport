@@ -68,6 +68,7 @@ run_static_checks() {
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_install_passport_skills.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_sanoba_scn_pack.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_sanoba_pack.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_sanoba_playthrough.py
     rm -rf "${test_dir}"
     echo "Host tests: PASS"
 }

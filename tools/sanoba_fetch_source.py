@@ -19,6 +19,7 @@ The port uses only the three asset families that upstream actually ships:
   <dest>/bg/*.jpg       107 背景(336x480 JPEG)
   <dest>/sd/*.jpg       292 SD 装饰图(240x144 JPEG,源工程 .sd-image 的显示框)
   <dest>/title_bg.jpg     1 标题主视觉(336x480 JPEG)
+  <dest>/game.txt         内容包清单:场景顺序(101 章的分组与次序)与 019 的选线规则
   <dest>/scn/*.txt      101 剧本(--chunks,打包剧本时需要)
   <dest>/MANIFEST.json  每个文件的相对路径、字节数与 sha256,便于复现校验
 
@@ -56,7 +57,7 @@ MIRRORS = (
     "https://raw.githack.com/{repo}/{ref}/{path}",
 )
 ASSET_ROOTS = ("src/common/bg/", "src/common/sd/")
-EXTRA_FILES = ("src/common/title_bg.jpg",)
+EXTRA_FILES = ("src/common/title_bg.jpg", "src/common/game.txt")
 SCRIPT_ROOT = "src/common/scn/"
 MANIFEST = "MANIFEST.json"
 COMMON_PREFIX = "src/common/"

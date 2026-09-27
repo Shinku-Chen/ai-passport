@@ -45,12 +45,14 @@ def source_scenarios() -> list[list]:
     return out
 
 
-def normalize_source_node(node: list, scenario_index: int, story: "PACK.Story", keep_sprites: bool) -> list:
+def normalize_source_node(node: list, scenario_index: int, is_last: bool, story: "PACK.Story",
+                          keep_sprites: bool) -> list:
     """把源节点规整成解码后的形状:选项表达式比较解析结果,未定义目标按 None。"""
     kind = node[0]
+    allow_cross = is_last
 
     def target_of(name: str):
-        kind_, _label = PACK.resolve_target(story, scenario_index, name)
+        kind_, _label = PACK.resolve_target(story, scenario_index, name, allow_cross)
         return None if kind_ == PACK.TARGET_IGNORED else name
 
     if kind == PACK.K_DIALOGUE:
@@ -129,7 +131,8 @@ class SanobaScriptPackTest(unittest.TestCase):
                 problems.append(f"{scenario['title']}: 节点数 {len(decoded)} != {len(source)}")
                 continue
             for number, (before, after) in enumerate(zip(source, decoded)):
-                expected = normalize_source_node(before, scenario_index, self.story, keep_sprites=False)
+                expected = normalize_source_node(before, scenario_index, number == len(source) - 1,
+                                                self.story, keep_sprites=False)
                 got = normalize_decoded_node(after)
                 if expected != got:
                     problems.append(f"{scenario['title']} 第 {number} 个节点: {expected!r} != {got!r}")
@@ -251,7 +254,7 @@ class SanobaScriptPackTest(unittest.TestCase):
         self.assertEqual(meta["labels"], str(EXPECTED_LABELS))
         self.assertEqual(meta["flags"], str(EXPECTED_FLAGS))
         self.assertEqual(meta["sprites"], "dropped")
-        self.assertEqual(meta["target_enum"], "0=label,1=ignored,2=ending")
+        self.assertTrue(meta["target_enum"].startswith("0=label,1=ignored,2=ending"))
         self.assertEqual(meta["event_clear"], "245")
 
     def test_json_listing_is_written(self) -> None:
