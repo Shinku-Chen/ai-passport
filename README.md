@@ -1,231 +1,179 @@
 <p align="right">
-  <a href="README.zh_CN.md">简体中文</a> · <strong>English</strong>
+  <strong>简体中文</strong> · <a href="README.en_US.md">English</a>
 </p>
 
-# FoloToy AI Passport — Shinku-Chen's Fork
+# FoloToy AI Passport —— Shinku-Chen 的 fork
 
-This is a personal fork of [`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport).
-The upstream repository is the development baseline for the [FoloToy AI Passport](https://ai-passport.folotoy.cn)
-— an open wearable AI device (ESP32-C3, 240×320 display, three keys, 8 MB Flash, no PSRAM).
+本仓库是 [`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport) 的个人 fork。
+上游仓库是 [FoloToy AI Passport](https://ai-passport.folotoy.cn)（开源可穿戴 AI 设备：
+ESP32-C3、240×320 彩屏、三键操作、8 MB Flash、无 PSRAM）的开发基线。
 
-This fork carries **several independent applications** built on that baseline. Each
-project lives on its own `feature/*` branch and is introduced below. Board facts,
-the BSP, and the development workflow come from upstream — see
-[`docs/README.md`](docs/README.md), [`AGENTS.md`](AGENTS.md), and
-[`docs/contribution/`](docs/contribution/). Released firmware for each project is
-attached to this repository's [Releases](https://github.com/Shinku-Chen/ai-passport/releases).
+这个 fork 在基线之上承载了**多个独立应用**，每个项目各自位于一个 `feature/*` 分支上，
+下面逐个介绍。板卡事实、BSP 与开发流程来自上游仓库 —— 见
+[`docs/README.md`](docs/README.md)、[`AGENTS.md`](AGENTS.md) 与
+[`docs/contribution/`](docs/contribution/)。每个项目的固件发布挂在本仓库的
+[Releases](https://github.com/Shinku-Chen/ai-passport/releases) 上。
 
-## Projects
+## 项目
 
-### Voice Keychain
+### 音效钥匙扣（Voice Keychain）
 
-A sound-effects keychain that turns the AI Passport into a pocket audio player:
-boot straight into the app and play one of **hundreds of Chinese voice clips from
-dozens of character packs** — jojo, meme cat, Liu Huaqiang, Haji Mi, Nailong,
-and more. Latest: **v1.3.0**.
+把 AI Passport 变成口袋音频播放器的音效钥匙扣：开机即进入应用，播放来自几十个角色包的
+**数百条中文语音片段** —— jojo、meme cat、刘华强、哈吉米、奶龙等等。最新版：**v1.3.0**。
 
-- Branch: [`feature/voice-keychain`](https://github.com/Shinku-Chen/ai-passport/tree/feature/voice-keychain)
-- Releases: [v1.1.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.1.0), [v1.3.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.3.0)
-- Experience notes: [`docs/reference/shinku-chen/voice-keychain/`](docs/reference/shinku-chen/voice-keychain/)
+- 分支：[`feature/voice-keychain`](https://github.com/Shinku-Chen/ai-passport/tree/feature/voice-keychain)
+- 发布：[v1.1.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.1.0)、[v1.3.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.3.0)
+- 经验沉淀：[`docs/reference/shinku-chen/voice-keychain/`](docs/reference/shinku-chen/voice-keychain/)
 
-**Controls (three keys):** UP / DOWN to move in a list, **OK** to enter a
-directory, select a clip, or play it, and **OK (hold)** for settings (volume,
-battery) or to go back.
+**操作方式（三键）：** UP / DOWN 在列表中移动，**OK** 进入目录、选择片段或播放，
+**OK（长按）** 进入设置（音量、电量）或返回。
 
-**Highlights (v1.3.0):**
+**v1.3.0 亮点：**
 
-- **Self-contained firmware** — `FoloToy-AI-Passport-full.bin` bakes the
-  `voicefs` data partition (at `0x210000`) into one 8 MB image; flash from `0x0`
-  and nothing else is needed.
-- **Deep-sleep wake fixed** — the GPIO0 wake source was never armed (a pin
-  number was passed where a bitmask is required); buttons could not wake the
-  device. Now it sleeps after 5 min idle and wakes on any key (verified on device).
-- **Reliable list playback** — pressing OK used to stop the current sound but
-  not play the selection (a fresh 16 KB Opus-decode stack per play failed under
-  heap pressure); replaced with one persistent player task on a static stack.
-- Battery percentage refresh every 30 s, plus a voltage-fallback SOC estimate
-  when the CW2017 gauge returns `0xFF` after power-up.
+- **自包含固件** —— `FoloToy-AI-Passport-full.bin` 把 `voicefs` 数据分区（位于
+  `0x210000`）打进同一个 8 MB 镜像，从 `0x0` 整体烧录即可，无需再单独刷数据分区。
+- **深睡唤醒已修复** —— GPIO0 唤醒源此前从未启用（把引脚号当位掩码传入），导致"睡了
+  按不醒"；现改为 5 分钟无操作入睡、任意按键可唤醒（真机验证）。
+- **列表播放更可靠** —— 此前每次播放都临时申请 16 KB Opus 解码栈，堆不足时"停掉当前
+  声音却不播选中项"；改为单个常驻播放任务（静态栈 + 二值信号量）。
+- 电量每 30 秒刷新；CW2017 上电偶发读到 `0xFF` 时，按开路电压查表兜底估算电量。
 
-### What to Eat Today
+### 今天吃啥（What to Eat Today）
 
-A button-driven food roulette that answers the eternal question. Hold **UP** to
-run the "what should we eat for lunch?" guide animation, hold **DOWN** to spin
-through the food selector, and release to stop on a random pick. Latest: **v1.2.0**.
+按键驱动的食物转盘决策器，终结"今天吃什么"。按住 **UP** 播放"今天午餐要吃什么呢？"
+引导动画，按住 **DOWN** 滚动食物选择器，松开停在随机结果上。最新版：**v1.2.0**。
 
-- Branch: [`feature/cheerful-goodall`](https://github.com/Shinku-Chen/ai-passport/tree/feature/cheerful-goodall)
-- Release: [v1.2.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.2.0)
-- Experience notes: [`docs/reference/shinku-chen/eat-what/`](docs/reference/shinku-chen/eat-what/)
+- 分支：[`feature/cheerful-goodall`](https://github.com/Shinku-Chen/ai-passport/tree/feature/cheerful-goodall)
+- 发布：[v1.2.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.2.0)
+- 经验沉淀：[`docs/reference/shinku-chen/eat-what/`](docs/reference/shinku-chen/eat-what/)
 
-**Controls:** hold UP / DOWN to run the two animations, release to stop on the
-current frame; **OK** toggles LVGL partial vs fast interlaced refresh.
-Auto-poweroff after 2 min idle (deep sleep, GPIO0 wake).
+**操作方式：** 按住 UP / DOWN 运行两套动画，松开停在当前帧；**OK** 切换 LVGL 局部刷新
+与快速隔行刷新。空闲 2 分钟自动关机（深睡，GPIO0 唤醒）。
 
-### Shengzi Cards
+### 生字卡片识记（Shengzi Cards）
 
-A Chinese-character flashcard memorization app. Three modes — **Browse**
-(scroll the character cards), **Self-test** (mark each character learned / not
-learned), and **Spell** (see the pinyin and guess the character). A short **OK**
-reveals the answer; learned marks persist to NVS. Latest: **v1.0.0**.
+汉字闪卡识记应用。三种模式 —— **浏览（Browse）**：滚动字卡；**自测（Self-test）**：
+标记每个字认识/不认识；**拼读（Spell）**：看拼音猜字。**OK 短按**揭晓答案，已认识
+标记持久化到 NVS。最新版：**v1.0.0**。
 
-- Branch: [`feature/shengzi-cards`](https://github.com/Shinku-Chen/ai-passport/tree/feature/shengzi-cards)
-- Release: [v1.0.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0)
+- 分支：[`feature/shengzi-cards`](https://github.com/Shinku-Chen/ai-passport/tree/feature/shengzi-cards)
+- 发布：[v1.0.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0)
 
-### Connect Four
+### 四子棋（Connect Four）
 
-A landscape Connect Four for the AI Passport: a **10 × 7 board**, human versus
-computer with three difficulty levels (either side can move first), or two players
-on one device. Latest: **v1.6.0-connect-four**.
+AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对战（低 / 中 / 高三档难度，先手可选玩家或电脑），也可双人同机轮下。最新版本：**v1.6.0-connect-four**。
 
-- Branch: [`feature/connect-four`](https://github.com/Shinku-Chen/ai-passport/tree/feature/connect-four)
-- Release: [v1.6.0-connect-four](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.6.0-connect-four)
+- 分支：[`feature/connect-four`](https://github.com/Shinku-Chen/ai-passport/tree/feature/connect-four)
+- 发布：[v1.6.0-connect-four](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.6.0-connect-four)
 
-**Controls:** UP / DOWN move the column cursor (held in landscape, UP is the
-right-hand key), **OK** drops a disc, **OK (hold)** returns to the settings
-screen. On the settings screen UP / DOWN picks a row and OK changes it (mode:
-`HUMAN vs AI` / `AI vs HUMAN` / `TWO PLAYERS`, level: `EASY` / `MEDIUM` / `HARD`,
-preview: `LANDING` / `TOP ROW`); selecting `START` begins a match. The two
-computer modes differ only in who moves first.
+**操作：** 上 / 下移动落子列（横屏持握时「上」在右手边），**确定**落子，**长按确定**回设置屏。设置屏上用上 / 下选行、确定切换取值（模式：`HUMAN vs AI` / `AI vs HUMAN` / `TWO PLAYERS`，难度：`低` / `中` / `高`，预览：`落点` / `顶部行`），选到 `START` 按确定开局；两个电脑模式只差先后手。
 
-**Highlights:**
+**亮点：**
 
-- **Landscape 320 × 240 with a dense board** — 70 positions of 26 px discs spaced
-  3 px apart, fitted to the panel by a BSP-level MADCTL rotation.
-- **Three AI levels** — a wall-clock search budget keeps every move under about a
-  second, while EASY and MEDIUM deliberately blunder at a fixed rate so the game
-  stays winnable.
-- **Sound without assets** — column, drop, win, loss and draw cues are synthesized
-  from a sine table; no audio files are stored in flash.
-- **Idle deep sleep** — 60 s on the settings screen or 180 s in a match, then any
-  key wakes the device (GPIO0 low-level wake, fixed for the ADC-owned pad).
-- **Serial screenshots** — the `FAP_SCREENSHOT_V1` command returns the real
-  320 × 240 frame, which is how the release cover was captured.
+- **横屏 320 × 240、棋盘密排** —— 70 个格子、26px 棋子、相邻仅隔 3px，靠 BSP 层的 MADCTL 硬件旋转铺满屏幕。
+- **三档电脑难度** —— 用墙钟搜索预算把每步控制在 1 秒内；低 / 中难度带固定失误率放水，保证打得赢。
+- **无素材音效** —— 换列、落子、胜、负、平局音都由正弦表实时合成，不占 flash 资源。
+- **空闲自动深睡** —— 设置屏 60 秒、对局中 180 秒后进入深睡，任意键唤醒（GPIO0 低电平唤醒，已修复 ADC 占用该脚导致的立即自唤醒）。
+- **串口截图** —— `FAP_SCREENSHOT_V1` 命令回传真实 320 × 240 画面，本版封面就是这么抓的。
 
-### ATRI Reader
 
-A portrait visual-novel reader that ports the Mi Band fan port of
-*ATRI -My Dear Moments-* to the AI Passport: **34 chapters, 1,069 scenes,
-12,188 lines of dialogue, five full-body character sprites and three endings**,
-fully offline. The story and art come from
-[`fywmjj/better-mb9p-ATRI`](https://github.com/fywmjj/better-mb9p-ATRI) (the
-refactored port of [`liuyuze61/ATRI-miband`](https://github.com/liuyuze61/ATRI-miband)),
-which adds the full-body `src/common/character/*` sprites the original port
-lacked. The originals are touch apps for Xiaomi's Vela OS; this branch
-re-implements the reading engine in C on LVGL and drives it with the three keys.
-Status: **released** — tag `v1.0.2-atri-reader`, submitted to the AI Passport community
-market as `my-dear-moments-2` (under review).
+### ATRI 阅读器（ATRI Reader）
 
-- Branch: [`feature/atri-reader`](https://github.com/Shinku-Chen/ai-passport/tree/feature/atri-reader)
-- Release: [`v1.0.2-atri-reader`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.2-atri-reader) — merged image `FoloToy-AI-Passport-full.bin`, 5,134,544 bytes
-- Upstream work: [`fywmjj/better-mb9p-ATRI`](https://github.com/fywmjj/better-mb9p-ATRI) and [`liuyuze61/ATRI-miband`](https://github.com/liuyuze61/ATRI-miband) — the fan ports this branch derives from. Neither repository declares a licence; their script, backgrounds and sprites are committed with the branch and packed into the firmware, with the upstream projects credited as the source.
-- Asset toolchain: [`tools/atri_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/atri-reader/tools/atri_pack.py) (script and images into `main/atri_data/atri_pack.bin`, 3.83 MB) and [`tools/atri_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/atri-reader/tools/atri_font.py) (16 px Chinese subset, 2,771 code points)
+把小米手环上的《ATRI -My Dear Moments-》同人移植搬到 AI Passport 上的
+**竖屏视觉小说阅读器**：**34 章、1,069 幕、12,188 句对白、5 张全身立绘、三个结局**，完全离线。
+剧本与素材取自 [`fywmjj/better-mb9p-ATRI`](https://github.com/fywmjj/better-mb9p-ATRI)
+（它在 [`liuyuze61/ATRI-miband`](https://github.com/liuyuze61/ATRI-miband) 基础上重构，
+并补上了原版没有的 `src/common/character/*` 全身立绘）。原版是 Vela OS 的触屏应用，
+本分支用 C + LVGL 重写了阅读引擎，改成三键操作。
+状态：**已发布** —— tag `v1.0.2-atri-reader`，并已投稿到 AI Passport 社区市场（作品 `my-dear-moments-2`，审核中）。
+
+- 分支：[`feature/atri-reader`](https://github.com/Shinku-Chen/ai-passport/tree/feature/atri-reader)
+- 发布：[`v1.0.2-atri-reader`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.2-atri-reader) —— 合并镜像 `FoloToy-AI-Passport-full.bin`，5,134,544 字节
+- 上游作品：[`fywmjj/better-mb9p-ATRI`](https://github.com/fywmjj/better-mb9p-ATRI) 与 [`liuyuze61/ATRI-miband`](https://github.com/liuyuze61/ATRI-miband) —— 本次移植所依据的同人版本，两个仓库都未声明许可；其剧本、背景与立绘随分支提交并打包进固件，来源以上游项目标注。
+- 素材工具链：[`tools/atri_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/atri-reader/tools/atri_pack.py)（剧本 + 图像打包成 `main/atri_data/atri_pack.bin`，3.83 MB）与 [`tools/atri_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/atri-reader/tools/atri_font.py)（16px 中文字体子集，2,771 个码位）
 
 ```text
-┌──────────────────────────────────┐  240 x 320, native portrait; the canvas is
-│  art area 240 x 320              │  the whole screen
-│  [ch. 3]                  [batt] │  chapter label / battery
+┌──────────────────────────────────┐  240 x 320,原生竖屏;画布铺满整屏
+│  画面区 240 x 320                │  背景 JPEG + 可选叠加
+│  [第N章]                  [电量] │
 │                                  │
-│ ┌────────┐                       │  speaker name plate
-│ │ Atri   │                       │  full-body sprite, shown only while a
-│ └────────┴───────────────────────┤  named cast member is speaking
-│  body text, 5 lines x 13 CJK     │  the source's translucent text band is
-│                                  │  painted into the canvas, the sprite sits
-└──────────────────────────────────┘  above it, a light scrim keeps text readable
+│ ┌────────┐                       │  说话人名牌
+│ │ 亚托莉 │                       │  全身立绘:只在有说话人名字的那句显示
+│ └────────┴───────────────────────┤  源工程的半透明蓝底文本带
+│  正文,5 行 × 13 个全角字/行      │  直接画进画布,立绘压在带子之上
+│                                  │  16px 字体,20px 行距
+└──────────────────────────────────┘
 ```
 
-**Controls:** on lists UP / DOWN move the cursor, **OK** selects and **OK (hold)**
-goes back. While reading, **UP / DOWN** advance line by line and **UP (hold)**
-fast-forwards through whole lines until you let go; **DOWN (hold)** toggles
-auto-read (advances 0.7 s after each line finishes typing, shows a cyan auto marker
-bottom-right, any key stops it, and keeps the screen awake while it runs); **OK**
-opens the menu (continue, save,
-load, skip chapter, back to title). Skipping a chapter runs to
-the next chapter and stops at any choice or ending. Choices use UP / DOWN + OK.
-The text speed setting cycles through instant / slow / medium / fast, and the about
-page scrolls with UP / DOWN. The art area shows the current chapter in the top-left
-corner and the page counter in the bottom-right when a line spills over.
+**操作：** 列表页上 / 下移动光标，**确定**进入，**长按确定**返回上一层。正文里
+**上 / 下短按**是下一句，**长按上**是快进、松手即停（快进时整句直接显示），
+**长按下**开关自动阅读模式（打字完停 0.7 秒自动翻页，右下角显示「自动」，任意键停止；自动阅读期间不会熄屏），
+**确定**打开菜单：继续阅读、保存进度、读取存档、跳过章节、返回标题（跳过章节会一直推进到下一章，
+路上遇到选项或结局就停下）。选项页上 / 下选择、
+确定确认。文字速度可选 瞬间 / 慢 / 中 / 快，关于页用上 / 下滚动。画面区左上角显示当前章节，
+一句装不下时右下角显示页码。
 
-**Save slots:** five manual slots plus one automatic slot written on every scene
-change, so the title screen can offer "continue". On the slots screen **OK** saves
-or loads and **OK (hold)** deletes a manual slot. Idle behaviour: 45 s dims the
-backlight, 2.5 min turns it off, 7 min enters deep sleep; any key wakes the device.
-Auto-read suspends all three timers and they start over once it stops; waiting on a
-choice or an ending is not activity, so the screen still turns itself off there.
+**存档：** 五个手动槽 + 一个自动槽（每次换幕自动写入，标题页的「继续阅读」读它）。
+存档页上短按确定存 / 读，长按确定删除手动槽。空闲 45 秒调暗背光、2.5 分钟熄屏、
+7 分钟进入深睡，任意键唤醒；自动阅读期间这三种空闲行为都会暂停，停止后重新计时，
+停在选项或结局上时照常熄灭。
 
-**Endings:** the happy and the bad ending are reached through the three choices in
-the script; once both are seen the title screen unlocks **the true ending** chapter,
-which is how the original Mi Band app gates its extra episode.
+**三个结局：** 剧本里的三次选择决定走向；圆满结局与悲剧结局都达成后，标题页解锁
+「真正的结局」章节 —— 与原版手环应用的门槛一致。
 
-**Offline data pipeline.** Nothing is downloaded at runtime; two tools generate
-everything the firmware needs and their output is committed, so a plain checkout
-builds:
+**离线数据管线。** 运行时不下载任何东西；两个脚本生成固件需要的全部数据，产物提交
+进仓库，普通 checkout 直接能编：
 
-| Step | Tool | Output |
+| 步骤 | 工具 | 产物 |
 | --- | --- | --- |
-| Script + images | `tools/atri_pack.py` | `main/atri_data/atri_pack.bin` (3.83 MB): 34 chapters, 1,069 scenes, 12,188 dialogues, 73 full-screen backgrounds, 14 effect overlays, 5 character sprites, plus source metadata |
-| Font subset | `tools/atri_font.py` | `assets/fonts/atri_cjk_16.c` + `assets/fonts/atri_cjk_symbols.txt` (2,771 code points) |
+| 剧本 + 图像 | `tools/atri_pack.py` | `main/atri_data/atri_pack.bin`（3.83 MB）：34 章、1,069 幕、12,188 句、73 张整屏背景、14 张特效叠加、5 张全身立绘，外加来源元数据 |
+| 字体子集 | `tools/atri_font.py` | `assets/fonts/atri_cjk_16.c` + `assets/fonts/atri_cjk_symbols.txt`（2,771 个码位） |
 
-**Highlights:**
+**亮点：**
 
-- **Portrait, like the source** — the Mi Band frame (336 x 480) is scaled by
-  240/336 to 240 x 343 and cropped to the full 240 x 320 screen, so backgrounds,
-  sprites and the text band sit where the original puts them.
-- **No runtime JSON parsing** — the pack is a flat little-endian binary read
-  straight out of flash; text is addressed by `(offset, length)` and the reader
-  walks chapter/scene/dialogue tables.
-- **~19 KB backgrounds** — backgrounds are cover-scaled, cropped and re-encoded as
-  JPEG (q88) at build time; the 72 scene backgrounds plus the title art cost
-  1.36 MB, against 4.7 MB of source PNGs.
-- **Full-body sprites, speaker-driven** — the five cast sprites (750 x 920 …
-  1150 PNGs) are squashed to 240 x 320 exactly like the reference engine's
-  `width/height:100%` element, cropped to their alpha box and stored as RGB565 +
-  4bpp mask. A sprite is shown **only on lines that carry a speaker name**; the
-  viewpoint character (Natsuki) never shows one, and event CGs / black screens stay
-  sprite-free because they already draw the cast. Everything else — narration,
-  minor characters, scene changes — hides the sprite again.
-- **Overlays that cost no RAM** — the 14 effect overlays are stored
-  losslessly as RGB565 plus a 4 bpp alpha mask, cropped to their alpha bounding
-  box, and composited row by row straight from flash into the canvas. The board
-  has no PSRAM and only a few tens of KB of heap left once the canvas and LVGL
-  are up, so a JPEG decode buffer for a 240 x 320 overlay would simply not fit;
-  this path never allocates.
-- **Text band painted in the canvas** — the source draws a translucent blue
-  `text_bg` over its full-screen art. Here the same band is alpha-blended into the
-  canvas rows (source colour, top-to-bottom ramp) but the sprite is composited
-  *above* it, with a light dark scrim over the text rows only: the character stays
-  complete instead of being washed out behind the band, and white text keeps its
-  contrast.
-- **Own font generator** — `lv_font_conv` writes corrupt glyph bitmaps under
-  current Node.js (the device showed a screen of noise); the in-repo generator
-  rasterises with FreeType, emits the LVGL 9 plain 4 bpp format and re-parses its
-  own output pixel by pixel before accepting it.
-- **Host-testable story logic** — `tests/test_atri_model.c` walks the real pack:
-  pack integrity, the happy / bad / true endings, the choice branch, paging rules
-  and save round-trips all run on the host in `tools/validate.sh --static`.
+- **与原版同样的竖屏** —— 手环画面（336 x 480）按 240/336 等比缩放到 240 x 343，取顶部
+  240 x 320 整屏，背景、立绘与文本带都落在原版的位置上。
+- **运行时不解析 JSON** —— 资源包是一段小端二进制，直接从 Flash 读；文本按
+  `(offset, length)` 寻址，阅读器沿章节 / 场景 / 对白三张表推进。
+- **背景约 19 KB 一张** —— 构建期就完成缩放、裁剪与 JPEG(q88) 重编码：72 张场景背景加
+  标题画共 1.36 MB，源素材是 4.7 MB 的 PNG。
+- **全身立绘,按说话人切换** —— 5 张主角立绘（750×920~1150 的 PNG）按新版引擎
+  `width/height:100%` 的方式压成 240×320，再按 alpha 包围盒裁剪，无损存成 RGB565 + 4bpp 遮罩。
+  **只有"这句有说话人名字"时才显示**；男主夏生是视角、不出镜；事件 CG / 黑屏整幕不叠立绘
+  （CG 里已经画了角色）。旁白、配角、换幕一律收起立绘。
+- **不占 RAM 的叠加层** —— 14 张特效叠加按 alpha 包围盒裁剪，无损存成
+  RGB565 + 4bpp 遮罩，合成时从 Flash 逐行直接写进画布。本板没有 PSRAM，画布与 LVGL
+  建好后堆只剩几十 KB，240 x 320 叠加的 JPEG 解码缓冲根本拿不出来；这条路径全程不分配内存。
+- **文本带画进画布** —— 源工程用一张半透明的蓝色 `text_bg` 盖在整屏画面上；这里把同一条带
+  子（同样的颜色、同样的自上而下渐深）在像素层混进画布，但把**立绘合成在带子之上**，只在文字
+  那几行盖一层浅暗帘：人物不会被"对话框"洗掉，白字也依然清晰。
+- **自研字体生成器** —— `lv_font_conv` 在当前 Node.js 下写出的字形位图是坏的（真机表现
+  为整屏噪点）；仓库内生成器用 FreeType 栅格化、直接输出 LVGL 9 plain 4bpp 格式，
+  并在写完后回读自检、逐像素比对。
+- **剧情逻辑可在宿主机上测** —— `tests/test_atri_model.c` 用真实资源包跑：包结构、
+  圆满 / 悲剧 / 真正的结局、选择分流、分页规则、存档往返，都在
+  `tools/validate.sh --static` 里执行。
 
-**On-device acceptance switch:** `idf.py -DATRI_BOOT_CHAPTER=<index> build` boots straight
-into a chapter (indices follow `CHAPTER_ORDER` in `tools/atri_pack.py`: 31 = b501 happy
-ending, 32 = b601 bad ending, 33 = b701 true ending, the last chapter). The default `-1`
-keeps the normal title screen.
+**真机验收开关：** `idf.py -DATRI_BOOT_CHAPTER=<章下标> build` 可以让固件开机直接进某一章
+（下标见 `tools/atri_pack.py` 的 `CHAPTER_ORDER`；31 = 圆满结局 b501，32 = 悲剧结局 b601，
+33 = 真正的结局 b701，也就是最后一章）。默认 `-1` 走正常标题页流程。
 
-**Debug aid:** the console (USB-Serial-JTAG) accepts `ATRIJUMP <chapter> [scene]` (moves the
-live reading position) and `ATRISHOT <chapter> <scene>`:
-the firmware renders that chapter/scene into the art canvas with the normal render
-path and streams the raw 240 x 320 RGB565 frame back (`ATRISHOT <w> <h> <bytes>`,
-then the pixels, then `ATRISHOT-END`). It is how the drawing pipeline was verified
-without a camera; it costs one idle task and does nothing until a command arrives.
+**调试通道：** 串口（USB-Serial-JTAG）接受 `ATRIJUMP <章下标> [幕下标]`（直接把进度拨过去）
+与 `ATRISHOT <章下标> <幕下标>`：固件用正常渲染路径把该幕
+画进画面区，再把 240 x 320 的 RGB565 原始帧回传（先 `ATRISHOT <w> <h> <字节数>`，随后像素，
+最后 `ATRISHOT-END`）。本项目的画面验证就是靠它（不用拍照）；平时它只挂在一个空闲任务上等输入。
 
-**Credits and rights:** the script, images and translation come from the fan ports
-`fywmjj/better-mb9p-ATRI` and `liuyuze61/ATRI-miband`, and from
-*ATRI -My Dear Moments-* (ANIPLEX.EXE / Frontwing / Makura). This firmware is a
-personal, non-commercial port; support the original release.
+**版权：** 剧本、图像与译文来自同人移植工程 `fywmjj/better-mb9p-ATRI`、
+`liuyuze61/ATRI-miband` 与原作
+《ATRI -My Dear Moments-》（ANIPLEX.EXE / Frontwing / 枕）。本固件是个人非商业移植，
+请支持正版。
 
-## Notes
 
-- Each application is a separate `feature/*` branch off the upstream baseline.
-  Do not merge demo branches wholesale into `main`; port reusable patterns
-  instead (see upstream `AGENTS.md`).
-- Firmware is flashed with the [web flasher](https://ai-passport.folotoy.cn/tools/web-flasher/)
-  or `esptool` — every release ships a merged `FoloToy-AI-Passport-full.bin`
-  written from offset `0x0`. Target board: 8 MB Flash.
-- Reusable engineering experience collected from these releases lives under
-  [`docs/reference/shinku-chen/`](docs/reference/shinku-chen/).
+## 说明
+
+- 每个应用都是基于上游基线的一个独立 `feature/*` 分支。不要把 demo 分支整支合入
+  `main`；需要复用时应抽取可移植的模式（见上游 `AGENTS.md`）。
+- 烧录使用[在线刷机工具](https://ai-passport.folotoy.cn/tools/web-flasher/)或 `esptool` ——
+  每个 release 都提供合并固件 `FoloToy-AI-Passport-full.bin`，从偏移 `0x0` 写入即可。
+  目标板卡：8 MB Flash。
+- 这些发布沉淀的可复用工程经验位于 [`docs/reference/shinku-chen/`](docs/reference/shinku-chen/)。
