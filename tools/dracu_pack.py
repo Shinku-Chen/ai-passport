@@ -544,7 +544,17 @@ class PackBuilder:
             self.finish(asset, "背景")
 
     def add_title_art(self, source: Path) -> None:
-        path = source / S.TITLE_BG
+        # 标题背景:优先用入库的封面图(--title-art,默认 assets/images/dracu-riot-title.png),
+        # 没有才退回源工程的 title_bg.jpg。两份都是同一张官方主视觉,入库那份分辨率更高。
+        explicit = Path(self.args.title_art) if self.args.title_art else None
+        if explicit is not None and explicit.is_file():
+            path = explicit
+            label = f"标题图(入库 {path.name})"
+        else:
+            if explicit is not None:
+                log(f"--title-art 不存在,退回源工程的 title_bg.jpg: {explicit}")
+            path = source / S.TITLE_BG
+            label = "标题图(源工程)"
         asset = Asset(name=self.args.title_name, pool=POOL_BG, kind=KIND_BG,
                       source_bytes=path.stat().st_size if path.is_file() else 0)
         if not path.is_file():
@@ -557,11 +567,11 @@ class PackBuilder:
                           self.args.crop_bias)
         asset.payload = jpeg_bytes(image, self.args.title_quality)
         asset.w, asset.h = image.size
-        asset.note = f"标题图 q{self.args.title_quality}"
+        asset.note = f"{label} q{self.args.title_quality} {image.width}x{image.height}"
         if self.args.verify:
             with Image.open(io.BytesIO(asset.payload)) as stored:
                 asset.verify = mean_abs_error(stored, image)
-        self.finish(asset, "标题图")
+        self.finish(asset, label)
 
     # -- 事件 CG ----------------------------------------------------------
     def add_events(self, source: Path, refs: S.Refs) -> None:
@@ -916,7 +926,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         help="背景/CG 目标体积的倍率(按像素折算后的源体积)")
     parser.add_argument("--bg-quality", type=int, default=0, help="固定背景 JPEG 质量(0=按体积标定)")
     parser.add_argument("--cg-quality", type=int, default=0, help="固定 CG JPEG 质量(0=按体积标定)")
-    parser.add_argument("--title-quality", type=int, default=88)
+    parser.add_argument("--title-quality", type=int, default=92)
+    parser.add_argument("--title-art", default="assets/images/dracu-riot-title.png",
+                        help="标题页背景图(缺省用仓库里入库的封面图;不存在时退回源工程的 title_bg.jpg)")
     parser.add_argument("--title-name", default=TITLE_NAME)
     parser.add_argument("--sprite-scale", type=float, default=0.55,
                         help="立绘相对源设备像素(336x480)的缩放")

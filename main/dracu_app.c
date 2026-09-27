@@ -1080,7 +1080,7 @@ int dracu_app_debug_info(dracu_app_t *app, char *out, size_t capacity)
         while (cut < used && cut < 42u) {
             cut = dracu_utf8_next_boundary(text, used, cut);
         }
-        text[cut] = ' ';
+        text[cut] = 0;
     }
     dracu_player_speaker(&app->player, &app->scn, speaker, sizeof(speaker));
     return snprintf(out, capacity,
