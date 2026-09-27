@@ -4,8 +4,9 @@
 // 可以直接用真实剧本包跑完整条线路。
 #include "senren_model.h"
 
+#include "senren_inflate.h"
+
 #include <string.h>
-#include <zlib.h>
 
 #define SENREN_SCN_HEADER_SIZE 20u
 #define SENREN_SCN_SECTION_SIZE 16u
@@ -321,22 +322,9 @@ uint32_t senren_scn_chunk(const senren_scn_t *scn, uint16_t index, uint8_t *raw,
     if (offset > scn->payload_size || length > scn->payload_size - offset || raw_len > capacity) {
         return 0;
     }
-    z_stream stream;
-    memset(&stream, 0, sizeof(stream));
-    if (inflateInit2(&stream, -15) != Z_OK) {
-        return 0;
-    }
-    stream.next_in = (Bytef *)(scn->payload + offset);
-    stream.avail_in = length;
-    stream.next_out = raw;
-    stream.avail_out = capacity;
-    int rc = inflate(&stream, Z_FINISH);
-    uint32_t produced = capacity - stream.avail_out;
-    inflateEnd(&stream);
-    if (rc != Z_STREAM_END || produced != raw_len) {
-        return 0;
-    }
-    return produced;
+    // ROM 里的 tinfl 解 zlib 流(见 senren_inflate.c)
+    uint32_t produced = senren_inflate(scn->payload + offset, length, raw, capacity);
+    return produced == raw_len ? produced : 0;
 }
 
 // 字典项里的 u16 是字符表下标,要借字符表才能还原成 UTF-8
