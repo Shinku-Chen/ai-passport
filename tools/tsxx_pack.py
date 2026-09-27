@@ -71,8 +71,9 @@
   python tools/tsxx_pack.py --verify main/tsxx_data/tsxx_pack.bin
   python tools/tsxx_pack.py --source <源 checkout> --out ... --report --symbols-out <file>
 
-源 checkout 需要包含 src/common/{script,bcgi,cimg,evig};也可以用 --script-dir /
---bg-dir / --cimg-dir / --evig-dir 分别指定。
+源 checkout 里放 src/common/{script,bcgi,cimg,evig};也可以只放这四个目录
+(仓库内的 assets/tsxx-source 就是后者),或用 --script-dir / --bg-dir /
+--cimg-dir / --evig-dir 分别指定。
 """
 
 from __future__ import annotations
@@ -87,6 +88,9 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 MAGIC = b"TSXXPK01"
 VERSION = 1
 GEN_VERSION = "tsxx_pack/1"
+# META 里记的来源标识。默认写上游项目名而不是本地路径,这样从任何位置重建
+# 都得到同一个资源包(已提交的包与 assets/README.md 里那条命令逐字节一致)。
+DEFAULT_SOURCE_LABEL = "hezdaaa/tsxxreboot-miband"
 
 SCREEN_W, SCREEN_H = 240, 320
 # 文本框顶边 = 画面区底边;必须与 main 侧布局常量一致。
@@ -1127,7 +1131,8 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     source.add_argument("--bg-dir", help="背景目录(源 bcgi)")
     source.add_argument("--cimg-dir", help="立绘目录(源 cimg)")
     source.add_argument("--evig-dir", help="事件图目录(源 evig)")
-    source.add_argument("--source-label", default="", help="写进 META 的来源描述")
+    source.add_argument("--source-label", default=DEFAULT_SOURCE_LABEL,
+                        help="写进 META 的来源描述")
 
     target = parser.add_argument_group("输出")
     target.add_argument("--out", help="资源包输出路径")
@@ -1153,12 +1158,18 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def common_root(source: str) -> str:
+    """源 checkout 可以是完整手环工程,也可以只放 script/bcgi/cimg/evig 四个目录。"""
+    nested = os.path.join(source, "src", "common")
+    return nested if os.path.isdir(nested) else source
+
+
 def fill_source_dirs(options: argparse.Namespace, only_script: bool = False) -> None:
     """
 
     only_script = True 时只解析 --script-dir(校验模式只需要剧本)。
     """
-    common = os.path.join(options.source, "src", "common") if options.source else None
+    common = common_root(options.source) if options.source else None
     for attr, sub in (("script_dir", "script"), ("bg_dir", "bcgi"),
                       ("cimg_dir", "cimg"), ("evig_dir", "evig")):
         if only_script and attr != "script_dir":
@@ -1170,8 +1181,6 @@ def fill_source_dirs(options: argparse.Namespace, only_script: bool = False) -> 
             setattr(options, attr, os.path.join(common, sub))
         if not os.path.isdir(getattr(options, attr)):
             raise SystemExit(f"{getattr(options, attr)} 不是目录")
-    if not options.source_label:
-        options.source_label = options.source or options.script_dir
 
 
 def report_sections(blob: bytes) -> None:

@@ -15,6 +15,41 @@
 - 添加字库前评估 Flash 与内部 RAM 影响；ESP32-C3 无 PSRAM。
 - 不提交许可不允许分发的字库。
 
+[`fonts/tsxx_symbols.txt`](fonts/tsxx_symbols.txt) 是 `feature/tsxx-reboot` 上《天使☆騒々
+RE-BOOT!》阅读器的字符清单：3,417 个码位，顺序就是资源包给 1 字节符号码排的词频
+顺序。由 `tools/tsxx_pack.py --symbols-out` 生成，供字体子集工具消费。字体本体是构建
+产物，不提交在这里。
+
+## 《天使☆騒々 RE-BOOT!》阅读器 —— `tsxx-source/`
+
+`feature/tsxx-reboot` 分支视觉小说阅读器的基础源素材，原样提交（22.0 MB、1,065 个
+文件），因此 clone 之后不需要外部 checkout 就能重建资源包。来源是小米手环快应用
+同人移植 [`hezdaaa/tsxxreboot-miband`](https://github.com/hezdaaa/tsxxreboot-miband)：
+
+| 目录 | 文件数 | 内容 |
+| --- | ---: | --- |
+| `script/` | 123 | `scriptData<编号>.txt`，线性页表（61,436 页） |
+| `bcgi/` | 120 | 背景，336 × 480 JPEG |
+| `cimg/` | 185 | 全身立绘，带 alpha 的 PNG（178 × 715 至 396 × 649） |
+| `evig/` | 637 | 事件 CG 与场景道具，336 × 480 |
+
+上游项目未声明许可。剧本、立绘、事件 CG 与背景的版权归柚子社（Yuzusoft）及原发行方
+所有；这里把该目录作为唯一的来源标注，资源包元数据里记录同一来源，并注明手环移植版
+是转换来源。本项目是非商业技术研究，使用时需要合法购买的正版原作。
+
+目录结构与上游 `src/common/` 的四个子目录一致，`tools/tsxx_pack.py` 可以直接接受：
+
+```bash
+# main/tsxx_data/tsxx_pack.bin 的内容
+python tools/tsxx_pack.py --source assets/tsxx-source --out main/tsxx_data/tsxx_pack.bin \
+    --bg-quality 65 --sprite-quality 68 --event-quality 62 --event-width 180 \
+    --symbols-out assets/fonts/tsxx_symbols.txt
+```
+
+用同一条命令重建可以逐字节复现仓库里提交的 `main/tsxx_data/tsxx_pack.bin`。资源包
+6.58 MiB；事件图存 180 px 宽是它装进 8 MB Flash 的关键，固件绘制时把它放大到
+240 × 320。
+
 ## 图片（images）
 
 可复用的源图与生成的显示资产放在 `images/`。

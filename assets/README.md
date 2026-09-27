@@ -17,6 +17,48 @@ Store reusable font files and generated font sources in `fonts/`.
 - Check Flash and internal-RAM impact before adding a font; the ESP32-C3 has no PSRAM.
 - Do not commit fonts whose license does not permit redistribution.
 
+[`fonts/tsxx_symbols.txt`](fonts/tsxx_symbols.txt) is the character inventory of the
+*Tenshi☆Sousou RE-BOOT!* reader on `feature/tsxx-reboot`: 3,417 code points, in the exact
+frequency order the resource pack uses for its 1-byte symbol codes. `tools/tsxx_pack.py
+--symbols-out` regenerates it; the font subsetter consumes it. The font itself is a
+build-time artifact and is not committed here.
+
+## Tenshi☆Sousou RE-BOOT! reader - `tsxx-source/`
+
+Base source material for the visual-novel reader on `feature/tsxx-reboot`, committed
+verbatim (22.0 MB, 1,065 files) so a clone can rebuild the resource pack without an
+external checkout. It comes from the Xiaomi Band quick-app fan port
+[`hezdaaa/tsxxreboot-miband`](https://github.com/hezdaaa/tsxxreboot-miband):
+
+| Directory | Files | Content |
+| --- | ---: | --- |
+| `script/` | 123 | `scriptData<number>.txt`, the linear page table (61,436 pages) |
+| `bcgi/` | 120 | Backgrounds, 336 × 480 JPEG |
+| `cimg/` | 185 | Full-height character sprites, PNG with alpha (178 × 715 up to 396 × 649) |
+| `evig/` | 637 | Event CGs and scene props, 336 × 480 |
+
+That upstream project declares no license. The script, character art, event CGs and
+backgrounds are the property of Yuzusoft and the original publisher; the directory is
+kept as the single source of attribution, the pack records the same provenance in its
+metadata section, and the fan port is credited as the source of the conversion. The
+project is a non-commercial technical study, and a reader needs a legitimately purchased
+copy of the original work to make use of it.
+
+The directory mirrors the four subdirectories of the upstream `src/common/`, which is the
+layout `tools/tsxx_pack.py` accepts directly:
+
+```bash
+# what main/tsxx_data/tsxx_pack.bin contains
+python tools/tsxx_pack.py --source assets/tsxx-source --out main/tsxx_data/tsxx_pack.bin \
+    --bg-quality 65 --sprite-quality 68 --event-quality 62 --event-width 180 \
+    --symbols-out assets/fonts/tsxx_symbols.txt
+```
+
+Rebuilding with the same command reproduces the committed
+`main/tsxx_data/tsxx_pack.bin` byte for byte. The pack is 6.58 MiB; the 180 px event
+width is what keeps it inside the 8 MB Flash budget, and the firmware scales event
+frames up to 240 × 320 when it draws them.
+
 ## Images
 
 Store reusable source images and generated display assets in `images/`.
