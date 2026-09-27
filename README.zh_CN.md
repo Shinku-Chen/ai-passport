@@ -153,7 +153,7 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 - **离线数据管线** —— 运行时不下载任何东西，`tools/atri_pack.py` 与 `tools/atri_font.py` 的产物提交进仓库，普通 checkout 直接能编。
 - **串口调试通道** —— `ATRISHOT <章> <幕>` 把任意一幕渲染进画面区并回传原始 240 × 320 帧，本版封面与历次版面验证靠的就是它；`ATRIJUMP` 可直接跳章。
 
-### limelight lemonade jam
+### 聚光灯柠檬果酱（limelight lemonade jam）
 
 把小米手环上的《limelight lemonade jam》同人移植搬到 AI Passport 上的**竖屏视觉小说阅读器**：
 **230 个章节标记、68,229 句对白、约 120 万字、991 张打包图像、8 个选项点**，完全离线。剧本与素材取自

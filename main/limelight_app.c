@@ -206,6 +206,7 @@ static void open_settings(lime_app_t *app, lime_page_t from)
 static void open_about(lime_app_t *app)
 {
     static const char body[] =
+        "聚光灯柠檬果酱\n"
         "limelight lemonade jam 阅读器\n\n"
         "阅读引擎用 C + LVGL 重写,\n"
         "剧本与素材来自 skdkzzx/limelight-\n"
