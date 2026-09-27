@@ -1,202 +1,165 @@
 <p align="right">
-  <a href="README.zh_CN.md">简体中文</a> · <strong>English</strong>
+  <strong>简体中文</strong> · <a href="README.en_US.md">English</a>
 </p>
 
-# Starry Sky Railroad and Shiro's Journey — a portrait visual-novel reader
+# 星空列车与白的旅行 —— 竖屏 galgame 阅读器
 
-A portrait visual-novel reader that ports the Mi Band 9 Pro fan port of the
-commercial Japanese novel *Hoshizora Tetsudou to Shiro no Tabi* and its Chinese fan
-translation to the AI Passport. The whole
-story runs offline from Flash: **39 chapters, 1,260 scenes, 13,787 lines of dialogue,
-one choice and one ending**.
+把 Mi Band 9 Pro 同人移植版《星空列车与白的旅行》搬到 AI Passport 上的竖屏阅读器。
+整条剧情离线跑在 Flash 里:**39 章、1260 场景、13787 句对白、一处选项、一个结局**。
 
-- Branch: `feature/starry-sky-railroad`
-- Source of the script, artwork, and translation:
+- 分支:`feature/starry-sky-railroad`
+- 剧本、素材与译文来源:
   [`liuyuze61/Starry_Sky_Railroad_and_Shiro-s_Journey_miband9P`](https://github.com/liuyuze61/Starry_Sky_Railroad_and_Shiro-s_Journey_miband9P)
-  (Xiaomi Vela / aiot quick app for the Mi Band 9 Pro), commit `307db0c`.
-- The interface and page flow are the ATRI reader's LVGL page system (title, body,
-  menu, settings, save slots, ending, about), driven by this title's own script pack
-  and save format. The hand-drawn strip renderer it replaced is still in `main/` but
-  is no longer compiled.
+  (小米手环 9 Pro 的 Vela / aiot 快应用),commit `307db0c`。
+- 界面与页面流程整体采用 ATRI 阅读器的 LVGL 页面系统(标题 / 正文 / 菜单 / 设置 /
+  存档 / 结局 / 关于),由本作自己的资源包与存档格式驱动。被替换掉的手绘逐条带渲染器
+  仍留在 `main/` 下,但不再参与构建。
 
-## Layout
+## 版面
 
 ```text
-┌────────────────────────────┐  240 x 320, held upright (portrait)
-│ [chapter 8]      [battery] │  plain chapter text top-left, battery text top-right
-│  art area                  │  one full-screen 240 x 320 background JPEG with the
-│  240 x 320                 │  character sprite on it and a speaker name plate over
-│  [speaker]                 │  the art, left of the text band
+┌────────────────────────────┐  240 x 320,竖屏握持
+│ 第8章            [电量]    │  左上角章节纯文字,右上角电量纯文字
+│  画面区                    │  一张整屏 240 x 320 背景 JPEG,角色立绘压在上面,
+│  240 x 320                 │  角色名带半透明底板(名牌在正文带左侧,不遮正文)
+│  诺瓦                      │
 ├────────────────────────────┤
-│  body text                 │  translucent blue text band over the art, 110 px tall
-│                            │  16 px font: 13 full-width chars/line, 5 lines
+│  正文                      │  半透明蓝色正文带压住画面下沿,高 110px
+│                            │  16px 字号:每行 13 个全角字,5 行
 └────────────────────────────┘
 ```
 
-The art area is the whole screen. The bottom 110 px carry a translucent blue
-gradient band (the text box), and the sprite is drawn *under* that band — exactly
-like the source port, so the character's lower body sits inside the text box while
-everything above the band is untouched. Only the text rows get a light scrim, which
-keeps white text readable no matter what is behind it.
+画面区铺满整屏:底部 110px 是半透明蓝色渐变正文带(文本框),立绘压在**带子下面**——
+与源移植版一致,人物下半身落进正文带里,带子以上的部分不受影响。文字那几行再盖一层
+淡暗帘,白字在任何画面上都能读。
 
-## Release
+## 发布
 
-- **Branch**: [`feature/starry-sky-railroad`](https://github.com/Shinku-Chen/ai-passport/tree/feature/starry-sky-railroad)
-- **Release**: [`v0.1.0-starry-sky-railroad`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-starry-sky-railroad)
-  — merged image `FoloToy-AI-Passport-full.bin`, flashed from `0x0`.
-- The release is also submitted to the [AI Passport community market](https://ai-passport.folotoy.cn).
-- The firmware answers the serial debug command `STARRYPAGE [title | <chapter> <scene>]`
-  with the current frame as raw RGB565. It is captured from the LVGL flush path, so it
-  is the real screen (art, sprite, chapter, battery, name plate and text) and is used
-  for remote acceptance instead of a phone photo.
+- **分支**:[`feature/starry-sky-railroad`](https://github.com/Shinku-Chen/ai-passport/tree/feature/starry-sky-railroad)
+- **Release**:[`v0.1.0-starry-sky-railroad`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-starry-sky-railroad)
+  —— 合并镜像 `FoloToy-AI-Passport-full.bin`,从 `0x0` 烧写。
+- 同版本已投稿到 [AI Passport 社区市场](https://ai-passport.folotoy.cn)。
+- 固件响应串口调试命令 `STARRYPAGE [title | <章> <幕>]`,把当前屏幕以原始 RGB565 回传。
+  它从 LVGL 刷屏路径上取帧,所以回传的就是真机上那一屏(画面、立绘、章节、电量、名牌、
+  正文),用于远程验收而不需要拍照。
 
-## Controls
+## 操作
 
-- **Title / lists** — UP / DOWN move the cursor, **OK** selects, **OK (hold)** goes back.
-- **Reading** — **UP / DOWN (short press)** advances one line (while text is typing,
-  one press shows the whole page); **UP (hold)** fast-forwards while the key stays down
-  and stops the moment it is released; **DOWN (hold)** toggles auto-reading, which
-  advances 900 ms after each line finishes typing (any other key cancels it);
-  **OK (short press)** opens the menu.
-- **Choices** — UP / DOWN select, **OK** confirms.
-- **Menu** — save, load, skip chapter, back to title, back to reading.
-- **Settings** — text speed (slow / medium / fast), about, power off, back.
-- **About** — UP / DOWN scroll the page, **OK** returns.
-- **Sprite visibility** — a sprite is drawn only while the character it belongs to is
-  the one speaking. The packer derives that owner from who references the sprite, and
-  also flags event CGs (`evcg*`) and solid screens (`bg_black/red/white`) as
-  "no sprite", so nothing is ever composited on top of an illustration. Narration and
-  other speakers hide the sprite instead of leaving the previous face on screen.
-- **Save slots** — 5 manual slots plus one automatic slot written on every scene
-  change, so "Continue" resumes where you left off. In save mode **OK (hold)** on a
-  slot deletes it.
+- **标题 / 列表页** —— 上/下移动光标,**确定**进入,**长按确定**返回。
+- **正文页** —— **上/下 短按**推进一句(打字中按一下立即显示全文);
+  **长按上**按住期间一直快进、松手立刻停;**长按下**切换自动阅读(每句显示完整后再等
+  900ms 推进下一句,按其它键取消);**确定 短按**打开菜单。
+- **选项页** —— 上/下选择,**确定**确认。
+- **菜单** —— 保存、读取、跳过章节、返回标题、返回正文。
+- **设置页** —— 文字速度(慢/中/快)、关于本作、关机、返回。
+- **关于页** —— 上/下滚动,**确定**返回。
+- **立绘显示规则** —— 只有立绘归属的角色本人在说话时才画立绘。归属关系由打包器按
+  "谁引用了这张立绘"统计得出;事件 CG(`evcg*`)与纯色幕(`bg_black/red/white`)额外打上
+  "不叠立绘"标志,所以立绘永远不会盖在插图上。旁白或别人说话时立绘收起,而不是把上
+  一句的脸留在画面上。
+- **存档位** —— 5 个手动存档 + 1 个自动续读位(每次换场景写入),所以"继续阅读"
+  能接着上次的地方。保存模式下**长按确定**删除该存档。
 
-The text box holds five lines at 16 px (13 full-width characters per line). In the
-shipped script the average line is 13 characters and the 99th percentile is 43, so
-nearly every line fits on one screen; only about 30 of 13,787 lines (the longest is
-74 characters) need a second press to see the rest.
+文本框在 16px 字号下一屏 5 行(每行 13 个全角字)。实测剧本平均每句 13 字、99% 不超过
+43 字 → 几乎每句一屏读完;全部 13787 句里只有约 30 句(最长 74 字)需要再按一下看后半句。
 
-Idle behaviour: 60 s dims the backlight, 3 min turns it off, 7 min enters deep
-sleep; any key wakes the device and reopens the reader at the last automatic save.
-Auto-reading and fast-forward count as activity, so the screen never dims or sleeps
-while the app is advancing on its own; the timer resumes once it stops at a choice
-or the ending.
+空闲行为:60 秒调暗背光、3 分钟熄屏、7 分钟进入 deep sleep;任意键唤醒后回到阅读器
+并从自动存档继续。**自动阅读与快进期间不进入这套空闲流程**(否则读到一半会变暗/熄屏);
+到选项或结局停下后恢复正常计时。
 
-The ES8311 codec is initialised and then suspended at boot even though the app plays
-no audio: left in its power-on default state it produces an audible idle buzz through
-the always-on speaker amplifier.
-The first boot shows a one-page attribution and control summary in place of the
-source app's tips screen; it is shown once and remembered in NVS. Long-pressing **OK**
-on the title page (or picking "power off" in settings) enters deep sleep directly.
+本应用不播放音频,但开机时仍会先把 ES8311 初始化再挂起:codec 停在上电默认状态时,
+常开的功放会把它放成可听见的待机蜂鸣。首次启动显示一页版权提示与操作说明(替代源应用
+的提示页),看过后记在 NVS 里。标题页**长按确定**(或设置页选"关机")直接进入 deep sleep。
 
-## Offline data pipeline
+## 离线数据管线
 
-Nothing is downloaded at runtime. Two tools generate everything the firmware needs,
-and their output is committed so a plain checkout builds:
+运行时不下载任何东西。两个工具生成固件所需的全部数据,产物随仓库提交,普通 clone 即可构建:
 
-| Step | Tool | Output |
+| 步骤 | 工具 | 产物 |
 | --- | --- | --- |
-| Script + images | `tools/starry_pack.py` | `main/starry_data/starry_pack.bin` (~3.3 MB): 39 chapters, 1,260 scenes, 13,787 dialogues, 105 backgrounds, 15 sprites, source metadata |
-| LVGL CJK font | `tools/starry_lvgl_font.py` | `assets/fonts/starry_cjk_16.c` (~2.4 MB of C source, 2,708 glyphs) and the character inventory `assets/fonts/starry_cjk_symbols.txt` |
+| 剧本 + 图像 | `tools/starry_pack.py` | `main/starry_data/starry_pack.bin`(约 3.3 MB):39 章 / 1260 场景 / 13787 对白 / 105 背景 / 15 立绘 + 来源元数据 |
+| LVGL 中文字体 | `tools/starry_lvgl_font.py` | `assets/fonts/starry_cjk_16.c`(约 2.4 MB 源码,2708 个字形)与字符清单 `assets/fonts/starry_cjk_symbols.txt` |
 
-Both are read straight out of Flash — there is no runtime JSON parsing and no
-decompression. Backgrounds are pre-scaled and cropped to 240 x 320 JPEG and decoded
-straight into the canvas. Sprites are cropped to their opaque bounds and scaled to
-fit 168 x 252, then placed against the right edge with the bottom edge at the screen
-bottom (so the lower body sits *under* the translucent text band instead of being cut
-off); they are stored **losslessly as RGB565 plus a 4bpp alpha mask** together with
-their screen position, so the runtime blits them row by row straight from Flash and
-never needs an 84 KB sprite decode buffer.
+两者都由固件直接从 Flash 读取:没有运行时 JSON 解析,也没有解压。背景在打包时就缩放
+裁切成 240 x 320 JPEG,运行时直接解码进画布。立绘先裁到不透明边界、等比缩放进
+168 x 252,再贴右边、底边贴屏幕底(下半身落在半透明文本框下面,是被压暗而不是被截断),
+存成**无损 RGB565 + 4bpp alpha 遮罩**并记录屏幕坐标 —— 运行时逐行从 Flash blit,
+不再需要 84KB 的立绘解码缓冲。
 
-The font is a genuine LVGL 4bpp bitmap font (two cmaps: ASCII as `FORMAT0_TINY`, the
-rest as `SPARSE_TINY`), because the UI draws text through LVGL now.
+字体是标准的 LVGL 4bpp 位图字体(两张 cmap:ASCII 用 `FORMAT0_TINY`,其余用
+`SPARSE_TINY`),因为界面层现在通过 LVGL 绘制文字。
 
-Regenerating needs a checkout of the source port and a licensed CJK font:
+重新生成需要源移植仓库的 checkout 与授权中文字体:
 
 ```bash
-python tools/starry_pack.py --source <source checkout> --out main/starry_data/starry_pack.bin
+python tools/starry_pack.py --source <源仓库 checkout> --out main/starry_data/starry_pack.bin
 python tools/starry_lvgl_font.py --font <NotoSansSC-Regular.otf> \
     --pack main/starry_data/starry_pack.bin --out-dir assets/fonts
 ```
 
-## Rendering architecture
+## 渲染架构
 
-A full 240 x 320 RGB565 canvas is 150 KB and lives in static RAM; the board has no
-PSRAM, so a single canvas plus LVGL's own buffers is the whole budget. Every scene is
-composed into that canvas, then LVGL draws the pages and text on top:
+整屏 240 x 320 RGB565 画布是 150KB,静态分配;这块板子没有 PSRAM,所以"一块画布 +
+LVGL 自身缓冲"就是全部预算。每个场景先合成进这块画布,再由 LVGL 把页面与文字画在上面:
 
 ```text
-canvas (static, 240 x 320 RGB565)
-  background JPEG   -> decoded straight into the canvas by the ROM TJpgDec via esp_jpeg
-  text band         -> translucent blue gradient, blended row by row into the canvas
-  sprite            -> RGB565 + 4bpp mask blitted row by row straight from Flash
-  text scrim        -> light darkening over the text rows only
-  -> LVGL draws boxes, labels, lists, choices and overlays from its own heap pool
+画布(静态,240 x 320 RGB565)
+  背景 JPEG   -> 由 C3 ROM 里的 TJpgDec 经 esp_jpeg 直接解码进画布
+  正文带      -> 蓝色渐变,逐行混进画布
+  立绘        -> RGB565 + 4bpp 遮罩,逐行直接从 Flash blit
+  文字暗帘    -> 只盖在文字那几行上
+  -> LVGL 用自己的内存池画文本框、标签、列表、选项与各种浮层
 ```
 
-Page structure, list rows, choice buttons, name plate, chapter progress, page counter,
-battery readout, auto-reading indicator, transient notices and the locked page stack
-are all the ATRI reader's (`main/atri_ui.c`); `main/atri_image.c` composes the canvas
-and `main/atri_app.c` is the state machine. The story graph, resource pack and save
-format remain this title's (`main/starry_model.c`, `starry_pack.c`, `starry_save.c`).
+页面结构、列表行、选项按钮、名牌、章节进度、页码、电量、自动阅读指示、瞬时提示与
+整页锁定约定都来自 ATRI 阅读器(`main/atri_ui.c`);`main/atri_image.c` 负责画布合成,
+`main/atri_app.c` 是状态机。剧情图、资源包与存档格式仍属本作
+(`main/starry_model.c`、`starry_pack.c`、`starry_save.c`)。
 
-Static RAM beyond the canvas: the LVGL heap pool (56 KB, raised from 24 KB because the
-page system needs about 90 objects) plus a 19.2 KB DMA draw buffer owned by the BSP.
-On device the application partition uses 4.35 MB of 7.96 MB (45 % free), and the
-removed strip/sprite/backdrop buffers free roughly 240 KB of DRAM.
+画布之外的静态 RAM:LVGL 内存池(56 KB,从 24 KB 调大 —— 页面系统约 90 个对象)
+与 BSP 持有的 19.2 KB DMA 刷屏缓冲。真机上应用分区 7.96MB 用 4.35MB(余 45%);
+去掉旧的条带/立绘/底图缓冲后释放约 240KB DRAM。
 
-Everything that can be tested without hardware is host-tested: the pack parser, the
-story graph (walked to the ending), pagination against line wrapping, save encoding,
-and the sprite encoding (dimensions, mask length, screen position, right/bottom
-edges). The font coverage check confirms every character of the script and the UI
-strings has a glyph.
+凡是不需要硬件就能验证的都跑了宿主机测试:资源包解析、剧情图(走到结局)、分页与逐行
+换行的一致性、存档编解码,以及立绘编码(尺寸、遮罩长度、屏幕坐标、贴右/贴底约束)。
+字体覆盖自检确认剧本与界面文案里的每个字都有字形。
 
-## Known gaps
+## 已知缺口
 
-- **Chapter 7 is absent** in the source data (the chapter files jump from 6 to 8),
-  and the source's HE/BE branch flags are never set, so the story runs 1 → 40 to the
-  single `FIN` ending. The port reproduces the data as published.
-- Because there is only one ending and this title has no per-ending unlock flags, the
-  title menu has no "true ending" entry (the ATRI reader had one).
-- The text speed setting keeps the three steps the original port used (slow / medium /
-  fast); the old 16 px / 20 px font-size toggle was dropped because the new interface
-  ships a single 16 px LVGL font.
-- Sprite visibility follows the speaker and the packer's owner statistics, so a face
-  the source author picked for a *different* speaker is not drawn. In the shipped
-  script 3,444 of 11,777 dialogue steps show a sprite; narration, other speakers,
-  event CGs and solid screens hide it.
-- Latin runs use the source font's proportional advances while the line model budgets
-  half-width cells, so a line that mixes a longer English word with CJK can overflow
-  the text area by up to one full-width glyph (2 of 19,986 lines in the shipped
-  script); the LVGL label wraps within its box.
-- No audio: the source port ships none, and this port adds none.
-- The repository's baseline hardware-test menu, the `demo_*.c` pages and the old
-  strip renderer (`starry_render.c`, `starry_gfx.c`, `starry_font.c`, `starry_ui.c`,
-  `starry_app.c`) are still in `main/` but are not compiled into this application;
-  see the repository's [AI guide](docs/development/ai-guide.md) and
-  [fork guide](docs/fork-guide.md).
-- On-device look and feel — text-band tint, sprite contrast, sprite/band overlap,
-  page-turn latency and the LVGL pool headroom under the "about" page — has been
-  checked on a real device; the whole story line has not been played end to end on
-  hardware.
+- **源数据缺第 7 章**(章节文件从 6 直接跳到 8),而且源应用的 HE/BE 分支标记从未被设置,
+  所以剧情是 1 → 40 直达唯一的 `FIN` 结局。本移植忠实保留源数据的现状。
+- 本作只有一个结局,也没有按结局解锁的标记,因此标题菜单里没有 ATRI 阅读器那样的
+  "真正的结局"入口。
+- 文字速度沿用原移植版的三档(慢/中/快);旧的 16px / 20px 字号切换被去掉,因为新界面
+  只带一套 16px LVGL 字体。
+- 立绘只在“归属角色本人说话”时画(比源脚本作者的本意更严)：源脚本里“作者给某一角色
+  配了别人脸的句子”现在不画立绘。全剧本 11777 个对白步里有 3444 步会画出立绘；
+  旁白、他人说话、事件 CG 与纯色幕一律收起。
+- 拉丁字母按源字体的自然宽度排,而排版模型按半角格子预算,所以夹着较长英文单词的行
+  最多会超出正文区一个全角字(全剧本 19986 行里 2 行);LVGL 标签会在自己的盒子内换行。
+- 无音频:源移植版没有音频,这里也不加。
+- 仓库 baseline 的硬件自检菜单、`demo_*.c` 页面与旧逐条带渲染器
+  (`starry_render.c`、`starry_gfx.c`、`starry_font.c`、`starry_ui.c`、`starry_app.c`)
+  仍留在 `main/` 下,但不参与本应用的构建;见仓库的
+  [AI 指南](docs/development/ai-guide.zh_CN.md) 与 [fork 指南](docs/fork-guide.zh_CN.md)。
+- 真机观感(正文带配色、立绘对比度、立绘与带子的叠压、翻页耗时、关于页下 LVGL 内存池
+  余量)已在真机上确认;但整条剧情线没有在硬件上从头玩到尾。
 
-## Licensing
+## 授权
 
-*Hoshizora Tetsudou to Shiro no Tabi* is a commercial title; its artwork and the
-Chinese translation come from the public Mi Band port, whose own notice asks readers
-to support the original release. This is a personal fan port. The generated pack is a
-conversion of that material — do not republish it as your own asset.
+《星空鉄道とシロの旅》是商业作品;素材与中文译文来自公开的手环移植版,那份仓库自己的
+声明也请读者支持正版。本移植是个人同人作品,生成的资源包只是这些素材的转换产物,
+请不要当作自己的素材再发布。
 
-## Build and validate
+## 构建与校验
 
 ```bash
-./tools/validate.sh --static     # repository checks, host tests, font coverage
-./tools/validate.sh --firmware   # ESP-IDF build + merged-image verification
+./tools/validate.sh --static     # 仓库检查、宿主机测试、字体覆盖
+./tools/validate.sh --firmware   # ESP-IDF 构建 + 合并镜像校验
 ```
 
-The static gate runs `tests/test_starry_model.c` (the real pack through the reader
-logic), `tests/test_starry_pack.py` (pack structure, including the RGB565 + 4bpp
-sprite encoding), `tests/test_starry_app_static.py` (pointer-cast, encoding and
-auto-read idle guards), and `tools/starry_lvgl_font.py --check` (every runtime
-character has a glyph). The old strip renderer's pixel-level host tests were removed
-from the gate together with the renderer itself.
+静态门禁会跑 `tests/test_starry_model.c`(真实资源包走阅读器逻辑)、
+`tests/test_starry_pack.py`(资源包结构,含 RGB565 + 4bpp 立绘编码)、
+`tests/test_starry_app_static.py`(指针强转 / 编码 / 自动阅读空闲豁免守卫)与
+`tools/starry_lvgl_font.py --check`(运行时会显示的每个字都有字形)。
+旧逐条带渲染器的像素级宿主测试已随渲染器一起从门禁里移除。
