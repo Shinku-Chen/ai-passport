@@ -1,45 +1,38 @@
 <p align="right">
-  <a href="README.zh_CN.md">简体中文</a> · <strong>English</strong>
+  <strong>简体中文</strong> · <a href="README.en_US.md">English</a>
 </p>
 
-# Tuner
+# 调音器（Tuner）
 
-A chromatic tuner for the FoloToy AI Passport. It samples the onboard microphone
-in real time, detects the pitch, and shows the note name, octave, frequency, and
-the cents deviation from a reference. Built on the standard BSP demo architecture
-(menu + demo pages) with the Tuner as the headlining page.
+面向 FoloToy AI Passport 的十二平均律调音器。用板载麦克风实时采集声音、检测音高，
+显示音名/八度/频率以及与基准音的 cents 偏差。构建在标准 BSP demo 架构（菜单 + 演示页）
+之上，以 Tuner 为主打演示页。
 
-This is the application built on the `feature/tuner` branch.
+本应用构建在 `feature/tuner` 分支上。
 
-## What it does
+## 功能
 
-- **Real-time pitch detection** — the mic is read in a dedicated worker task;
-  an integer NSDF pitch tracker turns the samples into a note name, octave, and
-  frequency.
-- **AUTO mode** — identify the current note automatically; a meter shows how far
-  it sits from the nearest equal-tempered pitch (in cents).
-- **MANUAL mode** — pick a target note (C4..B4) with UP / DOWN and tune to it;
-  the meter shows the deviation from that target, which feels like tuning a
-  string.
-- **Debug mode** (hold OK) — shows the raw frequency plus RMS / NSDF intermediates
-  and lets you adjust the microphone gain with UP / DOWN for on-device
-  validation.
+- **实时音高检测** —— 麦克风在独立 worker 任务中采集；整数 NSDF 音高跟踪把采样转成
+  音名、八度与频率。
+- **AUTO 模式** —— 自动识别当前音名，表头指示它离最近标准音多远（cents）。
+- **MANUAL 模式** —— 用 UP / DOWN 选目标音（C4..B4）并照着调，表头指示与目标音的
+  偏差，更符合调弦直觉。
+- **调试模式**（长按 OK）—— 大字显示原始频率及 RMS / NSDF 中间量，并可用 UP / DOWN
+  调整麦克风增益，便于真机校验。
 
-## Interaction
+## 操作方式
 
-- **OK (short)** — switch between AUTO and MANUAL mode.
-- **UP / DOWN (short)** — in MANUAL mode, cycle the target note; in debug mode,
-  adjust the mic gain.
-- **OK (hold)** — toggle debug mode.
-- **OK (hold, in Tuner)** — the Tuner page consumes long-OK itself (no menu
-  return).
+- **OK（短按）** —— 在 AUTO / MANUAL 模式间切换。
+- **UP / DOWN（短按）** —— MANUAL 模式下循环选择目标音；调试模式下调节麦克风增益。
+- **OK（长按）** —— 切换调试模式。
+- **OK（长按，在 Tuner 页内）** —— Tuner 页自行消费长按 OK（不返回菜单）。
 
-The other demo pages (Display / Button / Audio / Battery / Wi-Fi / BLE / Low
-Power) remain available from the menu as BSP references.
+其余演示页（Display / Button / Audio / Battery / Wi-Fi / BLE / Low Power）仍可从
+菜单进入，作为 BSP 参考。
 
-## Firmware / build
+## 构建 / 固件
 
-Standard ESP-IDF project (target `esp32c3`):
+标准 ESP-IDF 工程（target `esp32c3`）：
 
 ```bash
 idf.py set-target esp32c3
@@ -47,8 +40,8 @@ idf.py build
 idf.py flash monitor
 ```
 
-## Source
+## 来源
 
-- Branch: [`feature/tuner`](https://github.com/Shinku-Chen/ai-passport/tree/feature/tuner)
-- Key files: `main/demo_tuner.c` (page + key handling), `main/tuner_engine.c` /
-  `main/tuner_engine.h` (integer NSDF pitch detection).
+- 分支：[`feature/tuner`](https://github.com/Shinku-Chen/ai-passport/tree/feature/tuner)
+- 关键文件：`main/demo_tuner.c`（页面 + 按键处理）、`main/tuner_engine.c` /
+  `main/tuner_engine.h`（整数 NSDF 音高检测）。
