@@ -207,12 +207,12 @@ static void open_about(lime_app_t *app)
 {
     static const char body[] =
         "limelight lemonade jam 阅读器\n\n"
-        "剧本与素材来自小米手环上的同人移植\n"
-        "skdkzzx/limelight-lemonade-jam-\n"
-        "xiaomi-band10,界面用 C + LVGL 重写。\n\n"
+        "阅读引擎用 C + LVGL 重写,\n"
+        "剧本与素材来自 skdkzzx/limelight-\n"
+        "lemonade-jam-xiaomi-band10。\n\n"
         "原作:SAGA PLANETS\n"
-        "手环移植:skdkzzx / hezdaaa\n"
-        "本机移植:Shinku-Chen/ai-passport\n\n"
+        "素材:skdkzzx / hezdaaa\n"
+        "本机版:Shinku-Chen/ai-passport\n\n"
         "字体:Noto Sans SC(OFL-1.1)子集,\n"
         "4bpp 位图,由 tools/limelight_lvgl_font.py\n"
         "生成。\n"
@@ -222,8 +222,7 @@ static void open_about(lime_app_t *app)
         "  上/下短按:下一句(打字中=显示全文)\n"
         "  长按上:快进(松手即停)\n"
         "  长按下:自动阅读开关(任意键停)\n"
-        "  确定:菜单;长按确定:返回上一层\n\n"
-        "本作仅供个人学习与交流,请支持正版。";
+        "  确定:菜单;长按确定:返回上一层";
     lime_ui_set_about(&app->ui, body);
     set_page(app, LIME_PAGE_ABOUT);
 }
@@ -912,7 +911,7 @@ bool lime_app_init(lime_app_t *app, const uint8_t *script_data, uint32_t script_
     } else {
         lime_ui_set_warning(&app->ui,
                             "limelight lemonade jam\n"
-                            "小米手环移植版 · 本机阅读器\n\n"
+                            "竖屏阅读器\n\n"
                             "上 / 下：下一句\n"
                             "长按上：快进\n"
                             "长按下：自动阅读\n"
