@@ -44,7 +44,7 @@ Variants (发布规则,必须分清):
   community(默认) 只读 src/common/{sy,cg,fg},不含源仓库 补丁/ 里的任何内容。
                   仓库里提交的 main/saya_data/saya_pack.bin 就是这个版本 ——
                   可以随固件一起发布到 AI Passport 社区市场。
-  release(--patch)  用 补丁/ 里的同名章节替换基础脚本,并把 补丁/*.png(R18 CG)
+  release(--patch)  用 补丁/ 里的同名章节替换基础脚本,并把 补丁/*.png(追加 CG)
                   并入背景表。**只允许自用**:生成的 pack 不要提交、不要上传,
                   也不要用它构建面/发布给社区的固件。
                   补丁可能引入新汉字:重建后用两个 pack 一起重生成字体
@@ -218,7 +218,7 @@ class PackBuilder:
     def __init__(self, source: str, patch_dir: str = "") -> None:
         self.src = source
         self.sy_dir, self.cg_dir, self.fg_dir = source_dirs(source)
-        # 补丁目录(R18 内容,只给 release 变体用):同名章节覆盖基础脚本,PNG 并入背景表。
+        # 补丁目录(完整版 内容,只给 release 变体用):同名章节覆盖基础脚本,PNG 并入背景表。
         self.patch_dir = patch_dir
         self.patched_chapters: List[str] = []
         self.strings = Strings()
@@ -754,7 +754,7 @@ def main() -> int:
                     help="自检时跳过 JPEG 解码与接缝检查,只做结构与尺寸检查")
     ap.add_argument("--commit", default="", help="源仓库 commit(记录到元数据)")
     ap.add_argument("--patch", default="",
-                    help="release 变体:源仓库 补丁/ 目录(R18)。生成的 pack 禁提交/禁发布")
+                    help="release 变体:源仓库 补丁/ 目录(完整版)。生成的 pack 禁提交/禁发布")
     args = ap.parse_args()
 
     if args.check:
@@ -765,7 +765,7 @@ def main() -> int:
     if args.patch:
         if not os.path.isdir(args.patch):
             raise SystemExit(f"补丁目录不存在: {args.patch}")
-        log("  ⚠ release 变体:含补丁(R18)。不要把生成的 pack 提交进仓库,")
+        log("  ⚠ release 变体:含补丁(完整版)。不要把生成的 pack 提交进仓库,")
         log("    也不要用它构建发布到 AI Passport 社区市场的固件。")
 
     builder = PackBuilder(args.source, args.patch)

@@ -74,9 +74,9 @@ Flash 预算（ESP-IDF 5.5，应用分区 8,323,072 字节）：community 变体
 ## 变体与发布规则
 
 仓库里提交的 `main/saya_data/saya_pack.bin` 与 `assets/fonts/saya_cjk_*.c` 是
-**community 变体**：不含源移植仓库 `补丁/` 里的任何内容（7 个加长章节 + 22 张 R18 CG）。
+**community 变体**：不含源移植仓库 `补丁/` 里的任何内容（7 个加长章节 + 22 张追加 CG）。
 仓库默认构建与社区提交规则仍是 community 变体；作者本人那份社区条目已按其要求换成完整（含补丁）
-版，并在简介里标注了成人向内容；
+版；
 补丁自身的源文件提交在 `assets/saya-patch/`，本机 release 变体因此可以直接从仓库重建，
 只有用它们构建的 *pack 与固件* 不进入仓库。
 发布到 AI Passport 社区市场的固件只能用它。
@@ -110,7 +110,7 @@ python tools/saya_font.py --font <NotoSansSC-Regular.otf> \
 - **GitHub Release**：[`v0.1.1-saya-no-uta`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.1-saya-no-uta)
   （显示名「沙耶之歌 (Saya no Uta) v0.1.1」），挂两份附件：`FoloToy-AI-Passport-full.bin`
   （tag 触发的 CI 构建，community 变体，sha256 `e90476a5…`）与
-  `FoloToy-AI-Passport-full-patched-r18.bin`（同一 commit 的本地构建，含补丁，仅自用）。
+  `FoloToy-AI-Passport-full-patched.bin`（同一 commit 的本地构建，含补丁，仅自用）。
 - **社区市场**：以「沙耶之歌（社区版） / Saya no Uta (Community)」重新提交（新建项目，
   项目 672、修订 1413、slug `community-10803507`，待审核），上传的是不含补丁的 community
   合并镜像（含标题页菜单修复，已上机验证）；上一份提交已不在创作中心列表中，因此按新作品提交。

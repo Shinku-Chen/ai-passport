@@ -90,10 +90,9 @@ about 4.6 MB, leaving 43 %.
 
 The `main/saya_data/saya_pack.bin` and `assets/fonts/saya_cjk_*.c` committed here are
 the **community variant**: they contain nothing from the source port's patch
-directory (7 extended chapters plus 22 R18 CGs). The repository's default build and the rule
-for community submissions remain the community variant; the fork's own community listing was
-switched to the complete (patched) edition at the author's request, and that listing carries an
-adult-content notice. The patch's own source files are committed under
+directory (7 extended chapters plus 22 extra CGs). The repository's default build and the
+community-submission rule remain the community variant; the fork's own community listing runs
+the complete (patched) edition at the author's request. The patch's own source files are committed under
 `assets/saya-patch/`, so the local release variant is rebuildable from a clone alone;
 only the *pack and firmware* built from them stay out of the repository.
 
@@ -127,7 +126,7 @@ not drop them.
 
 - **GitHub Release**: [`v0.1.1-saya-no-uta`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.1-saya-no-uta)
   carries two assets: `FoloToy-AI-Passport-full.bin` (the tag-triggered CI build of the
-  community variant, sha256 `e90476a5…`) and `FoloToy-AI-Passport-full-patched-r18.bin`
+  community variant, sha256 `e90476a5…`) and `FoloToy-AI-Passport-full-patched.bin`
   (a local build of the same commit with the patch, for personal devices only).
 - **Community market**: submitted as "Saya no Uta (Community)" (the Simplified Chinese peer
   records the exact localized title) with the patch-free community merged image; project 672,

@@ -9,7 +9,7 @@
   1. 已提交的社区 pack 通过 tools/saya_pack.py --check(结构/尺寸/接缝/遮罩/元数据);
   2. 用 assets/saya-source 与 pack 元数据里记录的 commit 重建,结果与提交的 pack
      逐字节一致;
-  3. 用 assets/saya-patch 构建 release 变体并通过自检(R18 源文件可用;产物只落在
+  3. 用 assets/saya-patch 构建 release 变体并通过自检(补丁源文件可用;产物只落在
      临时目录,不写进仓库)。
 """
 
