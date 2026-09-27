@@ -381,8 +381,8 @@ bool tsxx_ui_create(tsxx_ui_t *ui, uint16_t *art_pixels, const lv_font_t *font_c
     build_pages(ui, screen);
 
     tsxx_ui_show_page(ui, TSXX_PAGE_TITLE);
-    ESP_LOGI(TAG, "界面就绪:画布 %dx%d 放大 4/3 到 %dx%d,正文带 y=%d",
-             TSXX_ART_W, TSXX_ART_H, TSXX_UI_W, TSXX_UI_H, TSXX_BAND_Y);
+    ESP_LOGI(TAG, "界面就绪:画布 %dx%d 与屏幕 1:1(scale %d),正文带 y=%d",
+             TSXX_ART_W, TSXX_ART_H, TSXX_ART_SCALE, TSXX_BAND_Y);
     return true;
 }
 

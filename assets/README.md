@@ -50,18 +50,30 @@ layout `tools/tsxx_pack.py` accepts directly:
 ```bash
 # what main/tsxx_data/tsxx_pack.bin contains
 python tools/tsxx_pack.py --source assets/tsxx-source --out main/tsxx_data/tsxx_pack.bin \
-    --bg-quality 65 --sprite-height 240 --sprite-quality 95 --event-quality 62 \
+    --bg-quality 65 --sprite-height 320 --sprite-quality 95 --event-quality 53 \
+    --max-bytes 6475000 \
     --title-image assets/images/tsxx-reboot-cover.png \
     --symbols-out assets/fonts/tsxx_symbols.txt
 ```
 
 Rebuilding with the same command reproduces the committed
-`main/tsxx_data/tsxx_pack.bin` byte for byte. The pack is 5.97 MiB and lives in a dedicated 6.5 MiB assets partition; sprites keep one pose per character (the source ships 2-4 arm/expression variants of the same outfit) and are stored at the full 240 px art height at JPEG quality 95, bottom-anchored so the text band covers their lower half, as in the source project. Backgrounds, sprites
-and event frames all render at 180 × 240 (the `--art-width` default), the firmware scales
-that art layer up to the 240 × 320 panel, and it still draws the text layer at the native
-240 × 320. Storing the art layer at 180 px wide is what keeps the pack inside the 8 MB
-Flash budget, and it halves the firmware canvas: 180 × 240 × 2 = 84 KB instead of
-240 × 320 × 2 = 150 KB.
+`main/tsxx_data/tsxx_pack.bin` byte for byte. The pack is 6.17 MiB and lives in a dedicated
+6.5 MiB assets partition; `--max-bytes 6475000` (95% of that partition) fails the build
+instead of silently overflowing it, and `--event-quality 53` is the highest event quality
+that still fits. Sprites keep one pose per character (the source ships 2-4 arm/expression
+variants of the same outfit) and are stored at the full 320 px art height at JPEG quality 95,
+bottom-anchored so the text band covers their lower half, as in the source project.
+
+Sprites are stored in the art layer's own coordinate system: the canvas is 240 × 320
+(`--art-width` default) and the firmware lays it on the panel 1:1, so sprites are never
+resampled for display. Backgrounds and event frames are still stored at 180 × 240
+(`--bg-width` / `--event-width` defaults) and both the packer and the firmware record those
+sizes in the pack META (`art=`, `bg=`, `event=`) so the firmware can upscale them by 4/3 with
+nearest-neighbour sampling while it composites. The 240 × 320 canvas costs
+240 × 320 × 2 = 150 KB of static RAM, which is why sprite and event JPEGs are decoded in
+MCU-sized chunks straight into that canvas (the `tjpgd` callback interface) instead of
+decoding each image into a full-image scratch buffer. The text layer is still drawn at the
+native 240 × 320.
 
 ## Images
 

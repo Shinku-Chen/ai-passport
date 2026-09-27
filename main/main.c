@@ -46,8 +46,12 @@ LV_FONT_DECLARE(tsxx_cjk_16);
 #define BACKLIGHT_FULL 100
 #define BACKLIGHT_DIM 30
 
-// 美术层画布:180x240 RGB565。整屏缓冲(150 KB)放不下,放大交给 LVGL(见 tsxx_image.h)。
+// 美术层画布:240x320 RGB565,与屏幕 1:1(不再缩放),立绘也按这个尺寸存。
+// 整屏缓冲要 150 KB,所以解码不放任何暂存区:见 tsxx_image.c 的分块合成。
 static uint16_t s_art_pixels[TSXX_ART_W * TSXX_ART_H];
+// 调试金丝雀:画布越界会先砸到这里、再砸到 s_app(pack 是它的第一个成员)。
+// 一旦 pack 被写坏,tsxx_pack_pages() 会变 0,界面会弹"剧本数据异常"。
+static volatile uint32_t s_canary = 0xC0FFEE01u;
 static tsxx_app_t s_app;
 
 static QueueHandle_t s_input_queue;
@@ -135,6 +139,10 @@ static void handle_tick(uint32_t elapsed_ms)
 {
     if (!bsp_lvgl_lock(500)) return;
     tsxx_app_tick(&s_app, elapsed_ms);
+    if (s_canary != 0xC0FFEE01u) {
+        ESP_LOGE(TAG, "画布越界:金丝雀被改写成 0x%08x", (unsigned)s_canary);
+        s_canary = 0xC0FFEE01u;
+    }
     const bool want_sleep = tsxx_app_take_sleep_request(&s_app);
     bsp_lvgl_unlock();
     if (want_sleep) enter_sleep();
@@ -144,9 +152,9 @@ static void handle_tick(uint32_t elapsed_ms)
 //   TSXXJUMP <页号>            直接把阅读进度拨到该页(改状态、正常落盘)
 //   TSXXSHOT <页号> [字节数]   只画该页(不改玩家进度),再回传美术层像素
 //
-// 回传的是 180x240 的美术层(TSXXSHOT <w> <h> <字节数> + 原始 RGB565 + TSXXSHOT-END),
+// 回传的是 240x320 的美术层(TSXXSHOT <w> <h> <字节数> + 原始 RGB565 + TSXXSHOT-END),
 // 与 ATRISHOT 一样不包含文字层 —— 不为了截图在内存里多摆一块整屏缓冲。
-// 主机侧把这块像素放大 4/3 就是屏幕上的画面区。
+// 画布与屏幕 1:1,主机侧拿到就是屏幕上的画面区(背景/事件图已在这张里放大)。
 static void debug_task(void *arg)
 {
     (void)arg;
@@ -303,7 +311,7 @@ void app_main(void)
     ESP_LOGI(TAG, "LVGL 内存池 %u 字节:已用 %u,空闲 %u(最大块 %u,碎片 %u%%)",
              (unsigned)mon.total_size, (unsigned)mon.total_size - mon.free_size,
              (unsigned)mon.free_size, (unsigned)mon.free_biggest_size, (unsigned)mon.frag_pct);
-    ESP_LOGI(TAG, "就绪:美术层 %dx%d 放大到 %dx%d;空闲 %us 调暗,%us 熄屏,%us 休眠",
+    ESP_LOGI(TAG, "就绪:美术层 %dx%d 与屏幕 %dx%d 1:1;空闲 %us 调暗,%us 熄屏,%us 休眠",
              TSXX_ART_W, TSXX_ART_H, TSXX_SCREEN_W, TSXX_SCREEN_H, (unsigned)(TSXX_DIM_MS / 1000),
              (unsigned)(TSXX_SCREEN_OFF_MS / 1000), (unsigned)(TSXX_SLEEP_MS / 1000));
 }

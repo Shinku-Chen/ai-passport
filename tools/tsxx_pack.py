@@ -48,24 +48,30 @@
   SEC_CGDIR 的 kind:
     0 整帧   — 直接画 SEC_EVB[img]
     1 补丁   — 先画 SEC_CGDIR[base](必须是 kind 0),再把 SEC_EVC[img] 贴到 (x, y)
-  补丁矩形用的是基准帧自己的坐标系;帧是美术层尺寸,固件负责放大到整屏。
+  补丁矩形用的是基准帧自己的坐标系(即事件图的存储坐标系);帧是事件图存储尺寸,
+  固件负责按 META 的 event= 放大到画布。
   事件图的 a/b/c… 差分里只有"同场景换表情/动手"那部分适合补丁;背景差分是整幅换
   时段、立绘差分是重画姿势,都不做补丁(实测省不到 8% / 0%)。
 
-美术层在 --art-width 宽(默认 180)的缩小画布上渲染,固件把整层放大到 240×320
-显示:帧缓冲只要 180×240×2 = 84 KB,是整屏 240×320×2 = 150 KB 的一半多,
-所有美术素材也随之变小。文字层仍由固件在原生 240×320 上绘制,不受影响。
-美术高度按屏幕长宽比推导(180 → 240),放大后不会拉伸。
+美术层(画布)是 --art-width 宽(默认 240 = 整屏宽)的满屏图层,固件按 1:1
+铺在 240×320 面板上:立绘就按这个尺寸存,显示时不再缩放,因此不会被重采样糊掉。
+美术高度按屏幕长宽比推导(240 → 320)。
 
-图像转换(用美术层坐标;文本框顶边 = 画面区底边,与 ATRI / 星空列车一致):
-  背景(bcgi)   等比放大到铺满美术层 180×240 后居中裁切 → JPEG
+背景与事件图另有自己的存储宽度 --bg-width / --event-width(默认都是 180)。它们
+数量多、单张体积大,存 180×240 能省下不少 Flash;固件合成时用最近邻放大 4/3 铺满
+画布。文字层仍由固件在原生 240×320 上绘制,不受影响。
+META 里的 art= / bg= / event= 三个尺寸就是这三类的坐标系与存储尺寸,固件用它核对
+固件常量并按比例放大。
+
+图像转换(立绘用美术层坐标,背景/事件图用各自的存储坐标;
+        文本框顶边 = 画面区底边,与 ATRI / 星空列车一致):
+  背景(bcgi)   等比放大到铺满 --bg-width × 推导高度后居中裁切 → JPEG
   立绘(cimg)   取 alpha 包围盒 → 等比缩放到 --sprite-height(默认 = 美术高度)
                → 水平居中、底边贴 --sprite-bottom → 裁到画面区 [0, --box-y)
                → JPEG + 1bpp 遮罩。透明区域先用相邻不透明像素的颜色膨胀填充,
-               否则 JPEG 会在立绘边缘留下暗边。默认参数与源工程取景一致(源工程
-               是 height:100% 全屏画,文本框压住下半身,画面上可见约 66%;
-               这里 160/240 = 67%)。
-  事件图(evig)  同背景(与美术层同尺寸);同一差分组的成员按差异外接框裁成补丁,
+               否则 JPEG 会在立绘边缘留下暗边。默认参数与源工程取景一致
+               (height:100% 满高画,文本框压住下半身)。
+  事件图(evig)  同背景(按 --event-width 存储);同一差分组的成员按差异外接框裁成补丁,
                补丁比整帧还大时退回整帧,整组差异为空时直接复用基准帧。基准帧取
                该组的中位图(到其余成员差异总量最小),而不是第一个,以缩小补丁面积。
 
@@ -99,26 +105,30 @@ GEN_VERSION = "tsxx_pack/1"
 DEFAULT_SOURCE_LABEL = "hezdaaa/tsxxreboot-miband"
 
 SCREEN_W, SCREEN_H = 240, 320
-# 美术层:背景/立绘/事件图都渲染在这个缩小的画布上,固件放大到整屏显示。
-# 必须与 main/tsxx_pack.h 的 TSXX_ART_W 一致;实际尺寸记录在 META 的 art= 里。
-ART_W = 180
+# 美术层(画布):固件把这一层 1:1 铺到屏幕上,所以立绘直接按它存 —— 显示时
+# 不缩放,才不会糊。必须与 main/tsxx_pack.h 的 TSXX_ART_W 一致;实际尺寸记在
+# META 的 art= 里。
+ART_W = 240
+# 背景与事件图的存储宽度(见 --bg-width / --event-width):这两类按小画布存,
+# 固件合成时放大到美术层。
+BG_WIDTH = 180
+EVENT_WIDTH = 180
 
 
 def art_height(width: int) -> int:
-    """美术高度:与整屏同长宽比,固件放大后不会变形。"""
+    """美术高度:与整屏同长宽比,放大到整屏后不会变形。"""
     return max(1, int(round(width * SCREEN_H / SCREEN_W)))
 
 
 ART_H = art_height(ART_W)
-# 文本框顶边 = 画面区底边,坐标是美术层坐标(214 × 180/240 取整 = 160);
-# 必须与 main 侧布局常量一致。
-# 立绘裁切下界(美术坐标)。0 = 不裁:整身画到画面底,由文本框压住下半身 ——
-# 源工程就是这么画的(height:100% 全屏画 + 半透明文本框盖在底部)。
+# 立绘裁切下界(画布坐标)。0 = 不裁:整身画到画布底边,由文本框压住下半身 ——
+# 源工程就是这么画的(height:100% 满高画 + 半透明文本框盖在底部)。
+# 画布与屏幕 1:1,所以 main 侧 TSXX_BAND_Y(214)就是画布坐标里的文本框顶边。
 DEFAULT_BOX_Y = 0
 # 立绘等比缩放到这个高度(美术坐标),底边贴 DEFAULT_SPRITE_BOTTOM。
-# 160:角色占画面下 2/3,身体一直延伸到底边被文本框压住 —— 源工程的版式。
-# 裁切下界 DEFAULT_BOX_Y = 0 表示不裁,整身存下来(下半身靠文本框盖住)。
-DEFAULT_SPRITE_HEIGHT = ART_H * 2 // 3
+# 默认 = 美术层满高:源工程就是 height:100% 全屏画,整身画到底边、下半身被
+# 文本框盖住。裁切下界 DEFAULT_BOX_Y = 0 表示不裁,整身存下来。
+DEFAULT_SPRITE_HEIGHT = ART_H
 DEFAULT_SPRITE_BOTTOM = ART_H
 # 差异判定阈值:JPEG 有损,低于它的差值按压缩噪声处理。
 DEFAULT_PATCH_TOLERANCE = 20
@@ -600,9 +610,18 @@ class PackBuilder:
     def build(self) -> Tuple[bytes, Dict[str, object]]:
         options = self.options
         art_w = options.art_width
-        if art_w <= 0 or art_w > SCREEN_W:
-            raise SystemExit(f"--art-width 必须在 1..{SCREEN_W} 之间")
+        bg_w = options.bg_width
+        ev_w = options.event_width
+        for flag, width in (("--art-width", art_w), ("--bg-width", bg_w),
+                            ("--event-width", ev_w)):
+            if width <= 0 or width > SCREEN_W:
+                raise SystemExit(f"{flag} 必须在 1..{SCREEN_W} 之间")
+        # 固件只做放大,不做缩小:存储尺寸比画布还大就没有意义。
+        if bg_w > art_w or ev_w > art_w:
+            raise SystemExit(f"背景/事件图的存储宽度({bg_w}/{ev_w})不能超过画布宽度 {art_w}")
         art_h = art_height(art_w)
+        bg_h = art_height(bg_w)
+        ev_h = art_height(ev_w)
         pages = load_pages(options.script_dir)
         used = referenced_names(pages)
         self.log(f"剧本 {len(pages)} 页 / {len(used['speaker'])} 个说话人")
@@ -742,17 +761,17 @@ class PackBuilder:
         bg_section = Section(SEC_BG, BG_ENTRY)
         for name in bg_names:
             with Image.open(bg_index[name]) as raw:
-                frame = cover_crop(raw.convert("RGB"), art_w, art_h)
-            bg_section.add_image(encode_jpeg(frame, options.bg_quality), art_w, art_h)
-        self.log(f"背景 {bg_section.count} 张 ({art_w}×{art_h})")
+                frame = cover_crop(raw.convert("RGB"), bg_w, bg_h)
+            bg_section.add_image(encode_jpeg(frame, options.bg_quality), bg_w, bg_h)
+        self.log(f"背景 {bg_section.count} 张 (存 {bg_w}×{bg_h},固件放大到 {art_w}×{art_h})")
         # 标题背景:追加到背景表末尾,名字固定为 __title__,下标写进 META。
         # 源素材里没有可用的标题画,所以由 --title-image 另外给一张。
         title_bg = 0
         if options.title_image:
             with Image.open(options.title_image) as raw:
-                title_frame = cover_crop(raw.convert("RGB"), art_w, art_h)
+                title_frame = cover_crop(raw.convert("RGB"), bg_w, bg_h)
             title_bg = bg_section.add_image(
-                encode_jpeg(title_frame, options.bg_quality), art_w, art_h)
+                encode_jpeg(title_frame, options.bg_quality), bg_w, bg_h)
             bg_names = list(bg_names) + ["__title__"]
             self.log(f"标题背景 #{title_bg} ← {os.path.basename(options.title_image)}")
 
@@ -771,16 +790,15 @@ class PackBuilder:
                                        width, height, x, y), body + mask)
             sprite_max_px = max(sprite_max_px, width * height)
         self.log(f"立绘 {fg_section.count} 张(最大 {sprite_max_px} 像素)")
-        # 固件用一块「立绘与补丁取最大值」的暂存区解码。把补丁也卡在立绘预算以内,
-        # 暂存区就只由立绘决定(最大 157x160 = 50 KB,而不是补丁的 146x240 = 70 KB);
-        # 超限的补丁退化成整帧 —— 整帧解码直接进画布,根本不占暂存区。
+        # 固件逐块解码,不再有"整张导入暂存区"的预算,补丁大小只影响体积与画质:
+        # 超过这个面积的补丁退回整帧(通常整帧更大,除非补丁压缩后反而更肥)。
         patch_budget_px = sprite_max_px if options.patch_max_pixels <= 0 \
             else min(options.patch_max_pixels, sprite_max_px)
 
         # ---- 事件图:整帧 + 差分补丁 ----
-        # 事件图与美术层同尺寸,固件负责放大到整屏。补丁矩形与差异判定都在美术
-        # 坐标里做,固件按 EVB 的 w/h 与整屏的比例换算。
-        event_w, event_h = art_w, art_h
+        # 事件图按 --event-width 存,固件合成时最近邻放大到画布。补丁矩形与差异
+        # 判定都在事件图自己的坐标系里做,固件按同一条比例换算。
+        event_w, event_h = ev_w, ev_h
         event_section = Section(SEC_EVB, EV_ENTRY)
         patch_section = Section(SEC_EVC, EV_ENTRY)
         groups: Dict[str, List[str]] = {}
@@ -866,6 +884,8 @@ class PackBuilder:
             f"title_bg={title_bg}",
             f"screen={SCREEN_W}x{SCREEN_H}",
             f"art={art_w}x{art_h}",
+            f"bg={bg_w}x{bg_h}",
+            f"event={ev_w}x{ev_h}",
             f"box_y={sprite_visible_bottom}",
             f"sprite_height={options.sprite_height}",
             f"bg_quality={options.bg_quality}",
@@ -957,14 +977,27 @@ def verify(pack_path: str, script_dir: Optional[str] = None) -> Dict[str, object
         return count
 
     symbols = unpack_symbols(pack)
-    # 美术层尺寸由 META 记录:BG / EVB / FG 都在这个坐标系里,固件按比例放大到整屏。
+    # 三个坐标系 / 存储尺寸都由 META 记录:art= 是画布(立绘坐标系,固件 1:1 显示),
+    # bg= 是背景存储尺寸,event= 是事件图存储尺寸(后两者固件放大到画布)。
     art_size = meta_size(pack, "art")
-    if art_size is None:
-        raise ValueError("META 缺 art=<宽>x<高>,无法核对美术层尺寸")
+    bg_size = meta_size(pack, "bg")
+    event_size = meta_size(pack, "event")
+    for key, size in (("art", art_size), ("bg", bg_size), ("event", event_size)):
+        if size is None:
+            raise ValueError(f"META 缺 {key}=<宽>x<高>")
+        width, height = size
+        if width * SCREEN_H != height * SCREEN_W:
+            raise ValueError(f"{key}={width}×{height} 与屏幕 {SCREEN_W}×{SCREEN_H} "
+                             f"长宽比不同,固件放大后会变形")
     art_w, art_h = art_size
-    if art_w * SCREEN_H != art_h * SCREEN_W:
-        raise ValueError(f"美术层 {art_w}×{art_h} 与屏幕 {SCREEN_W}×{SCREEN_H} 长宽比不同")
+    bg_w, bg_h = bg_size
+    event_w, event_h = event_size
+    if bg_w > art_w or event_w > art_w:
+        raise ValueError(f"背景/事件图存储宽度({bg_w}/{event_w})超过画布宽度 {art_w},"
+                         f"固件只能放大、不能缩小")
     stats["art_size"] = art_size
+    stats["bg_size"] = bg_size
+    stats["event_size"] = event_size
     text = section_bytes(pack, SEC_TEXT)
     checkpoints = struct.unpack(f"<{len(section_bytes(pack, SEC_TOFF)) // 4}I",
                                 section_bytes(pack, SEC_TOFF))
@@ -1020,16 +1053,18 @@ def verify(pack_path: str, script_dir: Optional[str] = None) -> Dict[str, object
                 raise ValueError(f"{SEC_NAMES[kind]}[{index}] 数据越界")
             if width == 0 or height == 0 or width > SCREEN_W or height > SCREEN_H:
                 raise ValueError(f"{SEC_NAMES[kind]}[{index}] 尺寸 {width}x{height} 非法")
-            if kind == SEC_BG and (width, height) != (art_w, art_h):
-                raise ValueError(f"BG[{index}] 必须是美术层尺寸 {art_w}×{art_h}")
-            if kind != SEC_EVC and width * art_h != height * art_w:
+            if kind == SEC_BG and (width, height) != (bg_w, bg_h):
+                raise ValueError(f"BG[{index}] 必须是背景存储尺寸 {bg_w}×{bg_h}")
+            if kind == SEC_EVB and (width, height) != (event_w, event_h):
+                raise ValueError(f"EVB[{index}] 必须是事件图存储尺寸 {event_w}×{event_h}")
+            if kind != SEC_EVC and width * SCREEN_H != height * SCREEN_W:
                 raise ValueError(f"{SEC_NAMES[kind]}[{index}] 尺寸 {width}x{height} "
-                                 f"与美术层 {art_w}×{art_h} 长宽比不同,固件放大后会变形")
+                                 f"与屏幕 {SCREEN_W}×{SCREEN_H} 长宽比不同,固件放大后会变形")
             if pack["blob"][data_start + offset] != 0xFF or \
                     pack["blob"][data_start + offset + 1] != 0xD8:
                 raise ValueError(f"{SEC_NAMES[kind]}[{index}] 不是 JPEG")
 
-    # 事件整帧必须与美术层同长宽比(固件放大),且同一包内尺寸统一
+    # 事件整帧必须与事件图存储尺寸一致(固件按 META 的 event= 放大),且同一包内尺寸统一
     frame_sizes = {struct.unpack("<HH", directory_entry(pack, SEC_EVB, EV_ENTRY, index)[8:12])
                    for index in range(frame_count)}
     if len(frame_sizes) > 1:
@@ -1068,10 +1103,13 @@ def verify(pack_path: str, script_dir: Optional[str] = None) -> Dict[str, object
                 raise ValueError(f"CGDIR[{index}] 引用了不存在的补丁 {image}")
             if width == 0 or height == 0:
                 raise ValueError(f"CGDIR[{index}] 补丁矩形为空")
-            # 补丁贴在基准帧上,坐标系是基准帧自己的尺寸(即美术层尺寸)。
+            # 补丁贴在基准帧上,坐标系是基准帧自己的尺寸(等于事件图存储尺寸)。
             base_frame = struct.unpack_from("<I", base_entry, 16)[0]
             frame_entry = directory_entry(pack, SEC_EVB, EV_ENTRY, base_frame)
             frame_w, frame_h = struct.unpack_from("<HH", frame_entry, 8)
+            if (frame_w, frame_h) != (event_w, event_h):
+                raise ValueError(f"CGDIR[{index}] 的基准帧尺寸 {(frame_w, frame_h)} "
+                                 f"不是事件图存储尺寸 {(event_w, event_h)}")
             if x + width > frame_w or y + height > frame_h:
                 raise ValueError(f"CGDIR[{index}] 补丁矩形 {x},{y} {width}x{height} "
                                  f"超出基准帧 {frame_w}x{frame_h}")
@@ -1114,9 +1152,10 @@ def verify(pack_path: str, script_dir: Optional[str] = None) -> Dict[str, object
     stats["text_chars"], stats["text_bytes"] = decoded, len(text)
 
     if script_dir:
-        verified, normalized = compare_with_source(pack, symbols, checkpoints,
-                                                   lengths, text, script_dir)
+        verified, normalized, merged = compare_with_source(pack, symbols, checkpoints,
+                                                           lengths, text, script_dir)
         stats["verified_pages"] = verified
+        stats["sprite_merge_pages"] = merged
         for key, count in sorted(normalized.items()):
             stats[f"normalized_{key}"] = count
     return stats
@@ -1146,8 +1185,9 @@ def normalize_source_page(page: dict, known: Dict[str, Sequence[str]]) -> Tuple[
 
 
 def compare_with_source(pack: dict, symbols, checkpoints, lengths, text,
-                        script_dir: str) -> Tuple[int, Dict[str, int]]:
-    """逐页比对剧本:字段、正文、资源归属必须与源 JSON 一致(允许上游缺陷归一)。"""
+                        script_dir: str) -> Tuple[int, Dict[str, int], int]:
+    """逐页比对剧本:字段、正文、资源归属必须与源 JSON 一致(允许上游缺陷归一
+    与立绘姿势差分合并)。返回 (比对页数, 归一计数, 差分合并命中页数)。"""
     pages = load_pages(script_dir)
     if len(pages) != len(lengths):
         raise ValueError(f"页数不一致:源 {len(pages)} / 包 {len(lengths)}")
@@ -1179,7 +1219,18 @@ def compare_with_source(pack: dict, symbols, checkpoints, lengths, text,
     cursor = 0
     mismatch: List[str] = []
     normalized: Dict[str, int] = {}
+    merged_pages = 0
     for index, (filename, number, page) in enumerate(pages):
+        # 立绘差分合并:包里同组只留一张姿势,源里被丢掉的差分名在包内指向保留的
+        # 那张,所以"源名 != 包名但同组"是打包器的正常行为,不算差异。
+        # 剩下的才算上游缺陷(名字在源仓里根本不存在),交给 normalize_source_page。
+        source_sprite = page.get("c")
+        merged = (isinstance(source_sprite, str) and source_sprite and pspr[index] != NONE8
+                  and source_sprite not in known["c"]
+                  and sprite_group(source_sprite) == sprite_group(sprite_names[pspr[index]]))
+        if merged:
+            merged_pages += 1
+            page = {key: value for key, value in page.items() if key != "c"}
         expected, touched = normalize_source_page(page, known)
         if touched:
             normalized[touched] = normalized.get(touched, 0) + 1
@@ -1201,11 +1252,13 @@ def compare_with_source(pack: dict, symbols, checkpoints, lengths, text,
             for slot, (value, target) in enumerate(choices[index], 1):
                 got[f"c{slot}"] = value
                 got[f"c{slot}t"] = target
+        if merged:
+            got.pop("c", None)
         if got != expected:
             mismatch.append(f"{filename}:{number}")
     if mismatch:
         raise ValueError(f"{len(mismatch)} 页与源不一致,例如 {mismatch[:5]}")
-    return len(pages), normalized
+    return len(pages), normalized, merged_pages
 
 
 # --------------------------------------------------------------------------- #
@@ -1273,7 +1326,12 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
 
     layout = parser.add_argument_group("版面")
     layout.add_argument("--art-width", type=int, default=ART_W,
-                        help="美术层宽度;高度按屏幕长宽比推导(固件放大到整屏)")
+                        help="画布(美术层)宽度:立绘按这个坐标系存,固件 1:1 显示;"
+                             "高度按屏幕长宽比推导")
+    layout.add_argument("--bg-width", type=int, default=BG_WIDTH,
+                        help="背景的存储宽度;高度按屏幕长宽比推导,固件合成时放大到画布")
+    layout.add_argument("--event-width", type=int, default=EVENT_WIDTH,
+                        help="事件图的存储宽度;含义同 --bg-width")
     layout.add_argument("--box-y", type=int, default=DEFAULT_BOX_Y,
                         help="文本框顶边(= 画面区底边),美术层坐标")
     layout.add_argument("--sprite-pose-limit", type=int, default=1,

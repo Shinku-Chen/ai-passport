@@ -35,6 +35,15 @@ CONFIG_LV_FONT_MONTSERRAT_20=y
 # label->text 留成 NULL,下一次布局就 Load access fault。
 CONFIG_LV_MEM_SIZE=69632
 
+# --- JPEG 解码(espressif/esp_jpeg)---
+# tsxx 阅读器用组件自带的 TJpgDec 回调接口分块解码(见 main/tsxx_image.c):
+# 立绘按 240x320 存,整张解码要 150 KB 暂存区,板上没有 PSRAM 放不下。
+# 用 ROM 里那份(esp32c3 有)也行不通:它是旧版 tjpgd,头文件/签名不同,而且只
+# 输出 RGB888,每个像素都要再转一次。所以编组件自带的那份,并让它直接出 RGB565。
+CONFIG_JD_USE_ROM=n
+CONFIG_JD_FORMAT_RGB565=y
+# CONFIG_JD_FORMAT_RGB888 is not set
+
 # --- 系统 ---
 CONFIG_FREERTOS_HZ=1000
 

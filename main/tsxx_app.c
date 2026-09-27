@@ -355,9 +355,9 @@ static void open_about(tsxx_app_t *app)
         "本机用 C + LVGL 重写了竖屏阅读引擎。\n"
         "资源包直接映射自闪存,没有解压,\n"
         "没有文本解析,也没有逐页分配。\n\n"
-        "美术层 180x240,由 LVGL 放大 4/3\n"
-        "铺满 240x320,文字层画在原生分辨率上,\n"
-        "不会被放大糊掉。\n\n"
+        "美术层 240x320 与屏幕 1:1,立绘原尺寸合成,\n"
+        "背景与事件图 180x240 按最近邻放大 4/3,\n"
+        "文字层画在原生分辨率上。\n\n"
         "中文字体：思源黑体 SC 子集(开源字型授权),\n"
         "4 位色深位图,由 tools/tsxx_font.py 生成。\n"
         "画面：ESP32C3 上的软件 esp_jpeg 解码。\n\n"
@@ -491,6 +491,14 @@ static void show_ending(tsxx_app_t *app)
 static bool start_reading(tsxx_app_t *app, uint32_t page)
 {
     if (!tsxx_player_start(&app->player, &app->pack, page, &app->layout)) {
+        // 走到这里只可能是 pack->page_count == 0 —— 启动时明明打印过页数,
+        // 所以要么结构被写坏,要么打开就失败了。把关键字段都打出来定位。
+        ESP_LOGE(TAG, "开读失败: 请求页=%u blob=%u bytes=%u pages=%u bg=%u fg=%u evb=%u"
+                 " meta=%u",
+                 (unsigned)page, (unsigned)app->pack.blob_size,
+                 (unsigned)app->pack.blob_size, (unsigned)app->pack.page_count,
+                 (unsigned)app->pack.bg_count, (unsigned)app->pack.fg_count,
+                 (unsigned)app->pack.evb_count, (unsigned)app->pack.meta_size);
         notify(app, "剧本数据异常");
         return false;
     }
@@ -963,9 +971,6 @@ static bool app_after_pack_open(tsxx_app_t *app, uint16_t *art_pixels, const lv_
         ESP_LOGI(TAG, "LVGL 池 %u B,建完界面空闲 %u B (最大连续 %u B,碎片 %u%%)",
                  (unsigned)mon.total_size, (unsigned)mon.free_size,
                  (unsigned)mon.free_biggest_size, (unsigned)mon.frag_pct);
-    }
-    if (!tsxx_art_prepare(&app->ui.art, &app->pack)) {
-        ESP_LOGW(TAG, "立绘暂存区不可用,本次运行不画立绘");
     }
 
     app->chapter_count = tsxx_chapters_scan(&app->pack, app->chapters, TSXX_MAX_CHAPTERS);

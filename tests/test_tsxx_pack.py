@@ -64,7 +64,9 @@ def build_min_pack(pages_text) -> bytes:
         tsxx.Section(tsxx.SEC_EVC, tsxx.EV_ENTRY),
         tsxx.Section(tsxx.SEC_CGDIR, tsxx.CGD_ENTRY),
         tsxx.plain_section(tsxx.SEC_META,
-                           f"generator=test\nart={tsxx.ART_W}x{tsxx.ART_H}\n".encode("utf-8"), 2),
+                           f"generator=test\nart={tsxx.ART_W}x{tsxx.ART_H}"
+                           f"\nbg={tsxx.ART_W}x{tsxx.ART_H}"
+                           f"\nevent={tsxx.ART_W}x{tsxx.ART_H}\n".encode("utf-8"), 4),
     ]
     background = tsxx.Section(tsxx.SEC_BG, tsxx.BG_ENTRY)
     background.add(struct.pack("<IIHH", 0, 2, tsxx.ART_W, tsxx.ART_H), b"\xff\xd8")
@@ -230,6 +232,19 @@ class ContainerTest(unittest.TestCase):
     def test_name_table_count_mismatch_is_rejected(self):
         self.write_broken(lambda blob: struct.pack_into(
             "<I", blob, self.table_offset(tsxx.SEC_BGNAME) + 8, 2))
+
+    def test_background_size_mismatch_is_rejected(self):
+        """BG 目录项的尺寸必须与 META 的 bg= 一致(固件按它决定放大比例)。"""
+        offset = tsxx.parse_pack(self.blob)["sections"][tsxx.SEC_BG][0]
+        self.write_broken(lambda blob: struct.pack_into("<H", blob, offset + 8,
+                                                        tsxx.ART_W - 1))
+
+    def test_meta_without_bg_size_is_rejected(self):
+        """META 里没有 bg=<宽>x<高> 就无法合成,一律拒绝。"""
+        meta_offset, _, meta_size = tsxx.parse_pack(self.blob)["sections"][tsxx.SEC_META]
+        index = bytes(self.blob[meta_offset:meta_offset + meta_size]).find(b"\nbg=")
+        self.assertGreaterEqual(index, 0)
+        self.write_broken(lambda blob: blob.__setitem__(meta_offset + index + 2, ord("q")))
 
 
 class CommittedPackTest(unittest.TestCase):

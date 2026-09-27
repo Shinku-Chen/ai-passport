@@ -42,16 +42,25 @@ RE-BOOT!》阅读器的字符清单：3,417 个码位，顺序就是资源包给
 ```bash
 # main/tsxx_data/tsxx_pack.bin 的内容
 python tools/tsxx_pack.py --source assets/tsxx-source --out main/tsxx_data/tsxx_pack.bin \
-    --bg-quality 65 --sprite-height 240 --sprite-quality 95 --event-quality 62 \
+    --bg-quality 65 --sprite-height 320 --sprite-quality 95 --event-quality 53 \
+    --max-bytes 6475000 \
     --title-image assets/images/tsxx-reboot-cover.png \
     --symbols-out assets/fonts/tsxx_symbols.txt
 ```
 
 用同一条命令重建可以逐字节复现仓库里提交的 `main/tsxx_data/tsxx_pack.bin`。资源包
-资源包 5.97 MiB，放在独立的 6.5 MiB assets 分区里；立绘每个角色只保留一种姿势（源工程同一件衣服有 2-4 张手臂/表情差分），存满 240 px 美术层高度、JPEG 质量 95，底边贴底、下半身由文本框盖住（与源工程一致）。背景、立绘与事件帧都按 180 × 240 渲染（`--art-width` 默认值），固件把美术
-层放大到 240 × 320 面板，文字层仍在原生 240 × 320 上绘制。美术层存 180 px 宽是它装进
-8 MB Flash 的关键，同时把固件的画布缓冲减半：180 × 240 × 2 = 84 KB，而不是
-240 × 320 × 2 = 150 KB。
+6.17 MiB，放在独立的 6.5 MiB assets 分区里；`--max-bytes 6475000`（该分区的 95%）
+让构建在装不下时直接失败，而不是默默溢出，`--event-quality 53` 则是在这个上限内能
+保住的最高事件图质量。立绘每个角色只保留一种姿势（源工程同一件衣服有 2-4 张手臂/
+表情差分），存满 320 px 美术层高度、JPEG 质量 95，底边贴底、下半身由文本框盖住
+（与源工程一致）。
+
+立绘用的是美术层自己的坐标系：画布 240 × 320（`--art-width` 默认值），固件 1:1 铺在
+面板上，显示时不再重采样。背景与事件帧仍按 180 × 240 存（`--bg-width` /
+`--event-width` 默认值），两个尺寸写进资源包的 META（`art=` / `bg=` / `event=`），
+固件合成时按 4/3 最近邻放大。240 × 320 的画布占 240 × 320 × 2 = 150 KB 静态 RAM，
+所以立绘与事件图的 JPEG 是走 `tjpgd` 回调接口逐块解进画布的，不再为每张图开一块
+整图暂存区。文字层仍在原生 240 × 320 上绘制。
 
 ## 图片（images）
 

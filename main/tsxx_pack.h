@@ -29,10 +29,13 @@
 // 屏幕尺寸(文字层在原生分辨率上绘制)。
 #define TSXX_SCREEN_W 240
 #define TSXX_SCREEN_H 320
-// 美术层尺寸:背景/立绘/事件图都按这个尺寸存储,由固件放大到整屏显示。
-// 必须与 tools/tsxx_pack.py 的 --art-width 一致;tsxx_pack_open() 会核对 META。
-#define TSXX_ART_W 180
-#define TSXX_ART_H 240
+// 美术层(画布)尺寸 = 整屏尺寸:固件把它 1:1 铺在屏幕上,所以立绘不会再被
+// 重采样。必须与 tools/tsxx_pack.py 的 --art-width 一致;tsxx_pack_open*() 会
+// 核对 META 的 art=。
+// 背景与事件图在包里更小(由打包器的 --bg-width / --event-width 决定,META 的
+// bg= / event= 记录),合成时按最近邻放大到这个画布。
+#define TSXX_ART_W 240
+#define TSXX_ART_H 320
 
 // 页面字段里的"没有"。
 #define TSXX_NONE8 0xFFu
@@ -115,6 +118,15 @@ typedef struct {
 
     uint32_t cg_count;            // CGDIR 条数 = 事件名表条数
                                   // { kind u8, pad u8, pad u16, base u32, x,y,w,h u16, img u32 }
+
+    // 背景与事件图的**存储**尺寸(META 的 bg= / event=)。它们可以比美术层小
+    // (默认 180x240),合成时整帧放大到 TSXX_ART_W/H、补丁矩形按同一比例换算。
+    // META 里没有这两行时按 1:1(= 美术层尺寸)处理。
+    uint16_t bg_w;
+    uint16_t bg_h;
+    uint16_t ev_w;
+    uint16_t ev_h;
+
     const uint8_t *meta;
     uint32_t meta_size;
 

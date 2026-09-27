@@ -227,25 +227,90 @@ static void bind_resident(tsxx_pack_t *view, const uint8_t *base)
     view->choice_opts = base + view->sec_off[SEC_CHOICEOPT];
 }
 
-static bool meta_has_art(const uint8_t *meta, uint32_t size)
+// 解析 "<宽>x<高>":整串必须是这个格式,否则返回 false。
+static bool parse_size(const uint8_t *text, uint32_t len, uint16_t *w, uint16_t *h)
 {
-    // META 里有一行 art=<W>x<H>;与编译期常量不符说明包和固件不是同一次生成的。
-    static const char key[] = "art=";
-    char expect[16];
-    const int expect_len = snprintf(expect, sizeof(expect), "%ux%u", TSXX_ART_W, TSXX_ART_H);
-    for (uint32_t i = 0; i + sizeof(key) - 1 <= size; ++i) {
-        if (memcmp(meta + i, key, sizeof(key) - 1) != 0) {
-            continue;
-        }
-        const uint32_t start = i + sizeof(key) - 1;
-        uint32_t end = start;
+    uint32_t value = 0;
+    uint32_t digits = 0;
+    uint32_t i = 0;
+    while (i < len && text[i] >= '0' && text[i] <= '9') {
+        value = value * 10u + (uint32_t)(text[i] - '0');
+        ++digits;
+        ++i;
+    }
+    if (digits == 0 || value == 0 || value > 0xFFFFu || i >= len || text[i] != 'x') {
+        return false;
+    }
+    const uint16_t width = (uint16_t)value;
+    value = 0;
+    digits = 0;
+    ++i;
+    while (i < len && text[i] >= '0' && text[i] <= '9') {
+        value = value * 10u + (uint32_t)(text[i] - '0');
+        ++digits;
+        ++i;
+    }
+    if (digits == 0 || value == 0 || value > 0xFFFFu || i != len) {
+        return false;
+    }
+    *w = width;
+    *h = (uint16_t)value;
+    return true;
+}
+
+// 在 META(key=value 逐行)里找 <key>=<宽>x<高>。按整行匹配,所以 background= /
+// title_bg= 这类"名字里含 key"的行不会被误认成 bg=。
+static bool meta_size(const uint8_t *meta, uint32_t size, const char *key, uint16_t *w,
+                      uint16_t *h)
+{
+    const uint32_t key_len = (uint32_t)strlen(key);
+    uint32_t pos = 0;
+    while (pos < size) {
+        uint32_t end = pos;
         while (end < size && meta[end] != '\n') {
             ++end;
         }
-        const uint32_t len = end - start;
-        return len == (uint32_t)expect_len && memcmp(meta + start, expect, len) == 0;
+        if (end > pos + key_len + 1u && memcmp(meta + pos, key, key_len) == 0 &&
+            meta[pos + key_len] == '=' &&
+            parse_size(meta + pos + key_len + 1u, end - pos - key_len - 1u, w, h)) {
+            return true;
+        }
+        pos = end + 1u;
     }
     return false;
+}
+
+// 把 META 里的三个尺寸搬进结构体:
+//   art=        画布尺寸,必须与编译期常量一致,否则整层坐标都会错位;
+//   bg=/event=  背景/事件图的存储尺寸,可以比画布小(合成时放大),不能比画布大
+//               (固件只有放大路径)。缺这两行(旧包)时按 1:1 处理。
+static bool meta_load_sizes(tsxx_pack_t *view)
+{
+    uint16_t w = 0;
+    uint16_t h = 0;
+    if (!meta_size(view->meta, view->meta_size, "art", &w, &h) || w != TSXX_ART_W ||
+        h != TSXX_ART_H) {
+        return false;
+    }
+    view->bg_w = TSXX_ART_W;
+    view->bg_h = TSXX_ART_H;
+    view->ev_w = TSXX_ART_W;
+    view->ev_h = TSXX_ART_H;
+    if (meta_size(view->meta, view->meta_size, "bg", &w, &h)) {
+        if (w > TSXX_ART_W || h > TSXX_ART_H) {
+            return false;
+        }
+        view->bg_w = w;
+        view->bg_h = h;
+    }
+    if (meta_size(view->meta, view->meta_size, "event", &w, &h)) {
+        if (w > TSXX_ART_W || h > TSXX_ART_H) {
+            return false;
+        }
+        view->ev_w = w;
+        view->ev_h = h;
+    }
+    return true;
 }
 
 bool tsxx_pack_open(tsxx_pack_t *pack, const uint8_t *data, uint32_t size)
@@ -278,7 +343,7 @@ bool tsxx_pack_open(tsxx_pack_t *pack, const uint8_t *data, uint32_t size)
     view.meta = data + view.sec_off[SEC_META];
     // 图片段在平坦模式下也直接用包内偏移寻址(map_window 返回 blob + off),
     // 这里把目录/数据指针留空,避免分区模式下出现第二套失效的地址。
-    if (!meta_has_art(view.meta, view.meta_size)) {
+    if (!meta_load_sizes(&view)) {
         return false;
     }
 
@@ -405,8 +470,10 @@ bool tsxx_pack_open_partition(tsxx_pack_t *pack, const char *label)
         return false;
     }
     pack->meta_buf[pack->meta_size] = '\0';
-    if (!meta_has_art(pack->meta_buf, pack->meta_size)) {
-        ESP_LOGE(TAG, "资源包的 META 美术尺寸与固件不符");
+    pack->meta = pack->meta_buf;   // meta_buf 已在 pack 里,地址不会再变
+    if (!meta_load_sizes(pack)) {
+        ESP_LOGE(TAG, "资源包的 META 尺寸与固件不符(需要 art=%ux%u,且 bg/event 不超过它)",
+                 TSXX_ART_W, TSXX_ART_H);
         return false;
     }
 
@@ -425,10 +492,11 @@ bool tsxx_pack_open_partition(tsxx_pack_t *pack, const char *label)
     pack->resident_size = resident_size;
     pack->resident_map = handle;
     pack->blob = (const uint8_t *)resident;
-    pack->meta = pack->meta_buf;   // meta_buf 已在 pack 里,地址不会再变
     bind_resident(pack, pack->blob);
     ESP_LOGI(TAG, "资源包已挂载:常驻 %u 字节(脚本区间),图片走 %u KiB 滑动窗口",
              (unsigned)resident_size, (unsigned)(TSXX_PACK_WINDOW_SIZE / 1024u));
+    ESP_LOGI(TAG, "尺寸:画布 %ux%u(1:1),背景 %ux%u,事件图 %ux%u(合成时放大)",
+             TSXX_ART_W, TSXX_ART_H, pack->bg_w, pack->bg_h, pack->ev_w, pack->ev_h);
     return true;
 #else
     (void)pack;
