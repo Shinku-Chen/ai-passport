@@ -66,6 +66,16 @@ run_static_checks() {
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_verify_firmware.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_archive_firmware.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_install_passport_skills.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_limelight_material_pack.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_limelight_script_pack.py
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
+        tests/test_limelight_data.c main/limelight_assets.c main/limelight_script.c \
+        -o "${test_dir}/test_limelight_data"
+    "${test_dir}/test_limelight_data"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
+        tests/test_limelight_model.c main/limelight_model.c main/limelight_script.c \
+        -o "${test_dir}/test_limelight_model"
+    "${test_dir}/test_limelight_model"
     rm -rf "${test_dir}"
     echo "Host tests: PASS"
 }
