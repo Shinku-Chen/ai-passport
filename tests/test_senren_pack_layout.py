@@ -116,9 +116,21 @@ class ImagePackLayoutTest(unittest.TestCase):
                 self.assertLessEqual(entry["dx"] + entry["dw"], base["width"])
                 self.assertLessEqual(entry["dy"] + entry["dh"], base["height"])
                 self.assertGreaterEqual(entry["data_len"], 8)
-            if entry["kind"] in (KIND_BG, KIND_CG, KIND_CG_DIFF):
+            if entry["kind"] in (KIND_BG, KIND_CG):
                 head = blob[entry["data_off"]] if entry["data_len"] else 0
                 self.assertEqual(head, 0xFF, f"{entry['name']} 不是 JPEG")
+            if entry["kind"] == KIND_CG_DIFF:
+                # 补丁载荷 = u32 掩码长度 + u32 像素长度 + 两段 zlib 流
+                mask_len, pixels_len = struct.unpack_from("<II", blob, entry["data_off"])
+                self.assertEqual(mask_len + pixels_len + 8, entry["data_len"],
+                                 f"{entry['name']} 补丁长度对不上")
+                expected_mask = (entry["dw"] * entry["dh"] + 7) // 8
+                mask = zlib.decompress(blob[entry["data_off"] + 8:
+                                            entry["data_off"] + 8 + mask_len])
+                pixels = zlib.decompress(blob[entry["data_off"] + 8 + mask_len:])
+                self.assertEqual(len(mask), expected_mask, f"{entry['name']} 掩码字节数不对")
+                marked = sum(bin(byte).count("1") for byte in mask)
+                self.assertEqual(len(pixels), marked * 2, f"{entry['name']} 像素数不等于掩码置位数")
 
     def test_geometry_matches_the_screen(self) -> None:
         _, _, _ = self.sections[SEC_ASSET]
@@ -208,8 +220,9 @@ class ScnPackLayoutTest(unittest.TestCase):
                 options = plain[position]
                 position += 1
                 for _ in range(options):
+                    # 选项 = text + u8 目标类型 + u16 块号 + u32 页号 + u8 标志 + u8 值
                     position = self.skip_text(plain, position)
-                    position += 8
+                    position += 9
             elif kind == NODE_NEXT:
                 position += 7
                 conditions = plain[position]

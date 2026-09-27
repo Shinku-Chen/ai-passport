@@ -653,15 +653,6 @@ static uint32_t chunk_node_count(const senren_player_t *player)
     return player->loaded_len >= 2 ? rd16(player->raw) : 0;
 }
 
-static void player_clear_sentence(senren_player_t *player)
-{
-    player->speaker[0] = '\0';
-    player->text[0] = '\0';
-    player->page[0] = '\0';
-    player->page_index = 0;
-    player->page_count = 0;
-}
-
 // 按排版参数把 player->text 切页,并把第 0 页放进 player->page
 static void player_paginate(senren_player_t *player, const senren_layout_t *layout)
 {
