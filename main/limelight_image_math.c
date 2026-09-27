@@ -3,8 +3,8 @@
 
 int lime_sprite_origin_x(int sprite_w)
 {
-    // 立绘贴右边(与源移植版一致:人物站在对话框右侧,下半身落在对话框后面)。
-    int x = LIME_ART_W - sprite_w - LIME_SPRITE_EDGE_MARGIN;
+    // 立绘水平居中:人物站在画面中间,下半身落在对话框后面。
+    int x = (LIME_ART_W - sprite_w) / 2;
     if (x < 0) x = 0;
     return x;
 }

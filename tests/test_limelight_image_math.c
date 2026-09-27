@@ -22,8 +22,9 @@ static int checks;
 
 static void test_placement(void)
 {
-    // 贴右边(人物站在对话框右侧)
-    CHECK(lime_sprite_origin_x(62) == LIME_ART_W - 62 - LIME_SPRITE_EDGE_MARGIN);
+    // 水平居中(人物站在画面中间)
+    CHECK(lime_sprite_origin_x(62) == (LIME_ART_W - 62) / 2);
+    CHECK(lime_sprite_origin_x(100) == (LIME_ART_W - 100) / 2);
     CHECK(lime_sprite_origin_x(LIME_ART_W + 40) == 0);          // 比画布还宽:顶到左边
     // 底边贴**屏幕**底(不是画布底):下摆伸进正文带、被对话框盖住
     CHECK(lime_sprite_origin_y(252) == LIME_SCREEN_H - 252 - LIME_SPRITE_EDGE_MARGIN);

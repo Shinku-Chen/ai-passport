@@ -23,13 +23,13 @@
 // 立绘上限,与 tools/limelight_material_pack.py 的 SPRITE_MAX_W/H/PIXELS 一致。
 #define LIME_SPRITE_MAX_W 168
 #define LIME_SPRITE_MAX_H 300
-#define LIME_SPRITE_MAX_PIXELS 30000   // 立绘静态解码缓冲 = 此值 x 2 字节(60KB)
-#define LIME_SPRITE_EDGE_MARGIN 1      // 贴底/右边留一点边
+#define LIME_SPRITE_MAX_PIXELS 23000   // 立绘静态解码缓冲 = 此值 x 2 字节(46KB)
+#define LIME_SPRITE_EDGE_MARGIN 1      // 贴底留一点边(水平居中不再用右边距)
 // 立绘至少要露出这么多行(在正文带上方)。矮立绘(实测有一批 168x100 的)如果也贴
 // 屏幕底,会整个落在对话框后面看不见,所以给它们一个上限。
 #define LIME_SPRITE_MIN_VISIBLE 110
 
-// 立绘摆放:贴屏幕右下角 —— x 贴右,底边贴**屏幕**底(y = 320 - h - 边距),
+// 立绘摆放:水平居中、底边贴**屏幕**底(y = 320 - h - 边距),
 // 这样下摆会伸进正文带那 106 行里、被对话框盖住(而不是被画面区底边切断)。
 int lime_sprite_origin_x(int sprite_w);
 int lime_sprite_origin_y(int sprite_h);
