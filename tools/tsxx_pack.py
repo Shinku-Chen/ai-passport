@@ -610,6 +610,29 @@ class PackBuilder:
         bg_names, bg_missing = resolve_assets(used["bg"], index_assets(options.bg_dir))
         sprite_names, sprite_missing = resolve_assets(
             used["sprite"], index_assets(options.cimg_dir))
+        # 同组立绘只留一张:姿势差分只影响姿态,保留一张能换回大量空间,
+        # 用来把这张推到满高 + 高画质。被丢掉的差分名映射到同组保留的那张,
+        # 所以剧本引用它们时仍会画出这个角色。
+        if options.sprite_pose_limit > 0:
+            kept: List[str] = []
+            alias: Dict[str, str] = {}
+            for name in sprite_names:
+                group = sprite_group(name)
+                if group in alias:
+                    continue
+                alias[group] = name
+                kept.append(name)
+            dropped = len(sprite_names) - len(kept)
+            sprite_names = kept
+            for name in used["sprite"]:
+                if name not in sprite_names:
+                    alias.setdefault(name, alias.get(sprite_group(name), name))
+            options.sprite_alias = alias
+            if dropped:
+                self.log(f"立绘差分合并: {len(used['sprite'])} → {len(kept)} 张"
+                         f"(同组姿势差分丢 {dropped} 张,引用保留那张)")
+        else:
+            options.sprite_alias = {}
         event_names, event_missing = resolve_assets(
             used["event"], index_assets(options.evig_dir))
         bg_index = index_assets(options.bg_dir)
@@ -673,6 +696,9 @@ class PackBuilder:
         # ---- 页表 ----
         bg_of = {name: i for i, name in enumerate(bg_names)}
         sprite_of = {name: i for i, name in enumerate(sprite_names)}
+        for name, target in getattr(options, "sprite_alias", {}).items():
+            if target in sprite_of:
+                sprite_of[name] = sprite_of[target]
         speaker_of = {name: i for i, name in enumerate(used["speaker"])}
         event_of = {name: i for i, name in enumerate(event_names)}
         pbg = bytearray()
@@ -1206,6 +1232,20 @@ def font_inventory(symbols: Sequence[str], speaker_names: Sequence[str]) -> List
     return out
 
 
+def sprite_group(name: str) -> str:
+    """立绘差分归组:fsh01_1/2/3 是同一个角色的同一件衣服、只是姿势不同。
+
+    源工程的立绘命名是 <角色><编号>_<差分号>,所以去掉末尾的 _N 就是一组。
+    """
+    stem = name
+    for suffix in IMAGE_SUFFIXES:
+        if stem.lower().endswith(suffix):
+            stem = stem[: -len(suffix)]
+            break
+    match = re.match(r"^(.*)_\d+$", stem)
+    return match.group(1) if match else stem
+
+
 def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="打包《天使☆騒々 RE-BOOT!》手环移植版素材。",
@@ -1236,6 +1276,8 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
                         help="美术层宽度;高度按屏幕长宽比推导(固件放大到整屏)")
     layout.add_argument("--box-y", type=int, default=DEFAULT_BOX_Y,
                         help="文本框顶边(= 画面区底边),美术层坐标")
+    layout.add_argument("--sprite-pose-limit", type=int, default=1,
+                        help="每组立绘最多保留几张姿态差分(0 = 全保留,默认 1)")
     layout.add_argument("--sprite-height", type=int, default=DEFAULT_SPRITE_HEIGHT)
     layout.add_argument("--sprite-bottom", type=int, default=DEFAULT_SPRITE_BOTTOM)
     layout.add_argument("--bg-quality", type=int, default=72)
