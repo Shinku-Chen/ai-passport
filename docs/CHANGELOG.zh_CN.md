@@ -53,3 +53,11 @@
 - 同步更新索引：`docs/software-design/README.md`、`README.en_US.md` / `README.zh_CN.md` 的 `docs/` 目录说明。
 - 参考 cindy 仓库文档组织完善索引：新增 `docs/README.md` 根总索引；AGENTS.md 规则索引按触发场景改写（附触发条件）；`docs/contribution/` 与 `docs/development/` 的 README 补充收录标准。
 - 引入社区治理文档（参照 cindy 改写，放仓库根目录）：新增 `CONTRIBUTING.md` / `.zh_CN.md`（贡献指南，针对 ESP-IDF/AI agent/fork 场景改写）、`CODE_OF_CONDUCT.md` / `.zh_CN.md`（贡献者公约）、`SECURITY.md` / `.zh_CN.md`（安全报告流程）、`SUPPORT.md` / `.zh_CN.md`（支持渠道）；AGENTS.md 与 docs/README.md 同步引用。
+
+## v0.1.0-limelight - 2026-09-27
+
+- 新增《limelight lemonade jam》竖屏视觉小说阅读器，落在 `cindy/curious-babbage` 分支：完整本篇——230 个章节点、68,229 句对白、约 120 万字、8 个选项点——从 Flash 里的打包数据离线运行；标题、正文、选项、章节跳转、CG 鉴赏、菜单、设置、五个手动存档槽 + 一个自动存档、结局与关于页沿用 ATRI 阅读器的 LVGL 页面体系。
+- 新增打包管线与两份入库的打包数据（`main/limelight_data/`）：背景与 CG 用 JPEG 直接解码进 240x214 画面区，立绘存 alpha 裁剪的 RGB565 + 1bpp 遮罩，剧本按每 250 条一块 raw-deflate 存储、由 ESP32-C3 ROM 的解压器展开，解压不占固件空间。素材是该商业作品公开手环移植版的转换产物，来源已在分支 README 标注。
+- 打包阶段清洗上游文本：104 条带内联排版指令的行与 7 条混进正文的译者备注被剔除，对白内容本身一字未改。
+- 新增生成式中文字体子集（Noto Sans SC，3,449 字形，OFL-1.1）在 `assets/fonts/` 下，并附带可重新生成并逐字节校验的生成器。
+- 扩展 BSP：按键释放事件、显式按键门限（短按 180 ms / 长按 500 ms）与深睡前的按键引脚交接；阅读器用它们实现"松手即停"的快进、自动阅读、`X-Y` 章节显示与休眠唤醒。自动阅读与快进期间不计空闲，屏幕保持常亮。

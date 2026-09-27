@@ -56,3 +56,11 @@
 - Updated software-design and project README references for the new documentation structure.
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
+
+## v0.1.0-limelight - 2026-09-27
+
+- Added the *limelight lemonade jam* portrait visual-novel reader on `cindy/curious-babbage`. The whole story - 230 chapter points, 68,229 lines of dialogue, about 1.2 million characters and eight choice points - runs offline from the pack in Flash, with title, body, choices, chapter jump, CG gallery, menu, settings, five save slots plus one automatic slot, ending and about pages on the ATRI reader's LVGL page system.
+- Added the pack pipeline and the two committed packs (`main/limelight_data/`): backgrounds and CGs stay JPEG and are decoded straight into the 240x214 canvas, sprites are stored as alpha-cut RGB565 plus a 1 bpp mask, and the script is UTF-8 compressed in 250-entry raw-deflate blocks that the ESP32-C3 ROM inflater expands, so decompression costs no Flash. The packs are a conversion of the public Mi Band port of this commercial title, credited in the branch README.
+- Cleaned the upstream text at pack time: 104 lines carrying inline layout directives and seven lines with a leaked translator memo are removed, leaving the dialogue itself unchanged.
+- Added a generated Noto Sans SC subset font (3,449 glyphs, OFL-1.1) under `assets/fonts/`, together with the tool that regenerates and byte-verifies it.
+- Extended the BSP with a button-release event, explicit press timing (180 ms short / 500 ms long) and the button hand-off before deep sleep; the reader uses them for release-to-stop fast-forward, auto-read, the `X-Y` chapter label and the sleep/wake path. Auto-read and fast-forward count as activity, so the screen stays lit while they run.
