@@ -1,100 +1,82 @@
 <p align="right">
-  <a href="README.zh_CN.md">简体中文</a> · <strong>English</strong>
+  <strong>简体中文</strong> · <a href="README.en_US.md">English</a>
 </p>
 
-# Asunabi
+# 飞鸟会长不肯认输（Asunabi）
 
-A portrait visual novel ported to the AI Passport from
-[`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband), a Xiaomi
-Band release: **30 chapters, 4,649 dialogue lines and about 94,000 characters**,
-read straight through to a single ending.
+从小米手环版本 [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband)
+移植到 AI Passport 的竖屏视觉小说：**30 章、4649 句对白、约 9.4 万字**，从头读到唯一结局。
 
-This is the application built on this `feature/asunabi-galgame` branch. The
-firmware boots straight into the title screen (no demo menu).
+这是建立在 `feature/asunabi-galgame` 分支上的应用。固件开机直接进入标题画面（没有 demo 菜单）。
 
-## What it does
+## 功能
 
-- **Reading** — the confirm key advances a line, or reveals the rest of a line
-  that is still being typed. A line too long for the panel is paginated, not
-  clipped.
-- **Title screen** — start a new read-through, continue from the stored position,
-  jump to any chapter, or open the settings.
-- **Reader menu** — resume, save, load, skip the current chapter, open the
-  settings, or return to the title.
-- **Save slots** — six manual slots that include the position within a paginated
-  line; hold the confirm key on a slot to delete it. The last position is also
-  remembered automatically, so "continue" resumes where you stopped.
-- **Settings** — text speed (slow / medium / fast / instant), text size (16 px or
-  20 px) with a live typewriter preview, and auto-play.
-- **Ending screen** — the story has one ending; reaching it clears the resume
-  point and offers a return to the title.
+- **阅读** —— 确定键推进一句；若该句正在逐字显示，则先立即全显。超出面板的长句会**翻页**而不是被裁掉。
+- **标题画面** —— 开始新游戏、从存档位置继续、跳到任意章节，或进入设置。
+- **阅读菜单** —— 继续阅读、保存、读取、跳过本章、设置、返回标题。
+- **存档** —— 6 个手动存档槽，位置包含「分页中的第几页」；在存档槽上长按确定键删除。
+  最后一次位置也会自动记住，「继续阅读」即从这里接着读。
+- **设置** —— 文字速度（慢 / 中 / 快 / 瞬间）、文字大小（16px 或 20px，带实时打字预览）、自动阅读。
+- **结局画面** —— 全部只有一个结局；读完后会清掉继续点，并提示返回标题。
 
-## Interaction
+## 交互
 
-Three keys drive the whole app. The battery percentage sits in the top-right
-corner and degrades to `--%` when the gauge cannot be read.
+三个按键驱动全部操作。右上角显示电量百分比；读不到电量计时降级显示 `--%`。
 
-| Key | Reading | In a menu |
+| 按键 | 阅读中 | 菜单中 |
 | --- | --- | --- |
-| UP (short) | next line, or reveal the rest of the current one | move the selection up |
-| UP (hold) | fast-forward while held; stops the moment you let go | — |
-| OK (short) | open the menu | activate the selected row |
-| OK (hold) | — | leave the menu |
-| DOWN (short) | scroll a line that runs past the panel | move the selection down |
-| DOWN (hold) | toggle auto-play (next line 0.9 s later; any key cancels it) | — |
+| UP 短按 | 下一句，或立即全显当前句 | 选中项上移 |
+| UP 长按 | 按住快进，松手即停 | — |
+| OK 短按 | 呼出菜单 | 执行选中项 |
+| OK 长按 | — | 退出菜单 |
+| DOWN 短按 | 滚动超出面板的文字 | 选中项下移 |
+| DOWN 长按 | 切换自动阅读（每句 0.9 秒，任意键解除） | — |
 
-The firmware never blanks the panel, so auto-play reads on without being interrupted.
+固件不会熄灭屏幕，自动阅读可以无人值守地一直读下去。
 
-## Assets
+## 素材
 
-The artwork and chapter scripts come from
-[`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) and are
-**third-party content**. That repository declares no license; the material is
-committed under `assets/gal-source/common/` so a clone can build the complete
-game, and the upstream project is credited as its only source.
+美术与章节剧本来自 [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband)，
+属于**第三方内容**。该仓库未声明任何许可；素材原样提交在 `assets/gal-source/common/`，
+让 clone 就能构建出完整作品，并以上游项目作为唯一来源标注。
 
-The build packs that tree into a dedicated 4 MiB `assets` data partition through
-[`tools/gal/`](tools/gal/README.md), which is the reusable part of this branch:
-a documented pack format, a packer with a visual preview, an inspector, and the
-CJK font subset generator.
+构建时通过 [`tools/gal/`](tools/gal/README.md) 把该目录打包进一个独立的 4 MiB `assets` 数据分区。
+那个工具链才是本分支可复用的部分：一套有文档的包格式、带可视预览的打包器、包检查器，
+以及 CJK 字体子集生成器。
 
-Two consequences are worth knowing before building or releasing:
+构建或发版前有两点需要知道：
 
-- Packing the artwork needs Pillow in the Python environment ESP-IDF builds with.
-  The firmware workflows install it; a local build without it stops at the packer.
-- Remove `assets/gal-source/common/` and the packer emits a small placeholder pack
-  instead, so a build without the material still configures, builds and boots.
+- 打包美术需要 ESP-IDF 构建所用解释器里装有 Pillow。固件的 CI 任务已经安装；
+  本地缺它会在打包器这一步停下。
+- 删掉 `assets/gal-source/common/` 时，打包器会改为生成小型占位包，
+  因此没有素材也能配置、构建并启动。
 
-## Firmware / build
+## 固件 / 构建
 
-This branch replaces the demo menu with the galgame: `main/gal/` (the pack reader
-and typesetting model, the memory-mapped asset layer, NVS saves, and the
-key-driven UI), a rewired `main/main.c`, a dedicated `assets` data partition
-(4 MiB, data subtype `0x40`), and two committed CJK font subsets under
-`assets/fonts/`.
+本分支用 galgame 替代了 demo 菜单：`main/gal/`（包读取与排版 model、内存映射素材层、
+NVS 存档、按键驱动的界面）、改写过的 `main/main.c`、一个独立的 `assets` 数据分区
+（4 MiB，data 子类型 `0x40`），以及提交在 `assets/fonts/` 下的两个 CJK 字体子集。
 
-The firmware also answers `FAP_SCREENSHOT_V1` on the console with the current frame
-as RGB565LE, which the community publisher requires before it accepts a submission.
+固件还会在控制台上响应 `FAP_SCREENSHOT_V1`，回一帧当前画面（RGB565LE）—— 这是社区发布接受投稿前的硬性要求。
 
-Packing the real artwork needs Pillow in the interpreter ESP-IDF builds with:
+打包真实美术需要 ESP-IDF 构建所用的解释器里装有 Pillow：
 
 ```bash
 "$IDF_PYTHON_ENV_PATH/Scripts/python.exe" -m pip install Pillow   # Windows
 python -m pip install Pillow                                       # Linux/macOS
 ```
 
-Then verify the merged image, which is what a release should ship:
+然后校验合并镜像（发版应交付这个）：
 
 ```bash
 ./tools/validate.sh --firmware      # -> build/FoloToy-AI-Passport-full.bin
 ```
 
-`./tools/validate.sh --static` runs the host tests, including the pack reader,
-the advance rules and the pagination.
+`./tools/validate.sh --static` 会跑 host 测试，其中覆盖包读取、推进规则与分页。
 
-## Source
+## 来源
 
-- **Branch**: [`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame)
-- **Release**: [`v0.1.0-asunabi`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-asunabi) — merged image `FoloToy-AI-Passport-full.bin`, 7,917,142 bytes; also submitted to the AI Passport community market.
-- **Upstream work**: [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) — the Xiaomi Band quick-app release this port is based on. No license is declared there; its artwork and chapter scripts are committed under `assets/gal-source/` with the upstream project credited as the source.
-- Asset pipeline: [`tools/gal/README.md`](tools/gal/README.md)
+- **分支**：[`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame)
+- **发布**：[`v0.1.0-asunabi`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-asunabi) —— 合并镜像 `FoloToy-AI-Passport-full.bin`，7,917,142 字节；并已投稿到 AI Passport 社区市场。
+- **上游作品**：[`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) —— 本次移植所依据的小米手环快应用版本。该仓库未声明许可；美术与章节剧本已提交在 `assets/gal-source/`，并以上游项目作为来源标注。
+- 素材工具链：[`tools/gal/README.md`](tools/gal/README.md)

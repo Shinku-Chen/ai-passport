@@ -13,8 +13,8 @@ docs/
     AI_HARDWARE_DEVELOPMENT_GUIDE.md   完整硬件开发指南与排障参考（上游）
   contribution/               协作规范（doc-conventions.md、commit-and-pr.md，见 README.md 索引）
   development/                工程规范与 AI 开发工作流（build-and-test.md、coding-conventions.md、ai-guide.md，见 README.md 索引）
-  README.md                   上游英文说明（FoloToy AI Passport；GitHub 主 README）
-  README.zh_CN.md             上游中文说明（FoloToy AI Passport）
+  README.md                   fork 根 README：简体中文默认（GitHub 主 README）
+  README.en_US.md             fork 根 README 的英文版本
   INDEX.md                    仓库根总索引（各目录索引表格 + 根治理文档）
   assets/                     fork 补充文档素材目录（README 不足以说明项目时存放补充文档与素材；上游 main 只保留空目录 `.gitkeep`，内容文件仅存在于 fork）
   fork-guide.md               本文档：fork 工作流与约定
@@ -47,7 +47,7 @@ fork 后，`main` 分支**只允许增加/修改根目录的 `README.md` 和 `do
 **根目录的 `README.md` 是预留给开发者自行放置的，因此上游留空**：
 
 - 上游 main 的根目录**故意不放 README**，把这一位置预留给 fork 开发者。上游项目说明位于 `docs/README.md`（GitHub 从 docs/ 识别主 README），不占用根目录。
-- 开发者 fork 项目后，可将**自己的内容**写到根目录的 `README.md`，以介绍 fork 后的项目——例如改动来源、二次开发说明、自定义用法等。这样 fork 的根目录 README 与上游互不冲突，也无需覆盖上游文档。
+- 开发者 fork 项目后，可将**自己的内容**写到根目录的 `README.md`，以介绍 fork 后的项目——例如改动来源、二次开发说明、自定义用法等。这样 fork 的根目录 README 与上游互不冲突，也无需覆盖上游文档。本 fork 的根 README 以中文为默认：`README.md` 为简体中文，英文版本放在 `README.en_US.md`，两个文件顶部互相切换——这是仓库语言规则里唯一由 fork 自有的例外。
 
 根 README 的内容跟分支模型一致：`feature/*` 分支的根 README 只介绍本分支自己的应用——做什么、怎么用、相关说明；fork `main` 的根 README 才是全部项目的目录，每个应用一段，在应用发布或归档时刷新。不要把整份目录复制到功能分支，也不要把 `main` 的目录简化成一串链接。
 

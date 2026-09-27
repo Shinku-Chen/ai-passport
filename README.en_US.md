@@ -1,0 +1,100 @@
+<p align="right">
+  <a href="README.md">简体中文</a> · <strong>English</strong>
+</p>
+
+# Asunabi
+
+A portrait visual novel ported to the AI Passport from
+[`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband), a Xiaomi
+Band release: **30 chapters, 4,649 dialogue lines and about 94,000 characters**,
+read straight through to a single ending.
+
+This is the application built on this `feature/asunabi-galgame` branch. The
+firmware boots straight into the title screen (no demo menu).
+
+## What it does
+
+- **Reading** — the confirm key advances a line, or reveals the rest of a line
+  that is still being typed. A line too long for the panel is paginated, not
+  clipped.
+- **Title screen** — start a new read-through, continue from the stored position,
+  jump to any chapter, or open the settings.
+- **Reader menu** — resume, save, load, skip the current chapter, open the
+  settings, or return to the title.
+- **Save slots** — six manual slots that include the position within a paginated
+  line; hold the confirm key on a slot to delete it. The last position is also
+  remembered automatically, so "continue" resumes where you stopped.
+- **Settings** — text speed (slow / medium / fast / instant), text size (16 px or
+  20 px) with a live typewriter preview, and auto-play.
+- **Ending screen** — the story has one ending; reaching it clears the resume
+  point and offers a return to the title.
+
+## Interaction
+
+Three keys drive the whole app. The battery percentage sits in the top-right
+corner and degrades to `--%` when the gauge cannot be read.
+
+| Key | Reading | In a menu |
+| --- | --- | --- |
+| UP (short) | next line, or reveal the rest of the current one | move the selection up |
+| UP (hold) | fast-forward while held; stops the moment you let go | — |
+| OK (short) | open the menu | activate the selected row |
+| OK (hold) | — | leave the menu |
+| DOWN (short) | scroll a line that runs past the panel | move the selection down |
+| DOWN (hold) | toggle auto-play (next line 0.9 s later; any key cancels it) | — |
+
+The firmware never blanks the panel, so auto-play reads on without being interrupted.
+
+## Assets
+
+The artwork and chapter scripts come from
+[`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) and are
+**third-party content**. That repository declares no license; the material is
+committed under `assets/gal-source/common/` so a clone can build the complete
+game, and the upstream project is credited as its only source.
+
+The build packs that tree into a dedicated 4 MiB `assets` data partition through
+[`tools/gal/`](tools/gal/README.md), which is the reusable part of this branch:
+a documented pack format, a packer with a visual preview, an inspector, and the
+CJK font subset generator.
+
+Two consequences are worth knowing before building or releasing:
+
+- Packing the artwork needs Pillow in the Python environment ESP-IDF builds with.
+  The firmware workflows install it; a local build without it stops at the packer.
+- Remove `assets/gal-source/common/` and the packer emits a small placeholder pack
+  instead, so a build without the material still configures, builds and boots.
+
+## Firmware / build
+
+This branch replaces the demo menu with the galgame: `main/gal/` (the pack reader
+and typesetting model, the memory-mapped asset layer, NVS saves, and the
+key-driven UI), a rewired `main/main.c`, a dedicated `assets` data partition
+(4 MiB, data subtype `0x40`), and two committed CJK font subsets under
+`assets/fonts/`.
+
+The firmware also answers `FAP_SCREENSHOT_V1` on the console with the current frame
+as RGB565LE, which the community publisher requires before it accepts a submission.
+
+Packing the real artwork needs Pillow in the interpreter ESP-IDF builds with:
+
+```bash
+"$IDF_PYTHON_ENV_PATH/Scripts/python.exe" -m pip install Pillow   # Windows
+python -m pip install Pillow                                       # Linux/macOS
+```
+
+Then verify the merged image, which is what a release should ship:
+
+```bash
+./tools/validate.sh --firmware      # -> build/FoloToy-AI-Passport-full.bin
+```
+
+`./tools/validate.sh --static` runs the host tests, including the pack reader,
+the advance rules and the pagination.
+
+## Source
+
+- **Branch**: [`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame)
+- **Release**: [`v0.1.0-asunabi`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-asunabi) — merged image `FoloToy-AI-Passport-full.bin`, 7,917,142 bytes; also submitted to the AI Passport community market.
+- **Upstream work**: [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) — the Xiaomi Band quick-app release this port is based on. No license is declared there; its artwork and chapter scripts are committed under `assets/gal-source/` with the upstream project credited as the source.
+- Asset pipeline: [`tools/gal/README.md`](tools/gal/README.md)
