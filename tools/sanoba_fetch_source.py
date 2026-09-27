@@ -34,6 +34,10 @@ Usage:
   python tools/sanoba_fetch_source.py --dest /tmp/sanoba-source --ref <commit>
 
 Existing files with the expected size are skipped, so re-running is cheap.
+
+本分支已把素材入库到 assets/sanoba-source/(来源与许可见 assets/README.md),
+所以重建资源包不需要联网,直接 --source assets/sanoba-source 即可。只有要跟上游
+最新版本时才需要跑本工具。
 """
 
 from __future__ import annotations

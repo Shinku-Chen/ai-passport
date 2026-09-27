@@ -901,7 +901,9 @@ def build_meta(story: Story, source: Path, ref: str, keep_sprites: bool, raw_lim
         "version=1",
         "source_repo=https://github.com/hrk666666/Sanoba-Witch-MiBand-10",
         f"source_ref={ref}",
-        f"source_dir={source.as_posix()}",
+        # 只记目录名不记完整路径:入库素材在 assets/sanoba-source、构建时可能在
+        # build/sanoba-source,记完整路径会让"重建"不再是逐字节可复现。
+        f"source_dir_name={source.name}",
         "deflate=zlib, one block per chunk, level 9 (sanoba_inflate expects the wrapper)",
         f"raw_limit={raw_limit}",
         f"sprites={'kept' if keep_sprites else 'dropped'}",

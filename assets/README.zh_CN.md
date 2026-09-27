@@ -31,6 +31,28 @@
 - 许可允许时保留可编辑源文件，并记录来源与许可。
 - 图片中不得包含设备二维码秘密、凭证或个人数据。
 
+## 第三方源素材(`sanoba-source/`)
+
+《魔女的夜宴》移植分支(`feature/sanoba-witch`)把"打包用的上游素材"一并入库,这样
+clone 下来就能离线重建资源包:
+
+| 路径 | 内容 | 来源与版权 |
+| --- | --- | --- |
+| `sanoba-source/bg/` | 107 张背景,336 × 480 JPEG | Yuzusoft,取自手环移植版 [`hrk666666/Sanoba-Witch-MiBand-10`](https://github.com/hrk666666/Sanoba-Witch-MiBand-10)(其上游是已存档的 `futrw4v/Sanoba-Witch-MiBand-9Pro`) |
+| `sanoba-source/sd/` | 292 张 SD(Q 版)演出图,240 × 144 JPEG | 同上 |
+| `sanoba-source/scn/` | 101 章剧本,由原版 KiriKiri `.ks` 转成的节点数组 JSON | 同上;简体中文文本为暗鸽汉化组成果 |
+| `sanoba-source/title_bg.jpg` | 标题主视觉,336 × 480 JPEG | 同上 |
+| `sanoba-source/game.txt` | 内容包清单:场景顺序与 019 选线规则 | 同上 |
+| `sanoba-source/MANIFEST.json` | 每个文件的字节数与 sha256(记录取源版本) | 由 [`tools/sanoba_fetch_source.py`](../tools/sanoba_fetch_source.py) 生成 |
+
+- 来源、哈希与上游 commit 见 `MANIFEST.json`;要刷新这份拷贝用
+  `python tools/sanoba_fetch_source.py --dest assets/sanoba-source --chunks`。
+- 直接从这里重建资源包:
+  `python tools/sanoba_scn_pack.py --source assets/sanoba-source --out main/sanoba_data/sanoba_scn.bin`
+  与 `python tools/sanoba_pack.py --source assets/sanoba-source --out main/sanoba_data/sanoba_pack.bin`。
+- 版权归 Yuzusoft(美术)与暗鸽汉化组(文本)所有,仅用于个人学习与技术展示,
+  请勿商用,请支持正版。
+
 ## 音乐与音效（music）
 
 可复用的音乐与音效源码放在 `music/`。

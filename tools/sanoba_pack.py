@@ -349,7 +349,8 @@ class PackBuilder:
             "layout=SENRNPK2-compatible header/section/entry structs",
             "source_repo=https://github.com/hrk666666/Sanoba-Witch-MiBand-10",
             f"source_ref={ref}",
-            f"source_dir={source.as_posix()}",
+            # 只记目录名(同 sanoba_scn_pack.py):保证入库素材重建逐字节一致。
+            f"source_dir_name={source.name}",
             f"screen={SCREEN_W}x{SCREEN_H}",
             f"bg_crop={self.args.crop}",
             f"bg_quality={self.args.bg_quality}",
