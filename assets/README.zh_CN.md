@@ -42,8 +42,7 @@ RE-BOOT!》阅读器的字符清单：3,417 个码位，顺序就是资源包给
 ```bash
 # main/tsxx_data/tsxx_pack.bin 的内容
 python tools/tsxx_pack.py --source assets/tsxx-source --out main/tsxx_data/tsxx_pack.bin \
-    --bg-quality 65 --sprite-height 320 --sprite-quality 95 --event-quality 53 \
-    --max-bytes 6475000 \
+    --bg-quality 65 --sprite-height 320 --sprite-quality 95 --event-quality 60 \
     --title-image assets/images/tsxx-reboot-cover.png \
     --symbols-out assets/fonts/tsxx_symbols.txt
 ```

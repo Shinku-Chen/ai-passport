@@ -768,12 +768,15 @@ class PackBuilder:
         # 源素材里没有可用的标题画,所以由 --title-image 另外给一张。
         title_bg = 0
         if options.title_image:
+            # 标题页是静态整屏,按**画布尺寸**存,合成时 1:1 不缩放 —— 它不需要为
+            # 背景表的紧凑尺寸让路(单张图改到 240x320 只多几十 KB)。
             with Image.open(options.title_image) as raw:
-                title_frame = cover_crop(raw.convert("RGB"), bg_w, bg_h)
+                title_frame = cover_crop(raw.convert("RGB"), art_w, art_h)
             title_bg = bg_section.add_image(
-                encode_jpeg(title_frame, options.bg_quality), bg_w, bg_h)
+                encode_jpeg(title_frame, options.title_quality), art_w, art_h)
             bg_names = list(bg_names) + ["__title__"]
-            self.log(f"标题背景 #{title_bg} ← {os.path.basename(options.title_image)}")
+            self.log(f"标题背景 #{title_bg} {art_w}×{art_h} ← "
+                     f"{os.path.basename(options.title_image)}")
 
         # ---- 立绘 ----
         fg_section = Section(SEC_FG, FG_ENTRY)
@@ -1053,8 +1056,9 @@ def verify(pack_path: str, script_dir: Optional[str] = None) -> Dict[str, object
                 raise ValueError(f"{SEC_NAMES[kind]}[{index}] 数据越界")
             if width == 0 or height == 0 or width > SCREEN_W or height > SCREEN_H:
                 raise ValueError(f"{SEC_NAMES[kind]}[{index}] 尺寸 {width}x{height} 非法")
-            if kind == SEC_BG and (width, height) != (bg_w, bg_h):
-                raise ValueError(f"BG[{index}] 必须是背景存储尺寸 {bg_w}×{bg_h}")
+            if kind == SEC_BG and (width, height) not in ((bg_w, bg_h), (art_w, art_h)):
+                raise ValueError(f"BG[{index}] 必须是背景存储尺寸 {bg_w}×{bg_h} "
+                                 f"或画布尺寸 {art_w}×{art_h}")
             if kind == SEC_EVB and (width, height) != (event_w, event_h):
                 raise ValueError(f"EVB[{index}] 必须是事件图存储尺寸 {event_w}×{event_h}")
             if kind != SEC_EVC and width * SCREEN_H != height * SCREEN_W:
@@ -1313,9 +1317,11 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
                         help="写进 META 的来源描述")
 
     target = parser.add_argument_group("输出")
-    target.add_argument("--title-image", default="",
-                        help="标题背景图(任意尺寸,按美术层尺寸 cover 裁切后追加到背景表末尾)")
     target.add_argument("--out", help="资源包输出路径")
+    target.add_argument("--title-image", default="",
+                        help="标题背景图(按画布尺寸 cover 裁切后追加到背景表末尾,合成时 1:1)")
+    target.add_argument("--title-quality", type=int, default=88,
+                        help="标题背景的 JPEG 质量(它是静态封面,给高一点)")
     target.add_argument("--symbols-out", help="码位清单输出路径(给字体子集工具)")
     target.add_argument("--report", action="store_true", help="打印分段体积")
     target.add_argument("--max-bytes", type=int, default=0,

@@ -314,12 +314,17 @@ bool tsxx_art_show(tsxx_art_t *img, const tsxx_pack_t *pack, uint8_t bg, const t
         if (!tsxx_pack_bg(pack, bg, &view)) {
             ESP_LOGE(TAG, "背景下标越界: %u", (unsigned)bg);
             ok = false;
-        } else if (view.w != pack->bg_w || view.h != pack->bg_h) {
-            ESP_LOGE(TAG, "背景尺寸 %ux%u 与 META bg=%ux%u 不符", (unsigned)view.w,
-                     (unsigned)view.h, pack->bg_w, pack->bg_h);
-            ok = false;
-        } else if (!decode_image(img, view.jpeg, view.jpeg_len, view.w, view.h, NULL, 0, 0,
-                                 TSXX_ART_W, TSXX_ART_H, NULL)) {
+        } else if ((view.w == pack->bg_w && view.h == pack->bg_h) ||
+                   (view.w == TSXX_ART_W && view.h == TSXX_ART_H)) {
+            // 普通背景 180x240 合成时放大;标题页是静态整屏图,按画布尺寸存、1:1 绘制。
+            if (!decode_image(img, view.jpeg, view.jpeg_len, view.w, view.h, NULL, 0, 0,
+                              TSXX_ART_W, TSXX_ART_H, NULL)) {
+                ok = false;
+            }
+        } else {
+            ESP_LOGE(TAG, "背景尺寸 %ux%u 既不是 META bg=%ux%u 也不是画布 %ux%u",
+                     (unsigned)view.w, (unsigned)view.h, pack->bg_w, pack->bg_h,
+                     (unsigned)TSXX_ART_W, (unsigned)TSXX_ART_H);
             ok = false;
         }
     }
