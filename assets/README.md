@@ -34,6 +34,39 @@ Store reusable source images and generated display assets in `images/`.
 - Preserve editable sources where licensing permits, and record the source and license.
 - Never commit device QR secrets, credentials, or personal data in images.
 
+## Port source material
+
+Archived upstream sources for the fan ports live here in the layout the packers
+read directly, so every packed blob in a firmware image can be rebuilt offline
+without touching the network.
+
+`senren-source/` holds the sources of the *Senren \* Banka* port:
+
+| Path | Contents |
+| --- | --- |
+| `senren-source/bg/` | 92 backgrounds |
+| `senren-source/ch/` | 123 character sprites (several poses each) |
+| `senren-source/ev/` | 570 event illustrations and SD images |
+| `senren-source/scn/` | 112 script chunks |
+| `senren-source/MANIFEST.json` | Upstream repository, ref and a SHA-256 per file, written by the fetch tool |
+
+Source: the Mi Band fan port [`hrk666666/Senren-Banka-MiBand-10`](https://github.com/hrk666666/Senren-Banka-MiBand-10),
+fetched with `tools/senren_fetch_source.py`. Repacking from this directory is
+byte-identical to the committed packs:
+
+```bash
+python3 tools/senren_pack.py --source assets/senren-source \
+  --out build/repack/senren_pack.bin --json build/repack/senren_pack.json \
+  --sprite-max-h 320 --quality-scale 1.15 --sd-min-refs 8
+python3 tools/senren_scn_pack.py --source assets/senren-source \
+  --out build/repack/senren_scn.bin --json build/repack/senren_scn.json
+```
+
+Both commands reproduce the committed SHA-256 values (`a0f89a22…` for the
+5,263,756-byte image pack and `a0d7d3cf…` for the 1,432,148-byte script pack).
+The port is non-commercial and for personal study only; the artwork belongs to
+its original publisher and the upstream project is credited in the branch README.
+
 ## Music and sound effects
 
 Store reusable music and sound-effect sources in `music/`.

@@ -32,6 +32,32 @@
 - 许可允许时保留可编辑源文件，并记录来源与许可。
 - 图片中不得包含设备二维码秘密、凭证或个人数据。
 
+## 移植源素材（移植分支的 assets/*-source）
+
+各移植分支的上游源素材按打包器直接读取的目录结构归档在这里，因此固件里的每一个打包数据块都可以离线重建，不需要联网。
+
+`senren-source/` 是《千恋＊万花》移植的源素材：
+
+| 路径 | 内容 |
+| --- | --- |
+| `senren-source/bg/` | 92 张背景 |
+| `senren-source/ch/` | 123 个立绘（每个含多个姿势） |
+| `senren-source/ev/` | 570 张事件插图与 SD 图 |
+| `senren-source/scn/` | 112 个剧本分块 |
+| `senren-source/MANIFEST.json` | 上游仓库、引用与逐文件 SHA-256，由取源工具写出 |
+
+来源：手环移植工程 [`hrk666666/Senren-Banka-MiBand-10`](https://github.com/hrk666666/Senren-Banka-MiBand-10)，由 `tools/senren_fetch_source.py` 拉取。用这个目录重新打包，结果与已提交的包**字节级一致**：
+
+```bash
+python3 tools/senren_pack.py --source assets/senren-source \
+  --out build/repack/senren_pack.bin --json build/repack/senren_pack.json \
+  --sprite-max-h 320 --quality-scale 1.15 --sd-min-refs 8
+python3 tools/senren_scn_pack.py --source assets/senren-source \
+  --out build/repack/senren_scn.bin --json build/repack/senren_scn.json
+```
+
+两条命令都能复现已提交的 SHA-256（5,263,756 字节图片包 `a0f89a22…`、1,432,148 字节剧本包 `a0d7d3cf…`）。本移植非商业、仅供个人学习；美术版权归原出版方，上游工程已在分支 README 中注明。
+
 ## 音乐与音效（music）
 
 可复用的音乐与音效源码放在 `music/`。
