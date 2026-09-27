@@ -50,12 +50,13 @@ layout `tools/tsxx_pack.py` accepts directly:
 ```bash
 # what main/tsxx_data/tsxx_pack.bin contains
 python tools/tsxx_pack.py --source assets/tsxx-source --out main/tsxx_data/tsxx_pack.bin \
-    --bg-quality 65 --sprite-quality 60 --event-quality 60 \
+    --bg-quality 65 --sprite-height 240 --sprite-quality 95 --event-quality 62 \
+    --title-image assets/images/tsxx-reboot-cover.png \
     --symbols-out assets/fonts/tsxx_symbols.txt
 ```
 
 Rebuilding with the same command reproduces the committed
-`main/tsxx_data/tsxx_pack.bin` byte for byte. The pack is 5.67 MiB and lives in a dedicated 6.5 MiB assets partition; sprites keep one pose per character (the source ships 2-4 arm/expression variants of the same outfit) and are stored at the full 240 px art height at JPEG quality 95, bottom-anchored so the text band covers their lower half, as in the source project. Backgrounds, sprites
+`main/tsxx_data/tsxx_pack.bin` byte for byte. The pack is 5.97 MiB and lives in a dedicated 6.5 MiB assets partition; sprites keep one pose per character (the source ships 2-4 arm/expression variants of the same outfit) and are stored at the full 240 px art height at JPEG quality 95, bottom-anchored so the text band covers their lower half, as in the source project. Backgrounds, sprites
 and event frames all render at 180 × 240 (the `--art-width` default), the firmware scales
 that art layer up to the 240 × 320 panel, and it still draws the text layer at the native
 240 × 320. Storing the art layer at 180 px wide is what keeps the pack inside the 8 MB
