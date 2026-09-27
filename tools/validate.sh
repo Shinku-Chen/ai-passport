@@ -61,6 +61,12 @@ run_static_checks() {
             -o "${test_dir}/test_demo_${demo}_runtime"
         "${test_dir}/test_demo_${demo}_runtime"
     done
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
+        tests/test_senren_model.c main/senren_model.c main/senren_pack.c -lz \
+        -o "${test_dir}/test_senren_model"
+    "${test_dir}/test_senren_model"
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_senren_scn_pack.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_senren_font.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_deep_sleep_contract.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_check_repo.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_verify_firmware.py
