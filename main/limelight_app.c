@@ -347,7 +347,10 @@ static void title_refresh(lime_app_t *app)
     if (app->title_sel >= n) app->title_sel = 0;
     app->ui.lists[LIME_LIST_TITLE].row_h = 20;
     app->ui.lists[LIME_LIST_TITLE].top_y = 6;
-    lime_ui_set_list(&app->ui, LIME_LIST_TITLE, NULL, NULL, ptrs, values, n, app->title_sel);
+    // 底部一行操作提示(替代以前的首次说明页):按宽度只放得下这一句,
+    // 完整按键说明在「系统设置 → 关于本作」里。
+    lime_ui_set_list(&app->ui, LIME_LIST_TITLE, NULL, "上/下选择 · 确定进入",
+                     ptrs, values, n, app->title_sel);
 }
 
 static void show_title(lime_app_t *app)
