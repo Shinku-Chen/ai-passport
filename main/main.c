@@ -72,6 +72,9 @@ static volatile bool s_debug_ready;
 static volatile bool s_input_ready;
 static uint8_t s_backlight = BACKLIGHT_FULL;
 
+// 背光状态(只在变化时打日志:自动阅读期间应当看不到 调暗/熄屏 记录)
+static int s_backlight_state = -1;
+
 static void set_backlight(uint8_t percent)
 {
     if (s_backlight == percent) return;
@@ -264,6 +267,20 @@ static void debug_task(void *arg)
             continue;
         }
 
+        // SANOBAAUTO <0|1>:切自动阅读(设备没有按键注入通道,靠它远程验证
+        // "自动模式不调暗、不熄屏"这类行为)。
+        if (sscanf(line, "SANOBAAUTO %d", &chapter) == 1) {
+            bool ok = false;
+            if (bsp_lvgl_lock(1000)) {
+                sanoba_app_set_auto_play(&s_app, chapter != 0);
+                ok = sanoba_app_auto_play(&s_app) == (chapter != 0);
+                bsp_lvgl_unlock();
+            }
+            printf("SANOBAAUTO-%s %d\n", ok ? "OK" : "ERR", chapter);
+            fflush(stdout);
+            continue;
+        }
+
         // SANOBAJUMP <章号> [<句号>]:把阅读进度直接拨过去(正常落盘)。
         if (sscanf(line, "SANOBAJUMP %d %d", &chapter, &scene) >= 1) {
             bool jumped = false;
@@ -321,6 +338,7 @@ static void input_task(void *arg)
 
         if (got) {
             set_backlight(BACKLIGHT_FULL);
+            s_backlight_state = BACKLIGHT_FULL;
             handle_key(&key);
         }
         handle_tick(elapsed_ms);
@@ -328,10 +346,16 @@ static void input_task(void *arg)
         const uint32_t idle = sanoba_app_idle_ms(&s_app);
         if (idle >= SANOBA_SLEEP_MS) {
             enter_sleep();
-        } else if (idle >= SANOBA_SCREEN_OFF_MS) {
-            set_backlight(0);
-        } else if (idle >= SANOBA_DIM_MS) {
-            set_backlight(BACKLIGHT_DIM);
+        } else {
+            const int want = idle >= SANOBA_SCREEN_OFF_MS
+                                 ? 0
+                                 : (idle >= SANOBA_DIM_MS ? BACKLIGHT_DIM : BACKLIGHT_FULL);
+            if (want != s_backlight_state) {
+                ESP_LOGI(TAG, "空闲 %u ms:背光 %s", (unsigned)idle,
+                         want == 0 ? "熄屏" : (want == BACKLIGHT_DIM ? "调暗" : "恢复"));
+                s_backlight_state = want;
+                set_backlight((uint8_t)want);
+            }
         }
     }
 }
@@ -445,7 +469,7 @@ void app_main(void)
              (unsigned)mon.free_size, (unsigned)mon.free_biggest_size,
              (unsigned)mon.frag_pct);
     ESP_LOGI(TAG, "就绪:竖屏阅读器;确定推进 / 长按确定菜单;"
-                  "空闲 %us 调暗,%us 熄屏,%us 休眠",
+                  "空闲 %us 调暗,%us 熄屏,%us 休眠(自动阅读/快进期间不计空闲)",
              (unsigned)(SANOBA_DIM_MS / 1000), (unsigned)(SANOBA_SCREEN_OFF_MS / 1000),
              (unsigned)(SANOBA_SLEEP_MS / 1000));
 }

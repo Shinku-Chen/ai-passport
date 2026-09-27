@@ -91,6 +91,11 @@ bool sanoba_app_auto_reading(const sanoba_app_t *app);
 // 空闲时长(毫秒),供 main 决定变暗/熄屏/深睡。
 uint32_t sanoba_app_idle_ms(const sanoba_app_t *app);
 
+// 自动阅读模式(开着就一直不计空闲:不调暗、不熄屏、不休眠)。
+// sanoba_app_set_auto_play 只允许在阅读页调用,用于调试通道/菜单开关。
+bool sanoba_app_auto_play(const sanoba_app_t *app);
+void sanoba_app_set_auto_play(sanoba_app_t *app, bool on);
+
 // 进入深睡前保存进度。
 void sanoba_app_before_sleep(sanoba_app_t *app);
 

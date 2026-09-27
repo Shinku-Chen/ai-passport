@@ -246,9 +246,9 @@ static void advance_reading(sanoba_app_t *app, bool skip_typing)
         case SANOBA_STEP_CHOICE:
             app->at_choice = true;
             auto_save(app);
-            app->fast_forward = false;   // 选项页停下,交回玩家
-            app->auto_play = false;
-            sanoba_ui_set_auto(&app->ui, false);
+            // 选项页停下交回玩家,但【自动模式保持开着】:屏幕上不熄、不暗(用户要求),
+            // 选完这一项之后自动继续往下读。
+            app->fast_forward = false;
             render_scene(app);
             return;
         case SANOBA_STEP_CHAPTER: {
@@ -825,10 +825,11 @@ void sanoba_app_key(sanoba_app_t *app, const sanoba_key_t *key)
     // 自动阅读模式:真实的“按键”(单击/长按)才停下来,把控制权交回玩家。
     // 注意不能把 PRESS/RELEASE 也算进去 —— 长按下的抬起事件会在刚开完开关后
     // 立刻把自动模式关掉,表现就是“开了不自动”。
+    // 例外:停在选项上时,上/下/确定是在选选项 —— 不能顺手把自动关掉。
     const bool is_auto_toggle =
         (key->btn == BSP_BTN_DOWN && key->ev == BSP_BTN_LONG && app->page == SANOBA_PAGE_GAME);
     const bool is_real_press = (key->ev == BSP_BTN_CLICK || key->ev == BSP_BTN_LONG);
-    if (app->auto_play && is_real_press && !is_auto_toggle) {
+    if (app->auto_play && is_real_press && !is_auto_toggle && !app->at_choice) {
         app->auto_play = false;
         app->fast_forward = false;
         sanoba_ui_set_auto(&app->ui, false);
@@ -861,10 +862,10 @@ void sanoba_app_key(sanoba_app_t *app, const sanoba_key_t *key)
 void sanoba_app_tick(sanoba_app_t *app, uint32_t elapsed_ms)
 {
     if (!app) return;
-    // 自动阅读/快进是应用自己在推进画面,玩家不需要碰机器,这段时间不能算空闲 ——
-    // 否则会读到一半自己变暗、熄屏甚至休眠。停在选项或结局上时两者都已停下,
-    // 照旧按时限熄灭。
-    if (sanoba_app_auto_reading(app) || app->fast_forward) {
+    // 自动模式开着就一直算“有人在看”:即使正停在打字机里 / 选项上 / 章节卡过场,
+    // 也不调暗、不熄屏、不休眠(用户 2026-09-27 明确要求:自动模式不息屏、不暗屏)。
+    // 快进是玩家按着键在推进,同样不算空闲。
+    if (app->auto_play || app->fast_forward) {
         app->idle_ms = 0;
     } else {
         app->idle_ms += elapsed_ms;
@@ -918,6 +919,22 @@ bool sanoba_app_auto_reading(const sanoba_app_t *app)
 {
     if (!app) return false;
     return app->auto_play && app->page == SANOBA_PAGE_GAME && !app->at_choice && !app->ended;
+}
+
+bool sanoba_app_auto_play(const sanoba_app_t *app)
+{
+    return app ? app->auto_play : false;
+}
+
+// 供调试通道(SANOBAAUTO)与将来的菜单开关使用;只允许在阅读页切换。
+void sanoba_app_set_auto_play(sanoba_app_t *app, bool on)
+{
+    if (app == NULL || app->page != SANOBA_PAGE_GAME) {
+        return;
+    }
+    app->auto_play = on;
+    app->auto_ms = SANOBA_AUTO_MS;
+    sanoba_ui_set_auto(&app->ui, on);
 }
 
 uint32_t sanoba_app_idle_ms(const sanoba_app_t *app)
