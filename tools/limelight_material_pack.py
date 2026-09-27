@@ -105,7 +105,7 @@ DEFAULT_QUALITY = 30
 # 立绘单独一套参数:它是画面主体,和背景共用 q30/4:2:0 会明显发糊(色度被砍半、
 # 高频细节被量化掉)。背景大片色块对压缩不敏感,立绘细节敏感,所以分开。
 # 实测各配置的包体积见 tools/README 或 REPORT 注释。
-DEFAULT_SPRITE_QUALITY = 35
+DEFAULT_SPRITE_QUALITY = 60
 DEFAULT_SPRITE_SUBSAMPLING = 0        # 0 = 4:4:4;立绘色度细节比省下的几十 KB 值钱
 # 实测(2026-09-27,全部素材 + 名字表 + 1bpp RLE 遮罩,图片预算 5,590,384 B):
 #   q35/CG 320 行 = 5,533,336 B(仅余 57 KiB,太紧);q32 = 5,240,392 B(余 0.33 MiB);
@@ -400,7 +400,8 @@ def decode_mask_1bpp_rle(blob: bytes) -> bytes:
 
 def scan_references(source: Path) -> dict:
     """汇总脚本与鉴赏列表引用的素材名。"""
-    refs = {"bg": set(), "char": set(), "cg": set(), "gallery": set(), "scripts": 0}
+    refs = {"bg": set(), "char": set(), "cg": set(), "gallery": set(), "scripts": 0,
+            "char_count": collections.Counter()}
     script_dir = source / "src" / "common" / "script"
     scripts = sorted(script_dir.glob("scriptData*.txt"),
                      key=lambda p: int(re.sub(r"\D", "", p.stem) or 0))
@@ -419,6 +420,8 @@ def scan_references(source: Path) -> dict:
                     name = name.strip()
                     if name:
                         refs[key].add(name)
+                        if key == "char":
+                            refs["char_count"][name] += 1   # 用于挑选姿势代表
     page = source / "src" / "pages" / "cgs" / "cgs.ux"
     if page.is_file():
         text = page.read_text(encoding="utf-8", errors="replace")
@@ -472,6 +475,22 @@ def collect_sources(source: Path) -> list[tuple[str, str, Path]]:
 # 打包
 # --------------------------------------------------------------------------
 
+def pose_representative(stem: str, refs: dict) -> bool:
+    """同角色多姿势只保留一张:引用次数最多的那个(换掉后观感差异最小)。
+
+    立绘源按 名字_编号 分组(如 hz01_1/hz01_2/hz01_3 是同一角色的三个姿势)。
+    实测组内姿势差异普遍在 24~66/255,并不是"近似重复",所以这是显式取舍:
+    被丢掉的名字会以别名形式指回保留的那张,剧本引用不受影响。
+    """
+    counts = refs.get("char_count") or {}
+    base = re.sub(r"_\d+$", "", stem)
+    members = [s for s in (refs.get("char") or set()) if re.sub(r"_\d+$", "", s) == base]
+    if not members or stem == base:
+        return True                       # 没编号或不成组:照常打包
+    best = max(members, key=lambda m: (counts.get(m, 0), m))
+    return stem == best
+
+
 def build_pack(source: Path, quality: int, bg_rows: int, cg_rows: int,
                keep_all: bool, max_pixels: int = SPRITE_MAX_PIXELS,
                sprite_quality: int = DEFAULT_SPRITE_QUALITY,
@@ -484,6 +503,8 @@ def build_pack(source: Path, quality: int, bg_rows: int, cg_rows: int,
     stats = {family: {"count": 0, "src_bytes": 0, "out_bytes": 0} for family in FAMILIES}
     names: list[str] = []
     skipped = collections.Counter()
+    pose_alias: list[tuple[str, str]] = []      # (被丢弃的姿势名, 组基名)
+    pose_kept: dict[str, tuple] = {}            # 组基名 -> 保留那张的 (blob, w, h, jpeg_len)
 
     for family, folder, path in collect_sources(source):
         raw = path.read_bytes()
@@ -492,6 +513,13 @@ def build_pack(source: Path, quality: int, bg_rows: int, cg_rows: int,
         if pruning and not is_referenced(family, path.stem, path.name, refs):
             skipped["count"] += 1
             skipped["src_bytes"] += len(raw)
+            continue
+
+        # 同角色的多个姿势只编码一张,其余做成指向它的别名(剧本引用不断)
+        pose_base = re.sub(r"_\d+$", "", path.stem) if family == "sprite" else ""
+        if family == "sprite" and not keep_all and not pose_representative(path.stem, refs):
+            pose_alias.append((path.stem, pose_base))
+            stats["sprite"]["dropped_pose"] = stats["sprite"].get("dropped_pose", 0) + 1
             continue
 
         with Image.open(io.BytesIO(raw)) as im:
@@ -513,11 +541,24 @@ def build_pack(source: Path, quality: int, bg_rows: int, cg_rows: int,
             size = canvas.size
 
         entries.append((kind, path.name, size[0], size[1], blob_ids[0], jpeg_len))
+        if family == "sprite":
+            pose_kept[pose_base] = (blob_ids[0], size[0], size[1], jpeg_len)
         # 名字表只存「家族 + 基名」(不带扩展名):剧本里的 b/c 值就是基名,cg 值带
         # 扩展名,固件查询时统一截断到扩展名之前。
         names.append(f"{family}\t{path.stem}")
         stats[family]["count"] += 1
         stats[family]["src_bytes"] += len(raw)
+
+    # 姿势别名:条目指向保留那张的 blob,名字保留原名(剧本里的 c 值仍能查到、能画出立绘)
+    for stem, base in pose_alias:
+        info = pose_kept.get(base)
+        if info is None:
+            stats["sprite"]["alias_missing"] = stats["sprite"].get("alias_missing", 0) + 1
+            continue
+        blob_id, w, h, jpeg_len = info
+        entries.append((KIND_SPRITE, stem + ".png", w, h, blob_id, jpeg_len))
+        names.append(f"sprite\t{stem}")
+        stats["sprite"]["alias"] = stats["sprite"].get("alias", 0) + 1
 
     out_bytes = collections.Counter()
     for blob_id, family in enumerate(store.owner):
