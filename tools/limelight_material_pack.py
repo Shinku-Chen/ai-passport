@@ -65,8 +65,14 @@ try:
     _PIL_MISSING = None
 except ImportError:  # pragma: no cover - 纯逻辑(容器/裁剪规则)不需要 Pillow
     Image = None
+    ImageFilter = None
     _PIL_IMAGE = None
     _PIL_MISSING = "需要 Pillow 才能转换图片: python -m pip install pillow"
+
+try:
+    import numpy as _numpy
+except ImportError:  # numpy 只是让抖动图的缩放更准,没有也能跑
+    _numpy = None
 
 MAGIC = b"LLMPK001"
 VERSION = 1
@@ -266,17 +272,43 @@ def sprite_canvas(im: Image.Image, max_pixels: int = SPRITE_MAX_PIXELS) -> Image
         rgba = rgba.crop((0, 0, rgba.width, bust_h))
     scale = min(SPRITE_MAX_W / rgba.width, SPRITE_MAX_H / rgba.height)
     size = (max(1, round(rgba.width * scale)), max(1, round(rgba.height * scale)))
-    rgba = rgba.resize(size, Image.LANCZOS)
+    rgba = resample_linear(rgba, size)
     if rgba.width * rgba.height > max_pixels:
         # 用 floor 而不是 round:四舍五入会让 w*h 略微超过上限(实测超 145 px),
         # 而固件是按上限申请静态缓冲的。缩完再断言一次,别让契约靠"应该差不多"。
         shrink = (max_pixels / (rgba.width * rgba.height)) ** 0.5
-        rgba = rgba.resize((max(1, int(rgba.width * shrink)),
-                            max(1, int(rgba.height * shrink))), Image.LANCZOS)
+        rgba = resample_linear(rgba, (max(1, int(rgba.width * shrink)),
+                                      max(1, int(rgba.height * shrink))))
         while rgba.width * rgba.height > max_pixels and rgba.width > 1 and rgba.height > 1:
-            rgba = rgba.resize((max(1, rgba.width - 1), max(1, rgba.height - 1)), Image.LANCZOS)
+            rgba = resample_linear(rgba, (max(1, rgba.width - 1), max(1, rgba.height - 1)))
     assert rgba.width * rgba.height <= max_pixels, (rgba.size, max_pixels)
     return rgba
+
+
+def resample_linear(im: Image.Image, size: tuple[int, int]) -> Image.Image:
+    """在线性光下等比缩放。
+
+    手环版立绘是 256 色调色板 + 抖动的图(实测 242x926 只有 19 KB)。抖动的本质是
+    "用噪声去近似中间色",只有在**线性光**下平均才会还原成原本的颜色;直接在 sRGB
+    下缩会把噪声平均成偏暗偏脏的灰泥,越缩越糊。没有 numpy 时退回普通缩放。
+    """
+    if _numpy is None:
+        return im.resize(size, Image.LANCZOS)
+    arr = _numpy.asarray(im.convert("RGBA"), dtype=_numpy.float32) / 255.0
+    rgb = arr[..., :3]
+    lin = _numpy.where(rgb <= 0.04045, rgb / 12.92, ((rgb + 0.055) / 1.055) ** 2.4)
+    chans = []
+    for c in range(3):
+        ch = Image.fromarray(lin[..., c], mode="F").resize(size, Image.LANCZOS)
+        chans.append(_numpy.asarray(ch, dtype=_numpy.float32))
+    lin = _numpy.stack(chans, axis=-1)
+    srgb = _numpy.where(lin <= 0.0031308, lin * 12.92,
+                        1.055 * _numpy.power(_numpy.clip(lin, 0, 1), 1 / 2.4) - 0.055)
+    alpha = im.getchannel("A").resize(size, Image.LANCZOS)   # alpha 本来就是线性的
+    merged = _numpy.concatenate(
+        [_numpy.clip(srgb, 0, 1) * 255.0,
+         _numpy.asarray(alpha, dtype=_numpy.float32)[..., None]], axis=-1)
+    return Image.fromarray(merged.astype(_numpy.uint8), "RGBA")
 
 
 def sharpen_sprite(rgba: Image.Image) -> Image.Image:
