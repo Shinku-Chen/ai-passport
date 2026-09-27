@@ -26,9 +26,11 @@ CONFIG_LV_FONT_MONTSERRAT_14=y
 CONFIG_LV_FONT_MONTSERRAT_20=y
 # LVGL 内置 malloc 池大小。它是独立静态区、不与系统堆共享,配大了会白白占用 RAM。
 # ⚠ LVGL 9.6 起 CONFIG_LV_MEM_SIZE_KILOBYTES 已废弃(Kconfig 里 default 0),必须写
-# CONFIG_LV_MEM_SIZE(字节)。本应用约 140 个对象 + 标签文本,32KB 留了余量;
+# CONFIG_LV_MEM_SIZE(字节)。实测(2026-09-27):创建界面时的**峰值约 17~24KB**
+# ——  压到 12,288 / 24,576 都会让 lime_ui_create 失败(界面起不来),28,672 可用;
+# 运行稳态只用 5.9KB。立绘解码缓冲(46KB)与它共用 DRAM,想再放大立绘必须先从这里省。
 # 自建更复杂界面出现绘制卡死/看门狗时再调大。
-CONFIG_LV_MEM_SIZE=12288
+CONFIG_LV_MEM_SIZE=28672
 
 # --- 系统 ---
 CONFIG_FREERTOS_HZ=1000
