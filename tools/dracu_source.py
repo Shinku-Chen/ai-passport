@@ -49,6 +49,7 @@ TITLE_BG = "src/common/title_bg.jpg"
 LOGO = "src/common/logo.png"
 BRANCH_CONFIG = "转换工具/branchConfig.js"
 LCT_PAGE = "src/pages/lct/lct.ux"
+MORE_PAGE = "src/pages/more/more.ux"
 
 # 源工程屏幕(小米手环快应用 336x480)
 SRC_W, SRC_H = 336, 480
@@ -255,6 +256,34 @@ def load_chapters(source: Path) -> list[tuple[str, int, str]]:
         for line, label in CHAPTER_RE.findall(match.group(2)):
             chapters.append((route, int(line), label))
     return chapters
+
+
+# more.ux 里的后日谈表:女主名 -> 起始页(源工程的"更多"页,选女主进她的后日谈)
+AFTER_STORY_RE = re.compile(r"name:\s*'([^']+)',\s*ref:[^,]+,\s*startPage:\s*(\d+)")
+# lct.ux 里每一条路线也单独列了"后日谈"入口,用来交叉核对
+LCT_AFTER_RE = re.compile(r'<text class="mid1">([^<]+)</text>(.*?)</div>', re.S)
+LCT_AFTER_LINK_RE = re.compile(r'loadStart\((\d+)\)">\s*后日谈')
+
+
+def load_after_stories(source: Path) -> list[tuple[str, int]]:
+    """后日谈入口 [(女主名, 起始页)]。
+
+    源工程把后日谈单独放在 more.ux(选女主 -> 她的后日谈),lct.ux 的路线块里也各
+    列了一条同名入口;两份不一致时以 more.ux 为准并打印告警(打包时能看见)。
+    """
+    text = (source / MORE_PAGE).read_text(encoding="utf-8")
+    entries = [(name, int(page)) for name, page in AFTER_STORY_RE.findall(text)]
+    lct = (source / LCT_PAGE).read_text(encoding="utf-8")
+    for match in re.finditer(r'<div class="page1"[^>]*>(.*?)</div>\s*</div>', lct, re.S):
+        block = match.group(1)
+        name_match = re.search(r'<text class="mid1">([^<]+)</text>', block)
+        link = LCT_AFTER_LINK_RE.search(block)
+        if name_match and link:
+            name, page = name_match.group(1), int(link.group(1))
+            if (name, page) not in entries:
+                log(f"后日谈入口不一致: lct.ux 说 {name} 在 {page},more.ux 里是 "
+                    f"{[p for n, p in entries if n == name]}")
+    return entries
 
 
 def route_labels(source: Path) -> dict[str, str]:

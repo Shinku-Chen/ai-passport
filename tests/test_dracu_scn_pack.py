@@ -285,6 +285,34 @@ class ScriptPackTest(unittest.TestCase):
                 self.assertLess(text_off + text_len * 2, text_total + 2)
                 self.assertGreater(text_len, 0)
 
+    def test_after_story_entries_are_listed(self) -> None:
+        """五条线的后日谈入口要在章节表里(源工程 more.ux 的那份页码)。"""
+        expected = {18039: "艾莉娜", 21698: "尼古拉", 31426: "莉音", 41801: "美羽", 51942: "梓"}
+        off, count, _size = self.sections[SEC_CHAPTERS]
+        found = {}
+        for index in range(count):
+            page, name, _route, _pad = CHAPTER.unpack_from(self.blob, off + 4 + index * CHAPTER.size)
+            if page in expected:
+                found[page] = name
+        missing = sorted(set(expected) - set(found))
+        self.assertFalse(missing, f"章节表里缺后日谈入口: {missing}")
+        for page, name_index in found.items():
+            self.assertTrue(self.decode_string(name_index).endswith("后日谈"),
+                            f"页 {page} 的标签不是后日谈: {self.decode_string(name_index)}")
+            self.assertTrue(self.decode_string(name_index).startswith(expected[page]))
+
+    def decode_string(self, index: int) -> str:
+        off, _count, _size = self.sections[SEC_STR]
+        position = off + 4
+        for _ in range(index + 1):
+            length = struct.unpack_from("<H", self.blob, position)[0]
+            position += 2
+            if _ == index:
+                return "".join(self.char_at(struct.unpack_from("<H", self.blob, position + 2 * i)[0])
+                               for i in range(length))
+            position += 2 * length
+        return ""
+
     def test_chapters_ascend_and_decode(self) -> None:
         off, count, _size = self.sections[SEC_CHAPTERS]
         self.assertGreater(count, 10)

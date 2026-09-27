@@ -398,6 +398,22 @@ class ScriptPacker:
         """
         route_ids: dict[str, int] = {}
         blob = bytearray()
+        # 后日谈入口(源工程 more.ux):挂到对应女主的路线编号下,标签写成"<女主> 后日谈",
+        # 在混合了所有路线的章节列表里才认得出是谁的。
+        after = S.load_after_stories(self.source)
+        by_heroine = {}
+        for route, _page, label in self.chapters:
+            for heroine, _start in after:
+                if label.startswith(heroine):
+                    by_heroine[heroine] = route
+        rows = list(self.chapters)
+        for heroine, start in after:
+            route = by_heroine.get(heroine)
+            if route is None:
+                log(f"后日谈 {heroine}({start})找不到对应路线,跳过")
+                continue
+            rows.append((route, start, f"{heroine} 后日谈"))
+        self.chapters = rows
         for route, page, label in sorted(self.chapters, key=lambda row: row[1]):
             route_ids.setdefault(route, len(route_ids))
             blob += struct.pack("<IHBB", page, self.strings.add(label), route_ids[route], 0)
