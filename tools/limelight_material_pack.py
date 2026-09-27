@@ -60,9 +60,8 @@ import sys
 from pathlib import Path
 
 try:
-    from PIL import Image
-    from PIL import Image as _PILImage
-    _PIL_IMAGE = _PILImage.Image
+    from PIL import Image, ImageFilter
+    _PIL_IMAGE = Image.Image
     _PIL_MISSING = None
 except ImportError:  # pragma: no cover - 纯逻辑(容器/裁剪规则)不需要 Pillow
     Image = None
@@ -79,6 +78,15 @@ SPRITE_MAX_W, SPRITE_MAX_H = 168, 252
 # 只有 0.27,脸部被压到十几像素,真机上就是"糊"。按"宽:高 = 1:2"的比例只保留
 # 上半身,把同样的像素预算集中在头肩胸;本来就矮/半身的图(坐姿、特写)不裁。
 SPRITE_BUST_ASPECT = 2.0
+# 缩到 ~120x240 这个量级后 LANCZOS 会明显发软,轻量 USM 把线条找回来。
+# 参数是拿真机尺寸的立绘做 A/B 定的:半径 1px、强度 60%、阈值 2(不动平坦区)。
+# 强度再高(110%)观感提升有限,但 JPEG 熵增会把素材包顶上去约 0.4 MiB,不划算。
+SPRITE_SHARPEN_RADIUS = 1.0
+SPRITE_SHARPEN_PERCENT = 60
+SPRITE_SHARPEN_THRESHOLD = 2
+# 透明区的 RGB 要向外扩散几圈再编码:JPEG 会在边缘混合相邻像素,如果透明处是
+# 黑色,立绘轮廓就会出现一圈暗边(真机观感就是"糊+脏")。扩散轮数 = 像素圈数。
+SPRITE_EDGE_BLEED = 3
 # 立绘像素上限:固件按 LIME_SPRITE_MAX_PIXELS(23,000)申请静态解码缓冲,必须放得下。
 # 取 22,000 px:上半身取景后立绘约 105x210 = 22k px(全身取景时约 65x252 = 16.4k)。
 # 实测(2026-09-27,q30/4:4:4)上半身 16k/18k/20k/22k 相对旧包只 +47/+42/+110/+162 KiB,
@@ -268,6 +276,26 @@ def sprite_canvas(im: Image.Image, max_pixels: int = SPRITE_MAX_PIXELS) -> Image
     return rgba
 
 
+def sharpen_sprite(rgba: Image.Image) -> Image.Image:
+    """只在 RGB 上做 USM;alpha 原样留给遮罩。"""
+    alpha = rgba.getchannel("A")
+    rgb = rgba.convert("RGB").filter(
+        ImageFilter.UnsharpMask(radius=SPRITE_SHARPEN_RADIUS,
+                                percent=SPRITE_SHARPEN_PERCENT,
+                                threshold=SPRITE_SHARPEN_THRESHOLD))
+    return Image.merge("RGBA", (*rgb.split(), alpha))
+
+
+def bleed_edges(rgba: Image.Image, rounds: int = SPRITE_EDGE_BLEED) -> Image.Image:
+    """把不透明像素的颜色往透明区扩散,避免 JPEG 在轮廓上掺进黑色。"""
+    rgb = rgba.convert("RGB")
+    alpha = rgba.getchannel("A")
+    transparent = alpha.point(lambda v: 255 if v < 128 else 0)
+    for _ in range(rounds):
+        rgb = Image.composite(rgb.filter(ImageFilter.MaxFilter(3)), rgb, transparent)
+    return Image.merge("RGBA", (*rgb.split(), alpha))
+
+
 def encode_jpeg(im: Image.Image, quality: int, subsampling: int = 2) -> bytes:
     """subsampling: 0 = 4:4:4(保留色度细节,立绘用), 2 = 4:2:0(默认,省体积)。"""
     buf = io.BytesIO()
@@ -417,7 +445,7 @@ def build_pack(source: Path, quality: int, bg_rows: int, cg_rows: int,
         with Image.open(io.BytesIO(raw)) as im:
             im.load()
             if family == "sprite":
-                canvas = sprite_canvas(im, max_pixels)
+                canvas = bleed_edges(sharpen_sprite(sprite_canvas(im, max_pixels)))
                 jpeg = encode_jpeg(canvas, sprite_quality, sprite_subsampling)
                 mask = encode_mask_1bpp_rle(
                     canvas.getchannel("A").point(lambda v: 255 if v >= 128 else 0))
