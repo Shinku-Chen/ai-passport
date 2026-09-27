@@ -21,6 +21,7 @@ Run: python3 tests/test_dracu_scn_pack.py
 
 from __future__ import annotations
 
+import collections
 import struct
 import sys
 import unittest
@@ -74,6 +75,64 @@ class ScriptPackTest(unittest.TestCase):
         cls.pages = b"".join(cls.decompress(index) for index in range(cls.page_blocks))
         cls.text_blocks = [cls.decompress(index)
                            for index in range(cls.page_blocks, cls.block_total)]
+        cls.build_graph()
+
+    @classmethod
+    def build_graph(cls) -> None:
+        """把分支表拆成"前进图":非选项页一条边(hidden 用兜底),选项页多条边。"""
+        off, _count, _size = cls.sections[SEC_BRANCH]
+        position = off
+
+        def take() -> int:
+            nonlocal position
+            value = struct.unpack_from("<I", cls.blob, position)[0]
+            position += 4
+            return value
+
+        cls.no_next = {}
+        for _ in range(take()):
+            page, target = struct.unpack_from("<II", cls.blob, position)
+            position += 8
+            cls.no_next[page] = target
+        for _ in range(take()):          # noBack 不需要
+            position += 8
+        cls.ends = {}
+        for _ in range(take()):
+            page, name = struct.unpack_from("<IH", cls.blob, position)
+            position += 6
+            cls.ends[page] = name
+        cls.cond_pages = []
+        for _ in range(take()):
+            cls.cond_pages.append(struct.unpack_from("<I", cls.blob, position)[0])
+            position += 4
+        cls.cond_index = {page: i for i, page in enumerate(cls.cond_pages)}
+        hidden_records = []
+        for _ in range(take()):
+            hidden_records.append(struct.unpack_from("<IIBBI", cls.blob, position))
+            position += 14
+        rules = []
+        for _ in range(take()):
+            rules.append(struct.unpack_from("<IBBI", cls.blob, position))
+            position += 10
+        literals = []
+        for _ in range(take()):
+            literals.append(struct.unpack_from("<BB", cls.blob, position))
+            position += 2
+        cls.hidden_fallback = {record[0]: record[4] for record in hidden_records}
+        cls.hidden_rules = {record[0]: (record[1], record[2]) for record in hidden_records}
+        cls.rules = rules
+        cls.literals = literals
+
+        cls.choices = {}
+        off, count, _size = cls.sections[SEC_CHOICE]
+        for index in range(count):
+            base = off + 4 + index * (CHOICE_HEAD.size + 5 * CHOICE_SLOT.size)
+            page, options, _a, _b = CHOICE_HEAD.unpack_from(cls.blob, base)
+            targets = []
+            for slot in range(options):
+                targets.append(CHOICE_SLOT.unpack_from(
+                    cls.blob, base + CHOICE_HEAD.size + slot * CHOICE_SLOT.size)[3])
+            cls.choices[page] = targets
 
     @classmethod
     def decompress(cls, index: int) -> bytes:
@@ -236,6 +295,98 @@ class ScriptPackTest(unittest.TestCase):
             previous = page
             self.assertTrue(1 <= page <= self.page_count)
             self.assertLess(route, 8)
+
+
+    def test_every_reachable_page_can_still_reach_an_ending(self) -> None:
+        """没有"进得去出不来"的死循环。
+
+        地图是"非选项页一条前进边 + 选项页若干条"，所以要保证:从第 1 页出发能到达的
+        每一页,都存在一条通往结局的路(选项页只要有**一个**选项能走下去就算通)。
+        上游数据里尼古拉第 4 话的收场跳转原本被导回重复场景块,导致 20608..21011
+        这 400 页无论怎么选都出不去 —— 打包器修正后这条用例守住它。
+        """
+        successors = {}
+        for page in range(1, self.page_count + 1):
+            if page in self.choices:
+                successors[page] = list(self.choices[page])
+            elif page in self.hidden_rules:
+                # 条件路由:上限取"所有规则 + 兜底"都可达(乐观),只要有一条路能出去就不算死循环
+                rule_off, rule_count = self.hidden_rules[page]
+                targets = [self.rules[rule_off + r][3] for r in range(rule_count)]
+                targets.append(self.hidden_fallback[page])
+                successors[page] = targets
+            else:
+                successors[page] = [self.no_next.get(page, page + 1)]
+
+        # 反向可达:能走到结局的页
+        reverse = {}
+        for page, targets in successors.items():
+            for target in targets:
+                if 1 <= target <= self.page_count:
+                    reverse.setdefault(target, []).append(page)
+        good = set(self.ends)
+        queue = [page for page in self.ends]
+        while queue:
+            page = queue.pop()
+            for previous in reverse.get(page, ()):
+                if previous not in good:
+                    good.add(previous)
+                    queue.append(previous)
+
+        # 从第 1 页出发(所有选项都算),找出到不了的页
+        seen = {1}
+        queue = [1]
+        while queue:
+            page = queue.pop()
+            for target in successors.get(page, ()):
+                if 1 <= target <= self.page_count and target not in seen:
+                    seen.add(target)
+                    queue.append(target)
+        stuck = sorted(page for page in seen if page not in good)
+        self.assertFalse(stuck, f"这些页进得去、但怎么选都到不了结局: {stuck[:12]}")
+
+    def test_all_five_routes_are_reachable_from_the_prologue(self) -> None:
+        """五条女主线都要能从第 1 页靠选项走到(带上选择历史做 BFS)。"""
+        routes = {"梓": 42333, "美羽": 32071, "莉音": 22712, "艾莉娜": 9028, "尼古拉": 18437}
+        blank = (0,) * len(self.cond_pages)
+
+        def successor_states(page: int, hist):
+            if page in self.choices:
+                for index, target in enumerate(self.choices[page], start=1):
+                    new_hist = list(hist)
+                    slot = self.cond_index.get(page)
+                    if slot is not None:
+                        new_hist[slot] = index
+                    yield target, tuple(new_hist)
+            elif page in self.hidden_rules:
+                rule_off, rule_count = self.hidden_rules[page]
+                target = None
+                for rule in range(rule_count):
+                    lit_off, lit_count, _pad, rule_target = self.rules[rule_off + rule]
+                    if all(hist[self.literals[lit_off + slot][0]] ==
+                           self.literals[lit_off + slot][1] for slot in range(lit_count)):
+                        target = rule_target
+                        break
+                yield target if target is not None else self.hidden_fallback[page], hist
+            else:
+                yield self.no_next.get(page, page + 1), hist
+
+        for label, target in routes.items():
+            seen = {(1, blank)}
+            queue = collections.deque([(1, blank)])
+            hit = False
+            while queue and not hit:
+                page, hist = queue.popleft()
+                if page == target:
+                    hit = True
+                    break
+                if page in self.ends or not (1 <= page <= self.page_count):
+                    continue
+                for state in successor_states(page, hist):
+                    if state not in seen and 1 <= state[0] <= self.page_count:
+                        seen.add(state)
+                        queue.append(state)
+            self.assertTrue(hit, f"{label}线(入口页 {target})不可达")
 
 
 def main() -> int:

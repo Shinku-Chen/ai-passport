@@ -99,6 +99,18 @@ FLAG_CHOOSE = 1 << 3
 
 PAGES_PER_BLOCK = 256                     # 256 x 16 = 4096 字节
 TEXT_BLOCK_RAW = 3000                     # 正文块上限(解压缓冲 4 KB)
+# 上游 branchConfig 的已知缺陷(本次移植时实测发现并修正,原样搬运会让玩家卡死):
+# 尼古拉线第 4 话有两份重复的 H 场景块(20587-20611 与 20995-21019),两份的收场
+# 变体(中出 20607 / 外射 21015 / 中出 21019)在 noNextPages 里都被导回 20612
+# ——那是**第一份**的后日谈,走完又回到第二份选项目,于是 20608..21011 这 400 页
+# 无限循环(选项页的两个选项都指向同一后续,玩家只能靠菜单里的"跳过章节"逃出去)。
+# 剧本页表的实际顺序是:21012-21015/21016-21019 之后紧接着就是 21020 起的后日谈
+# 与 21029 起的第 5 话,所以把这两条改指 21020。
+NO_NEXT_FIXES = {
+    21015: 21020,   # 第二份 H 场景·中出变体 收场
+    21019: 21020,   # 第二份 H 场景·外射变体 收场
+}
+
 ROUTE_LABELS = {
     "commonChapters": "共通线", "miuChapters": "美羽", "rioChapters": "莉音",
     "azuChapters": "梓", "eriChapters": "艾莉娜", "nicChapters": "尼古拉",
@@ -320,7 +332,19 @@ class ScriptPacker:
         cond_pages = B.build_cond_pages(self.config["hidden"])
         cond_index = {page: index for index, page in enumerate(cond_pages)}
         self.cond_pages = cond_pages
-        no_next = sorted(self.config["no_next"].items())
+        # 上游已知缺陷:两条收场跳转被导回重复场景块,会把玩家卡在 400 页循环里
+        no_next_map = dict(self.config["no_next"])
+        for page, target in NO_NEXT_FIXES.items():
+            old_target = no_next_map.get(page)
+            if old_target == target:
+                continue
+            if old_target is None:
+                log(f"提示: noNextPages 里没有 {page},跳过这条上游修正")
+                continue
+            log(f"修正上游跳转: noNextPages[{page}] {old_target} -> {target}"
+                f"(原目标是重复场景块,会让玩家在 20608..21011 之间无限循环)")
+            no_next_map[page] = target
+        no_next = sorted(no_next_map.items())
         no_back = sorted(self.config["no_back"].items())
         endings = sorted(self.config["end"].items())
         hidden = sorted(self.config["hidden"].items())
