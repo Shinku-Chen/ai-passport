@@ -90,8 +90,10 @@ about 4.6 MB, leaving 43 %.
 
 The `main/saya_data/saya_pack.bin` and `assets/fonts/saya_cjk_*.c` committed here are
 the **community variant**: they contain nothing from the source port's patch
-directory (7 extended chapters plus 22 R18 CGs). Firmware published to the AI Passport
-Community market must use this variant. The patch's own source files are committed under
+directory (7 extended chapters plus 22 R18 CGs). The repository's default build and the rule
+for community submissions remain the community variant; the fork's own community listing was
+switched to the complete (patched) edition at the author's request, and that listing carries an
+adult-content notice. The patch's own source files are committed under
 `assets/saya-patch/`, so the local release variant is rebuildable from a clone alone;
 only the *pack and firmware* built from them stay out of the repository.
 

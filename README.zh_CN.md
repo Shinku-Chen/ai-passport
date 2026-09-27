@@ -74,7 +74,9 @@ Flash 预算（ESP-IDF 5.5，应用分区 8,323,072 字节）：community 变体
 ## 变体与发布规则
 
 仓库里提交的 `main/saya_data/saya_pack.bin` 与 `assets/fonts/saya_cjk_*.c` 是
-**community 变体**：不含源移植仓库 `补丁/` 里的任何内容（7 个加长章节 + 22 张 R18 CG）；
+**community 变体**：不含源移植仓库 `补丁/` 里的任何内容（7 个加长章节 + 22 张 R18 CG）。
+仓库默认构建与社区提交规则仍是 community 变体；作者本人那份社区条目已按其要求换成完整（含补丁）
+版，并在简介里标注了成人向内容；
 补丁自身的源文件提交在 `assets/saya-patch/`，本机 release 变体因此可以直接从仓库重建，
 只有用它们构建的 *pack 与固件* 不进入仓库。
 发布到 AI Passport 社区市场的固件只能用它。
