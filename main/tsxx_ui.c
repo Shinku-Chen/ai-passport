@@ -276,6 +276,11 @@ static void build_game_layers(tsxx_ui_t *ui, lv_obj_t *screen)
     lv_obj_align(mode_text, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_user_data(ui->mode, mode_text);
     set_hidden(ui->mode, true);
+
+    // 验收用:章节与自动/快进指示都只留文字、不带底纹。0 表示完全透明。
+    ESP_LOGI(TAG, "浮层底纹:章节 %u / 自动 %u (0 = 无底纹)",
+             (unsigned)lv_obj_get_style_bg_opa(ui->chapter, 0),
+             (unsigned)lv_obj_get_style_bg_opa(ui->mode, 0));
 }
 
 static void build_choices(tsxx_ui_t *ui, lv_obj_t *screen)
