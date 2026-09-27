@@ -1,102 +1,87 @@
 <p align="right">
-  <a href="README.zh_CN.md">简体中文</a> · <strong>English</strong>
+  <strong>简体中文</strong> · <a href="README.en_US.md">English</a>
 </p>
 
-# Saya no Uta — a visual novel reader for the AI Passport
+# 沙耶之歌 —— AI Passport 视觉小说阅读器
 
-A landscape visual-novel reader that ports the Mi Band 10 fan port of
-Nitroplus' *Saya no Uta* ([`liuyuze61/Saya-miband10`](https://github.com/liuyuze61/Saya-miband10))
-to the AI Passport: **44 chapters, 3,828 lines of dialogue, three endings**, all
-offline. The Mi Band title is a portrait touch app; this branch re-implements the
-reading engine in C on LVGL and drives it with the three keys.
+本项目把小米手环 10 上的《沙耶之歌》同人移植
+（[`liuyuze61/Saya-miband10`](https://github.com/liuyuze61/Saya-miband10)）搬到 AI Passport：
+**44 章、3,828 段对白、3 个结局**，全程离线。手环版是竖屏触控应用，本分支用 C + LVGL
+重写阅读引擎，改由三个按键操作。
 
-- Branch: [`feature/saya-no-uta`](https://github.com/Shinku-Chen/ai-passport/tree/feature/saya-no-uta)
+- 分支：[`feature/saya-no-uta`](https://github.com/Shinku-Chen/ai-passport/tree/feature/saya-no-uta)
 
-## Layout
+## 版面
 
 ```text
-┌──────────────────────────────────┐  320 x 240, held in landscape
-│                                  │  the background fills the whole screen:
-│                        [battery] │  upper 320 x 150 canvas + lower 320 x 90
-│                                  │  canvas, both drawn 1:1 (no crop/stretch)
-│  speaker name (bottom-left)      │  translucent chip above the dialogue box
+┌──────────────────────────────────┐  横屏 320 x 240
+│                                  │  背景铺满整屏：上 320 x 150 画布
+│                          [电量]  │  + 下 320 x 90 画布，均 1:1 原尺寸
+│                                  │  （不裁切、不拉伸），立绘贴右侧
+│  说话人名字(左下角)              │  半透明标签，文本框正上方
 ├──────────────────────────────────┤
-│  up to 4 lines of body text      │  dialogue box 90 px, flush with the bottom
-└──────────────────────────────────┘  (16 px font: 19 full-width chars per line)
-                                       (20 px font: 15 chars, 3 lines)
+│  正文最多 4 行                   │  文本框 90 px，贴屏幕底边
+└──────────────────────────────────┘  （16px 字号：一行 19 个全角字）
+                                        （20px 字号：15 字、3 行）
 ```
 
-## Controls
+## 操作
 
-- **Disclaimer screen** — UP / DOWN scroll the text (one line per press, a full screen when
-  held). The hint only turns into "press OK to continue" once the text has been read to
-  the end; before that OK just pages the text down instead of entering the game.
-- **Title / lists** — UP / DOWN move the cursor and stop at the ends (no wrap),
-  **OK** selects, **OK (hold)** goes back.
-- **Reading** — **OK** opens the menu; UP (short) advances one line of dialogue
-  (finishing the typewriter first), UP (hold 1 s or more) fast-forwards at 180 ms per
-  line until released, DOWN (short) steps back one page.
-- **Auto-play** — hold DOWN for one second to start; it advances one segment every
-  900 ms once the current segment has finished typing. **Any key stops it**, choices and endings
-  stop it automatically, and the screen never dims, blanks or sleeps while it runs.
-- **Choices** — UP / DOWN select, **OK** confirms.
-- **Menu** — save, load, skip chapter, back to title, close. Skipping a chapter stops at
-  any choice it has not reached yet instead of deciding for you.
-- **Settings** — text speed (slow / medium / fast / instant), font size (16 px or
-  20 px), about, back.
-- **About** — UP / DOWN scroll the text (one line per press, four lines when held),
-  **OK** goes back.
-- **Save slots** — 5 manual slots plus one automatic slot written on every scene
-  change, so "Continue" resumes where you left off. In save mode **OK (hold)** on a
-  slot deletes it.
+- **开机警告页**：上、下滚动正文（短按滚一行，长按整屏），**读到最后**提示才会变成
+  「按确定继续阅读」；没读完按确定只会往下翻一屏，不会直接进游戏。
+- **标题 / 列表页**：上、下移动光标（到顶 / 到底就停住，不绕圈），**确定**进入，
+  **长按确定**返回。
+- **正文页**：**确定**打开菜单；**上**短按 = 下一段（打字过程中按一下先补全），
+  **上**长按 1 秒以上 = 快进（每 180 ms 一段），松手即停；**下**短按 = 回看上一页。
+- **自动播放**：**下**长按 1 秒进入，当前段打完字后每 900 ms 自动推进一段；
+  **任意键退出**，选项与结局处自动停下；自动播放期间不调暗、不息屏、不进入 deep sleep。
+- **选项页**：上、下选择，**确定**确认。
+- **菜单**：保存、读取、跳过章节、返回标题、关闭菜单。跳过章节时，若本章后面还有
+  未遇到的选项，会停在那个选项上让你选，不会替你决定。
+- **设置**：文字速度（慢 / 中 / 快 / 瞬间）、字号（小 16px / 大 20px）、关于、返回。
+- **关于页**：上、下滚动正文（短按滚一行，长按滚四行），**确定**返回。
+- **存档**：5 个手动存档位 + 1 个自动位（每次换场景写入），标题页的“继续”从自动位接上；
+  保存模式下在槽位上**长按确定**可删除该存档。
 
-Idle behaviour: 60 s dims the backlight, 3 min turns it off, 7 min enters deep
-sleep; any key wakes the device and reopens the reader at the last automatic save.
+空闲策略：60 秒调暗背光，3 分钟熄屏，7 分钟进入 deep sleep；按任意键唤醒并从自动存档继续。
 
-## Offline data pipeline
+## 离线数据管线
 
-Nothing is downloaded at runtime. Two tools generate everything the firmware needs,
-and their output is committed so a plain checkout builds:
+固件运行时不联网、不下载任何东西。两个工具负责生成全部素材，产物已提交进仓库，
+因此普通 checkout 即可直接编译：
 
-| Step | Tool | Output |
+| 步骤 | 工具 | 产物 |
 | --- | --- | --- |
-| Script + images | `tools/saya_pack.py` | `main/saya_data/saya_pack.bin` (~3.9 MB): 44 chapters, 473 scenes, 3,828 dialogues, 193 backgrounds, 75 sprites, plus source metadata |
-| Font subsets | `tools/saya_font.py` | `assets/fonts/saya_cjk_16.c`, `saya_cjk_20.c` and the character inventory `assets/fonts/saya_cjk_symbols.txt` |
+| 剧本 + 图片 | `tools/saya_pack.py` | `main/saya_data/saya_pack.bin`（约 3.9 MB）：44 章、473 场景、3,828 段对白、193 张背景、75 张立绘，外加来源元数据 |
+| 字体子集 | `tools/saya_font.py` | `assets/fonts/saya_cjk_16.c`、`saya_cjk_20.c`，以及字符清单 `assets/fonts/saya_cjk_symbols.txt` |
 
-The pack is read straight out of Flash — there is no runtime JSON parsing and no
-decompression. Each background is pre-scaled once to a full 320 × 240 frame and stored
-as two JPEGs (rows 0–149 and rows 150–239, both 1:1); sprites are scaled to
-screen height, pre-cropped to the visible band and stored as JPEG plus a 1bpp mask.
-The firmware `mmap`s the pack from the application partition, decodes one scene
-(background plus sprite) into a 320 × 150 RGB565 canvas only when the background or
-sprite actually changes, and composites the sprite with its mask.
+资源包直接从 Flash 读取：运行时不解析 JSON、不做解压。每张背景在打包时一次性缩放到整幅
+320 × 240，再切成两张 1:1 的 JPEG（第 0–149 行、第 150–239 行）；立绘按屏幕高度缩放，
+存成 JPEG + 1bpp 遮罩。固件只在（背景, 立绘）真正变化时才解码一次画面，并把立绘按遮罩
+合进上下两块 RGB565 画布（下半块就在半透明文本框背后）。
 
-Regenerating only needs the committed `assets/saya-source/` material (scripts,
-backgrounds and sprites) plus a redistributable CJK font; the patched release variant
-also needs the source port's patch directory, which is not committed. Rebuilding with
-the same source commit reproduces the committed `main/saya_data/saya_pack.bin` byte for
-byte; see the header of each tool. Fonts are produced by a small in-repo generator instead of
-`lv_font_conv` — that tool's last release writes corrupt glyph bitmaps under current
-Node.js (same input, byte-identical output with and without `--no-prefilter`, none of
-it decodes under LVGL's plain 4bpp reader), and the generator verifies its own output
-by re-parsing the C file and comparing every glyph against the rasterization. Font
-provenance and license are recorded in [`assets/README.md`](assets/README.md).
+重新生成只需要仓库内的 `assets/saya-source/`（已提交剧本、背景与立绘全部基础素材）与一个
+许可允许分发的 CJK 字体；含补丁的 release 变体的补丁源文件已随仓库提交在
+`assets/saya-patch/`（30 个文件、692 KB），clone 后即可重建。
+具体命令见两个工具的文件头注释。字体由仓库内的小生成器产出，不用 `lv_font_conv` —— 该工具最后一版在当前 Node.js
+下写出的字形位图是坏的（同样输入、加不加 `--no-prefilter` 产出字节完全相同，按 LVGL 的
+PLAIN 4bpp 读法解不出字形）；生成器会把写出的 C 文件回读、逐像素与栅格化结果比对。
+字体来源与许可记录在 [`assets/README.md`](assets/README.md)。
 
-Flash budget (ESP-IDF 5.5, app partition 8,323,072 bytes): the community variant uses
-about 4.3 MB, leaving 46 % of the partition free; the patched release variant uses
-about 4.6 MB, leaving 43 %.
+Flash 预算（ESP-IDF 5.5，应用分区 8,323,072 字节）：community 变体应用约 4.3 MB，分区剩余 46%；
+含补丁的 release 变体约 4.6 MB，剩余 43%。
 
-## Variants and the publishing rule
+## 变体与发布规则
 
-The `main/saya_data/saya_pack.bin` and `assets/fonts/saya_cjk_*.c` committed here are
-the **community variant**: they contain nothing from the source port's patch
-directory (7 extended chapters plus 22 extra CGs). The repository's default build and the
-community-submission rule remain the community variant; the fork's own community listing runs
-the complete (patched) edition at the author's request. The patch's own source files are committed under
-`assets/saya-patch/`, so the local release variant is rebuildable from a clone alone;
-only the *pack and firmware* built from them stay out of the repository.
+仓库里提交的 `main/saya_data/saya_pack.bin` 与 `assets/fonts/saya_cjk_*.c` 是
+**community 变体**：不含源移植仓库 `补丁/` 里的任何内容（7 个加长章节 + 22 张追加 CG）。
+仓库默认构建与社区提交规则仍是 community 变体；作者本人那份社区条目已按其要求换成完整（含补丁）
+版；
+补丁自身的源文件提交在 `assets/saya-patch/`，本机 release 变体因此可以直接从仓库重建，
+只有用它们构建的 *pack 与固件* 不进入仓库。
+发布到 AI Passport 社区市场的固件只能用它。
 
-The **release variant** carries that patch and is for local flashing only:
+自用的 **release 变体**才带补丁，只在本机刷机使用：
 
 ```bash
 python tools/saya_pack.py --source assets/saya-source \
@@ -106,9 +91,8 @@ SDKCONFIG_DEFAULTS=sdkconfig.defaults idf.py -B build/release/idf \
     -D SAYA_PACK_FILE=build/release/saya_pack.bin build
 ```
 
-Fonts are shared: `assets/fonts` holds the union of both variants' characters (including
-the glyphs only the patched text uses), and both firmware images embed it. If a new
-patch introduces new characters, regenerate that union from both packs:
+字体不分变体：`assets/fonts` 里的子集是两个变体字符的并集（含补丁正文用到的字形），
+两个固件共用它。补丁换新后如果引入了新字，需要用两个 pack 一起重生成字体：
 
 ```bash
 python tools/saya_font.py --font <NotoSansSC-Regular.otf> \
@@ -116,49 +100,40 @@ python tools/saya_font.py --font <NotoSansSC-Regular.otf> \
     --out-dir assets/fonts
 ```
 
-`build/` is git-ignored: the patched pack and any firmware built from it must **never be
-committed or published to the community**. The font is the union of both variants (glyphs
-only, no story content) and is committed; its inventory `assets/fonts/saya_cjk_symbols.txt`
-remembers the glyphs the patch used, so regenerating from the community pack alone does
-not drop them.
+`build/` 已被 `.gitignore` 忽略：补丁版 pack 以及用它们构建的固件都
+**不得提交、不得发布到社区**。字体是两变体的并集（只含字形，不含剧情内容），
+已随仓库提交；它的字符清单 `assets/fonts/saya_cjk_symbols.txt` 会记住补丁用过的字形，
+所以之后只用社区 pack 重生成也不会丢字。
 
-## Releases
+## 发布
 
-- **GitHub Release**: [`v0.1.1-saya-no-uta`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.1-saya-no-uta)
-  carries two assets: `FoloToy-AI-Passport-full.bin` (the tag-triggered CI build of the
-  community variant, sha256 `e90476a5…`) and `FoloToy-AI-Passport-full-patched.bin`
-  (a local build of the same commit with the patch, for personal devices only).
-- **Community market**: project 672, slug `community-10803507`, currently listed as
-  "Saya no Uta Galgame" (the Simplified Chinese peer records the localized title). The patch-free
-  base edition was approved as revision 1425 and the complete edition, with the source port's
-  patch, as revision 1434; a title and copy update (revision 1436) awaits review. The submission
-  text and publish metadata are archived in
-  [`docs/reference/shinku-chen/saya-no-uta/`](docs/reference/shinku-chen/saya-no-uta/README.md),
-  and the Simplified Chinese peer records the exact localized titles.
-- The publishing workflow and its checks are described in
-  [`docs/development/release/publish-to-community.md`](docs/development/release/publish-to-community.md).
+- **GitHub Release**：[`v0.1.1-saya-no-uta`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.1-saya-no-uta)
+  （显示名「沙耶之歌 (Saya no Uta) v0.1.1」），挂两份附件：`FoloToy-AI-Passport-full.bin`
+  （tag 触发的 CI 构建，community 变体，sha256 `e90476a5…`）与
+  `FoloToy-AI-Passport-full-patched.bin`（同一 commit 的本地构建，含补丁，仅自用）。
+- **社区市场**：项目 672、slug `community-10803507`，当前标题为「沙耶之歌 Galgame」（英文 Saya no
+  Uta Galgame）。不含补丁的基础版（修订 1425）与含补丁的完整版（修订 1434）已先后审核上架；
+  2026-09-27 提交了标题与文案更新（修订 1436，待审核）。发布信息与简介原文记录在
+  [`docs/reference/shinku-chen/saya-no-uta/`](docs/reference/shinku-chen/saya-no-uta/README.zh_CN.md)。
+- 发布流程与检查项见 [`docs/development/release/publish-to-community.md`](docs/development/release/publish-to-community.md)。
 
-## Notes
+## 说明
 
-- **Content**: the story contains heavy gore. The app keeps the source port's
-  content warning on first boot.
-- **Licensing**: *Saya no Uta* is a commercial Nitroplus title. This is a personal
-  fan port; the artwork and the Chinese translation come from the public Mi Band
-  port, and both the project and the in-app disclaimer ask readers to support the
-  original release. Do not republish the generated pack as your own asset.
-- **No audio**: the source port ships no audio, and this port adds none.
-- **Baseline demo**: the repository's hardware-test menu and `demo_*.c` pages are
-  still in `main/` but are not compiled into this application; see the repository's
-  [AI guide](docs/development/ai-guide.md) and [fork guide](docs/fork-guide.md).
+- **内容**：剧情含大量血腥描写，应用保留了源移植的首次启动内容警告页。
+- **版权**：《沙耶之歌》是 Nitroplus 的商业作品。本固件是个人同人移植；美术素材与中文译文
+  来自公开的小米手环移植项目，项目与应用内的免责声明都请读者支持正版。请勿把生成的资源包
+  当作自己的素材再分发。
+- **无音频**：源移植没有音频素材，本移植也不添加。
+- **基线 demo**：仓库的硬件自检菜单与 `demo_*.c` 仍保留在 `main/`，但不参与本应用的构建；
+  相关约定见仓库的 [AI 指南](docs/development/ai-guide.md) 与 [fork 指南](docs/fork-guide.md)。
 
-## Build and validate
+## 构建与验证
 
 ```bash
-./tools/validate.sh --static     # repository checks, host tests, font coverage
-./tools/validate.sh --firmware    # ESP-IDF build + merged-image verification
+./tools/validate.sh --static     # 仓库检查、宿主机测试、字体覆盖度
+./tools/validate.sh --firmware    # ESP-IDF 构建 + 合并镜像校验
 ```
 
-The host test `tests/test_saya_model.c` runs the real pack through the reader logic
-(chapter graph, all three endings, pagination round-trips, save encoding), and
-`tools/saya_font.py --check` fails the gate if any UI string or script character is
-missing from the generated font subsets.
+宿主机测试 `tests/test_saya_model.c` 用真实资源包跑阅读逻辑（章节图、三个结局可达性、
+分页往返、存档编解码）；`tools/saya_font.py --check` 会在界面文案或剧本出现字体子集没覆盖的
+字时让门禁失败。

@@ -348,8 +348,11 @@ application is registered where it is developed.
 
 ### Rules
 
-- Only touch fork-owned root READMEs (`README.md` / `README.zh_CN.md`); do not
-  modify the upstream project overview at `docs/README.md`.
+- Only touch fork-owned root READMEs (`README.md` in Simplified Chinese /
+  `README.en_US.md` in English); do not
+  modify the upstream project overview at `docs/README.md`. The default
+  `README.md` is Chinese, so the English text lives in the peer file and both
+  keep reciprocal top links.
 - Check the root README on each relevant branch (`main` and the current
   `feature/*` branch), not just one branch.
 - A `feature/*` branch's root README describes **only that branch's application** —
