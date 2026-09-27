@@ -30,6 +30,10 @@ CONFIG_LV_MEM_SIZE_KILOBYTES=24
 
 # --- 系统 ---
 CONFIG_FREERTOS_HZ=1000
+# 阅读器在 app_main 里就要跑一次剧本包自检(完整走一遍块解压 / 字典解码 / 分页),
+# 默认 3.5 KB 的主任务栈会溢出(实测:栈溢出在“就绪:场景 …”那行日志时被检出)。
+# 主任务在 app_main 返回后即被删除、栈随之释放,所以这 8 KB 只在启动阶段占用。
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
 
 # --- Bluetooth LE / NimBLE ---
 # ESP32-C3 仅支持 BLE；示例只启用单连接 peripheral 所需的最小 host 配置。

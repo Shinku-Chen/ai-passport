@@ -31,7 +31,8 @@ under "与 SENRSCN1 的差异" below.
     SEC_CHUNK    u16 count,每块 { data_off u32, data_len u32, raw_len u32, node_count u32 }
                  (u16 count 之后按 16 字节对齐存放)。data_off 相对 SEC_BLOB 数据区,
                  每块 4 字节对齐。
-    SEC_BLOB     逐块 raw deflate(zlib wbits=-15,level 9)。
+    SEC_BLOB     逐块 zlib 流(zlib.compress level 9,带 2 字节头与 adler32);
+                 固件的 main/sanoba_inflate.c 就吃这种。
     SEC_LABEL    u32 count,每条 { name_id u32, scenario u16, chunk u16, node u32 }。
                  name_id 指向 label 字典块;chunk/node 是该标签解析后的落点(node 是
                  块内节点下标)。
@@ -161,7 +162,10 @@ SCN_FILE = re.compile(r"^(?P<id>[^.]*)\.(?P<name>.+)\.ks\.txt$")
 ASSIGN_RE = re.compile(r"^\s*f\.([A-Za-z0-9_]+)\s*(=|==|!=|<=|>=|\+=|-=|\+\+|--)\s*(-?\d+)?\s*$")
 COND_RE = re.compile(r"^\s*f\.([A-Za-z0-9_]+)\s*(==|!=|<=|>=|<|>)\s*(-?\d+)\s*$")
 
-DEFAULT_RAW_LIMIT = 20000
+# 单块解压后字节上限。为什么这么小(3 KB):本板开机后空闲堆只有十几 KB、最大连续块约
+# 7.7 KB,块解压缓冲要从中 malloc —— 块大了就直接分配失败,表现是“一进阅读全剧终”。
+# 同仓库的千恋＊万花移植也是 ≤3 KB 的块。代价是包从 1.28 MB 涨到 1.52 MB,仍在预算内。
+DEFAULT_RAW_LIMIT = 3072
 DEFAULT_BUDGET_MB = 1.60
 
 
@@ -799,13 +803,13 @@ def pad4(payload: bytes) -> bytes:
 def serialize(story: Story, meta_lines: list[str], raw_limit: int, keep_sprites: bool) -> bytes:
     build_chunks(story, raw_limit, keep_sprites)
 
-    # SEC_BLOB:逐块 raw deflate,4 字节对齐;同时算好 CHUNK 表
+    # SEC_BLOB:逐块 zlib 流,4 字节对齐;同时算好 CHUNK 表
     compressed: list[bytes] = []
     offsets: list[int] = []
     cursor = 0
     for index, body in enumerate(story.chunks):
         raw = struct.pack("<H", story.chunk_nodes[index]) + body
-        block = zlib.compress(raw, 9)[2:-4]
+        block = zlib.compress(raw, 9)
         offsets.append(cursor)
         compressed.append(block)
         cursor += len(block) + ((-len(block)) % 4)
@@ -898,7 +902,7 @@ def build_meta(story: Story, source: Path, ref: str, keep_sprites: bool, raw_lim
         "source_repo=https://github.com/hrk666666/Sanoba-Witch-MiBand-10",
         f"source_ref={ref}",
         f"source_dir={source.as_posix()}",
-        "deflate=raw, one block per chunk, level 9",
+        "deflate=zlib, one block per chunk, level 9 (sanoba_inflate expects the wrapper)",
         f"raw_limit={raw_limit}",
         f"sprites={'kept' if keep_sprites else 'dropped'}",
         f"scenarios={len(story.scenarios)}",
@@ -1032,7 +1036,7 @@ class Pack:
     def decompress(self, index: int) -> bytes:
         entry = self.chunks[index]
         block = self.blob[entry["data_off"]:entry["data_off"] + entry["data_len"]]
-        raw = zlib.decompress(block, -15)
+        raw = zlib.decompress(block)
         if len(raw) != entry["raw_len"]:
             raise ValueError(f"块 {index} 解压 {len(raw)} 字节,头里写 {entry['raw_len']}")
         return raw

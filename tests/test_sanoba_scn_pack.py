@@ -241,8 +241,10 @@ class SanobaScriptPackTest(unittest.TestCase):
         packed = sum(entry["data_len"] for entry in self.pack.chunks)
         self.assertGreater(raw / packed, 1.5, "压缩率低于预期")
         for entry in self.pack.chunks:
-            self.assertLessEqual(entry["raw_len"], 2 + 20000, "单块超过 raw_limit")
-            self.assertLessEqual(entry["raw_len"], 32768, "单块超过固件 32 KB 解压缓冲")
+            self.assertLessEqual(entry["raw_len"], 2 + PACK.DEFAULT_RAW_LIMIT, "单块超过 raw_limit")
+            # 固件侧的缓冲是 4 KB(main/sanoba_model.h 的 SANOBA_CHUNK_RAW_MAX):
+            # 本板最大连续空闲块只有 7.7 KB 左右,块一大就 malloc 失败 -> “一进阅读全剧终”
+            self.assertLessEqual(entry["raw_len"], 4096, "单块超过固件 4 KB 解压缓冲")
 
     def test_metadata_records_the_provenance(self) -> None:
         meta = self.pack.meta

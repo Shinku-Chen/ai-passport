@@ -1,7 +1,7 @@
 // main/sanoba_model.h —— 《魔女的夜宴》剧本包(SANOSCN1)的只读解析 + 阅读状态机。
 //
 // 剧本包由 tools/sanoba_scn_pack.py 生成,整块放在 Flash 里。位置是"场景 + 块 + 节点":
-// 179 个块各自是一段独立 raw deflate 的记录流(解压后最大 19.5 KB),换块时只解一块,
+// 674 个块各自是一段独立 zlib 流的记录流(解压后最大 19.5 KB),换块时只解一块,
 // 所以阅读顺序推进不需要把整部剧本读进内存。
 //
 // 字节序与字段布局必须与 tools/sanoba_scn_pack.py 一致:
@@ -12,7 +12,7 @@
 //                每块 u16 count,随后每条 u16 长度 + 长度个 u16 字符码(无段前计数)
 //   SEC_SCENARIO u16 count,每项 { first_chunk u16, chunk_count u16, title text }
 //   SEC_CHUNK    u16 count,每块 { data_off u32, data_len u32, raw_len u32, node_count u32 }
-//   SEC_BLOB     逐块 raw deflate(zlib wbits=-15)
+//   SEC_BLOB     逐块 zlib 流(带 2 字节头与 adler32,见 main/sanoba_inflate.c)
 //   SEC_LABEL    u32 count,每条 { name_id u32, scenario u16, chunk u16, node u32 }
 //   SEC_ROUTE    u16 触发场景, u16 兜底场景, u16 目标数, 每项 { flag_id u8, scenario u16 }
 //   SEC_META     key=value 文本
@@ -52,8 +52,9 @@
 #define SANOBA_COND_MAX 8
 // 旗标槽位(本作 8 个:sel/meg/nen/tsu/tou/wak/eye/glass_flag)
 #define SANOBA_FLAG_MAX 32
-// 单块解压缓冲上限(实测最大 19.5 KB,留余量)
-#define SANOBA_CHUNK_RAW_MAX 32768
+// 单块解压缓冲上限:块是 3 KB 切的,缓冲 4 KB;本板最大连续空闲块只有 7.7 KB 左右,
+// 别把这里调大 —— 分配失败会表现成“一进阅读全剧终”
+#define SANOBA_CHUNK_RAW_MAX 4096      /* 与打包器 --raw-limit 3072 对应(留余量) */
 // 章节标题缓冲(源数据形如 "chapter 4-8")
 #define SANOBA_TITLE_MAX 64
 

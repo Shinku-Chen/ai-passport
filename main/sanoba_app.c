@@ -1,9 +1,13 @@
 // main/sanoba_app.c —— 应用状态机实现(《千恋＊万花》阅读器,数据层接到 senren 模型/存档)。
 #include "sanoba_app.h"
 
+#include "sanoba_inflate.h"
+
 #include "bsp_battery.h"
 #include "bsp_button.h"
 
+#include "esp_heap_caps.h"
+#include "esp_system.h"
 #include "esp_log.h"
 
 #include <stdio.h>
@@ -697,8 +701,8 @@ bool sanoba_app_init(sanoba_app_t *app, const uint8_t *pack_data, uint32_t pack_
     if (!app->settings.seen_tips) {
         static const char tips[] =
             "同人移植阅读器\n\n"
-            "本机运行的是《千恋＊万花》阅读器,剧本与素材"
-            "来自《千恋＊万花》的同人移植工程,"
+            "本机运行的是《魔女的夜宴》阅读器,剧本与素材"
+            "来自《魔女的夜宴》的手环移植工程,"
             "仅供个人学习与交流,请支持正版。\n\n"
             "上/下 翻页\n"
             "确定 继续\n"
@@ -711,14 +715,47 @@ bool sanoba_app_init(sanoba_app_t *app, const uint8_t *pack_data, uint32_t pack_
         show_title(app);
     }
 
+    // 启动自检:把第一个场景的第一句真解一次 —— 块解压、字典解码、分页都过一遍。
+    // 为什么值得单独做:块解压失败会被状态机当成“剧情走完”,真机上只看到“全剧终”;
+    // 有这道自检,压缩流格式不一致这种问题在开机日志里就现形了。
+    if (sanoba_player_start(&app->player, &app->scn, 0, 0, 0, &app->layout_hint)) {
+        const sanoba_step_t step = sanoba_player_advance(&app->player, &app->scn, &app->layout_hint);
+        char speaker[SANOBA_NAME_MAX] = { 0 };
+        char sample[SANOBA_TEXT_BUFFER] = { 0 };
+        sanoba_player_speaker(&app->player, speaker, sizeof(speaker));
+        sanoba_player_text(&app->player, sample, sizeof(sample));
+        if (step == SANOBA_STEP_TEXT || step == SANOBA_STEP_CHAPTER) {
+            ESP_LOGI(TAG, "剧本包自检:块 0 解压 %u 字节,首句 <%s> %u 字",
+                     (unsigned)app->player.loaded_len, speaker, (unsigned)strlen(sample));
+        } else {
+            ESP_LOGE(TAG, "剧本包自检失败:推进返回 %d,块 0 解压 %u 字节(解压报错: %s);"
+                     "空闲堆 %u,最大块 %u",
+                     (int)step, (unsigned)app->player.loaded_len,
+                     sanoba_inflate_last_error(), (unsigned)esp_get_free_heap_size(),
+                     (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+        }
+        sanoba_player_reset(&app->player);   // 自检的进度不要留给阅读页
+    } else {
+        ESP_LOGE(TAG, "剧本包自检失败:无法从场景 0 开始");
+    }
+
     ESP_LOGI(TAG, "就绪:场景 %u / 块 %u / 字符 %u / 说话人 %u / 事件图 %u / 背景 %u / 旗标 %u / 标签 %u",
              (unsigned)app->scn.scenario_count, (unsigned)app->scn.chunk_count,
              (unsigned)app->scn.char_count, (unsigned)app->scn.speaker_count,
              (unsigned)app->scn.event_count, (unsigned)app->scn.bg_count,
              (unsigned)app->scn.flag_count, (unsigned)app->scn.label_count);
-    ESP_LOGI(TAG, "图片包:条目 %u(背景 %u 池 / 事件 %u 池)",
-             (unsigned)app->pack.entry_count, (unsigned)app->scn.bg_count,
-             (unsigned)app->scn.event_count);
+    uint32_t bg_pool = 0;
+    uint32_t ev_pool = 0;
+    for (uint32_t index = 0; index < app->pack.entry_count; index++) {
+        sanoba_asset_t asset;
+        if (!sanoba_pack_at(&app->pack, (uint16_t)index, &asset)) {
+            continue;
+        }
+        if (asset.pool == SANOBA_POOL_BG) bg_pool++;
+        if (asset.pool == SANOBA_POOL_EV) ev_pool++;
+    }
+    ESP_LOGI(TAG, "图片包:条目 %u(背景池 %u / 事件池 %u)", (unsigned)app->pack.entry_count,
+             (unsigned)bg_pool, (unsigned)ev_pool);
     return true;
 }
 
