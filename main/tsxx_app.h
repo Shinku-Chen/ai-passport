@@ -72,9 +72,6 @@ typedef struct {
     uint32_t notice_ms;
 
     bool have_auto;        // 自动存档存在(标题页的"继续阅读")
-    // 已经选了"开始/继续"但还没过首次的同人移植提示:0 = 无,1 = 新游戏,2 = 继续阅读。
-    // 开机直接进标题页,提示只在第一次真的要进正文前拦一次。
-    uint8_t pending_start;
     bool started;          // 已经开始过阅读
     bool ended;            // 已抵达页表末尾
     bool sleep_requested;  // 标题页长按确定:请 main 进入 deep sleep

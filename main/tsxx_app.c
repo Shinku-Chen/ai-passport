@@ -64,7 +64,6 @@ static void set_page(tsxx_app_t *app, tsxx_page_id_t page)
 }
 
 // 前置声明:后文的按键处理与标题页选择互相调用。
-static void show_warning(tsxx_app_t *app);
 static void title_select(tsxx_app_t *app);
 
 static void notify(tsxx_app_t *app, const char *text)
@@ -577,16 +576,7 @@ static void key_warning(tsxx_app_t *app, const tsxx_key_t *key)
         tsxx_ui_set_warning(&app->ui, NULL, bottom ? "确定 开始阅读" : "上/下 滚动阅读到底部");
         return;
     }
-    app->settings.seen_warning = 1;
-    (void)tsxx_settings_store(&app->settings);
-    // 从标题页"开始/继续"过来的:确认后直接把那一项走完。
-    const uint8_t pending = app->pending_start;
-    app->pending_start = 0;
-    if (pending != 0) {
-        app->title_sel = (pending == 1) ? 0 : 1;
-        title_select(app);   // seen_warning 已置位,不会再被拦
-        return;
-    }
+    // 同人提示已移除:这里只把警告页当作普通页处理(不再从标题页进入)。
     show_title(app);
 }
 
@@ -596,12 +586,6 @@ static void title_select(tsxx_app_t *app)
     // 顺序与 title_refresh() 一致。
     int index = 0;
     if (app->title_sel == index++) {
-        // 首次进正文前先过一次同人移植提示;确认后回到这里继续。
-        if (!app->settings.seen_warning) {
-            app->pending_start = 1;
-            show_warning(app);
-            return;
-        }
         (void)tsxx_slot_clear(TSXX_AUTO_SLOT);   // 新游戏:旧进度的自动存档不再有意义
         app->have_auto = false;
         (void)start_reading(app, 0);
@@ -609,11 +593,6 @@ static void title_select(tsxx_app_t *app)
     }
     if (app->have_auto) {
         if (app->title_sel == index++) {
-            if (!app->settings.seen_warning) {
-                app->pending_start = 2;
-                show_warning(app);
-                return;
-            }
             tsxx_save_t save;
             if (tsxx_slot_load(TSXX_AUTO_SLOT, &save) &&
                 tsxx_player_start(&app->player, &app->pack, save.page, &app->layout)) {
@@ -649,26 +628,6 @@ static void title_select(tsxx_app_t *app)
         open_about(app);
         return;
     }
-}
-
-static void show_warning(tsxx_app_t *app)
-{
-    static const char warning[] =
-        "同人移植提示\n\n"
-        "本机运行的是《天使☆骚骚 RE－BOOT!》阅读器,"
-        "剧本、立绘与背景来自小米手环的同人移植工程"
-        "(hezdaaa 的手环版)。\n\n"
-        "本工程只做转换与重制,不再分发源素材。"
-        "剧本、图像与译文版权归柚子社(Yuzusoft)与移植作者所有,"
-        "仅供个人学习交流,请支持正版。\n\n"
-        "操作 上/下或确定 短按翻页,长按确定 打开菜单,"
-        "长按上 快进,长按下 自动阅读。\n\n"
-        "按确定开始阅读。";
-    tsxx_ui_set_warning(&app->ui, warning, NULL);
-    // 正文没超过一屏时不需要"滚到底",提示直接给放行文案。
-    const bool bottom = tsxx_ui_scrolled_to_bottom(&app->ui, TSXX_PAGE_WARNING);
-    tsxx_ui_set_warning(&app->ui, NULL, bottom ? "确定 开始阅读" : "上/下 滚动阅读到底部");
-    set_page(app, TSXX_PAGE_WARNING);
 }
 
 static int title_row_count(const tsxx_app_t *app)
