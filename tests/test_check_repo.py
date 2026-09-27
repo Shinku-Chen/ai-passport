@@ -337,5 +337,74 @@ class CommunityDocumentLinksTest(unittest.TestCase):
         self.assertIn("language switch must use a Markdown link", output.getvalue())
 
 
+class ForkRootReadmeLanguageTest(unittest.TestCase):
+    """The fork root README is Chinese-first with an English `README.en_US.md` peer."""
+
+    def setUp(self) -> None:
+        temporary = tempfile.TemporaryDirectory(prefix="ai-passport-root-readme-tests-")
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name).resolve()
+        root_patch = patch.object(CHECKS, "ROOT", self.root)
+        root_patch.start()
+        self.addCleanup(root_patch.stop)
+
+    def document(self, name: str, content: str) -> Path:
+        path = self.root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        return path
+
+    def document_errors(self, files: list[Path]) -> list[str]:
+        errors: list[str] = []
+        CHECKS.check_document_languages(files, errors)
+        return errors
+
+    def test_chinese_default_pair_passes(self) -> None:
+        files = [
+            self.document(
+                "README.md",
+                '<p align="right"><a href="README.en_US.md">English</a></p>\n\n# Fork 说明\n',
+            ),
+            self.document(
+                "README.en_US.md",
+                '<p align="right"><a href="README.md">简体中文</a></p>\n\n# Fork README\n',
+            ),
+        ]
+        self.assertEqual(self.document_errors(files), [])
+
+    def test_missing_english_peer_is_rejected(self) -> None:
+        page = self.document("README.md", "[English](README.en_US.md)\n\n# Fork 说明\n")
+        errors = self.document_errors([page])
+        self.assertTrue(any("missing English peer" in error for error in errors))
+
+    def test_missing_reciprocal_switches_are_rejected(self) -> None:
+        files = [
+            self.document("README.md", "# Fork 说明\n"),
+            self.document("README.en_US.md", "# Fork README\n"),
+        ]
+        errors = self.document_errors(files)
+        self.assertTrue(any("language link to README.en_US.md" in error for error in errors))
+        self.assertTrue(any("language link to README.md" in error for error in errors))
+
+    def test_english_peer_must_not_contain_chinese_prose(self) -> None:
+        files = [
+            self.document("README.md", "[English](README.en_US.md)\n\n# Fork 说明\n"),
+            self.document("README.en_US.md", "[简体中文](README.md)\n\n# 说明\n"),
+        ]
+        errors = self.document_errors(files)
+        self.assertTrue(any("English peer Markdown must use English prose" in error for error in errors))
+
+    def test_root_allowlist_accepts_the_english_peer(self) -> None:
+        self.assertIn("README.en_US.md", CHECKS.ROOT_MARKDOWN_ALLOWLIST)
+
+    def test_nested_readmes_still_default_to_english(self) -> None:
+        files = [
+            self.document("docs/README.md", "[简体中文](README.zh_CN.md)\n\n# 指南\n"),
+            self.document("docs/README.zh_CN.md", "[English](README.md)\n\n# 指南\n"),
+        ]
+        errors = self.document_errors(files)
+        self.assertTrue(any("default Markdown must use English prose" in error for error in errors))
+
+
 if __name__ == "__main__":
     unittest.main()
