@@ -14,7 +14,8 @@ idf_component_register(
          "limelight_app.c"
          "limelight_inflate.c"
     INCLUDE_DIRS "."
-    REQUIRES bsp lvgl esp_timer nvs_flash esp_hw_support esp_jpeg
+    # esp_driver_usb_serial_jtag:控制台走驱动快路径(社区抓屏协议要求秒级传完 150KB)
+    REQUIRES bsp lvgl esp_timer nvs_flash esp_hw_support esp_jpeg esp_driver_usb_serial_jtag
     # 资源包:素材(JPEG + 立绘遮罩 + 名字表)与剧本(分块 deflate),由 tools/ 下的
     # limelight_material_pack.py / limelight_script_pack.py 生成后直接读 Flash。
     EMBED_FILES "limelight_data/limelight_pack.bin"

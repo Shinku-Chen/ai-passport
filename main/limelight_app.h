@@ -121,5 +121,8 @@ bool lime_app_debug_title(lime_app_t *app);
 // 调试用:按名字切到列表页(chapters/gallery/menu/settings/about/title)。
 bool lime_app_debug_page(lime_app_t *app, const char *name);
 
+// 调试用:重画画面区(串口抓帧前调用,否则 memset 后的画面区是黑的)。
+void lime_app_debug_redraw_art(lime_app_t *app);
+
 // 调试用:直接开关自动阅读(串口验收用)。
 void lime_app_debug_set_auto(lime_app_t *app, bool on);

@@ -953,6 +953,19 @@ void lime_app_debug_set_auto(lime_app_t *app, bool on)
     lime_ui_set_auto(&app->ui, on);
 }
 
+// 调试用:把画面区重新合成一遍。串口抓帧会把拼好的整帧写回同一块画布
+// (memset 先清空),所以抓帧前必须重画背景/立绘,否则回传的画面区是黑的。
+void lime_app_debug_redraw_art(lime_app_t *app)
+{
+    if (!app) return;
+    const int bg = app->rendered_bg;
+    const int sprite = app->rendered_sprite;
+    // render_art 会把"同屏不重复解码"当缓存命中直接返回,先清掉缓存逼它真画。
+    app->rendered_bg = LIME_ASSET_NONE;
+    app->rendered_sprite = LIME_ASSET_NONE;
+    render_art(app, bg, sprite);
+}
+
 // 调试用:按名字直接切到某个列表页(串口抓图/验收时用,不进正常操作路径)。
 bool lime_app_debug_page(lime_app_t *app, const char *name)
 {

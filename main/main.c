@@ -18,6 +18,7 @@
 #include "limelight_app.h"
 #include "limelight_inflate.h"
 
+#include "driver/usb_serial_jtag.h"
 #include "driver/usb_serial_jtag_vfs.h"
 
 #include <fcntl.h>
@@ -119,11 +120,38 @@ static void capture_flush_event(lv_event_t *event)
 // 强制一次整屏重画,把画面区抄进画布缓冲供回传。必须在持有 LVGL 锁时调用。
 // 抓一段:把屏幕上 [row_offset, row_offset+LIME_ART_H) 的行抄进画布缓冲。
 // 画布只有 214 行,抓整屏 320 行要分两次(0 与 214),由上位机拼起来。
+// 把一段字节可靠地写到控制台串口。
+// 两个要点(实测):① 必须走 usb_serial_jtag 驱动快路径——用 fwrite 走寄存器级 VFS 时
+// 只有 ~2.7KB/s,153600 字节要 56 秒,官方 publisher 15 秒就超时判失败;
+// ② 必须检查返回值,短写要重试(之前直接 fwrite 会整块丢 2048 字节)。
+static bool write_all_serial(const uint8_t *bytes, uint32_t length)
+{
+    uint32_t off = 0;
+    int stall = 0;
+    while (off < length) {
+        const uint32_t left = length - off;
+        const uint32_t chunk = left > 512u ? 512u : left;   // 驱动 tx 缓冲 1024,取一半
+        const int wrote = usb_serial_jtag_write_bytes(bytes + off, chunk,
+                                                     pdMS_TO_TICKS(500));
+        if (wrote > 0) {
+            off += (uint32_t)wrote;
+            stall = 0;
+            continue;
+        }
+        if (++stall > 200) return false;                    // 约 2 秒无进展就放弃
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+    return true;
+}
+
 static void capture_full_frame(int row_offset)
 {
     // 先把画布缓冲清零:LVGL 的刷新是分块的,某些行这次没被覆盖的话
     // 会留下上一段的旧内容,看起来就像"屏幕上出现了两遍文字"。
+    // 注意这块缓冲同时是画面区画布,清完必须立即重画背景/立绘,
+    // 否则回传的画面区是黑的(而且屏上也是黑的)。
     memset(s_art_pixels, 0, sizeof(s_art_pixels));
+    lime_app_debug_redraw_art(&s_app);
     s_capture_row_offset = row_offset;
     s_capture_frame = true;
     lv_obj_invalidate(lv_screen_active());
@@ -215,6 +243,7 @@ static void handle_tick(uint32_t elapsed_ms)
 //   LIMEPAGE [title | chapters | gallery | menu | settings | about | <对白id>]
 //                                回标题页/按名字切页/指定对白并渲染
 //   LIMEIMAGE                    回传画面区原始 RGB565(240x214,末尾 LIMEIMAGE-END)
+//   FAP_SCREENSHOT_V1            社区上架协议的整屏抓屏(240x320 RGB565LE,无结束标记)
 //   LIMEJUMP <对白id>            直接拨进度(正常落盘)
 //   LIMEAUTO [on|off]            开关自动阅读(验收不调暗/不息屏)
 static void handle_console_line(char *line)
@@ -228,19 +257,18 @@ static void handle_console_line(char *line)
         if (bsp_lvgl_lock(2000)) {
             capture_full_frame(row_offset);
             const uint32_t total = sizeof(s_art_pixels);
-            printf("LIMEIMAGE %d %d %d %u\n", row_offset, LIME_ART_W, LIME_ART_H,
-                   (unsigned)total);
-            fflush(stdout);
-            usb_serial_jtag_vfs_set_tx_line_endings(ESP_LINE_ENDINGS_LF);
-            const uint8_t *bytes = (const uint8_t *)s_art_pixels;
-            for (uint32_t off = 0; off < total; off += 2048) {
-                const uint32_t chunk = (total - off) < 2048u ? (total - off) : 2048u;
-                fwrite(bytes + off, 1, chunk, stdout);
-            }
-            fflush(stdout);
-            usb_serial_jtag_vfs_set_tx_line_endings(ESP_LINE_ENDINGS_CRLF);
-            printf("\nLIMEIMAGE-END\n");
-            fflush(stdout);
+            // 头部与像素共用一个 USB-CDC 流,且上位机按声明的字节数精确读取,
+            // 中间混进一个日志字节整张图就错位,所以传输期间静音日志。
+            esp_log_level_set("*", ESP_LOG_NONE);
+            char header[48];
+            const int header_len = snprintf(header, sizeof(header), "LIMEIMAGE %d %d %d %u\n",
+                                            row_offset, LIME_ART_W, LIME_ART_H,
+                                            (unsigned)total);
+            (void)write_all_serial((const uint8_t *)header, (uint32_t)header_len);
+            (void)write_all_serial((const uint8_t *)s_art_pixels, total);
+            const char tail[] = "\nLIMEIMAGE-END\n";
+            (void)write_all_serial((const uint8_t *)tail, (uint32_t)(sizeof(tail) - 1));
+            esp_log_level_set("*", ESP_LOG_INFO);
             bsp_lvgl_unlock();
         } else {
             printf("LIMEIMAGE-ERR\n");
@@ -282,6 +310,29 @@ static void handle_console_line(char *line)
         }
         printf("LIMEAUTO-OK %s\n", on ? "on" : "off");
         fflush(stdout);
+        return;
+    }
+    if (strncmp(line, "FAP_SCREENSHOT_V1", 17) == 0) {
+        // 社区上架要求的抓屏协议:头部 + RGB565LE 原始像素(240x320x2 = 153600 B)。
+        // 画布缓冲只有 240x214 行,所以分两段抓、按行序连续写出,不额外占 RAM。
+        const uint32_t total = (uint32_t)LIME_ART_W * LIME_SCREEN_H * 2u;
+        if (bsp_lvgl_lock(5000)) {
+            // 同 LIMEIMAGE:头部与像素共用一个流,传输期间必须静音日志。
+            esp_log_level_set("*", ESP_LOG_NONE);
+            char header[64];
+            const int header_len = snprintf(header, sizeof(header),
+                                            "FAP_SCREENSHOT_V1 %d %d RGB565LE %u\n",
+                                            LIME_ART_W, LIME_SCREEN_H, (unsigned)total);
+            (void)write_all_serial((const uint8_t *)header, (uint32_t)header_len);
+            for (int part = 0; part < 2; ++part) {
+                const uint32_t rows = part == 0 ? LIME_ART_H : (LIME_SCREEN_H - LIME_ART_H);
+                capture_full_frame(part == 0 ? 0 : LIME_ART_H);
+                (void)write_all_serial((const uint8_t *)s_art_pixels,
+                                       rows * LIME_ART_W * sizeof(uint16_t));
+            }
+            esp_log_level_set("*", ESP_LOG_INFO);
+            bsp_lvgl_unlock();
+        }
         return;
     }
     if (strncmp(line, "LIMEBTN", 7) == 0) {
@@ -430,17 +481,34 @@ void app_main(void)
     s_console_queue = xQueueCreate(CONSOLE_QUEUE_DEPTH, 64);
     if (!s_console_queue) {
         ESP_LOGW(TAG, "串口命令队列创建失败(不影响阅读)");
-    } else if (xTaskCreate(console_task, "lime_con", 3072, NULL, 3, NULL) != pdPASS) {
-        ESP_LOGW(TAG, "串口读任务创建失败(不影响阅读)");
-        vQueueDelete(s_console_queue);
-        s_console_queue = NULL;
     }
+    // 先建 8KB 栈的输入任务,再把内存留给下面的 USB 驱动缓冲。
+    // 反过来的顺序会让驱动缓冲(几 KB)先把堆吃掉,输入任务创不出来。
     if (xTaskCreate(input_task, "lime_input", 8192, NULL, 5, &s_input_task) != pdPASS) {
         ESP_LOGE(TAG, "输入任务创建失败");
-        vQueueDelete(s_input_queue);
-        s_input_queue = NULL;
         return;
     }
+    if (s_console_queue) {
+        // 串口控制台改走 USB-Serial-JTAG 的**驱动**路径。默认的寄存器级 VFS 写很慢
+        // (实测 153600 字节要 56 秒),社区抓屏协议 15 秒就超时;换驱动后秒级完成。
+        // 必须放在正常 VFS 已经建好之后、console_task 开读之前:
+        // 提前到 app_main 开头调会直接卡死(实测设备无任何输出,只能重新刷写)。
+        usb_serial_jtag_driver_config_t jtag_cfg = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
+        jtag_cfg.tx_buffer_size = 1024;   // 社区参考实现用的是 1KB 级别,够快且省内存
+        jtag_cfg.rx_buffer_size = 256;
+        const esp_err_t jtag_err = usb_serial_jtag_driver_install(&jtag_cfg);
+        if (jtag_err != ESP_OK && jtag_err != ESP_ERR_INVALID_STATE) {
+            ESP_LOGW(TAG, "USB-Serial-JTAG 驱动安装失败(%s),抓屏会很慢",
+                     esp_err_to_name(jtag_err));
+        }
+        usb_serial_jtag_vfs_use_driver();
+        if (xTaskCreate(console_task, "lime_con", 3072, NULL, 3, NULL) != pdPASS) {
+            ESP_LOGW(TAG, "串口读任务创建失败(不影响阅读)");
+            vQueueDelete(s_console_queue);
+            s_console_queue = NULL;
+        }
+    }
+
     if (bsp_button_init(on_key, NULL) != ESP_OK) {
         ESP_LOGE(TAG, "按键初始化失败,无法翻页");
         return;
