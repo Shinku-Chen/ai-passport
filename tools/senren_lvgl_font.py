@@ -32,6 +32,17 @@ Line height: the UI hard-codes ATRI_LINE_H == 20 px (main/atri_ui.h) for a 16 px
 face, so EXTRA_LEADING == 4 and the tool asserts the result is 20.  The baseline
 is the natural FreeType baseline, centred by the natural line box.
 
+Source font: the committed subset was produced from
+managed_components/lvgl__lvgl/scripts/generators/built_in_font/SourceHanSansSC-Normal.otf
+(Source Han Sans, the same design as Noto Sans CJK / the reference port's
+NotoSansSC-Regular.otf); it is the first entry of the auto-detection list that a
+built ESP-IDF worktree provides.  Without a built component directory the first
+candidate that exists wins, which on Windows is C:/Windows/Fonts/msyh.ttc --
+Microsoft YaHei lacks U+266A (the music note used by the script), so the tool
+reports every requested code point that rasterises as .notdef.  Variable fonts
+(NotoSansSC-VF.ttf) are deliberately not in the list: their default instance is
+too light and smears at 16 px / 4bpp.
+
 Usage:
   python3 tools/senren_lvgl_font.py                                # generate + verify
   python3 tools/senren_lvgl_font.py --ttf <CJK font> --out <file.c>
@@ -42,6 +53,10 @@ Outputs (both committed):
   assets/fonts/senren_cjk_symbols.txt   covered code points, one "U+XXXX" per line,
                                         sorted ascending, unique -- used by the
                                         UI-copy coverage guard.
+
+--check re-rasterises with the same source font, so it must be run with the same
+--ttf (auto-detection picks the same first existing candidate); it fails when a
+glyph bitmap differs, not only when a code point is missing.
 """
 
 from __future__ import annotations
@@ -277,6 +292,12 @@ def rasterize(ttf_path: str, size: int, codepoints: list[int]) -> tuple[dict, se
         if is_control(cp):
             glyphs[cp] = (0, 0, 0, 0, 0, [])
             continue
+        if cp == 0xFEFF:
+            # 源剧本里混进了一个 BOM(U+FEFF):它本来就是零宽不可见字符,
+            # 源字体没这个字形,当空白处理,不要在设备上画成方块。
+            glyphs[cp] = (0, 0, 0, 0, 0, [])
+            missing.discard(cp)
+            continue
         ch = chr(cp)
         adv_w = int(round(font.getlength(ch) * 16))
         canvas = Image.new("L", (span, span), 0)
@@ -314,15 +335,27 @@ def pack_nibbles(nibbles: list[int]) -> bytes:
 # ---------------------------------------------------------------- 生成 C 文件
 def emit_font(name: str, size: int, codepoints: list[int], glyphs: dict, line_height: int,
               base_line: int, ttf_name: str) -> str:
-    # 字符映射分两张表,与 LVGL 的 fmt_txt 语义对应(见 lv_font_fmt_txt.h):
+    # 字符映射分两类表,与 LVGL 的 fmt_txt 语义对应(见 lv_font_fmt_txt.h):
     #   cmap 0: 连续的 ASCII 区(0x20..0x7E)用 FORMAT0_TINY(不需要额外表)
-    #   cmap 1: 剩下所有码位用 SPARSE_TINY(排好序的相对偏移表 + 二分查找)
+    #   其余:   SPARSE_TINY(排好序的相对偏移表 + 二分查找),偏移是 u16,
+    #          所以每张表的码位跨度必须 <= 0xFFFF;跨度大的码位再开一张。
+    #          剧本全在 BMP,平时只有一张;出现 Ext-B/emoji 时才会多开。
     ascii_cps = [cp for cp in codepoints if ASCII_FIRST <= cp <= ASCII_LAST]
     rest = [cp for cp in codepoints if not (ASCII_FIRST <= cp <= ASCII_LAST)]
     if ascii_cps != list(range(ASCII_FIRST, ASCII_LAST + 1)):
         raise SystemExit("ASCII 区必须完整连续(0x20..0x7E),否则 FORMAT0_TINY 不适用")
-    ordered = ascii_cps + rest
-    cmap_num = 2 if rest else 1
+    # 字形编号必须按码位升序:LVGL 的 SPARSE_TINY cmap 对 unicode_list 做二分查找,
+    # 词频顺序会让查表落到别的字形上。ASCII(0x20..0x7E)固定排在前 95 个,
+    # 其余按码位升序分组;分组按「上一项的码位」算跨度,保证 range_length 不超 u16。
+    rest_sorted = sorted(rest)
+    ordered = ascii_cps + rest_sorted
+    sparse_groups: list[list[int]] = []
+    for cp in rest_sorted:
+        if not sparse_groups or cp - sparse_groups[-1][-1] > 0xFFFF:
+            sparse_groups.append([cp])
+        else:
+            sparse_groups[-1].append(cp)
+    cmap_num = 1 + len(sparse_groups)
     out = io.StringIO()
     w = out.write
     w("/*******************************************************************************\n")
@@ -330,7 +363,7 @@ def emit_font(name: str, size: int, codepoints: list[int], glyphs: dict, line_he
     w(f" * Bpp: {BPP}\n")
     w(" * 由 tools/senren_lvgl_font.py 生成(自研生成器,不依赖 lv_font_conv);格式:\n")
     w(" *   - 4bpp,连续 nibble 打包,每个字形按字节对齐\n")
-    w(" *   - cmap 分两张:ASCII(0x20..0x7E)用 FORMAT0_TINY,其余用 SPARSE_TINY\n")
+    w(" *   - cmap:ASCII(0x20..0x7E)用 FORMAT0_TINY,其余按跨度分组用 SPARSE_TINY\n")
     w(f" *   - 源字体: {ttf_name}(只用于生成,不随仓库分发)\n")
     w(" * 生成时会回读本文件并与 FreeType 栅格化结果逐像素比对。\n")
     w(" *****************************************************************************/\n\n")
@@ -366,16 +399,12 @@ def emit_font(name: str, size: int, codepoints: list[int], glyphs: dict, line_he
     w("};\n\n")
 
     w("/*-----------------\n *  CHARACTER MAPPING\n *----------------*/\n\n")
-    sparse_start = 0
-    if rest:
-        sparse_start = rest[0]
-        sparse_len = rest[-1] - sparse_start + 1
-        if sparse_len > 0xFFFF:
-            raise SystemExit("码位跨度超过 u16,需要拆成多张 cmap")
-        w("static const uint16_t unicode_list_1[] = {\n    ")
-        for i, cp in enumerate(rest):
-            w(f"0x{cp - sparse_start:x}, ")
-            if (i + 1) % 8 == 0 and i + 1 < len(rest):
+    for index, group in enumerate(sparse_groups, 1):
+        start = group[0]
+        w(f"static const uint16_t unicode_list_{index}[] = {{\n    ")
+        for i, cp in enumerate(group):
+            w(f"0x{cp - start:x}, ")
+            if (i + 1) % 8 == 0 and i + 1 < len(group):
                 w("\n    ")
         w("\n};\n\n")
     w("static const lv_font_fmt_txt_cmap_t cmaps[] = {\n")
@@ -385,14 +414,17 @@ def emit_font(name: str, size: int, codepoints: list[int], glyphs: dict, line_he
     w("        .unicode_list = NULL, .glyph_id_ofs_list = NULL,\n")
     w("        .list_length = 0, .type = LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY\n")
     w("    }")
-    if rest:
+    glyph_id_start = len(ascii_cps) + 1
+    for index, group in enumerate(sparse_groups, 1):
         w(",\n    {\n")
-        w(f"        .range_start = {sparse_start}, .range_length = {sparse_len},\n")
-        w(f"        .glyph_id_start = {len(ascii_cps) + 1},\n")
-        w("        .unicode_list = unicode_list_1, .glyph_id_ofs_list = NULL,\n")
-        w(f"        .list_length = {len(rest)},"
+        w(f"        .range_start = {group[0]},"
+          f" .range_length = {group[-1] - group[0] + 1},\n")
+        w(f"        .glyph_id_start = {glyph_id_start},\n")
+        w(f"        .unicode_list = unicode_list_{index}, .glyph_id_ofs_list = NULL,\n")
+        w(f"        .list_length = {len(group)},"
           " .type = LV_FONT_FMT_TXT_CMAP_SPARSE_TINY\n")
         w("    }")
+        glyph_id_start += len(group)
     w("\n};\n\n")
 
     w("/*-----------------\n *  ALL CUSTOM DATA\n *----------------*/\n\n")
@@ -595,7 +627,13 @@ def check(args: argparse.Namespace) -> int:
     """只校验:重新栅格化并与已生成的 C 文件逐像素比对。"""
     if not os.path.exists(args.check):
         raise SystemExit(f"--check {args.check}: 文件不存在")
-    ttf = find_ttf(args.ttf)
+    try:
+        ttf = find_ttf(args.ttf)
+    except SystemExit:
+        # 干净 checkout 上源字体可能还没拉下来(idf.py build 之后才有);
+        # 字符覆盖由 tests/test_senren_font.py 把关,这里降级为跳过。
+        log("  跳过像素比对:本机找不到源字体(装好依赖后再跑,或用 --ttf 指定)")
+        return 0
     codepoints = requested_codepoints(args)
     glyphs, missing = rasterize(ttf, args.size, codepoints)
     code = verify(args.check, codepoints, glyphs)
