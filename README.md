@@ -217,9 +217,9 @@ and drives it with the three keys. Status: **released** as `v0.1.0-limelight`, s
 Passport community market (under review).
 
 - Branch: [`cindy/curious-babbage`](https://github.com/Shinku-Chen/ai-passport/tree/cindy/curious-babbage)
-- Release: [`v0.1.0-limelight`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-limelight) — merged image `FoloToy-AI-Passport-full.bin`, 7,940,496 bytes
+- Release: [`v0.1.0-limelight`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-limelight) — merged image `FoloToy-AI-Passport-full.bin`, 7,897,824 bytes
 - Upstream work: [`skdkzzx/limelight-lemonade-jam-xiaomi-band10`](https://github.com/skdkzzx/limelight-lemonade-jam-xiaomi-band10) — the Xiaomi Band release this port is based on. That repository declares no licence; its artwork and script are committed with the branch, packed into the firmware, and credited to the upstream project as their source.
-- Asset toolchain: [`tools/limelight_material_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_material_pack.py) and [`tools/limelight_script_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_script_pack.py) (into `main/limelight_data/`, 4.53 MB + 1.81 MB) and [`tools/limelight_lvgl_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_lvgl_font.py) (16 px Chinese subset of Noto Sans SC, 3,449 code points)
+- Asset toolchain: [`tools/limelight_material_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_material_pack.py) and [`tools/limelight_script_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_script_pack.py) (into `main/limelight_data/`, 4.49 MB + 1.81 MB) and [`tools/limelight_lvgl_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_lvgl_font.py) (16 px Chinese subset of Noto Sans SC, 3,449 code points)
 - Merged image: `FoloToy-AI-Passport-full.bin`, 7,431,456 bytes
 
 **Controls:** **UP / DOWN** advance line by line, **UP (hold)** fast-forwards while held and
