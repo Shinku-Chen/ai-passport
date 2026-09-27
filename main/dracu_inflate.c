@@ -1,11 +1,17 @@
-// main/senren_inflate.c —— 自带的非包装 inflate(DEFLATE / zlib)。
+// main/dracu_inflate.c —— 自带的非包装 inflate(DEFLATE / zlib)。
 //
 // 设计前提:整段输出都装得进调用方给的缓冲 —— 我们的剧本小块(<=3 KB)、立绘分块(<=3 KB)
 // 和补丁掩码(<=10 KB)都满足。于是:
 //   * 不需要 32 KB 滑窗/字典(回溯距离直接落在已写出的输出里);
 //   * 状态只有几十字节,不占栈、不占堆,不依赖 ROM/组件里的任何第三方解压实现。
 // 解码用经典的"码长计数 + 逐位比较"法(counts/symbols),比查表慢一点,但块很小、够快。
-#include "senren_inflate.h"
+//
+// 栈纪律:这张表里的临时数组(码长表 320 字节 + 固定表 320 字节)是 static 的,
+// 本板任务的栈只有 8 KB,把它们放栈上会在"画立绘"这种深调用链里触发
+// Stack protection fault(实测)。static 的前提是**同一时刻只有一个任务在解压** ——
+// 所有调用方(应用状态机、画面合成、剧本读取)都在 LVGL 锁里跑,满足这个前提。
+// 新增调用方时务必同样持锁,或改成自己传缓冲。
+#include "dracu_inflate.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -27,7 +33,7 @@ static void fail(const char *fmt, ...)
     va_end(args);
 }
 
-const char *senren_inflate_last_error(void)
+const char *dracu_inflate_last_error(void)
 {
     return s_error[0] ? s_error : "无";
 }
@@ -229,13 +235,14 @@ static bool inflate_fixed(inflate_t *state)
     static huffman_t literals;
     static huffman_t distances;
     static bool ready = false;
+    // static:见文件头的"栈纪律"
+    static uint8_t literal_lengths[MAX_LIT_SYMBOLS];
+    static uint8_t distance_lengths[MAX_DIST_SYMBOLS];
     if (!ready) {
-        uint8_t literal_lengths[MAX_LIT_SYMBOLS];
         for (int index = 0; index < 144; index++) literal_lengths[index] = 8;
         for (int index = 144; index < 256; index++) literal_lengths[index] = 9;
         for (int index = 256; index < 280; index++) literal_lengths[index] = 7;
         for (int index = 280; index < 288; index++) literal_lengths[index] = 8;
-        uint8_t distance_lengths[MAX_DIST_SYMBOLS];
         for (int index = 0; index < 32; index++) distance_lengths[index] = 5;
         if (!huffman_build(&literals, literal_lengths, MAX_LIT_SYMBOLS, "固定字面表") ||
             !huffman_build(&distances, distance_lengths, MAX_DIST_SYMBOLS, "固定距离表")) {
@@ -262,18 +269,19 @@ static bool inflate_dynamic(inflate_t *state)
         fail("动态块符号数越界(%d/%d)", literal_count, distance_count);
         return false;
     }
-    uint8_t codelen_lengths[MAX_CODELEN_SYMBOLS];
+    // static:见文件头的"栈纪律"
+    static uint8_t codelen_lengths[MAX_CODELEN_SYMBOLS];
     memset(codelen_lengths, 0, sizeof(codelen_lengths));
     for (int index = 0; index < codelen_count; index++) {
         if (!need_bits(state, 3, &value)) return false;
         codelen_lengths[CODELEN_ORDER[index]] = (uint8_t)value;
     }
-    huffman_t codelen_table;
+    static huffman_t codelen_table;
     if (!huffman_build(&codelen_table, codelen_lengths, MAX_CODELEN_SYMBOLS, "码长表")) {
         return false;
     }
 
-    uint8_t lengths[MAX_LIT_SYMBOLS + MAX_DIST_SYMBOLS];
+    static uint8_t lengths[MAX_LIT_SYMBOLS + MAX_DIST_SYMBOLS];
     memset(lengths, 0, sizeof(lengths));
     const int total = literal_count + distance_count;
     int index = 0;
@@ -319,7 +327,7 @@ static bool inflate_dynamic(inflate_t *state)
     return inflate_codes(state, &literals, &distances);
 }
 
-uint32_t senren_inflate(const uint8_t *src, uint32_t src_len, uint8_t *dst, uint32_t dst_cap)
+uint32_t dracu_inflate(const uint8_t *src, uint32_t src_len, uint8_t *dst, uint32_t dst_cap)
 {
     s_error[0] = '\0';
     if (src == NULL || dst == NULL || src_len < 2 || dst_cap == 0) {

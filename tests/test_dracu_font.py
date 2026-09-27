@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Structural guard for the generated Senren * Banka LVGL font.
+"""Structural guard for the generated DRACU-RIOT * Banka LVGL font.
 
-This test never rasterises a glyph (that is `tools/senren_lvgl_font.py --check`,
+This test never rasterises a glyph (that is `tools/dracu_lvgl_font.py --check`,
 which needs Pillow and a source font); it re-parses the committed artefacts and
 cross-checks them against the script pack, so it stays fast and dependency free:
 
-  * assets/fonts/senren_cjk_symbols.txt is sorted, unique and "U+XXXX" formatted;
-  * assets/fonts/senren_cjk_16.c declares `senren_cjk_16` with a line height of
-    20 px (main/atri_ui.h ATRI_LINE_H) and consistent glyph_dsc / glyph_bitmap /
+  * assets/fonts/dracu_cjk_symbols.txt is sorted, unique and "U+XXXX" formatted;
+  * assets/fonts/dracu_cjk_16.c declares `dracu_cjk_16` with a line height of
+    20 px (main/dracu_ui.h DRACU_LINE_H) and consistent glyph_dsc / glyph_bitmap /
     cmaps sizes;
   * every code point of the script pack's SEC_CHAR (the character set the game
     text needs) is covered by both the symbols file and the font cmap -- a
@@ -16,10 +16,10 @@ cross-checks them against the script pack, so it stays fast and dependency free:
 The pack lives in build/ and is not in CI, so both checks skip cleanly when the
 pack or the font is absent:
 
-  python tools/senren_scn_pack.py --source build/senren-source \
-      --out build/senren-pack/senren_scn.bin          # needs the fetched source
-  python3 tools/senren_lvgl_font.py --ttf <CJK font>  # regenerate the font
-  python3 tests/test_senren_font.py
+  python tools/dracu_scn_pack.py --source build/dracu-source \
+      --out build/dracu-pack/dracu_scn.bin          # needs the fetched source
+  python3 tools/dracu_lvgl_font.py --ttf <CJK font>  # regenerate the font
+  python3 tests/test_dracu_font.py
 """
 
 from __future__ import annotations
@@ -31,16 +31,16 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PACK = ROOT / "build" / "senren-pack" / "senren_scn.bin"
-FONT = ROOT / "assets" / "fonts" / "senren_cjk_16.c"
-SYMBOLS = ROOT / "assets" / "fonts" / "senren_cjk_symbols.txt"
+PACK = ROOT / "build" / "dracu-pack" / "dracu_scn.bin"
+FONT = ROOT / "assets" / "fonts" / "dracu_cjk_16.c"
+SYMBOLS = ROOT / "assets" / "fonts" / "dracu_cjk_symbols.txt"
 
-FONT_NAME = "senren_cjk_16"
-EXPECTED_LINE_HEIGHT = 20        # main/atri_ui.h 的 ATRI_LINE_H
+FONT_NAME = "dracu_cjk_16"
+EXPECTED_LINE_HEIGHT = 20        # main/dracu_ui.h 的 DRACU_LINE_H
 EXPECTED_BPP = 4
 ASCII_FIRST, ASCII_LAST = 0x20, 0x7E
 
-# SENRSCN1 脚本包头部/段表(见 tools/senren_scn_pack.py)
+# DRACUSC1 脚本包头部/段表(见 tools/dracu_scn_pack.py)
 SCN_HEADER = struct.Struct("<8sHHHHI")
 SCN_SECTION = struct.Struct("<IIII")
 SEC_CHAR = 0
@@ -77,7 +77,7 @@ def scn_char_points(path: Path) -> list[int]:
     """读脚本包的 SEC_CHAR:u32 count + count × u16 码点。"""
     blob = path.read_bytes()
     magic, _version, _header_size, section_count, _reserved, total = SCN_HEADER.unpack_from(blob)
-    if magic != b"SENRSCN1":
+    if magic != b"DRACUSC1":
         raise AssertionError(f"{path}: 魔数不符 {magic!r}")
     if total != len(blob):
         raise AssertionError(f"{path}: 头里写 {total} 字节,实际 {len(blob)}")
@@ -131,27 +131,27 @@ class SymbolsFileTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.lines = read_text(SYMBOLS).splitlines() if SYMBOLS.exists() else []
 
-    @unittest.skipUnless(SYMBOLS.exists(), f"missing {SYMBOLS.name}; run tools/senren_lvgl_font.py")
+    @unittest.skipUnless(SYMBOLS.exists(), f"missing {SYMBOLS.name}; run tools/dracu_lvgl_font.py")
     def test_every_line_is_u_plus_form(self) -> None:
         bad = [line for line in self.lines if not SYMBOL_RE.match(line)]
         self.assertEqual(bad, [], f"清单里有 {len(bad)} 行不是 U+XXXX: {bad[:5]}")
 
-    @unittest.skipUnless(SYMBOLS.exists(), f"missing {SYMBOLS.name}; run tools/senren_lvgl_font.py")
+    @unittest.skipUnless(SYMBOLS.exists(), f"missing {SYMBOLS.name}; run tools/dracu_lvgl_font.py")
     def test_sorted_and_unique(self) -> None:
         points = symbols()
         self.assertEqual(len(points), len(self.lines), "有重复的码位行")
         self.assertEqual(points, sorted(points), "清单没有按码位升序")
         self.assertEqual(len(set(points)), len(points), "清单里有重复码位")
 
-    @unittest.skipUnless(SYMBOLS.exists(), f"missing {SYMBOLS.name}; run tools/senren_lvgl_font.py")
+    @unittest.skipUnless(SYMBOLS.exists(), f"missing {SYMBOLS.name}; run tools/dracu_lvgl_font.py")
     def test_printable_ascii_is_covered(self) -> None:
         points = set(symbols())
         missing = [cp for cp in range(ASCII_FIRST, ASCII_LAST + 1) if cp not in points]
         self.assertEqual(missing, [], "ASCII 区不完整,UI 文案里的标点会缺字")
 
 
-@unittest.skipUnless(PACK.exists(), f"missing {PACK.name}; run tools/senren_scn_pack.py")
-@unittest.skipUnless(SYMBOLS.exists(), f"missing {SYMBOLS.name}; run tools/senren_lvgl_font.py")
+@unittest.skipUnless(PACK.exists(), f"missing {PACK.name}; run tools/dracu_scn_pack.py")
+@unittest.skipUnless(SYMBOLS.exists(), f"missing {SYMBOLS.name}; run tools/dracu_lvgl_font.py")
 class ScriptCoverageTest(unittest.TestCase):
     def test_every_script_character_is_listed(self) -> None:
         wanted = scn_char_points(PACK)
@@ -162,12 +162,12 @@ class ScriptCoverageTest(unittest.TestCase):
                          % (len(missing), " ".join(f"U+{cp:04X}" for cp in missing[:10])))
 
 
-@unittest.skipUnless(FONT.exists(), f"missing {FONT.name}; run tools/senren_lvgl_font.py")
+@unittest.skipUnless(FONT.exists(), f"missing {FONT.name}; run tools/dracu_lvgl_font.py")
 class LvglFontFileTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         if not FONT.exists():
-            raise unittest.SkipTest(f"missing {FONT.name}; run tools/senren_lvgl_font.py")
+            raise unittest.SkipTest(f"missing {FONT.name}; run tools/dracu_lvgl_font.py")
         cls.text = read_text(FONT)
         cls.bitmap_block = BITMAPS_RE.search(cls.text)
         cls.cmap = parse_cmaps(cls.text)
@@ -180,7 +180,7 @@ class LvglFontFileTest(unittest.TestCase):
     def test_line_height_is_the_ui_line_height(self) -> None:
         line_height = int(re.search(r"\.line_height\s*=\s*(\d+)", self.text).group(1))
         self.assertEqual(line_height, EXPECTED_LINE_HEIGHT,
-                         "行高必须等于 main/atri_ui.h 的 ATRI_LINE_H")
+                         "行高必须等于 main/dracu_ui.h 的 DRACU_LINE_H")
         bpp = int(re.search(r"\.bpp\s*=\s*(\d+)", self.text).group(1))
         self.assertEqual(bpp, EXPECTED_BPP)
 
@@ -211,8 +211,8 @@ class LvglFontFileTest(unittest.TestCase):
             self.assertIn(cp, self.cmap, f"U+{cp:04X} 不在 cmap 里")
 
 
-@unittest.skipUnless(FONT.exists(), f"missing {FONT.name}; run tools/senren_lvgl_font.py")
-@unittest.skipUnless(PACK.exists(), f"missing {PACK.name}; run tools/senren_scn_pack.py")
+@unittest.skipUnless(FONT.exists(), f"missing {FONT.name}; run tools/dracu_lvgl_font.py")
+@unittest.skipUnless(PACK.exists(), f"missing {PACK.name}; run tools/dracu_scn_pack.py")
 class FontCoversScriptTest(unittest.TestCase):
     def test_every_script_character_has_a_glyph(self) -> None:
         cmap = parse_cmaps(read_text(FONT))

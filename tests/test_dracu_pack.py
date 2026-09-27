@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Round-trip tests for the blocked palette payload codec in tools/senren_pack.py.
+"""Round-trip tests for the blocked palette payload codec in tools/dracu_pack.py.
 
 The device has ~11 KB of free heap and a 7.7 KB largest block, so SPRITE / SD /
 EFFECT payloads are no longer PNG: they are palettized, row-filtered and cut
@@ -10,9 +10,9 @@ invertible across block boundaries.
 
 These tests build small synthetic RGBA images, encode them, and decode them
 with the same reader `--compare` uses, so they do not need the multi-megabyte
-source assets (run tools/senren_fetch_source.py for those).
+source assets (run tools/dracu_fetch_source.py for those).
 
-Run: python3 tests/test_senren_pack.py
+Run: python3 tests/test_dracu_pack.py
 Skips cleanly when Pillow/numpy are unavailable (they are only needed to pack).
 """
 
@@ -39,10 +39,10 @@ else:
 
 
 def load_packer():
-    """按路径加载 tools/senren_pack.py(它不在 sys.path 上)。"""
-    spec = importlib.util.spec_from_file_location("senren_pack", ROOT / "tools" / "senren_pack.py")
+    """按路径加载 tools/dracu_pack.py(它不在 sys.path 上)。"""
+    spec = importlib.util.spec_from_file_location("dracu_pack", ROOT / "tools" / "dracu_pack.py")
     module = importlib.util.module_from_spec(spec)
-    sys.modules["senren_pack"] = module   # dataclass 需要模块已在 sys.modules 里
+    sys.modules["dracu_pack"] = module   # dataclass 需要模块已在 sys.modules 里
     spec.loader.exec_module(module)
     return module
 
@@ -105,10 +105,10 @@ class BlockedPayloadTest(unittest.TestCase):
         payload = self.pack.encode_blocked(image, 255)
         fields, blocks = self.read_blocks(payload)
         self.assertEqual((fields["width"], fields["height"]), (120, 37))
-        self.assertEqual(fields["block_rows"], 8)
-        self.assertEqual(fields["block_count"], (37 + 7) // 8)          # 最后一块只有 5 行
+        self.assertEqual(fields["block_rows"], self.pack.BLOCK_ROWS)
+        self.assertEqual(fields["block_count"], (37 + self.pack.BLOCK_ROWS - 1) // self.pack.BLOCK_ROWS)
         self.assertEqual(fields["reserved"], 0)
-        self.assertEqual(fields["raw_block_bytes"], 8 * (120 + 1))
+        self.assertEqual(fields["raw_block_bytes"], self.pack.BLOCK_ROWS * (120 + 1))
         self.assertTrue(1 <= fields["palette_count"] <= 255)
         self.assertEqual(len(blocks), fields["block_count"])
         # 最后一块更短,其余都满;每块都 <= raw_block_bytes(固件只备一块缓冲)
@@ -152,7 +152,8 @@ class BlockedPayloadTest(unittest.TestCase):
 
     def test_up_filter_is_kept_across_block_boundaries(self) -> None:
         """每一行都和上一行相同,Up(2)的代价是 0:非全零行必须是 Up,跨块也一样。"""
-        image = repeated_row_image(40, 20)
+        # 高度要跨过至少一个块边界(每块 BLOCK_ROWS 行),否则"上一行跨块保留"没被覆盖
+        image = repeated_row_image(40, self.pack.BLOCK_ROWS * 2 + 5)
         fields, blocks = self.read_blocks(self.pack.encode_blocked(image, 255))
         row_bytes = fields["width"] + 1
         previous = np.zeros(fields["width"], dtype=np.uint8)

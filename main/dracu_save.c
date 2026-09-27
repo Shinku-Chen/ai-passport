@@ -1,12 +1,12 @@
-// main/senren_save.c —— NVS 持久化实现。
-#include "senren_save.h"
+// main/dracu_save.c —— NVS 持久化实现。
+#include "dracu_save.h"
 
 #include "esp_log.h"
 #include "nvs.h"
 
-static const char *TAG = "senren_save";
+static const char *TAG = "dracu_save";
 
-#define SENREN_NVS_NAMESPACE "senren"
+#define DRACU_NVS_NAMESPACE "dracu"
 #define KEY_AUTO "auto"
 #define KEY_CFG "cfg"
 #define CFG_MAGIC 0x53u
@@ -25,7 +25,7 @@ static void slot_key(uint8_t slot, char out[4])
     out[2] = '\0';
 }
 
-void senren_settings_default(senren_settings_t *settings)
+void dracu_settings_default(dracu_settings_t *settings)
 {
     if (!settings) return;
     settings->text_speed = 1;   // 中速
@@ -33,10 +33,10 @@ void senren_settings_default(senren_settings_t *settings)
     settings->seen_tips = 0;
 }
 
-bool senren_save_init(void)
+bool dracu_save_init(void)
 {
     if (s_ready) return true;
-    const esp_err_t err = nvs_open(SENREN_NVS_NAMESPACE, NVS_READWRITE, &s_handle);
+    const esp_err_t err = nvs_open(DRACU_NVS_NAMESPACE, NVS_READWRITE, &s_handle);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "NVS 打开失败: %s", esp_err_to_name(err));
         return false;
@@ -45,10 +45,10 @@ bool senren_save_init(void)
     return true;
 }
 
-bool senren_settings_load(senren_settings_t *out)
+bool dracu_settings_load(dracu_settings_t *out)
 {
     if (!out) return false;
-    senren_settings_default(out);
+    dracu_settings_default(out);
     if (!s_ready) return false;
 
     uint8_t blob[8] = { 0 };
@@ -63,7 +63,7 @@ bool senren_settings_load(senren_settings_t *out)
     return true;
 }
 
-bool senren_settings_store(const senren_settings_t *settings)
+bool dracu_settings_store(const dracu_settings_t *settings)
 {
     if (!settings || !s_ready) return false;
     const uint8_t blob[5] = { CFG_MAGIC, CFG_VERSION, settings->text_speed,
@@ -72,22 +72,22 @@ bool senren_settings_store(const senren_settings_t *settings)
     return nvs_commit(s_handle) == ESP_OK;
 }
 
-bool senren_slot_load(uint8_t slot, senren_save_t *out)
+bool dracu_slot_load(uint8_t slot, dracu_save_t *out)
 {
-    if (!out || !s_ready || slot >= SENREN_SAVE_SLOTS) return false;
+    if (!out || !s_ready || slot >= DRACU_SAVE_SLOTS) return false;
     char key[4];
     slot_key(slot, key);
     uint8_t blob[SAVE_BLOB_MAX] = { 0 };
     size_t len = sizeof(blob);
     if (nvs_get_blob(s_handle, key, blob, &len) != ESP_OK) return false;
-    return senren_save_decode(out, blob, len);
+    return dracu_save_decode(out, blob, len);
 }
 
-bool senren_slot_store(uint8_t slot, const senren_save_t *save)
+bool dracu_slot_store(uint8_t slot, const dracu_save_t *save)
 {
-    if (!save || !s_ready || slot >= SENREN_SAVE_SLOTS) return false;
+    if (!save || !s_ready || slot >= DRACU_SAVE_SLOTS) return false;
     uint8_t blob[SAVE_BLOB_MAX];
-    const size_t len = senren_save_encode(save, blob, sizeof(blob));
+    const size_t len = dracu_save_encode(save, blob, sizeof(blob));
     if (len == 0) return false;
     char key[4];
     slot_key(slot, key);
@@ -95,9 +95,9 @@ bool senren_slot_store(uint8_t slot, const senren_save_t *save)
     return nvs_commit(s_handle) == ESP_OK;
 }
 
-bool senren_slot_clear(uint8_t slot)
+bool dracu_slot_clear(uint8_t slot)
 {
-    if (!s_ready || slot >= SENREN_SAVE_SLOTS) return false;
+    if (!s_ready || slot >= DRACU_SAVE_SLOTS) return false;
     char key[4];
     slot_key(slot, key);
     const esp_err_t err = nvs_erase_key(s_handle, key);
@@ -105,26 +105,26 @@ bool senren_slot_clear(uint8_t slot)
     return nvs_commit(s_handle) == ESP_OK;
 }
 
-bool senren_auto_load(senren_save_t *out)
+bool dracu_auto_load(dracu_save_t *out)
 {
     if (!out || !s_ready) return false;
     uint8_t blob[SAVE_BLOB_MAX] = { 0 };
     size_t len = sizeof(blob);
     if (nvs_get_blob(s_handle, KEY_AUTO, blob, &len) != ESP_OK) return false;
-    return senren_save_decode(out, blob, len);
+    return dracu_save_decode(out, blob, len);
 }
 
-bool senren_auto_store(const senren_save_t *save)
+bool dracu_auto_store(const dracu_save_t *save)
 {
     if (!save || !s_ready) return false;
     uint8_t blob[SAVE_BLOB_MAX];
-    const size_t len = senren_save_encode(save, blob, sizeof(blob));
+    const size_t len = dracu_save_encode(save, blob, sizeof(blob));
     if (len == 0) return false;
     if (nvs_set_blob(s_handle, KEY_AUTO, blob, len) != ESP_OK) return false;
     return nvs_commit(s_handle) == ESP_OK;
 }
 
-bool senren_auto_clear(void)
+bool dracu_auto_clear(void)
 {
     if (!s_ready) return false;
     const esp_err_t err = nvs_erase_key(s_handle, KEY_AUTO);

@@ -1,7 +1,7 @@
-// main/main.c —— 《千恋＊万花》AI Passport 阅读器:开机直接进阅读器(竖屏 240x320)。
+// main/main.c —— 《DRACU-RIOT!》AI Passport 阅读器:开机直接进阅读器(竖屏 240x320)。
 //
-// 界面与页面流程来自 ATRI 阅读器(main/atri_ui.c、main/atri_image.c、main/atri_app.c),
-// 剧情/资源包/存档由 senren 数据层(main/senren_model.c、senren_pack.c、senren_save.c)
+// 界面与页面流程来自 ATRI 阅读器(main/dracu_ui.c、main/dracu_image.c、main/dracu_app.c),
+// 剧情/资源包/存档由 dracu 数据层(main/dracu_model.c、dracu_pack.c、dracu_save.c)
 // 驱动。按键语义:
 //   标题/列表页 上、下移动光标,确定进入,长按确定返回
 //   正文页      上/下短按推进,长按上快进(松手停),长按下自动阅读,确定打开菜单
@@ -9,7 +9,7 @@
 //
 // 线程模型:按键回调只入队;输入任务串行处理事件并驱动应用状态机;
 // LVGL 对象只在持有 bsp_lvgl_lock() 时改写(由本文件负责加锁)。
-#include "atri_app.h"
+#include "dracu_app.h"
 #include "bsp_audio.h"
 #include "bsp_battery.h"
 #include "bsp_button.h"
@@ -17,6 +17,7 @@
 #include "bsp_i2c.h"
 #include "bsp_pins.h"
 
+#include "driver/usb_serial_jtag.h"
 #include "driver/usb_serial_jtag_vfs.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -30,35 +31,35 @@
 
 static const char *TAG = "main";
 
-// 资源包由 main/CMakeLists.txt 的 EMBED_FILES 注入(见 tools/senren_pack.py、
-// tools/senren_scn_pack.py):图片包(SENRNPK2)+ 剧本包(SENRSCN1)。
-extern const uint8_t senren_pack_bin_start[] asm("_binary_senren_pack_bin_start");
-extern const uint8_t senren_pack_bin_end[] asm("_binary_senren_pack_bin_end");
-extern const uint8_t senren_scn_bin_start[] asm("_binary_senren_scn_bin_start");
-extern const uint8_t senren_scn_bin_end[] asm("_binary_senren_scn_bin_end");
-// LVGL 中文字体子集(assets/fonts/senren_cjk_16.c,由 tools/senren_lvgl_font.py 生成)。
-LV_FONT_DECLARE(senren_cjk_16);
+// 资源包由 main/CMakeLists.txt 的 EMBED_FILES 注入(见 tools/dracu_pack.py、
+// tools/dracu_scn_pack.py):图片包(DRACUPK1)+ 剧本包(DRACUSC1)。
+extern const uint8_t dracu_pack_bin_start[] asm("_binary_dracu_pack_bin_start");
+extern const uint8_t dracu_pack_bin_end[] asm("_binary_dracu_pack_bin_end");
+extern const uint8_t dracu_scn_bin_start[] asm("_binary_dracu_scn_bin_start");
+extern const uint8_t dracu_scn_bin_end[] asm("_binary_dracu_scn_bin_end");
+// LVGL 中文字体子集(assets/fonts/dracu_cjk_16.c,由 tools/dracu_lvgl_font.py 生成)。
+LV_FONT_DECLARE(dracu_cjk_16);
 
-// 开机直接进入的章号(-1 = 正常走标题页;0 = 从剧本开头)。由 CMake 的
-// SENREN_BOOT_CHAPTER 传入,用于真机验收某一章:正式固件用默认值,验收时单独构建。
-#ifndef SENREN_BOOT_CHAPTER
-#define SENREN_BOOT_CHAPTER (-1)
+// 开机直接进入的页号(-1 = 正常走标题页)。由 CMake 的 DRACU_BOOT_PAGE 传入,
+// 用于真机验收某一页:正式固件用默认值,验收时单独构建。
+#ifndef DRACU_BOOT_PAGE
+#define DRACU_BOOT_PAGE (-1)
 #endif
 
 #define INPUT_QUEUE_DEPTH 8
 #define INPUT_TICK_MS 40
 
 // 空闲策略:先调暗,再熄屏,最后 deep sleep(任意键唤醒后回到标题页继续读)。
-#define SENREN_DIM_MS 60000u
-#define SENREN_SCREEN_OFF_MS 180000u
-#define SENREN_SLEEP_MS 420000u
+#define DRACU_DIM_MS 60000u
+#define DRACU_SCREEN_OFF_MS 180000u
+#define DRACU_SLEEP_MS 420000u
 #define BACKLIGHT_FULL 100
 #define BACKLIGHT_DIM 35
 
 // 画面区 240x320 RGB565 画布(整屏合成,背景 JPEG 直接解码进这块缓冲)。
 // ⚠ 它同时是 LVGL canvas 的像素缓冲,必须与 LVGL 生命周期一致,所以静态分配。
-static uint16_t s_art_pixels[ATRI_ART_W * ATRI_ART_H] __attribute__((aligned(4)));
-static atri_app_t s_app;
+static uint16_t s_art_pixels[DRACU_ART_W * DRACU_ART_H] __attribute__((aligned(4)));
+static dracu_app_t s_app;
 
 // 整屏验收截图:LVGL 是按 40 行一条把合成结果刷进绘制缓冲的,把每条都抄回画布缓冲,
 // 画布缓冲就变成了"当前屏幕上看到的完整画面"(不额外占 RAM,不需要色键)。
@@ -92,15 +93,15 @@ static void capture_flush_event(lv_event_t *event)
     if (lv_display_get_color_format(disp) != LV_COLOR_FORMAT_RGB565) return;
 
     const int32_t x1 = area->x1 < 0 ? 0 : area->x1;
-    const int32_t x2 = area->x2 >= ATRI_ART_W ? ATRI_ART_W - 1 : area->x2;
+    const int32_t x2 = area->x2 >= DRACU_ART_W ? DRACU_ART_W - 1 : area->x2;
     if (x2 < x1) return;
     const size_t row_bytes = (size_t)(x2 - x1 + 1) * sizeof(uint16_t);
     for (int32_t y = area->y1; y <= area->y2; ++y) {
-        if (y < 0 || y >= ATRI_ART_H) continue;
+        if (y < 0 || y >= DRACU_ART_H) continue;
         const uint8_t *src = draw_buf->data +
                              (size_t)(y - area->y1) * draw_buf->header.stride +
                              (size_t)x1 * sizeof(uint16_t);
-        memcpy(s_art_pixels + (size_t)y * ATRI_ART_W + x1, src, row_bytes);
+        memcpy(s_art_pixels + (size_t)y * DRACU_ART_W + x1, src, row_bytes);
     }
 }
 
@@ -125,7 +126,7 @@ static void capture_end(void)
 static bool push_key(int btn, int ev)
 {
     if (!s_input_ready || !s_input_queue) return false;
-    const atri_key_t key = { .btn = (uint8_t)btn, .ev = (uint8_t)ev };
+    const dracu_key_t key = { .btn = (uint8_t)btn, .ev = (uint8_t)ev };
     return xQueueSend(s_input_queue, &key, pdMS_TO_TICKS(200)) == pdTRUE;
 }
 
@@ -137,7 +138,7 @@ static void on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user)
 
 // ---- 按键黑匣子 -----------------------------------------------------------
 // 记下最近若干条按键事件及当时的 ADC 电压。物理按键的真实时序(尤其是"长按一个键
-// 却在别的窗口报事件")在机器上重现后,用串口 SENRENKEYS 就能回看,不必一边按一边抓日志。
+// 却在别的窗口报事件")在机器上重现后,用串口 DRACUKEYS 就能回看,不必一边按一边抓日志。
 #define KEYLOG_MAX 32
 
 typedef struct {
@@ -150,7 +151,7 @@ typedef struct {
 static key_log_t s_keylog[KEYLOG_MAX];
 static volatile uint32_t s_keylog_count;
 
-static void keylog_push(const atri_key_t *key)
+static void keylog_push(const dracu_key_t *key)
 {
     const uint32_t slot = s_keylog_count++ % KEYLOG_MAX;
     s_keylog[slot].ms = (uint32_t)(esp_timer_get_time() / 1000);
@@ -163,7 +164,7 @@ static void keylog_push(const atri_key_t *key)
 static void enter_sleep(void)
 {
     ESP_LOGI(TAG, "空闲 %u ms,进入 deep sleep(任意按键唤醒)",
-             (unsigned)atri_app_idle_ms(&s_app));
+             (unsigned)dracu_app_idle_ms(&s_app));
 
     const esp_err_t wake_err =
         esp_deep_sleep_enable_gpio_wakeup(1ULL << BSP_BTN_GPIO, ESP_GPIO_WAKEUP_GPIO_LOW);
@@ -174,8 +175,8 @@ static void enter_sleep(void)
     }
 
     if (bsp_lvgl_lock(300)) {
-        atri_app_before_sleep(&s_app);
-        atri_app_show_sleeping(&s_app);
+        dracu_app_before_sleep(&s_app);
+        dracu_app_show_sleeping(&s_app);
         bsp_lvgl_unlock();
     }
     vTaskDelay(pdMS_TO_TICKS(400));
@@ -208,30 +209,30 @@ static void enter_sleep(void)
     esp_restart();
 }
 
-static void handle_key(const atri_key_t *key)
+static void handle_key(const dracu_key_t *key)
 {
     if (!bsp_lvgl_lock(500)) {
         ESP_LOGW(TAG, "拿不到 LVGL 锁,丢弃本次按键");
         return;
     }
-    atri_app_key(&s_app, key);
+    dracu_app_key(&s_app, key);
     bsp_lvgl_unlock();
 }
 
 static void handle_tick(uint32_t elapsed_ms)
 {
     if (!bsp_lvgl_lock(500)) return;
-    atri_app_tick(&s_app, elapsed_ms);
-    const bool want_sleep = atri_app_take_sleep_request(&s_app);
+    dracu_app_tick(&s_app, elapsed_ms);
+    const bool want_sleep = dracu_app_take_sleep_request(&s_app);
     bsp_lvgl_unlock();
     if (want_sleep) enter_sleep();
 }
 
 // 串口截图通道(调试用):在 USB-Serial-JTAG 控制台输入
-//   SENRENSHOT <章号> [<句号>]
-// 就把该处的画面区渲染出来,并以 RGB565 原始字节回传:
-//   SENRENSHOT <w> <h> <字节数> + 原始像素 + SENRENSHOT-END
-// 章号从 1 起(源数据 CHAPTERx-y 的 x),句号是该章之后的第几句正文(0 起)。
+//   DRACUSHOT <页号>
+// 就把该页的画面区渲染出来,并以 RGB565 原始字节回传:
+//   DRACUSHOT <w> <h> <字节数> + 原始像素 + DRACUSHOT-END
+// 页号从 1 起(源工程剧本页表的编号),范围见 tools/dracu_scn_pack.py 的 --check。
 // 平时它只是阻塞在一行输入上,不占 CPU;发行固件保留它便于远程验收画面。
 static void debug_task(void *arg)
 {
@@ -242,23 +243,26 @@ static void debug_task(void *arg)
             vTaskDelay(pdMS_TO_TICKS(200));
             continue;
         }
-        int chapter = -1;
-        int scene = -1;
+        line[strcspn(line, "\r\n")] = 0;   // 去掉行尾:下面按整串比较
+        if (line[0] == 0) continue;
+        ESP_LOGI(TAG, "串口命令: %s", line);
+        int page_arg = -1;
 
-        // SENRENPAGE [title | <章号> <句号>]:把整屏(**画面区 + LVGL 画的文字/名牌/列表**)快照回传。
+        // DRACUPAGE [title | <页号>]:把整屏(**画面区 + LVGL 画的文字/名牌/列表**)快照回传。
         // 做法:强制一次整屏重画,capture_flush_event 把每条合成结果抄进画布缓冲——
         // 回传的就是真正上屏的那一张画面,不需要第二块 150KB 缓冲、也不需要色键。
         // 回传期间一直持 LVGL 锁:~13s 内屏幕不会变(用户按键也不生效),否则翻页会把
         // 画布缓冲重写一遍,回传出去的字节就是两次画面的混合。
-        if (strncmp(line, "SENRENPAGE", 10) == 0) {
+        if (strcmp(line, "DRACUPAGE") == 0 || strncmp(line, "DRACUPAGE ", 10) == 0) {
             const bool is_title = strstr(line, "title") != NULL;
             bool prepared = false;
             if (bsp_lvgl_lock(2000)) {
                 if (is_title) {
-                    (void)atri_app_debug_title(&s_app);
-                } else if (sscanf(line, "SENRENPAGE %d %d", &chapter, &scene) == 2) {
-                    (void)atri_app_debug_start(&s_app, (uint16_t)chapter, (uint16_t)scene);
+                    (void)dracu_app_debug_title(&s_app);
+                } else if (sscanf(line, "DRACUPAGE %d", &page_arg) == 1) {
+                    (void)dracu_app_debug_start(&s_app, (uint32_t)page_arg);
                 }
+                dracu_app_debug_settle(&s_app);
                 lv_obj_update_layout(lv_screen_active());
                 capture_begin();
                 bsp_lvgl_unlock();
@@ -273,7 +277,7 @@ static void debug_task(void *arg)
                         ESP_LOGW(TAG, "整屏截图:400ms 内 LVGL 没刷过帧,回传的可能是旧画面");
                     }
                     const uint32_t total = sizeof(s_art_pixels);
-                    printf("SENRENPAGE %d %d %u\n", ATRI_ART_W, ATRI_ART_H, (unsigned)total);
+                    printf("DRACUPAGE %d %d %u\n", DRACU_ART_W, DRACU_ART_H, (unsigned)total);
                     fflush(stdout);
                     usb_serial_jtag_vfs_set_tx_line_endings(ESP_LINE_ENDINGS_LF);
                     const uint8_t *bytes = (const uint8_t *)s_art_pixels;
@@ -283,127 +287,148 @@ static void debug_task(void *arg)
                     }
                     fflush(stdout);
                     usb_serial_jtag_vfs_set_tx_line_endings(ESP_LINE_ENDINGS_CRLF);
-                    printf("\nSENRENPAGE-END\n");
+                    printf("\nDRACUPAGE-END\n");
                     fflush(stdout);
 
                     // 画布缓冲现在装的是"带文字的整屏画面";重画一次这一幕,让它回到干净的画面内容。
                     if (is_title) {
-                        (void)atri_app_debug_title(&s_app);
-                    } else if (chapter >= 0) {
-                        (void)atri_app_debug_start(&s_app, (uint16_t)chapter,
-                                                   scene < 0 ? 0 : (uint16_t)scene);
+                        (void)dracu_app_debug_title(&s_app);
+                    } else if (page_arg >= 0) {
+                        (void)dracu_app_debug_start(&s_app, (uint32_t)page_arg);
                     }
                     bsp_lvgl_unlock();
                 } else {
-                    printf("SENRENPAGE-ERR\n");
+                    printf("DRACUPAGE-ERR\n");
                     fflush(stdout);
                 }
             } else {
-                printf("SENRENPAGE-ERR\n");
+                printf("DRACUPAGE-ERR\n");
                 fflush(stdout);
             }
             continue;
         }
 
-        // 调试命令:SENRENINFO / SENRENSAVE <槽> / SENRENLOAD <槽>(槽 -1 = 自动档)。
-        if (strncmp(line, "SENRENINFO", 10) == 0) {
+        // 调试命令:DRACUINFO / DRACUSAVE <槽> / DRACULOAD <槽>(槽 -1 = 自动档)。
+        if (strcmp(line, "DRACUINFO") == 0) {
             char info[256] = { 0 };
             if (bsp_lvgl_lock(1000)) {
-                atri_app_debug_info(&s_app, info, sizeof(info));
+                dracu_app_debug_info(&s_app, info, sizeof(info));
                 bsp_lvgl_unlock();
             }
-            printf("SENRENINFO %s\n", info);
+            printf("DRACUINFO %s\n", info);
             fflush(stdout);
             continue;
         }
 
         int slot = 0;
-        if (sscanf(line, "SENRENSAVE %d", &slot) == 1) {
+        if (sscanf(line, "DRACUSAVE %d", &slot) == 1) {
             bool saved = false;
             if (bsp_lvgl_lock(1000)) {
-                saved = atri_app_debug_save(&s_app, slot);
+                saved = dracu_app_debug_save(&s_app, slot);
                 bsp_lvgl_unlock();
             }
-            printf("SENRENSAVE-%s %d\n", saved ? "OK" : "ERR", slot);
+            printf("DRACUSAVE-%s %d\n", saved ? "OK" : "ERR", slot);
             fflush(stdout);
             continue;
         }
-        if (sscanf(line, "SENRENLOAD %d", &slot) == 1) {
+        if (sscanf(line, "DRACULOAD %d", &slot) == 1) {
             bool loaded = false;
             if (bsp_lvgl_lock(1000)) {
-                loaded = atri_app_debug_load(&s_app, slot);
+                loaded = dracu_app_debug_load(&s_app, slot);
                 bsp_lvgl_unlock();
             }
-            printf("SENRENLOAD-%s %d\n", loaded ? "OK" : "ERR", slot);
+            printf("DRACULOAD-%s %d\n", loaded ? "OK" : "ERR", slot);
             fflush(stdout);
             continue;
         }
 
-        // SENRENKEYS:回看最近 32 条按键事件(时间 / 键 / 事件 / 当时 ADC 电压)。
-        if (strncmp(line, "SENRENKEYS", 10) == 0) {
+        // DRACUSTACK:打印两个任务的栈余量(排查 Stack protection fault 用)。
+        if (strcmp(line, "DRACUSTACK") == 0) {
+            printf("DRACUSTACK debug=%u input=%u\n",
+                   (unsigned)(uxTaskGetStackHighWaterMark(NULL) * sizeof(StackType_t)),
+                   (unsigned)(s_input_task ? uxTaskGetStackHighWaterMark(s_input_task) *
+                                                 sizeof(StackType_t)
+                                           : 0));
+            fflush(stdout);
+            continue;
+        }
+
+        // DRACUKEYS:回看最近 32 条按键事件(时间 / 键 / 事件 / 当时 ADC 电压)。
+        if (strcmp(line, "DRACUKEYS") == 0) {
             const uint32_t total = s_keylog_count < KEYLOG_MAX ? s_keylog_count : KEYLOG_MAX;
-            printf("SENRENKEYS %u\n", (unsigned)total);
+            printf("DRACUKEYS %u\n", (unsigned)total);
             for (uint32_t i = 0; i < total; ++i) {
                 const uint32_t first = s_keylog_count >= KEYLOG_MAX ? s_keylog_count % KEYLOG_MAX : 0;
                 const key_log_t *entry = &s_keylog[(first + i) % KEYLOG_MAX];
                 printf("%u ms btn=%u ev=%u adc=%dmV\n", (unsigned)entry->ms, entry->btn, entry->ev,
                        (int)entry->mv);
             }
-            printf("SENRENKEYS-END\n");
+            printf("DRACUKEYS-END\n");
             fflush(stdout);
             continue;
         }
 
-        // SENRENKEY <键> <事件>:把一条合成按键塞进与物理按键完全相同的队列
+        // DRACUKEY <键> <事件>:把一条合成按键塞进与物理按键完全相同的队列
         // (0=上 1=下 2=确定;0=按下 1=单击 2=双击 3=长按 4=抬起),用于无人值守验收。
         int vbtn = -1;
         int vev = -1;
-        if (sscanf(line, "SENRENKEY %d %d", &vbtn, &vev) == 2) {
+        if (sscanf(line, "DRACUKEY %d %d", &vbtn, &vev) == 2) {
             const bool sent = push_key(vbtn, vev);
-            printf("SENRENKEY-%s %d %d\n", sent ? "OK" : "ERR", vbtn, vev);
+            printf("DRACUKEY-%s %d %d\n", sent ? "OK" : "ERR", vbtn, vev);
             fflush(stdout);
             continue;
         }
 
-        // SENRENSKIP:走一次「跳过章节」(与菜单里那条路径相同),打印跳前跳后的位置。
-        if (strncmp(line, "SENRENSKIP", 10) == 0) {
+        // DRACUSKIP:走一次「跳过章节」(与菜单里那条路径相同),打印跳前跳后的位置。
+        if (strcmp(line, "DRACUSKIP") == 0) {
             bool skipped = false;
             if (bsp_lvgl_lock(1000)) {
-                skipped = atri_app_debug_skip_chapter(&s_app);
+                skipped = dracu_app_debug_skip_chapter(&s_app);
                 bsp_lvgl_unlock();
             }
-            printf("SENRENSKIP-%s\n", skipped ? "OK" : "ERR");
+            printf("DRACUSKIP-%s\n", skipped ? "OK" : "ERR");
             fflush(stdout);
             continue;
         }
 
-        // SENRENJUMP <章号> [<句号>]:把阅读进度直接拨过去(正常落盘)。
-        if (sscanf(line, "SENRENJUMP %d %d", &chapter, &scene) >= 1) {
+        // DRACUJUMP <页号>:把阅读进度直接拨过去(正常落盘)。
+        if (sscanf(line, "DRACUJUMP %d", &page_arg) == 1) {
             bool jumped = false;
             if (bsp_lvgl_lock(1000)) {
-                jumped = atri_app_debug_start(&s_app, (uint16_t)chapter,
-                                              scene < 0 ? 0 : (uint16_t)scene);
+                jumped = dracu_app_debug_start(&s_app, (uint32_t)page_arg);
                 bsp_lvgl_unlock();
             }
-            printf("SENRENJUMP-%s %d %d\n", jumped ? "OK" : "ERR", chapter, scene);
+            printf("DRACUJUMP-%s %d\n", jumped ? "OK" : "ERR", page_arg);
             fflush(stdout);
             continue;
         }
 
-        if (sscanf(line, "SENRENSHOT %d %d", &chapter, &scene) != 2) continue;
+        // DRACUBACK:往回退一屏(页内上一屏 / 上一页,受模型的堵死页限制)。
+        if (strcmp(line, "DRACUBACK") == 0) {
+            bool backed = false;
+            if (bsp_lvgl_lock(1000)) {
+                backed = dracu_app_debug_back(&s_app);
+                bsp_lvgl_unlock();
+            }
+            printf("DRACUBACK-%s\n", backed ? "OK" : "ERR");
+            fflush(stdout);
+            continue;
+        }
+
+        if (sscanf(line, "DRACUSHOT %d", &page_arg) != 1) continue;
 
         bool ok = false;
         if (bsp_lvgl_lock(1000)) {
-            ok = atri_app_debug_render(&s_app, (uint16_t)chapter, (uint16_t)scene);
+            ok = dracu_app_debug_render(&s_app, (uint32_t)page_arg);
             bsp_lvgl_unlock();
         }
         if (!ok) {
-            printf("SENRENSHOT-ERR %d %d\n", chapter, scene);
+            printf("DRACUSHOT-ERR %d\n", page_arg);
             fflush(stdout);
             continue;
         }
         const uint32_t total = sizeof(s_art_pixels);
-        printf("SENRENSHOT %d %d %u\n", ATRI_ART_W, ATRI_ART_H, (unsigned)total);
+        printf("DRACUSHOT %d %d %u\n", DRACU_ART_W, DRACU_ART_H, (unsigned)total);
         fflush(stdout);
         // 控制台默认把输出里的 LF 翻成 CRLF,那会往原始像素里插字节、把画面打花;
         // 发像素期间关掉翻译,发完再恢复。
@@ -415,7 +440,7 @@ static void debug_task(void *arg)
         }
         fflush(stdout);
         usb_serial_jtag_vfs_set_tx_line_endings(ESP_LINE_ENDINGS_CRLF);
-        printf("\nSENRENSHOT-END\n");
+        printf("\nDRACUSHOT-END\n");
         fflush(stdout);
     }
 }
@@ -423,7 +448,7 @@ static void debug_task(void *arg)
 static void input_task(void *arg)
 {
     (void)arg;
-    atri_key_t key;
+    dracu_key_t key;
     int64_t last_us = esp_timer_get_time();
 
     for (;;) {
@@ -441,13 +466,13 @@ static void input_task(void *arg)
         }
         handle_tick(elapsed_ms);
 
-        const uint32_t idle = atri_app_idle_ms(&s_app);
-        if (idle >= SENREN_SLEEP_MS) {
+        const uint32_t idle = dracu_app_idle_ms(&s_app);
+        if (idle >= DRACU_SLEEP_MS) {
             enter_sleep();
-        } else if (idle >= SENREN_SCREEN_OFF_MS) {
+        } else if (idle >= DRACU_SCREEN_OFF_MS) {
             if (s_backlight != 0) ESP_LOGI(TAG, "无操作 %us:熄屏", (unsigned)(idle / 1000));
             set_backlight(0);
-        } else if (idle >= SENREN_DIM_MS) {
+        } else if (idle >= DRACU_DIM_MS) {
             if (s_backlight != BACKLIGHT_DIM) {
                 ESP_LOGI(TAG, "无操作 %us:调暗(自动阅读/快进时不会走到这里)", (unsigned)(idle / 1000));
             }
@@ -458,7 +483,7 @@ static void input_task(void *arg)
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "AI Passport《千恋＊万花》阅读器启动");
+    ESP_LOGI(TAG, "AI Passport《DRACU-RIOT!》阅读器启动");
 
     // deep sleep 唤醒会重启整个应用,把原因打出来便于确认"按键真能唤醒"。
     const esp_sleep_wakeup_cause_t wakeup = esp_sleep_get_wakeup_cause();
@@ -502,11 +527,11 @@ void app_main(void)
         ESP_LOGW(TAG, "音频 codec 静音失败,底噪可能仍在");
     }
 
-    const uint32_t pack_size = (uint32_t)(senren_pack_bin_end - senren_pack_bin_start);
-    const uint32_t scn_size = (uint32_t)(senren_scn_bin_end - senren_scn_bin_start);
+    const uint32_t pack_size = (uint32_t)(dracu_pack_bin_end - dracu_pack_bin_start);
+    const uint32_t scn_size = (uint32_t)(dracu_scn_bin_end - dracu_scn_bin_start);
     if (bsp_lvgl_lock(-1)) {
-        if (!atri_app_init(&s_app, senren_pack_bin_start, pack_size, senren_scn_bin_start, scn_size,
-                           s_art_pixels, &senren_cjk_16)) {
+        if (!dracu_app_init(&s_app, dracu_pack_bin_start, pack_size, dracu_scn_bin_start, scn_size,
+                           s_art_pixels, &dracu_cjk_16)) {
             ESP_LOGE(TAG, "阅读器初始化失败(图片包 %u 字节 / 剧本包 %u 字节)", (unsigned)pack_size,
                      (unsigned)scn_size);
             bsp_lvgl_unlock();
@@ -518,14 +543,14 @@ void app_main(void)
         return;
     }
 
-    s_input_queue = xQueueCreate(INPUT_QUEUE_DEPTH, sizeof(atri_key_t));
+    s_input_queue = xQueueCreate(INPUT_QUEUE_DEPTH, sizeof(dracu_key_t));
     if (!s_input_queue) {
         ESP_LOGE(TAG, "输入队列创建失败");
         return;
     }
     // 输入任务里跑的是"按键 -> 模型推进 -> 画面合成"整条链路:模型一次小块解压、
     // 立绘逐块解码都在这里,4 KB 栈会直接触发 Stack protection fault(实测)。
-    if (xTaskCreate(input_task, "atri_input", 8192, NULL, 5, &s_input_task) != pdPASS) {
+    if (xTaskCreate(input_task, "dracu_input", 8192, NULL, 5, &s_input_task) != pdPASS) {
         ESP_LOGE(TAG, "输入任务创建失败");
         vQueueDelete(s_input_queue);
         s_input_queue = NULL;
@@ -537,20 +562,33 @@ void app_main(void)
     }
     s_input_ready = true;
 
-#if SENREN_BOOT_CHAPTER >= 0
-    // 真机验收用:跳过标题页,直接从指定章(1 起)开始读。
+#if DRACU_BOOT_PAGE >= 1
+    // 真机验收用:跳过标题页,直接从指定页开始读。
     if (bsp_lvgl_lock(1000)) {
-        if (!atri_app_debug_start(&s_app, (uint16_t)SENREN_BOOT_CHAPTER, 0)) {
-            ESP_LOGE(TAG, "开机进章失败:第 %d 章不存在", (int)SENREN_BOOT_CHAPTER);
+        if (!dracu_app_debug_start(&s_app, (uint32_t)DRACU_BOOT_PAGE)) {
+            ESP_LOGE(TAG, "开机进页失败:第 %d 页不存在", (int)DRACU_BOOT_PAGE);
         }
         bsp_lvgl_unlock();
     }
 #endif
 
-    // 调试图任务:输入任务(8192)之后才建,而且只给 4096 —— 整块堆只剩 ~7.6KB,
-    // 反过来先建它、或给它 8KB,输入任务就分不到内存(实测按键全无反应)。
-    // 它平时阻塞在 fgets 上,只占栈不占 CPU;重活都交给 LVGL 任务做(capture_begin)。
-    if (xTaskCreate(debug_task, "senren_debug", 4096, NULL, 4, NULL) != pdPASS) {
+    // 串口调试通道要能"收"命令:USB-Serial-JTAG 控制台的 stdin 得装上驱动并切到
+    // 驱动模式 —— 只靠 ROM 的轮询路径在应用起来之后读不到数据(实测命令完全没反应,
+    // 而截图、跳页、按键注入这些真机验收手段都靠这条通道)。
+    usb_serial_jtag_driver_config_t usj_cfg = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
+    usj_cfg.rx_buffer_size = 512;
+    usj_cfg.tx_buffer_size = 1024;
+    if (usb_serial_jtag_driver_install(&usj_cfg) == ESP_OK) {
+        usb_serial_jtag_vfs_use_driver();
+    } else {
+        ESP_LOGW(TAG, "USB-Serial-JTAG 驱动安装失败,串口命令可能收不到");
+    }
+
+    // 调试图任务:输入任务(8192)之后才建。栈给 6144 —— 它要跑"跳页 + 整帧捕获"这条
+    // 会解块、画立绘的深调用链,4096 会直接 Stack protection fault(实测);
+    // 再大也拿不出来:此时最大连续空闲块只有 ~8KB。
+    // 它平时阻塞在 fgets 上,只占栈不占 CPU;整屏刷帧仍交给 LVGL 任务(capture_begin)。
+    if (xTaskCreate(debug_task, "dracu_debug", 6144, NULL, 4, NULL) != pdPASS) {
         ESP_LOGW(TAG, "串口调试任务创建失败(不影响阅读)");
     }
 
@@ -564,6 +602,6 @@ void app_main(void)
              (unsigned)mon.frag_pct);
     ESP_LOGI(TAG, "就绪:竖屏阅读器;确定推进 / 长按确定菜单;"
                   "空闲 %us 调暗,%us 熄屏,%us 休眠",
-             (unsigned)(SENREN_DIM_MS / 1000), (unsigned)(SENREN_SCREEN_OFF_MS / 1000),
-             (unsigned)(SENREN_SLEEP_MS / 1000));
+             (unsigned)(DRACU_DIM_MS / 1000), (unsigned)(DRACU_SCREEN_OFF_MS / 1000),
+             (unsigned)(DRACU_SLEEP_MS / 1000));
 }

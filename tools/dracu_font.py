@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the LVGL CJK bitmap font subset for the Senren * Banka port.
+"""Generate the LVGL CJK bitmap font subset for the DRACU-RIOT port.
 
 Why a hand-written generator instead of lv_font_conv: that tool stopped at 1.5.3
 (2021) and under Node v24 writes broken glyph bitmaps -- the same OTF with the
@@ -28,7 +28,7 @@ Control code points (0x0A, 0x0E appear in the script character table) get an
 empty glyph so that the coverage guard and the requested set stay identical:
 LVGL handles '\\n' itself and never looks those up.
 
-Line height: the UI hard-codes ATRI_LINE_H == 20 px (main/atri_ui.h) for a 16 px
+Line height: the UI hard-codes DRACU_LINE_H == 20 px (main/dracu_ui.h) for a 16 px
 face, so EXTRA_LEADING == 4 and the tool asserts the result is 20.  The baseline
 is the natural FreeType baseline, centred by the natural line box.
 
@@ -44,13 +44,13 @@ reports every requested code point that rasterises as .notdef.  Variable fonts
 too light and smears at 16 px / 4bpp.
 
 Usage:
-  python3 tools/senren_lvgl_font.py                                # generate + verify
-  python3 tools/senren_lvgl_font.py --ttf <CJK font> --out <file.c>
-  python3 tools/senren_lvgl_font.py --check assets/fonts/senren_cjk_16.c
+  python3 tools/dracu_font.py                                # generate + verify
+  python3 tools/dracu_font.py --ttf <CJK font> --out <file.c>
+  python3 tools/dracu_font.py --check assets/fonts/dracu_cjk_16.c
 
 Outputs (both committed):
-  assets/fonts/senren_cjk_16.c          LVGL font (glyph_bitmap + glyph_dsc + cmaps)
-  assets/fonts/senren_cjk_symbols.txt   covered code points, one "U+XXXX" per line,
+  assets/fonts/dracu_cjk_16.c          LVGL font (glyph_bitmap + glyph_dsc + cmaps)
+  assets/fonts/dracu_cjk_symbols.txt   covered code points, one "U+XXXX" per line,
                                         sorted ascending, unique -- used by the
                                         UI-copy coverage guard.
 
@@ -74,17 +74,17 @@ try:
 except ImportError:  # pragma: no cover - tool dependency
     sys.exit("Pillow is required: python -m pip install pillow")
 
-# 脚本包(SENRSCN1)格式常量,见 tools/senren_scn_pack.py
-SCN_MAGIC = b"SENRSCN1"
+# 脚本包(DRACUSC1)格式常量,见 tools/dracu_scn_pack.py
+SCN_MAGIC = b"DRACUSC1"
 SCN_HEADER = struct.Struct("<8sHHHHI")     # magic, version, header_size, sections, rsvd, total
 SCN_SECTION = struct.Struct("<IIII")       # type, offset, count, size
-SEC_CHAR, SEC_NAME, SEC_META = 0, 1, 5
+SEC_CHAR, SEC_STR, SEC_BLOCK, SEC_BLOB, SEC_BRANCH, SEC_CHOICE, SEC_CHAPTERS, SEC_META = range(8)
 
 BPP = 4                       # LVGL 的 PLAIN 4bpp:连续 nibble 打包
-EXTRA_LEADING = 4             # 行高 = 字号 + 4(见 main/atri_ui.h 的 ATRI_LINE_H)
-EXPECTED_LINE_HEIGHT = 20     # ATRI_LINE_H;16px 字面 + 4px 行距,断言在此
+EXTRA_LEADING = 4             # 行高 = 字号 + 4(见 main/dracu_ui.h 的 DRACU_LINE_H)
+EXPECTED_LINE_HEIGHT = 20     # DRACU_LINE_H;16px 字面 + 4px 行距,断言在此
 ASCII_FIRST, ASCII_LAST = 0x20, 0x7E
-SYMBOLS_NAME = "senren_cjk_symbols.txt"
+SYMBOLS_NAME = "dracu_cjk_symbols.txt"
 # 探测 .notdef 的码位(Unicode 里永远不分配):栅格化结果与它完全相同 = 源字体没有这个字形
 NOTDEF_PROBE = 0x10FFFE
 
@@ -122,15 +122,16 @@ def is_control(cp: int) -> bool:
 def pack_chars(path: str) -> tuple[list[int], set[int]]:
     """读脚本包:返回 (SEC_CHAR 码位, 包里字面文本的码位)。
 
-    字面文本只取 SEC_NAME(名字表的 u16 码点)与 SEC_META(UTF-8 的 key=value),
-    不去扫整个二进制 —— 段表/压缩块里的随机字节会被误认成 UTF-8,产生几千个垃圾码位。
+    字面文本只取 SEC_STR(字符串表的 u16 码点:说话人 / 结局名 / 章节名)与
+    SEC_META(UTF-8 的 key=value),不去扫整个二进制 —— 段表/压缩块里的随机字节
+    会被误认成 UTF-8,产生几千个垃圾码位。
     """
     blob = open(path, "rb").read()
     if len(blob) < SCN_HEADER.size:
-        raise SystemExit(f"{path}: 文件太短,不是 SENRSCN1 脚本包")
+        raise SystemExit(f"{path}: 文件太短,不是 DRACUSC1 脚本包")
     magic, version, header_size, section_count, _reserved, total = SCN_HEADER.unpack_from(blob)
     if magic != SCN_MAGIC:
-        raise SystemExit(f"{path}: 魔数不符 {magic!r},不是 SENRSCN1 脚本包")
+        raise SystemExit(f"{path}: 魔数不符 {magic!r},不是 DRACUSC1 脚本包")
     if total != len(blob):
         raise SystemExit(f"{path}: 头里写 {total} 字节,实际 {len(blob)}")
     sections: dict[int, tuple[int, int]] = {}
@@ -154,23 +155,20 @@ def pack_chars(path: str) -> tuple[list[int], set[int]]:
     codepoints = list(struct.unpack_from("<%dH" % count, blob, offset + 4))
 
     literals: set[int] = set()
-    if SEC_NAME in sections:
-        # 名字表:每个 block 是 u16 条目数,每条 u16 长度 + 长度个 u16 码表下标;
-        # 下标要经过 SEC_CHAR 映射才是真正的码位。读到段尾为止。
-        name_off, name_size = sections[SEC_NAME]
+    if SEC_STR in sections:
+        # 字符串表:u32 条数,随后每条 { u16 长度 + 长度个字符码表下标 };
+        # 下标要经过 SEC_CHAR 映射才是真正的码位。
+        name_off, name_size = sections[SEC_STR]
         end = name_off + name_size
-        cursor = name_off
-        while cursor + 2 <= end:
-            entries = struct.unpack_from("<H", blob, cursor)[0]
-            cursor += 2
+        if name_size >= 4:
+            entries = struct.unpack_from("<I", blob, name_off)[0]
+            cursor = name_off + 4
             for _ in range(entries):
                 if cursor + 2 > end:
-                    cursor = end
                     break
                 length = struct.unpack_from("<H", blob, cursor)[0]
                 cursor += 2
                 if cursor + 2 * length > end:
-                    cursor = end
                     break
                 for code in struct.unpack_from("<%dH" % length, blob, cursor):
                     if code < len(codepoints):
@@ -224,7 +222,7 @@ def requested_codepoints(args: argparse.Namespace) -> list[int]:
     """字体要覆盖的全部码位(升序);这就是 symbols.txt 的内容。"""
     if not os.path.exists(args.scn):
         raise SystemExit(
-            f"缺少脚本包 {args.scn};先用 tools/senren_scn_pack.py 生成,"
+            f"缺少脚本包 {args.scn};先用 tools/dracu_scn_pack.py 生成,"
             "或显式指定 --scn <pack>")
     scn_points, scn_literals = pack_chars(args.scn)
     src_non_ascii, src_alnum = source_chars(args.sources)
@@ -239,12 +237,12 @@ def requested_codepoints(args: argparse.Namespace) -> list[int]:
 
 # ---------------------------------------------------------------- 字号 / 字体
 def line_height_for(size: int) -> int:
-    """UI 按 16px 字、20px 行高排版,所以行高必须正好是 ATRI_LINE_H。"""
+    """UI 按 16px 字、20px 行高排版,所以行高必须正好是 DRACU_LINE_H。"""
     line_height = size + EXTRA_LEADING
     if line_height != EXPECTED_LINE_HEIGHT:
         raise SystemExit(
-            f"--size {size} 得到行高 {line_height},但界面写死 ATRI_LINE_H == "
-            f"{EXPECTED_LINE_HEIGHT}(main/atri_ui.h);请用 "
+            f"--size {size} 得到行高 {line_height},但界面写死 DRACU_LINE_H == "
+            f"{EXPECTED_LINE_HEIGHT}(main/dracu_ui.h);请用 "
             f"--size {EXPECTED_LINE_HEIGHT - EXTRA_LEADING}")
     assert line_height == EXPECTED_LINE_HEIGHT, line_height
     return line_height
@@ -256,7 +254,7 @@ def find_ttf(explicit: str | None) -> str:
         if not os.path.exists(explicit):
             raise SystemExit(f"--ttf {explicit}: 文件不存在")
         return explicit
-    env = os.environ.get("SENREN_FONT")
+    env = os.environ.get("DRACU_FONT")
     candidates = ([env] if env else []) + list(TTF_CANDIDATES)
     for path in candidates:
         if os.path.exists(path):
@@ -265,7 +263,7 @@ def find_ttf(explicit: str | None) -> str:
     listing = "\n".join(f"    {path}" for path in candidates)
     raise SystemExit("找不到可用的 CJK 字体,请用 --ttf <path> 指定;已查找:\n"
                      f"{listing}\n"
-                     "  也可设环境变量 SENREN_FONT。首次 idf.py build 后 LVGL 组件目录里"
+                     "  也可设环境变量 DRACU_FONT。首次 idf.py build 后 LVGL 组件目录里"
                      "会带思源黑体(managed_components/...)。")
 
 
@@ -361,7 +359,7 @@ def emit_font(name: str, size: int, codepoints: list[int], glyphs: dict, line_he
     w("/*******************************************************************************\n")
     w(f" * Size: {size} px\n")
     w(f" * Bpp: {BPP}\n")
-    w(" * 由 tools/senren_lvgl_font.py 生成(自研生成器,不依赖 lv_font_conv);格式:\n")
+    w(" * 由 tools/dracu_font.py 生成(自研生成器,不依赖 lv_font_conv);格式:\n")
     w(" *   - 4bpp,连续 nibble 打包,每个字形按字节对齐\n")
     w(" *   - cmap:ASCII(0x20..0x7E)用 FORMAT0_TINY,其余按跨度分组用 SPARSE_TINY\n")
     w(f" *   - 源字体: {ttf_name}(只用于生成,不随仓库分发)\n")
@@ -569,7 +567,7 @@ def verify(path: str, codepoints: list[int], glyphs: dict) -> int:
             diff = sum(1 for a, b in zip(want[5], got[5]) if a != b)
             errors.append(f"U+{cp:04X} 位图不一致({diff}/{len(want[5])} 像素不同)")
     if font["line_height"] != EXPECTED_LINE_HEIGHT:
-        errors.append(f"行高 {font['line_height']} != ATRI_LINE_H {EXPECTED_LINE_HEIGHT}")
+        errors.append(f"行高 {font['line_height']} != DRACU_LINE_H {EXPECTED_LINE_HEIGHT}")
     if font["bpp"] != BPP:
         errors.append(f"bpp {font['bpp']} != {BPP}")
     if errors:
@@ -584,7 +582,7 @@ def verify(path: str, codepoints: list[int], glyphs: dict) -> int:
 
 # ---------------------------------------------------------------- 主流程
 def symbols_path_for(out_path: str) -> str:
-    """字符清单固定与 .c 同目录(tests/test_senren_font.py 依赖这个规则)。"""
+    """字符清单固定与 .c 同目录(tests/test_dracu_font.py 依赖这个规则)。"""
     return os.path.join(os.path.dirname(out_path), SYMBOLS_NAME)
 
 
@@ -614,7 +612,7 @@ def generate(args: argparse.Namespace) -> int:
     symbols = symbols_path_for(args.out)
     write_symbols(symbols, codepoints)
     log(f"  字形 {len(codepoints)} 个,源字体自然行高 {ascent + descent},"
-        f"基线 {baseline} -> base_line {base_line},行高 {line_height}(ATRI_LINE_H)")
+        f"基线 {baseline} -> base_line {base_line},行高 {line_height}(DRACU_LINE_H)")
     log(f"  写出 {args.out} ({os.path.getsize(args.out) / 1048576:.2f} MB 源码)")
     log(f"  写出 {symbols} ({os.path.getsize(symbols) / 1024:.0f} KB 清单)")
     if missing:
@@ -631,7 +629,7 @@ def check(args: argparse.Namespace) -> int:
         ttf = find_ttf(args.ttf)
     except SystemExit:
         # 干净 checkout 上源字体可能还没拉下来(idf.py build 之后才有);
-        # 字符覆盖由 tests/test_senren_font.py 把关,这里降级为跳过。
+        # 字符覆盖由 tests/test_dracu_font.py 把关,这里降级为跳过。
         log("  跳过像素比对:本机找不到源字体(装好依赖后再跑,或用 --ttf 指定)")
         return 0
     codepoints = requested_codepoints(args)
@@ -657,16 +655,16 @@ def check(args: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--scn", default="build/senren-pack/senren_scn.bin",
-                        help="SENRSCN1 脚本包(字符集来源: SEC_CHAR + 包内字面文本)")
+    parser.add_argument("--scn", default="build/dracu-pack/dracu_scn.bin",
+                        help="DRACUSC1 脚本包(字符集来源: SEC_CHAR + 包内字面文本)")
     parser.add_argument("--extra-text", action="append", metavar="FILE",
                         help="逐行的额外文案(可重复)")
     parser.add_argument("--sources", default="main/*.c,main/*.h",
                         help="逗号分隔的源码通配符,提取字面量里的非 ASCII 字符与 ASCII 字母数字")
-    parser.add_argument("--size", type=int, default=16, help="字号 px(行高必须等于 ATRI_LINE_H)")
+    parser.add_argument("--size", type=int, default=16, help="字号 px(行高必须等于 DRACU_LINE_H)")
     parser.add_argument("--bpp", type=int, default=BPP, help="位深(只支持 4)")
     parser.add_argument("--ttf", help="CJK 源字体 TTF/OTF;省略时按候选表探测")
-    parser.add_argument("--out", default="assets/fonts/senren_cjk_16.c",
+    parser.add_argument("--out", default="assets/fonts/dracu_cjk_16.c",
                         help="输出的 LVGL 字体 C 文件(清单写在其同目录)")
     parser.add_argument("--check", metavar="FONT_C",
                         help="只校验已生成的字体 C 文件(重新栅格化逐像素比对)")
