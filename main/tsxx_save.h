@@ -4,8 +4,9 @@
 // (见 tsxx_app.c 的 TSXX_AUTOSAVE_MS),标题页的"继续阅读"读它;手动槽只在存档页写,
 // 长按确定删除。自动槽不能手动覆盖,也不能删除 —— 它是"上次读到哪"的唯一记录。
 //
-// 存档内容就是 tsxx_model.h 的 tsxx_save_t(页号 + 屏号),由 tsxx_save_encode/decode
-// 编解码,所以格式变化只会影响这两个纯逻辑函数。设置另存一包。
+// 存档内容就是 tsxx_model.h 的 tsxx_save_t(页号 + 屏号 + 选择历史),由
+// tsxx_save_encode/decode 编解码,所以格式变化只会影响这两个纯逻辑函数。
+// 历史不能丢:闸门判定完全依赖它。设置另存一包。
 #pragma once
 
 #include "tsxx_model.h"

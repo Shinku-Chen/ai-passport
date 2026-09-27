@@ -70,6 +70,8 @@ bool tsxx_settings_store(const tsxx_settings_t *settings)
 }
 
 // 槽位 -> NVS key。自动槽用固定的 "auto",手动槽是 "s0".."s4"。
+#define TSXX_SAVE_BLOB_MAX (9u + TSXX_MAX_HISTORY * 5u)
+
 static bool slot_key(uint8_t slot, char out[8])
 {
     if (slot == TSXX_AUTO_SLOT) {
@@ -87,7 +89,7 @@ bool tsxx_slot_load(uint8_t slot, tsxx_save_t *out)
 {
     char key[8];
     if (!out || !s_ready || !slot_key(slot, key)) return false;
-    uint8_t blob[16] = { 0 };
+    uint8_t blob[TSXX_SAVE_BLOB_MAX];
     size_t len = sizeof(blob);
     if (nvs_get_blob(s_handle, key, blob, &len) != ESP_OK) return false;
     return tsxx_save_decode(out, blob, len);
@@ -97,7 +99,7 @@ bool tsxx_slot_store(uint8_t slot, const tsxx_save_t *save)
 {
     char key[8];
     if (!save || !s_ready || !slot_key(slot, key)) return false;
-    uint8_t blob[16];
+    uint8_t blob[TSXX_SAVE_BLOB_MAX];
     const size_t len = tsxx_save_encode(save, blob, sizeof(blob));
     if (len == 0) return false;
     if (nvs_set_blob(s_handle, key, blob, len) != ESP_OK) return false;
@@ -116,6 +118,14 @@ bool tsxx_slot_clear(uint8_t slot)
 void tsxx_save_from_player(const tsxx_player_t *player, tsxx_save_t *out)
 {
     if (!player || !out) return;
+    memset(out, 0, sizeof(*out));
     out->page = player->page;
     out->screen = player->screen;
+    // 选择历史必须一起存:闸门判定完全依赖它。
+    uint8_t count = player->history_count;
+    if (count > TSXX_MAX_HISTORY) count = TSXX_MAX_HISTORY;
+    out->history_count = count;
+    for (uint8_t i = 0; i < count; ++i) {
+        out->history[i] = player->history[i];
+    }
 }

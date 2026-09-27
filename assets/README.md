@@ -44,22 +44,34 @@ metadata section, and the fan port is credited as the source of the conversion. 
 project is a non-commercial technical study, and a reader needs a legitimately purchased
 copy of the original work to make use of it.
 
+[`tsxx-source/branch.json`](tsxx-source/branch.json) is not part of the upstream checkout.
+It is the branch configuration extracted programmatically from the quick app's
+`detail.ux` (`branchConfig`): 15 ending points, 18 `no_next` jumps, 38 `no_back` jumps and
+5 flag gates (11 rules, 54 conditions). Its page and option numbers are the source app's
+1-based `progressId`s and 1-based option numbers. `tools/tsxx_pack.py` converts pages to
+the pack's 0-based indices, rejects any condition that does not point at a real choice
+point or option, and stores the result in seven `SEC_B*` sections, so an edit here cannot
+silently change the story routes: `--verify` compares the pack against this file and the
+packer fails the build if the data disagrees. `--branch-json` overrides the path; by
+default the packer looks next to the script directory (`assets/tsxx-source/branch.json`
+for this checkout).
+
 The directory mirrors the four subdirectories of the upstream `src/common/`, which is the
 layout `tools/tsxx_pack.py` accepts directly:
 
 ```bash
 # what main/tsxx_data/tsxx_pack.bin contains
 python tools/tsxx_pack.py --source assets/tsxx-source --out main/tsxx_data/tsxx_pack.bin \
-    --bg-quality 65 --sprite-height 320 --sprite-quality 95 --event-quality 60 \
-    --title-image assets/images/tsxx-reboot-cover.png \
+    --bg-quality 65 --sprite-height 320 --sprite-bottom 360 --sprite-quality 95 \
+    --event-quality 60 --title-image assets/images/tsxx-reboot-cover.png \
     --symbols-out assets/fonts/tsxx_symbols.txt
 ```
 
 Rebuilding with the same command reproduces the committed
-`main/tsxx_data/tsxx_pack.bin` byte for byte. The pack is 6.17 MiB and lives in a dedicated
-6.5 MiB assets partition; `--max-bytes 6475000` (95% of that partition) fails the build
-instead of silently overflowing it, and `--event-quality 53` is the highest event quality
-that still fits. Sprites keep one pose per character (the source ships 2-4 arm/expression
+`main/tsxx_data/tsxx_pack.bin` byte for byte. The pack is 6.26 MiB and lives in a dedicated
+6.5 MiB (`0x680000`) assets partition; `--max-bytes 6475000` (95% of that partition) fails the
+build instead of silently overflowing it, and `--event-quality 53` is the highest event
+quality that still fits. Sprites keep one pose per character (the source ships 2-4 arm/expression
 variants of the same outfit) and are stored at the full 320 px art height at JPEG quality 95,
 bottom-anchored so the text band covers their lower half, as in the source project.
 
@@ -72,7 +84,10 @@ nearest-neighbour sampling while it composites. The 240 × 320 canvas costs
 240 × 320 × 2 = 150 KB of static RAM, which is why sprite and event JPEGs are decoded in
 MCU-sized chunks straight into that canvas (the `tjpgd` callback interface) instead of
 decoding each image into a full-image scratch buffer. The text layer is still drawn at the
-native 240 × 320.
+native 240 × 320. The seven branch sections (1,296 bytes of endings, jumps, gates, rules
+and conditions) sit after the image sections, past the resident script mapping, so the
+firmware copies them into RAM when it opens the pack instead of mapping them;
+`TSXX_PACK_BRANCH_MAX` bounds that copy and the packer enforces the same limit.
 
 ## Images
 

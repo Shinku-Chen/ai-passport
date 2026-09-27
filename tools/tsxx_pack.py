@@ -39,6 +39,14 @@
   SEC_EVC     {off u32, len u32, w u16, h u16}                          12 B  事件补丁 JPEG
   SEC_CGDIR   {kind u8, pad u8, pad u16, base u32,
                x u16, y u16, w u16, h u16, img u32}                     20 B  事件渲染配方
+  SEC_BENDNAME u8                       字节数   结局名,\n 分隔
+  SEC_BEND    {page u32, name u16, pad u16}                              8 B  结局点
+  SEC_BNEXT   {page u32, target u32}                                     8 B  本页"推进"的目标
+  SEC_BBACK   {page u32, target u32}                                     8 B  本页"回退"的目标
+  SEC_BGATE   {page u32, first_rule u32, rule_count u16, pad u16,
+               else_target u32}                                         16 B  分支闸门
+  SEC_BRULE   {target u32, first_cond u32, cond_count u16, pad u16}      12 B  闸门规则
+  SEC_BCOND   {page u32, value u8, pad u8, pad u16}                      8 B  规则条件
   SEC_META    u8                        字节数   key=value 来源信息
 
   正文里的字符按出现频率排序:前 255 个码位用 1 字节,其余用 0x00 + u16。
@@ -52,6 +60,19 @@
   固件负责按 META 的 event= 放大到画布。
   事件图的 a/b/c… 差分里只有"同场景换表情/动手"那部分适合补丁;背景差分是整幅换
   时段、立绘差分是重画姿势,都不做补丁(实测省不到 8% / 0%)。
+
+  分支段(BEND/BENDNAME/BNEXT/BBACK/BGATE/BRULE/BCOND)照抄源工程 `detail.ux` 的
+  branchConfig 语义,页号全部由源应用的 1-based progressId 转成包内的 0-based:
+    推进:no_next[p] → 它;gates[p] → 按选择历史匹配第一条命中的规则,
+          都不命中且 else != 0 → else;否则 p+1。
+    回退:no_back[p] → 它;否则 p-1。
+    结局:当前页在 SEC_BEND 里 → 显示结局名,不再推进。
+    选项:把 (页, 选项号) 记进历史(选项号从 1 起,与闸门条件同一个坐标系),
+          历史是下一次闸门判定的输入。
+  数据来自 assets/tsxx-source/branch.json(--branch-json 可覆盖)。打包时拒绝任何
+  没有指向真选择点/真选项的条件,`--verify` 再拿那份 JSON 逐字节比对 7 个分支段。
+  这 7 段加起来只有 1,296 字节,但它们在包尾、拿不到常驻映射,所以固件开包时整体
+  拷进 RAM;上限 TSXX_PACK_BRANCH_MAX / BRANCH_BLOB_MAX 两边同步。
 
 美术层(画布)是 --art-width 宽(默认 240 = 整屏宽)的满屏图层,固件按 1:1
 铺在 240×320 面板上:立绘就按这个尺寸存,显示时不再缩放,因此不会被重采样糊掉。
@@ -141,8 +162,11 @@ SEC_PCGB, SEC_PCG = 8, 9
 SEC_BGNAME, SEC_SPKNAME, SEC_SPRNAME, SEC_CGNAME = 10, 11, 12, 13
 SEC_CHOICE, SEC_CHOICEOPT = 14, 15
 SEC_BG, SEC_FG, SEC_EVB, SEC_EVC, SEC_CGDIR = 16, 17, 18, 19, 20
-SEC_META = 21
-SECTION_COUNT = 22
+# 分支段:它们排在包尾(CGDIR 之后),固件不能常驻映射,开包时整体拷进结构体。
+SEC_BENDNAME, SEC_BEND, SEC_BNEXT, SEC_BBACK = 21, 22, 23, 24
+SEC_BGATE, SEC_BRULE, SEC_BCOND = 25, 26, 27
+SEC_META = 28
+SECTION_COUNT = 29
 
 SEC_NAMES = {
     SEC_SYM: "SYM", SEC_TEXT: "TEXT", SEC_TOFF: "TOFF", SEC_TLEN: "TLEN",
@@ -151,11 +175,29 @@ SEC_NAMES = {
     SEC_BGNAME: "BGNAME", SEC_SPKNAME: "SPKNAME", SEC_SPRNAME: "SPRNAME",
     SEC_CGNAME: "CGNAME", SEC_CHOICE: "CHOICE", SEC_CHOICEOPT: "CHOICEOPT",
     SEC_BG: "BG", SEC_FG: "FG", SEC_EVB: "EVB", SEC_EVC: "EVC",
-    SEC_CGDIR: "CGDIR", SEC_META: "META",
+    SEC_CGDIR: "CGDIR",
+    SEC_BENDNAME: "BENDNAME", SEC_BEND: "BEND", SEC_BNEXT: "BNEXT",
+    SEC_BBACK: "BBACK", SEC_BGATE: "BGATE", SEC_BRULE: "BRULE",
+    SEC_BCOND: "BCOND", SEC_META: "META",
 }
 
 CH_ENTRY, CHOPT_ENTRY = 12, 12
 BG_ENTRY, FG_ENTRY, EV_ENTRY, CGD_ENTRY = 12, 24, 12, 20
+BEND_ENTRY, BNEXT_ENTRY, BBACK_ENTRY = 8, 8, 8
+BGATE_ENTRY, BRULE_ENTRY, BCOND_ENTRY = 16, 12, 8
+
+# branch.json 里的页号与选项号都是 1-based(源应用用的 progressId),包内统一转成
+# 0-based。闸门的 else 用 0 表示"没有规则命中就按顺序推进到下一页";源数据的 else
+# 也是 1-based 页号,所以 else=1 无法表示(会与哨兵撞车),构建时直接失败。
+BRANCH_FIELDS = ("no_next", "no_back", "gates", "ends")
+BRANCH_SEQUENTIAL = 0
+# 单个规则的条件数上限(u16 足够,这里只是防呆)。
+BRANCH_MAX_CONDITIONS = 4096
+# 7 个分支段加起来的上限,必须与 main/tsxx_pack.h 的 TSXX_PACK_BRANCH_MAX 一致:
+# 固件把这几段整体拷进结构体(它们在包尾,拿不到常驻映射),而设备上的空闲堆
+# 只有十几 KB。当前数据是 1,296 字节;超限就直接让构建失败,而不是等到设备上
+# 开包才报错。
+BRANCH_BLOB_MAX = 1536
 
 CG_KIND_FRAME, CG_KIND_PATCH = 0, 1
 NONE8 = 0xFF
@@ -283,6 +325,184 @@ def script_sort_key(filename: str) -> Tuple[int, str]:
 
 def checkpoint_count(pages: int) -> int:
     return (pages + CHECKPOINT_PAGES - 1) // CHECKPOINT_PAGES + 1
+
+
+# --------------------------------------------------------------------------- #
+# 分支配置(纯逻辑:不依赖图片库,宿主机测试直接调用)
+# --------------------------------------------------------------------------- #
+
+def as_int(value, what: str) -> int:
+    """JSON 里的整数必须以整数出现:字符串 "3143" 与 3143 不是一回事。"""
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{what} 必须是整数,实际 {value!r}")
+    return value
+
+
+def page_key(key, what: str) -> int:
+    """JSON 的对象键都是字符串,允许纯数字键(源工程就是这么导出的)。"""
+    if isinstance(key, str) and key.isdigit():
+        return int(key)
+    return as_int(key, what)
+
+
+def parse_branch(raw: dict, label: str = "branch") -> dict:
+    """把 branch.json 归一成 {ends, no_next, no_back, gates},页号仍保持 1-based。
+
+    gates 的每一项是 (页, else 页(0 = 顺序推进), [(目标页, [(条件页, 选项号), ...]), ...]),
+    规则与条件都按文件里的顺序保留 —— 闸门判定"第一条命中的规则胜出"依赖这个顺序。
+    """
+    if not isinstance(raw, dict):
+        raise ValueError(f"{label}: 顶层不是对象")
+    unknown = set(raw) - set(BRANCH_FIELDS)
+    if unknown:
+        raise ValueError(f"{label}: 出现未知字段 {sorted(unknown)}")
+
+    ends = []
+    for key, name in raw.get("ends", {}).items():
+        page = page_key(key, f"{label}.ends 的页号")
+        if not isinstance(name, str) or not name:
+            raise ValueError(f"{label}.ends[{page}] 的结局名非法: {name!r}")
+        ends.append((page, name))
+
+    pairs = {}
+    for field in ("no_next", "no_back"):
+        items = []
+        for key, value in raw.get(field, {}).items():
+            page = page_key(key, f"{label}.{field} 的页号")
+            items.append((page, as_int(value, f"{label}.{field}[{page}]")))
+        pairs[field] = items
+
+    gates = []
+    for key, gate in raw.get("gates", {}).items():
+        page = page_key(key, f"{label}.gates 的页号")
+        if not isinstance(gate, dict):
+            raise ValueError(f"{label}.gates[{page}] 不是对象")
+        rules = []
+        for index, rule in enumerate(gate.get("rules", [])):
+            if not isinstance(rule, dict):
+                raise ValueError(f"{label}.gates[{page}].rules[{index}] 不是对象")
+            conditions = []
+            for atom in rule.get("when", []):
+                if not isinstance(atom, list) or len(atom) != 2:
+                    raise ValueError(f"{label}.gates[{page}].rules[{index}] 的条件 {atom!r} "
+                                     f"不是 [页, 选项号]")
+                conditions.append((page_key(atom[0], f"{label}.gates[{page}] 条件页"),
+                                   as_int(atom[1], f"{label}.gates[{page}] 选项号")))
+            rules.append((as_int(rule.get("to"),
+                                 f"{label}.gates[{page}].rules[{index}].to"),
+                          conditions))
+        gates.append((page, as_int(gate.get("else", 0), f"{label}.gates[{page}].else"),
+                      rules))
+    if any(len(rules) > 0xFFFF for _, _, rules in gates):
+        raise ValueError(f"{label}: 单个闸门的规则数超过 u16")
+    return {"ends": ends, "no_next": pairs["no_next"], "no_back": pairs["no_back"],
+            "gates": gates}
+
+
+def load_branch(path: str) -> dict:
+    """读分支配置(源工程 detail.ux 的 branchConfig 程序化抽取产物)。"""
+    import json
+
+    with open(path, encoding="utf-8") as handle:
+        raw = json.load(handle)
+    return parse_branch(raw, os.path.basename(path))
+
+
+def default_branch_path(common: Optional[str], script_dir: Optional[str],
+                        source: Optional[str]) -> Optional[str]:
+    """找 branch.json:源 checkout 根目录 → 剧本目录的上一级。"""
+    candidates = []
+    for base in (common, source):
+        if base:
+            candidates.append(os.path.join(base, "branch.json"))
+    if script_dir:
+        candidates.append(os.path.join(os.path.dirname(os.path.abspath(script_dir)),
+                                       "branch.json"))
+    for path in candidates:
+        if os.path.isfile(path):
+            return path
+    return None
+
+
+def branch_blob(branch: dict, pages: int,
+                option_counts: Dict[int, int]) -> Dict[int, Tuple[bytes, int]]:
+    """把 1-based 的分支配置编成 7 个段的 (字节, count);页号在这里转 0-based。
+
+    option_counts 是 0-based 选项页 → 选项数(这就是包里的页号),用来校验闸门条件
+    引用的确实是真选择点。任何越界都会抛 ValueError:分支数据错了会直接毁掉游戏走向,
+    不能静默降级。
+    """
+    def zero(page: int, what: str) -> int:
+        if page < 1 or page > pages:
+            raise ValueError(f"{what} 页号 {page} 越界(1..{pages})")
+        return page - 1
+
+    ends = sorted(branch["ends"])
+    names: List[str] = []
+    name_id: Dict[str, int] = {}
+    end_entries = bytearray()
+    for page, name in ends:
+        if name not in name_id:
+            name_id[name] = len(names)
+            names.append(name)
+        end_entries += struct.pack("<IHH", zero(page, "结局点"), name_id[name], 0)
+
+    def pairs(field: str) -> bytes:
+        blob = bytearray()
+        for page, target in sorted(branch[field]):
+            blob += struct.pack("<II", zero(page, f"{field} 的起点"),
+                                zero(target, f"{field} [{page}] 的目标"))
+        return bytes(blob)
+
+    gate_entries = bytearray()
+    rule_entries = bytearray()
+    cond_entries = bytearray()
+    rule_index = 0
+    cond_index = 0
+    for page, else_page, rules in sorted(branch["gates"]):
+        if else_page == BRANCH_SEQUENTIAL:
+            else_target = BRANCH_SEQUENTIAL
+        else:
+            if else_page == 1:
+                raise ValueError(f"闸门 {page} 的 else=1 与 0-based 的顺序推进哨兵冲突")
+            else_target = zero(else_page, f"闸门 {page} 的 else")
+        first_rule = rule_index
+        for target, conditions in rules:
+            if len(conditions) > BRANCH_MAX_CONDITIONS:
+                raise ValueError(f"闸门 {page} 的规则条件数超过上限")
+            first_cond = cond_index
+            for cond_page, value in conditions:
+                cond_index_zero = zero(cond_page, "条件页")
+                count = option_counts.get(cond_index_zero, 0)
+                if count == 0:
+                    raise ValueError(f"闸门 {page} 的条件页 {cond_page} 不是选择点")
+                if value < 1 or value > count:
+                    raise ValueError(f"闸门 {page} 引用第 {cond_page} 页的选项 {value},"
+                                     f"该页只有 {count} 个选项")
+                cond_entries += struct.pack("<IBBH", cond_index_zero, value, 0, 0)
+                cond_index += 1
+            rule_entries += struct.pack("<IIHH", zero(target, f"闸门 {page} 的目标"),
+                                        first_cond, len(conditions), 0)
+            rule_index += 1
+        gate_entries += struct.pack("<IIHHI", zero(page, "闸门"), first_rule,
+                                    len(rules), 0, else_target)
+
+    parts = {
+        SEC_BENDNAME: (encode_name_table(names), len(names)),
+        SEC_BEND: (bytes(end_entries), len(ends)),
+        SEC_BNEXT: (pairs("no_next"), len(branch["no_next"])),
+        SEC_BBACK: (pairs("no_back"), len(branch["no_back"])),
+        SEC_BGATE: (bytes(gate_entries), len(branch["gates"])),
+        SEC_BRULE: (bytes(rule_entries), rule_index),
+        SEC_BCOND: (bytes(cond_entries), cond_index),
+    }
+    # 固件把这几段整体拷进结构体(它们在包尾,拿不到常驻映射),RAM 很紧:
+    # 这里用同一个上限拦住,免得等到设备上开包失败。
+    total = sum(len(payload) for payload, _ in parts.values())
+    if total > BRANCH_BLOB_MAX:
+        raise ValueError(f"分支段共 {total} 字节,超过固件常驻拷贝上限 {BRANCH_BLOB_MAX} "
+                         f"(main/tsxx_pack.h 的 TSXX_PACK_BRANCH_MAX)")
+    return parts
 
 
 # --------------------------------------------------------------------------- #
@@ -712,6 +932,17 @@ class PackBuilder:
             first_option += len(options_list)
         self.log(f"选项点 {len(choices)} 个 / 选项 {first_option} 条")
 
+        # ---- 分支配置(结局点 / no_next / no_back / 5 个 flag 闸门)----
+        # 源数据是 1-based 的 progressId,这里统一转成 0-based 存进包。
+        option_counts = {page_index: len(options_list)
+                         for page_index, options_list in choices}
+        branch = load_branch(options.branch_json)
+        branch_parts = branch_blob(branch, len(pages), option_counts)
+        self.log(f"分支:结局 {len(branch['ends'])} / no_next {len(branch['no_next'])}"
+                 f" / no_back {len(branch['no_back'])} / 闸门 {len(branch['gates'])}"
+                 f"(规则 {branch_parts[SEC_BRULE][1]} 条 / 条件"
+                 f" {branch_parts[SEC_BCOND][1]} 个)")
+
         # ---- 页表 ----
         bg_of = {name: i for i, name in enumerate(bg_names)}
         sprite_of = {name: i for i, name in enumerate(sprite_names)}
@@ -884,6 +1115,13 @@ class PackBuilder:
             f"event_frames={event_section.count}",
             f"event_patches={patch_section.count}",
             f"choices={len(choices)}",
+            f"endings={branch_parts[SEC_BEND][1]}",
+            f"end_names={branch_parts[SEC_BENDNAME][1]}",
+            f"branch_next={branch_parts[SEC_BNEXT][1]}",
+            f"branch_back={branch_parts[SEC_BBACK][1]}",
+            f"branch_gates={branch_parts[SEC_BGATE][1]}",
+            f"branch_rules={branch_parts[SEC_BRULE][1]}",
+            f"branch_conds={branch_parts[SEC_BCOND][1]}",
             f"title_bg={title_bg}",
             f"screen={SCREEN_W}x{SCREEN_H}",
             f"art={art_w}x{art_h}",
@@ -920,6 +1158,14 @@ class PackBuilder:
             plain_section(SEC_CHOICE, bytes(choice_blob), len(choices)),
             plain_section(SEC_CHOICEOPT, bytes(choice_opt_blob), first_option),
             bg_section, fg_section, event_section, patch_section, cg_dir,
+            plain_section(SEC_BENDNAME, branch_parts[SEC_BENDNAME][0],
+                          branch_parts[SEC_BENDNAME][1]),
+            plain_section(SEC_BEND, branch_parts[SEC_BEND][0], branch_parts[SEC_BEND][1]),
+            plain_section(SEC_BNEXT, branch_parts[SEC_BNEXT][0], branch_parts[SEC_BNEXT][1]),
+            plain_section(SEC_BBACK, branch_parts[SEC_BBACK][0], branch_parts[SEC_BBACK][1]),
+            plain_section(SEC_BGATE, branch_parts[SEC_BGATE][0], branch_parts[SEC_BGATE][1]),
+            plain_section(SEC_BRULE, branch_parts[SEC_BRULE][0], branch_parts[SEC_BRULE][1]),
+            plain_section(SEC_BCOND, branch_parts[SEC_BCOND][0], branch_parts[SEC_BCOND][1]),
             plain_section(SEC_META, ("\n".join(meta) + "\n").encode("utf-8"), len(meta)),
         ]
         sections.sort(key=lambda s: s.kind)
@@ -928,6 +1174,8 @@ class PackBuilder:
             "backgrounds": bg_section.count, "sprites": fg_section.count,
             "event_frames": event_section.count, "event_patches": patch_section.count,
             "events": len(event_names), "choices": len(choices),
+            "endings": branch_parts[SEC_BEND][1],
+            "branch_gates": branch_parts[SEC_BGATE][1],
             "missing": {k: v for k, v in missing.items() if v},
             "normalized": {k: v for k, v in normalized.items() if v},
         }
@@ -955,7 +1203,121 @@ def meta_size(pack: dict, key: str) -> Optional[Tuple[int, int]]:
     return None
 
 
-def verify(pack_path: str, script_dir: Optional[str] = None) -> Dict[str, object]:
+def choice_option_counts(pack: dict) -> Dict[int, int]:
+    """选项页 -> 选项数;顺便校验 first + count 不越出 CHOICEOPT。"""
+    choice_offset, choice_count, _ = pack["sections"][SEC_CHOICE]
+    opt_total = pack["sections"][SEC_CHOICEOPT][1]
+    counts: Dict[int, int] = {}
+    for index in range(choice_count):
+        page, count, _, _, first = struct.unpack_from("<IBBHI", pack["blob"],
+                                                     choice_offset + index * CH_ENTRY)
+        if count == 0 or first > opt_total or count > opt_total - first:
+            raise ValueError(f"CHOICE[{index}]: 选项区间 [{first}, {first + count}) "
+                             f"越出 {opt_total} 条")
+        if page in counts:
+            raise ValueError(f"CHOICE 里第 {page} 页出现了两次")
+        counts[page] = count
+    return counts
+
+
+def verify_branch(pack: dict, pages: int, option_counts: Dict[int, int]) -> Dict[str, int]:
+    """分支段自检:步长 × 条数 == 段长,所有页号/下标都在范围内。"""
+    for kind, stride in ((SEC_BEND, BEND_ENTRY), (SEC_BNEXT, BNEXT_ENTRY),
+                         (SEC_BBACK, BBACK_ENTRY), (SEC_BGATE, BGATE_ENTRY),
+                         (SEC_BRULE, BRULE_ENTRY), (SEC_BCOND, BCOND_ENTRY)):
+        _, count, size = pack["sections"][kind]
+        if count * stride != size:
+            raise ValueError(f"{SEC_NAMES[kind]}: {count} × {stride} != {size}")
+
+    def pages_of(kind: int, stride: int) -> List[int]:
+        """整段的首字段是页号:必须严格递增(固件按序查找)且在范围内。"""
+        blob = section_bytes(pack, kind)
+        count = pack["sections"][kind][1]
+        seen: List[int] = []
+        for index in range(count):
+            page = struct.unpack_from("<I", blob, index * stride)[0]
+            if page >= pages:
+                raise ValueError(f"{SEC_NAMES[kind]}[{index}] 的页号 {page} 超出 {pages}")
+            if seen and page <= seen[-1]:
+                raise ValueError(f"{SEC_NAMES[kind]} 的页号没有严格递增: {page}")
+            seen.append(page)
+        return seen
+
+    end_names = decode_name_table(section_bytes(pack, SEC_BENDNAME))
+    if pack["sections"][SEC_BENDNAME][1] != len(end_names):
+        raise ValueError(f"BENDNAME: count {pack['sections'][SEC_BENDNAME][1]} "
+                         f"!= 名表条数 {len(end_names)}")
+    end_blob = section_bytes(pack, SEC_BEND)
+    end_pages = pages_of(SEC_BEND, BEND_ENTRY)
+    for index in range(len(end_pages)):
+        name = struct.unpack_from("<H", end_blob, index * BEND_ENTRY + 4)[0]
+        if name >= len(end_names):
+            raise ValueError(f"BEND[{index}] 的结局名下标 {name} 越界")
+
+    for kind in (SEC_BNEXT, SEC_BBACK):
+        blob = section_bytes(pack, kind)
+        for index, page in enumerate(pages_of(kind, BNEXT_ENTRY)):
+            target = struct.unpack_from("<I", blob, index * 8 + 4)[0]
+            if target >= pages:
+                raise ValueError(f"{SEC_NAMES[kind]}[{page}] 的目标 {target} 超出 {pages}")
+
+    rule_total = pack["sections"][SEC_BRULE][1]
+    cond_total = pack["sections"][SEC_BCOND][1]
+    gate_blob = section_bytes(pack, SEC_BGATE)
+    for index, page in enumerate(pages_of(SEC_BGATE, BGATE_ENTRY)):
+        _, first_rule, rule_count, _, else_target = struct.unpack_from(
+            "<IIHHI", gate_blob, index * BGATE_ENTRY)
+        if first_rule > rule_total or rule_count > rule_total - first_rule:
+            raise ValueError(f"BGATE[{page}] 的规则区间 [{first_rule}, "
+                             f"{first_rule + rule_count}) 越出 {rule_total} 条")
+        if else_target != BRANCH_SEQUENTIAL and else_target >= pages:
+            raise ValueError(f"BGATE[{page}] 的 else 目标 {else_target} 超出 {pages}")
+
+    rule_blob = section_bytes(pack, SEC_BRULE)
+    for index in range(rule_total):
+        target, first_cond, cond_count, _ = struct.unpack_from("<IIHH", rule_blob,
+                                                               index * BRULE_ENTRY)
+        if target >= pages:
+            raise ValueError(f"BRULE[{index}] 的目标 {target} 超出 {pages}")
+        if first_cond > cond_total or cond_count > cond_total - first_cond:
+            raise ValueError(f"BRULE[{index}] 的条件区间 [{first_cond}, "
+                             f"{first_cond + cond_count}) 越出 {cond_total} 个")
+
+    cond_blob = section_bytes(pack, SEC_BCOND)
+    for index in range(cond_total):
+        page, value, _, _ = struct.unpack_from("<IBBH", cond_blob, index * BCOND_ENTRY)
+        if page >= pages:
+            raise ValueError(f"BCOND[{index}] 的条件页 {page} 超出 {pages}")
+        if page not in option_counts:
+            raise ValueError(f"BCOND[{index}] 的条件页 {page} 不是选择点")
+        if value < 1 or value > option_counts[page]:
+            raise ValueError(f"BCOND[{index}] 引用第 {page} 页的选项 {value},"
+                             f"该页只有 {option_counts[page]} 个选项")
+
+    return {"endings": len(end_pages), "end_names": len(end_names),
+            "branch_next": pack["sections"][SEC_BNEXT][1],
+            "branch_back": pack["sections"][SEC_BBACK][1],
+            "branch_gates": pack["sections"][SEC_BGATE][1],
+            "branch_rules": rule_total, "branch_conds": cond_total}
+
+
+def compare_with_branch(pack: dict, branch_path: str, pages: int,
+                        option_counts: Dict[int, int]) -> Dict[str, int]:
+    """逐段比对分支配置:包里的分支数据必须能从 branch.json 一字不差地重建。"""
+    branch = load_branch(branch_path)
+    expected = branch_blob(branch, pages, option_counts)
+    for kind, (payload, count) in expected.items():
+        actual, actual_count, size = pack["sections"][kind]
+        if pack["blob"][actual:actual + size] != payload or actual_count != count:
+            raise ValueError(f"{SEC_NAMES[kind]} 与 {os.path.basename(branch_path)} 不一致")
+    return {"source_ends": len(branch["ends"]),
+            "source_no_next": len(branch["no_next"]),
+            "source_no_back": len(branch["no_back"]),
+            "source_gates": len(branch["gates"])}
+
+
+def verify(pack_path: str, script_dir: Optional[str] = None,
+           branch_path: Optional[str] = None) -> Dict[str, object]:
     """读回来逐项自检;给了源剧本目录还会逐页比对内容。"""
     with open(pack_path, "rb") as handle:
         pack = parse_pack(handle.read(), pack_path)
@@ -1017,6 +1379,7 @@ def verify(pack_path: str, script_dir: Optional[str] = None) -> Dict[str, object
     array_check(SEC_PCGB, 1, (pages + 7) // 8)
     array_check(SEC_CHOICE, CH_ENTRY)
     array_check(SEC_CHOICEOPT, CHOPT_ENTRY)
+    option_counts = choice_option_counts(pack)
 
     bg_names = decode_name_table(section_bytes(pack, SEC_BGNAME))
     sprite_names = decode_name_table(section_bytes(pack, SEC_SPRNAME))
@@ -1154,6 +1517,10 @@ def verify(pack_path: str, script_dir: Optional[str] = None) -> Dict[str, object
                 raise ValueError(f"第 {page} 页正文越界")
             decoded += count
     stats["text_chars"], stats["text_bytes"] = decoded, len(text)
+    stats.update(verify_branch(pack, pages, option_counts))
+
+    if branch_path:
+        stats.update(compare_with_branch(pack, branch_path, pages, option_counts))
 
     if script_dir:
         verified, normalized, merged = compare_with_source(pack, symbols, checkpoints,
@@ -1313,6 +1680,9 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     source.add_argument("--bg-dir", help="背景目录(源 bcgi)")
     source.add_argument("--cimg-dir", help="立绘目录(源 cimg)")
     source.add_argument("--evig-dir", help="事件图目录(源 evig)")
+    source.add_argument("--branch-json",
+                        help="分支配置 JSON(源工程 detail.ux 的 branchConfig 抽取产物);"
+                             "默认找 <源根>/branch.json 或剧本目录的上一级")
     source.add_argument("--source-label", default=DEFAULT_SOURCE_LABEL,
                         help="写进 META 的来源描述")
 
@@ -1362,7 +1732,7 @@ def common_root(source: str) -> str:
 def fill_source_dirs(options: argparse.Namespace, only_script: bool = False) -> None:
     """
 
-    only_script = True 时只解析 --script-dir(校验模式只需要剧本)。
+    only_script = True 时只解析 --script-dir 与分支配置(校验模式只需要剧本)。
     """
     common = common_root(options.source) if options.source else None
     for attr, sub in (("script_dir", "script"), ("bg_dir", "bcgi"),
@@ -1376,6 +1746,15 @@ def fill_source_dirs(options: argparse.Namespace, only_script: bool = False) -> 
             setattr(options, attr, os.path.join(common, sub))
         if not os.path.isdir(getattr(options, attr)):
             raise SystemExit(f"{getattr(options, attr)} 不是目录")
+    # 分支配置不在源 checkout 里(它是从 detail.ux 抽取出来的),所以按
+    # --branch-json → <源根>/branch.json → 剧本目录的上一级 依次找。
+    if not getattr(options, "branch_json", None):
+        options.branch_json = default_branch_path(common, options.script_dir,
+                                                  options.source)
+    if not options.branch_json or not os.path.isfile(options.branch_json):
+        raise SystemExit("找不到分支配置 branch.json(--branch-json 指定;"
+                         "默认找 <源根>/branch.json 或剧本目录的上一级);"
+                         "没有它就没有结局点与分支闸门,不会静默地打出一个单线包")
 
 
 def report_sections(blob: bytes) -> None:
@@ -1390,10 +1769,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     if options.verify:
         script_dir = None
+        branch_path = options.branch_json
         if options.verify_source:
             fill_source_dirs(options, only_script=True)
             script_dir = options.script_dir
-        stats = verify(options.verify, script_dir)
+            branch_path = options.branch_json
+        stats = verify(options.verify, script_dir, branch_path)
         print(f"校验通过: {options.verify}")
         for key in sorted(stats):
             print(f"  {key} = {stats[key]}")
@@ -1419,7 +1800,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     print(f"资源包 {len(blob):,} B ({len(blob) / 1048576:.2f} MiB) → {options.out}")
     if options.report:
         report_sections(blob)
-    verify(options.out, options.script_dir)
+    verify(options.out, options.script_dir, options.branch_json)
     print(f"自检通过: 逐页比对 {report['pages']} 页无差异")
 
     if options.max_bytes and len(blob) > options.max_bytes:

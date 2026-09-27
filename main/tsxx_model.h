@@ -3,8 +3,10 @@
 // 这一层不碰 ESP-IDF 与 LVGL,只依赖 tsxx_pack 的只读视图,方便在宿主机上直接跑测试
 // (tests/test_tsxx_model.c 用真实资源包走完整条剧情线)。
 //
-// 剧本是一张线性页表:推进 = 页序号 +1;选项 = 跳到绝对页号;章节点由 [CHAPTER x-y]
-// 标记推导。没有场景层,也没有结局分支表 —— 走到页表末尾就是结束。
+// 剧本是一张线性页表,但推进不是简单 +1:包尾的分支段给出了结局点、no_next /
+// no_back 跳转与 5 个 flag 闸门(见 tsxx_pack.h)。推进顺序是:
+//   结局点 → no_next / 闸门(按 accumulated choices) → 顺序 p+1。
+// 选择历史是闸门判定的唯一输入,所以它属于玩家状态,也必须进存档。
 #pragma once
 
 #include "tsxx_pack.h"
@@ -19,6 +21,9 @@
 #define TSXX_MAX_SCREENS 32
 // 章节跳转点上限(源数据 45 个)。
 #define TSXX_MAX_CHAPTERS 64
+// 选择历史上限:全剧本只有 13 个选择点,闸门条件只引用其中 11 个,16 项已经富余。
+// 它直接决定存档长度,改它就要同时改存档格式与 NVS 缓冲。
+#define TSXX_MAX_HISTORY 16
 
 // 排版参数:一行多少"半角单位"(CJK 算 2),一屏几行。字号变化时由应用层换算。
 typedef struct {
@@ -31,21 +36,28 @@ typedef struct {
     uint8_t screen;        // 当前页内的第几屏(0 起)
     uint8_t screens;       // 当前页文本分了几屏(0 = 本页没有正文)
     uint8_t at_choice;     // 停在选项上,等玩家选择
-    uint8_t ended;         // 已读完(页表末尾)
+    uint8_t ended;         // 已读完(结局点或页表末尾)
     uint8_t choice_count;  // at_choice 时的选项数
+    // 做过的选择(append-only,与源工程的 branchChoices 一样)。闸门判定只读它。
+    uint8_t history_count;
+    tsxx_choice_t history[TSXX_MAX_HISTORY];
 } tsxx_player_t;
 
 typedef enum {
     TSXX_STEP_SCREEN = 0,  // 同一页里翻到下一屏
     TSXX_STEP_PAGE,        // 进入新的一页(可能要换背景/立绘/事件图)
     TSXX_STEP_CHOICE,      // 进入选项,等玩家选
-    TSXX_STEP_END,         // 抵达页表末尾
+    TSXX_STEP_END,         // 抵达结局点或页表末尾(结局名用 tsxx_pack_end 取)
     TSXX_STEP_STUCK,       // 没有可推进的内容(停在选项或已结束)
 } tsxx_step_t;
 
+// 存档:阅读位置 + 选择历史。旧固件写的 8 字节存档(只有 page/screen)仍能解码,
+// 只是历史为空 —— 那种存档落在闸门前后时会走错分支,但不会解码失败。
 typedef struct {
     uint32_t page;
     uint32_t screen;
+    uint8_t history_count;
+    tsxx_choice_t history[TSXX_MAX_HISTORY];
 } tsxx_save_t;
 
 typedef struct {
@@ -55,9 +67,20 @@ typedef struct {
 
 void tsxx_player_reset(tsxx_player_t *player);
 
-// 从指定页开始阅读。页号越界会被夹到合法范围。返回是否成功。
+// 从指定页开始阅读(新游戏 / 章节跳转)。页号越界会被夹到合法范围。返回是否成功。
+// 选择历史会被清空 —— 这是一条全新的阅读线。(读档走 tsxx_player_load。)
 bool tsxx_player_start(tsxx_player_t *player, const tsxx_pack_t *pack, uint32_t page,
                        const tsxx_layout_t *layout);
+
+// 从存档恢复:位置(页 + 屏)与选择历史一起恢复。读档必须走这里,否则闸门会
+// 拿一份空历史去判定,把玩家送到错误的分支。
+bool tsxx_player_load(tsxx_player_t *player, const tsxx_pack_t *pack, const tsxx_save_t *save,
+                      const tsxx_layout_t *layout);
+
+// 按 no_back 退回上一页(没有 no_back 就是 page-1)。页表开头返回 false。
+// 历史不回滚:它与源工程的 branchChoices 一样只增不减(回退后重走闸门会得到同一条结果)。
+bool tsxx_player_back(tsxx_player_t *player, const tsxx_pack_t *pack,
+                      const tsxx_layout_t *layout);
 
 // 推进:翻屏 -> 翻页 -> 选项/结束。返回发生了什么。
 tsxx_step_t tsxx_player_advance(tsxx_player_t *player, const tsxx_pack_t *pack,
@@ -71,8 +94,8 @@ bool tsxx_player_choose(tsxx_player_t *player, const tsxx_pack_t *pack, uint8_t 
 bool tsxx_player_jump(tsxx_player_t *player, const tsxx_pack_t *pack, uint32_t page,
                       const tsxx_layout_t *layout);
 
-// 跳过本章剩余内容:一直推进到下一个章节点、遇见选项、或抵达末尾为止。
-// 选项与末尾一定会停 —— 这就是"跳过章节"的安全边界。
+// 跳过本章剩余内容:一直推进到下一个章节点、遇见选项、结局点或抵达末尾为止。
+// 选项与结局一定会停 —— 这就是"跳过章节"的安全边界。
 #define TSXX_SKIP_MAX_STEPS 4096u
 tsxx_step_t tsxx_player_skip_chapter(tsxx_player_t *player, const tsxx_pack_t *pack,
                                      const tsxx_layout_t *layout);

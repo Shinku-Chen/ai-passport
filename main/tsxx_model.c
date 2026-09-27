@@ -227,7 +227,7 @@ tsxx_step_t tsxx_player_advance(tsxx_player_t *player, const tsxx_pack_t *pack,
                                 const tsxx_layout_t *layout)
 {
     if (player->at_choice) {
-        return TSXX_STEP_STUCK;
+        return TSXX_STEP_STUCK;   // 选项页上"推进"被禁用:必须先做出选择
     }
     if (player->ended) {
         return TSXX_STEP_STUCK;
@@ -236,7 +236,15 @@ tsxx_step_t tsxx_player_advance(tsxx_player_t *player, const tsxx_pack_t *pack,
         ++player->screen;
         return TSXX_STEP_SCREEN;
     }
-    const uint32_t next = player->page + 1u;
+    // 结局点:当前页读完了就触发结局序列(不再往下走)。
+    if (tsxx_pack_end(pack, player->page, NULL, 0)) {
+        player->ended = 1;
+        player->at_choice = 0;
+        return TSXX_STEP_END;
+    }
+    // no_next / 闸门:包里有特殊规则就听它的,没有就顺序推进。
+    uint32_t next = player->page + 1u;
+    (void)tsxx_pack_next(pack, player->page, player->history, player->history_count, &next);
     if (next >= tsxx_pack_pages(pack)) {
         player->ended = 1;
         player->at_choice = 0;
@@ -253,6 +261,19 @@ tsxx_step_t tsxx_player_advance(tsxx_player_t *player, const tsxx_pack_t *pack,
     return player->at_choice ? TSXX_STEP_CHOICE : TSXX_STEP_PAGE;
 }
 
+// 把一次选择记进历史(选项号从 1 起,与源工程的闸门条件同一坐标系)。
+// 历史满了就不再记:全剧本只有 13 个选择点,16 项足够;与其丢掉最早的一条
+// (闸门可能正好引用它),不如什么都不丢 —— 这一段根本走不到。
+static void record_choice(tsxx_player_t *player, uint32_t page, uint8_t value)
+{
+    if (player->history_count >= TSXX_MAX_HISTORY) {
+        return;
+    }
+    player->history[player->history_count].page = page;
+    player->history[player->history_count].value = value;
+    ++player->history_count;
+}
+
 bool tsxx_player_choose(tsxx_player_t *player, const tsxx_pack_t *pack, uint8_t index,
                         const tsxx_layout_t *layout)
 {
@@ -262,6 +283,44 @@ bool tsxx_player_choose(tsxx_player_t *player, const tsxx_pack_t *pack, uint8_t 
     uint32_t target = 0;
     if (!tsxx_pack_choice_option(pack, player->page, index, NULL, 0, &target)) {
         return false;
+    }
+    if (target >= tsxx_pack_pages(pack)) {
+        return false;
+    }
+    record_choice(player, player->page, (uint8_t)(index + 1u));
+    enter_page(player, pack, layout, target);
+    return true;
+}
+
+bool tsxx_player_load(tsxx_player_t *player, const tsxx_pack_t *pack, const tsxx_save_t *save,
+                      const tsxx_layout_t *layout)
+{
+    if (save == NULL || !tsxx_player_start(player, pack, save->page, layout)) {
+        return false;
+    }
+    if (save->screen < player->screens) {
+        player->screen = (uint8_t)save->screen;
+    }
+    uint8_t count = save->history_count;
+    if (count > TSXX_MAX_HISTORY) {
+        count = TSXX_MAX_HISTORY;
+    }
+    player->history_count = count;
+    for (uint8_t i = 0; i < count; ++i) {
+        player->history[i] = save->history[i];
+    }
+    return true;
+}
+
+bool tsxx_player_back(tsxx_player_t *player, const tsxx_pack_t *pack,
+                      const tsxx_layout_t *layout)
+{
+    uint32_t target = 0;
+    if (!tsxx_pack_prev(pack, player->page, &target)) {
+        if (player->page == 0) {
+            return false;
+        }
+        target = player->page - 1u;
     }
     if (target >= tsxx_pack_pages(pack)) {
         return false;
@@ -434,20 +493,48 @@ int tsxx_chapters_scan(const tsxx_pack_t *pack, tsxx_chapter_t *out, int max)
 
 size_t tsxx_save_encode(const tsxx_save_t *save, uint8_t *out, size_t capacity)
 {
-    if (out == NULL || capacity < 8) {
+    if (save == NULL || out == NULL) {
+        return 0;
+    }
+    uint8_t count = save->history_count;
+    if (count > TSXX_MAX_HISTORY) {
+        count = TSXX_MAX_HISTORY;
+    }
+    // 头 8 字节与旧格式(只有 page + screen)逐字节相同,历史追加在后面。
+    const size_t length = 9u + (size_t)count * 5u;
+    if (capacity < length) {
         return 0;
     }
     memcpy(out, &save->page, 4);
     memcpy(out + 4, &save->screen, 4);
-    return 8;
+    out[8] = count;
+    for (uint8_t i = 0; i < count; ++i) {
+        memcpy(out + 9u + (size_t)i * 5u, &save->history[i].page, 4);
+        out[9u + (size_t)i * 5u + 4u] = save->history[i].value;
+    }
+    return length;
 }
 
 bool tsxx_save_decode(tsxx_save_t *save, const uint8_t *data, size_t len)
 {
-    if (data == NULL || len < 8) {
+    if (save == NULL || data == NULL || len < 8u) {
         return false;
     }
+    memset(save, 0, sizeof(*save));
     memcpy(&save->page, data, 4);
     memcpy(&save->screen, data + 4, 4);
+    if (len == 8u) {
+        return true;   // 旧固件的存档:没有历史
+    }
+    const uint8_t count = data[8];
+    if (count > TSXX_MAX_HISTORY || len < 9u + (size_t)count * 5u) {
+        return false;
+    }
+    save->history_count = count;
+    for (uint8_t i = 0; i < count; ++i) {
+        const uint8_t *entry = data + 9u + (size_t)i * 5u;
+        memcpy(&save->history[i].page, entry, 4);
+        save->history[i].value = entry[4];
+    }
     return true;
 }

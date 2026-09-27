@@ -37,18 +37,27 @@ RE-BOOT!》阅读器的字符清单：3,417 个码位，顺序就是资源包给
 所有；这里把该目录作为唯一的来源标注，资源包元数据里记录同一来源，并注明手环移植版
 是转换来源。本项目是非商业技术研究，使用时需要合法购买的正版原作。
 
+[`tsxx-source/branch.json`](tsxx-source/branch.json) 不在上游 checkout 里，它是从快应用
+`detail.ux`（`branchConfig`）程序化抽取出来的分支配置：15 个结局点、18 条 `no_next`
+跳转、38 条 `no_back` 跳转和 5 个 flag 闸门（11 条规则、54 个条件）。里面的页号与选项号
+是源应用的 1-based `progressId` / 选项号；`tools/tsxx_pack.py` 负责转成包内 0-based
+下标，并拒绝任何没有指向真选择点或真选项的条件，最后写进 7 个 `SEC_B*` 段。改这个文件
+不会静默改掉游戏走向：`--verify` 会拿资源包与它逐字节比对，对不上就让构建失败。
+`--branch-json` 可以指定别的路径，默认找剧本目录的上一级（本仓库就是
+`assets/tsxx-source/branch.json`）。
+
 目录结构与上游 `src/common/` 的四个子目录一致，`tools/tsxx_pack.py` 可以直接接受：
 
 ```bash
 # main/tsxx_data/tsxx_pack.bin 的内容
 python tools/tsxx_pack.py --source assets/tsxx-source --out main/tsxx_data/tsxx_pack.bin \
-    --bg-quality 65 --sprite-height 320 --sprite-quality 95 --event-quality 60 \
-    --title-image assets/images/tsxx-reboot-cover.png \
+    --bg-quality 65 --sprite-height 320 --sprite-bottom 360 --sprite-quality 95 \
+    --event-quality 60 --title-image assets/images/tsxx-reboot-cover.png \
     --symbols-out assets/fonts/tsxx_symbols.txt
 ```
 
 用同一条命令重建可以逐字节复现仓库里提交的 `main/tsxx_data/tsxx_pack.bin`。资源包
-6.17 MiB，放在独立的 6.5 MiB assets 分区里；`--max-bytes 6475000`（该分区的 95%）
+6.40 MiB，放在独立的 6.5 MiB（`0x680000`）assets 分区里；`--max-bytes 6475000`（该分区的 95%）
 让构建在装不下时直接失败，而不是默默溢出，`--event-quality 53` 则是在这个上限内能
 保住的最高事件图质量。立绘每个角色只保留一种姿势（源工程同一件衣服有 2-4 张手臂/
 表情差分），存满 320 px 美术层高度、JPEG 质量 95，底边贴底、下半身由文本框盖住
@@ -59,7 +68,9 @@ python tools/tsxx_pack.py --source assets/tsxx-source --out main/tsxx_data/tsxx_
 `--event-width` 默认值），两个尺寸写进资源包的 META（`art=` / `bg=` / `event=`），
 固件合成时按 4/3 最近邻放大。240 × 320 的画布占 240 × 320 × 2 = 150 KB 静态 RAM，
 所以立绘与事件图的 JPEG 是走 `tjpgd` 回调接口逐块解进画布的，不再为每张图开一块
-整图暂存区。文字层仍在原生 240 × 320 上绘制。
+整图暂存区。文字层仍在原生 240 × 320 上绘制。7 个分支段（结局、跳转、闸门、规则、
+条件，共 1,296 字节）排在图片段之后、常驻脚本映射之外，固件开包时整体拷进 RAM，
+上限 `TSXX_PACK_BRANCH_MAX`，打包器用同一个上限拦住。
 
 ## 图片（images）
 

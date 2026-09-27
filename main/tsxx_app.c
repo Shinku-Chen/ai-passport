@@ -16,6 +16,9 @@ static const uint32_t s_speed_ms[3] = { 50, 28, 12 };
 static const char *const s_speed_names[3] = { "慢", "中", "快" };
 #define TSXX_SPEED_DEFAULT 1
 
+// 结局覆盖层上的标题就是包里的结局名(例如 "Noa end" / "END"),最长几十字节。
+#define TSXX_ENDING_NAME 40
+
 // 自动阅读:打字机打完之后再等这么久翻到下一句(也是两次翻页的最小间隔)。
 #define TSXX_AUTO_MS 700u
 // 长按上快进时每句话之间的间隔。
@@ -349,7 +352,8 @@ static void open_about(tsxx_app_t *app)
 {
     static const char body[] =
         "《天使☆骚骚 RE－BOOT!》阅读器\n\n"
-        "单线剧情 61,436 页,13 个选择支,\n"
+        "剧本 61,436 页,13 个选择支、\n"
+        "5 道分支闸门与 15 个结局点。\n"
         "剧本与素材来自小米手环的同人移植。\n\n"
         "本机用 C + LVGL 重写了竖屏阅读引擎。\n"
         "资源包直接映射自闪存,没有解压,\n"
@@ -472,19 +476,32 @@ static void open_chapters(tsxx_app_t *app)
 }
 
 // ---------------------------------------------------------------- 阅读推进
+// 源工程的 "回到主页" 是一个特殊结局名:它表示剧本结束、直接回标题页,
+// 所以不弹覆盖层。
 static void show_ending(tsxx_app_t *app)
 {
+    char name[TSXX_ENDING_NAME];
+    const bool named = tsxx_pack_end(&app->pack, app->player.page, name, sizeof(name));
+
     app->ended = true;
     app->auto_play = false;
     app->fast_forward = false;
     tsxx_ui_set_mode(&app->ui, false, false);
     tsxx_ui_hide_choices(&app->ui);
     render_scene(app);
-    tsxx_ui_ending_overlay(&app->ui, "—— 完 ——", "按确定返回标题", true);
     // 读完了就不再保留自动存档:标题页的"继续阅读"应该指向没读完的进度。
     (void)tsxx_slot_clear(TSXX_AUTO_SLOT);
     app->have_auto = false;
-    ESP_LOGI(TAG, "读完页表末尾,回到标题页");
+
+    if (named && strcmp(name, "回到主页") == 0) {
+        ESP_LOGI(TAG, "结局「回到主页」(第 %u 页),直接回标题页",
+                 (unsigned)app->player.page);
+        show_title(app);
+        return;
+    }
+    tsxx_ui_ending_overlay(&app->ui, named ? name : "—— 完 ——", "按确定返回标题", true);
+    ESP_LOGI(TAG, "结局 %s(第 %u 页),按确定返回标题",
+             named ? name : "页表末尾", (unsigned)app->player.page);
 }
 
 static bool start_reading(tsxx_app_t *app, uint32_t page)
@@ -595,10 +612,7 @@ static void title_select(tsxx_app_t *app)
         if (app->title_sel == index++) {
             tsxx_save_t save;
             if (tsxx_slot_load(TSXX_AUTO_SLOT, &save) &&
-                tsxx_player_start(&app->player, &app->pack, save.page, &app->layout)) {
-                if (save.screen < app->player.screens) {
-                    app->player.screen = (uint8_t)save.screen;
-                }
+                tsxx_player_load(&app->player, &app->pack, &save, &app->layout)) {
                 app->started = true;
                 app->ended = false;
                 tsxx_ui_ending_overlay(&app->ui, NULL, NULL, false);
@@ -767,10 +781,7 @@ static void key_slots(tsxx_app_t *app, const tsxx_key_t *key)
             const uint8_t slot = is_auto ? TSXX_AUTO_SLOT : (uint8_t)app->slots_sel;
             tsxx_save_t save;
             if (tsxx_slot_load(slot, &save) &&
-                tsxx_player_start(&app->player, &app->pack, save.page, &app->layout)) {
-                if (save.screen < app->player.screens) {
-                    app->player.screen = (uint8_t)save.screen;
-                }
+                tsxx_player_load(&app->player, &app->pack, &save, &app->layout)) {
                 app->started = true;
                 app->ended = false;
                 tsxx_ui_ending_overlay(&app->ui, NULL, NULL, false);
@@ -945,6 +956,9 @@ static bool app_after_pack_open(tsxx_app_t *app, uint16_t *art_pixels, const lv_
              (unsigned)tsxx_pack_pages(&app->pack), (unsigned)tsxx_pack_bg_count(&app->pack),
              (unsigned)tsxx_pack_sprite_count(&app->pack), (unsigned)tsxx_pack_cg_count(&app->pack),
              (unsigned)app->pack.choice_count, app->chapter_count);
+    ESP_LOGI(TAG, "分支:结局点 %u 个 / 闸门 %u 道",
+             (unsigned)tsxx_pack_end_count(&app->pack),
+             (unsigned)tsxx_pack_gate_count(&app->pack));
     return true;
 }
 

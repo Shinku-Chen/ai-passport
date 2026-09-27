@@ -20,6 +20,9 @@ enum {
     SEC_BGNAME, SEC_SPKNAME, SEC_SPRNAME, SEC_CGNAME,
     SEC_CHOICE, SEC_CHOICEOPT,
     SEC_BG, SEC_FG, SEC_EVB, SEC_EVC, SEC_CGDIR,
+    // 分支段:页号全部是 0-based(打包时从源工程的 1-based progressId 转过一次)。
+    SEC_BENDNAME, SEC_BEND, SEC_BNEXT, SEC_BBACK,
+    SEC_BGATE, SEC_BRULE, SEC_BCOND,
     SEC_META, SEC_COUNT
 };
 
@@ -30,8 +33,17 @@ enum {
 #define ENTRY_CGDIR 20u
 #define ENTRY_CHOICE 12u
 #define ENTRY_CHOICEOPT 12u
+#define ENTRY_BEND 8u
+#define ENTRY_BNEXT 8u
+#define ENTRY_BBACK 8u
+#define ENTRY_BGATE 16u
+#define ENTRY_BRULE 12u
+#define ENTRY_BCOND 8u
 #define HEADER_SIZE 20u
 #define SECTION_ENTRY 16u
+
+// 闸门的 else_target 用 0 表示"没有规则命中就顺序推进到下一页"(与打包器一致)。
+#define GATE_SEQUENTIAL 0u
 
 // 资源包的检查点间隔,必须与 tools/tsxx_pack.py 的 CHECKPOINT_PAGES 一致。
 #define CHECKPOINT_PAGES 256u
@@ -94,7 +106,7 @@ static bool section_entry(const uint8_t *table, uint32_t pack_size, uint32_t typ
 }
 
 // 校验段表与各段的长度关系,填出计数/长度与每段的绝对偏移;不建立任何指针。
-// 平坦模式与分区模式共用:两边都对"22 个段、各段长度、计数是否匹配"有同样的要求。
+// 平坦模式与分区模式共用:两边都对"29 个段、各段长度、计数是否匹配"有同样的要求。
 static bool pack_layout(const uint8_t *table, uint32_t pack_size, tsxx_pack_t *view)
 {
     tsxx_section_t secs[SEC_COUNT];
@@ -202,6 +214,37 @@ static bool pack_layout(const uint8_t *table, uint32_t pack_size, tsxx_pack_t *v
         return false;
     }
 
+    // 分支段:6 个固定步长数组 + 一张 \n 分隔的结局名表。
+    // 它们排在包尾(CGDIR 之后、META 之前),不能常驻映射:开包时整块拷进
+    // branch_buf,所以这里先把总量量一遍。
+    view->end_name_size = secs[SEC_BENDNAME].size;
+    view->end_name_count = secs[SEC_BENDNAME].count;
+    const struct {
+        uint32_t type;
+        uint32_t stride;
+        uint32_t *count;
+    } barrays[] = {
+        { SEC_BEND, ENTRY_BEND, &view->end_count },
+        { SEC_BNEXT, ENTRY_BNEXT, &view->next_count },
+        { SEC_BBACK, ENTRY_BBACK, &view->back_count },
+        { SEC_BGATE, ENTRY_BGATE, &view->gate_count },
+        { SEC_BRULE, ENTRY_BRULE, &view->rule_count },
+        { SEC_BCOND, ENTRY_BCOND, &view->cond_count },
+    };
+    uint32_t branch_size = view->end_name_size;
+    for (size_t i = 0; i < sizeof(barrays) / sizeof(barrays[0]); ++i) {
+        const tsxx_section_t *sec = &secs[barrays[i].type];
+        if (sec->count > sec->size / barrays[i].stride ||
+            sec->count * barrays[i].stride != sec->size) {
+            return false;
+        }
+        *barrays[i].count = sec->count;
+        branch_size += sec->size;
+    }
+    if (branch_size > sizeof(view->branch_buf)) {
+        return false;
+    }
+
     view->meta_size = secs[SEC_META].size;
     return true;
 }
@@ -225,6 +268,84 @@ static void bind_resident(tsxx_pack_t *view, const uint8_t *base)
     view->cg_names = base + view->sec_off[SEC_CGNAME];
     view->choices = base + view->sec_off[SEC_CHOICE];
     view->choice_opts = base + view->sec_off[SEC_CHOICEOPT];
+}
+
+// 分支段整体拷进结构体(与 META 同一套做法:段在包尾,拿不到常驻映射)。
+// base 是平坦模式的包基址;分区模式传 base = NULL,靠 partition 逐段读。
+// 段大小由 pack_layout 算出的计数推出来,不会超过 branch_buf。
+static bool branch_load(tsxx_pack_t *view, const uint8_t *base, const void *partition)
+{
+    uint32_t pos = 0;
+    for (uint32_t kind = SEC_BENDNAME; kind <= SEC_BCOND; ++kind) {
+        uint32_t size = 0;
+        switch (kind) {
+        case SEC_BENDNAME:
+            size = view->end_name_size;
+            break;
+        case SEC_BEND:
+            size = view->end_count * ENTRY_BEND;
+            break;
+        case SEC_BNEXT:
+            size = view->next_count * ENTRY_BNEXT;
+            break;
+        case SEC_BBACK:
+            size = view->back_count * ENTRY_BBACK;
+            break;
+        case SEC_BGATE:
+            size = view->gate_count * ENTRY_BGATE;
+            break;
+        case SEC_BRULE:
+            size = view->rule_count * ENTRY_BRULE;
+            break;
+        default:
+            size = view->cond_count * ENTRY_BCOND;
+            break;
+        }
+        if (size > sizeof(view->branch_buf) || pos > sizeof(view->branch_buf) - size) {
+            return false;
+        }
+        uint8_t *dst = view->branch_buf + pos;
+        switch (kind) {
+        case SEC_BENDNAME:
+            view->end_names = dst;
+            break;
+        case SEC_BEND:
+            view->ends = dst;
+            break;
+        case SEC_BNEXT:
+            view->nexts = dst;
+            break;
+        case SEC_BBACK:
+            view->backs = dst;
+            break;
+        case SEC_BGATE:
+            view->gates = dst;
+            break;
+        case SEC_BRULE:
+            view->rules = dst;
+            break;
+        default:
+            view->conds = dst;
+            break;
+        }
+        pos += size;
+        if (size == 0) {
+            continue;
+        }
+        if (partition != NULL) {
+#ifdef ESP_PLATFORM
+            if (esp_partition_read((const esp_partition_t *)partition, view->sec_off[kind], dst,
+                                   size) != ESP_OK) {
+                return false;
+            }
+#else
+            return false;
+#endif
+        } else {
+            memcpy(dst, base + view->sec_off[kind], size);
+        }
+    }
+    return true;
 }
 
 // 解析 "<宽>x<高>":整串必须是这个格式,否则返回 false。
@@ -343,6 +464,9 @@ bool tsxx_pack_open(tsxx_pack_t *pack, const uint8_t *data, uint32_t size)
     view.meta = data + view.sec_off[SEC_META];
     // 图片段在平坦模式下也直接用包内偏移寻址(map_window 返回 blob + off),
     // 这里把目录/数据指针留空,避免分区模式下出现第二套失效的地址。
+    if (!branch_load(&view, data, NULL)) {
+        return false;
+    }
     if (!meta_load_sizes(&view)) {
         return false;
     }
@@ -423,7 +547,7 @@ bool tsxx_pack_open_partition(tsxx_pack_t *pack, const char *label)
         return false;
     }
 
-    // 先读包头 512 字节:段表在 [20, 372),足够判完魔数/版本/总长/22 个段/各段长度,
+    // 先读包头 512 字节:段表在 [20, 484),足够判完魔数/版本/总长/29 个段/各段长度,
     // 不用等真正取图时才报错。
     uint8_t header[512];
     if (part->size < sizeof(header) ||
@@ -471,6 +595,15 @@ bool tsxx_pack_open_partition(tsxx_pack_t *pack, const char *label)
     }
     pack->meta_buf[pack->meta_size] = '\0';
     pack->meta = pack->meta_buf;   // meta_buf 已在 pack 里,地址不会再变
+    // 分支段也在包尾:与 META 一样拷一份进结构体(它们只有 1 KB 出头)。
+    if (!branch_load(pack, NULL, part)) {
+        ESP_LOGE(TAG, "资源分区 %s 的分支段读不出来(需要 %u 字节常驻拷贝)", label,
+                 (unsigned)(pack->end_name_size + pack->end_count * ENTRY_BEND +
+                            pack->next_count * ENTRY_BNEXT + pack->back_count * ENTRY_BBACK +
+                            pack->gate_count * ENTRY_BGATE + pack->rule_count * ENTRY_BRULE +
+                            pack->cond_count * ENTRY_BCOND));
+        return false;
+    }
     if (!meta_load_sizes(pack)) {
         ESP_LOGE(TAG, "资源包的 META 尺寸与固件不符(需要 art=%ux%u,且 bg/event 不超过它)",
                  TSXX_ART_W, TSXX_ART_H);
@@ -648,6 +781,33 @@ size_t tsxx_pack_text(const tsxx_pack_t *pack, const tsxx_page_t *page, uint32_t
     return written;
 }
 
+// 在 \n 分隔的名表里取第 id 条(名表都是裸 UTF-8 字节串)。
+static size_t name_at(const uint8_t *blob, uint32_t size, uint32_t id, char *out,
+                      size_t capacity)
+{
+    if (out == NULL || capacity == 0) {
+        return 0;
+    }
+    out[0] = '\0';
+    uint32_t index = 0;
+    uint32_t start = 0;
+    for (uint32_t i = 0; i <= size; ++i) {
+        if (i != size && blob[i] != '\n') {
+            continue;
+        }
+        if (index == id) {
+            const uint32_t len = i - start;
+            const uint32_t copy = (len < capacity - 1) ? len : (uint32_t)(capacity - 1);
+            memcpy(out, blob + start, copy);
+            out[copy] = '\0';
+            return copy;
+        }
+        ++index;
+        start = i + 1;
+    }
+    return 0;
+}
+
 size_t tsxx_pack_name(const tsxx_pack_t *pack, uint8_t table, uint16_t id, char *out,
                       size_t capacity)
 {
@@ -677,23 +837,7 @@ size_t tsxx_pack_name(const tsxx_pack_t *pack, uint8_t table, uint16_t id, char 
     default:
         return 0;
     }
-    uint32_t index = 0;
-    uint32_t start = 0;
-    for (uint32_t i = 0; i <= size; ++i) {
-        if (i != size && blob[i] != '\n') {
-            continue;
-        }
-        if (index == id) {
-            const uint32_t len = i - start;
-            const uint32_t copy = (len < capacity - 1) ? len : (uint32_t)(capacity - 1);
-            memcpy(out, blob + start, copy);
-            out[copy] = '\0';
-            return copy;
-        }
-        ++index;
-        start = i + 1;
-    }
-    return 0;
+    return name_at(blob, size, id, out, capacity);
 }
 
 // 带目录的段里的第 index 张图。目录与数据都用包内绝对偏移(分区模式算窗口)。
@@ -902,4 +1046,132 @@ bool tsxx_pack_choice_option(const tsxx_pack_t *pack, uint32_t page, uint8_t slo
         *target_page = target;
     }
     return true;
+}
+
+// ---------------------------------------------------------------- 分支
+// 源工程的语义(全部照抄,不做任何"优化"):
+//   推进:no_next[p] → 它;gates[p] → 第一条命中的规则,都不中且 else != 0 → else;
+//         否则顺序推进到 p+1。
+//   回退:no_back[p] → 它;否则顺序退回 p-1。
+//   当前页在 ends 里 → 触发结局序列,不再推进。
+//   选项:把 (页, 选项号) 记进历史,历史是下一次闸门判定的输入。
+// 包里的页号已经全部是 0-based。
+
+// 在固定步长段里按页号找一条。表只有几十条,直接线性扫 —— 不依赖"表按页号升序"
+// 这个打包器契约,数据万一重排也不会默默地走错分支。
+static const uint8_t *find_page_entry(const uint8_t *base, uint32_t count, uint32_t stride,
+                                      uint32_t page)
+{
+    if (base == NULL) {
+        return NULL;
+    }
+    for (uint32_t i = 0; i < count; ++i) {
+        const uint8_t *entry = base + i * stride;
+        if (rd32(entry) == page) {
+            return entry;
+        }
+    }
+    return NULL;
+}
+
+// 历史里有没有"在第 page 页选了第 value 个选项"这条记录。
+static bool history_has(const tsxx_choice_t *hist, uint32_t count, uint32_t page,
+                        uint8_t value)
+{
+    for (uint32_t i = 0; i < count; ++i) {
+        if (hist[i].page == page && hist[i].value == value) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool tsxx_pack_end(const tsxx_pack_t *pack, uint32_t page, char *out, size_t capacity)
+{
+    if (pack == NULL) {
+        return false;
+    }
+    if (out != NULL && capacity > 0) {
+        out[0] = '\0';
+    }
+    const uint8_t *entry = find_page_entry(pack->ends, pack->end_count, ENTRY_BEND, page);
+    if (entry == NULL) {
+        return false;
+    }
+    if (out != NULL && capacity > 0) {
+        name_at(pack->end_names, pack->end_name_size, rd16(entry + 4), out, capacity);
+    }
+    return true;
+}
+
+bool tsxx_pack_next(const tsxx_pack_t *pack, uint32_t page, const tsxx_choice_t *hist,
+                    uint32_t count, uint32_t *out)
+{
+    if (pack == NULL || out == NULL) {
+        return false;
+    }
+    if (hist == NULL) {
+        count = 0;
+    }
+    const uint8_t *jump = find_page_entry(pack->nexts, pack->next_count, ENTRY_BNEXT, page);
+    if (jump != NULL) {
+        *out = rd32(jump + 4);
+        return true;
+    }
+    const uint8_t *gate = find_page_entry(pack->gates, pack->gate_count, ENTRY_BGATE, page);
+    if (gate == NULL) {
+        return false;
+    }
+    const uint32_t first_rule = rd32(gate + 4);
+    const uint32_t rule_count = rd16(gate + 8);
+    const uint32_t else_target = rd32(gate + 12);
+    if (first_rule > pack->rule_count || rule_count > pack->rule_count - first_rule) {
+        return false;
+    }
+    for (uint32_t i = 0; i < rule_count; ++i) {
+        const uint8_t *rule = pack->rules + (first_rule + i) * ENTRY_BRULE;
+        const uint32_t target = rd32(rule);
+        const uint32_t first_cond = rd32(rule + 4);
+        const uint32_t cond_count = rd16(rule + 8);
+        if (first_cond > pack->cond_count || cond_count > pack->cond_count - first_cond) {
+            return false;
+        }
+        bool matched = true;
+        for (uint32_t c = 0; c < cond_count && matched; ++c) {
+            const uint8_t *cond = pack->conds + (first_cond + c) * ENTRY_BCOND;
+            matched = history_has(hist, count, rd32(cond), cond[4]);
+        }
+        if (matched) {
+            *out = target;
+            return true;
+        }
+    }
+    if (else_target != GATE_SEQUENTIAL) {
+        *out = else_target;
+        return true;
+    }
+    return false;   // 闸门没有命中,也没写死 else:按顺序推进到 page + 1
+}
+
+bool tsxx_pack_prev(const tsxx_pack_t *pack, uint32_t page, uint32_t *out)
+{
+    if (pack == NULL || out == NULL) {
+        return false;
+    }
+    const uint8_t *entry = find_page_entry(pack->backs, pack->back_count, ENTRY_BBACK, page);
+    if (entry == NULL) {
+        return false;
+    }
+    *out = rd32(entry + 4);
+    return true;
+}
+
+uint32_t tsxx_pack_end_count(const tsxx_pack_t *pack)
+{
+    return pack != NULL ? pack->end_count : 0u;
+}
+
+uint32_t tsxx_pack_gate_count(const tsxx_pack_t *pack)
+{
+    return pack != NULL ? pack->gate_count : 0u;
 }

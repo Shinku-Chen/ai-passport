@@ -17,6 +17,11 @@
 // 剧本是**线性页表**:61,436 页,每页自带背景/说话人/立绘/事件图/正文。
 // 没有独立的章节与场景层 —— 章节跳转点由正文页里的 [CHAPTER x-y] 标记推导
 // (见 tsxx_model 的 tsxx_chapter_*)。
+//
+// 页表不是全程顺序推进的:包尾还有一组分支段(结局点 / no_next / no_back /
+// 5 个 flag 闸门),它们照抄源工程 detail.ux 的 branchConfig 语义。这些段很小但
+// 排在包尾,**不能靠常驻映射**,所以开包时整体拷进 tsxx_pack_t 的 branch_buf
+// (与 META 同一套做法),之后所有判定都只读结构体。
 #pragma once
 
 #include <stdbool.h>
@@ -42,7 +47,9 @@
 #define TSXX_NONE16 0xFFFFu
 
 // 段表条数,必须与 tools/tsxx_pack.py 的 SEC_COUNT 一致。
-#define TSXX_PACK_SECTIONS 22
+// 22 个脚本/图片段 + 7 个分支段(结局名 / 结局点 / no_next / no_back / 闸门 /
+// 规则 / 条件)。
+#define TSXX_PACK_SECTIONS 29
 
 // 设备模式(tsxx_pack_open_partition)的两层映射:
 //   常驻映射覆盖 [0, 脚本区间末尾 = SEC_BG 的偏移),类型 0..15 的脚本段都指向它;
@@ -55,6 +62,12 @@
 #define TSXX_PACK_WINDOW_SIZE (256u * 1024u)
 // META 段(在包末尾,不能常驻映射)拷进结构体保存时的字节上限。
 #define TSXX_PACK_META_MAX 512u
+// 7 个分支段加起来拷进结构体时的字节上限。实测只有 1,296 字节(15 个结局点 +
+// 18 条 no_next + 38 条 no_back + 5 个闸门 / 11 条规则 / 54 个条件 + 9 个结局名),
+// 留 240 字节余量 —— 一边是 RAM 很紧(空闲堆只有十几 KB),一边是分支表以后再长
+// 也长不了多少。超限时开包失败并打印实际字节数,同时 tools/tsxx_pack.py 会在打包时
+// 用同一个数拦住(见 BRANCH_BLOB_MAX)。
+#define TSXX_PACK_BRANCH_MAX 1536u
 
 // page.flags
 #define TSXX_PAGE_ZOOM (1u << 0)   // 源数据带缩放提示(全库都是同一个值)
@@ -130,6 +143,27 @@ typedef struct {
     const uint8_t *meta;
     uint32_t meta_size;
 
+    // ---- 分支段(在包尾,不能常驻映射:开包时整体拷进 branch_buf)----
+    // 页号全部是**0-based**(打包时从源工程的 1-based progressId 转过一次),
+    // 与 page_count 同一坐标系。
+    const uint8_t *end_names;     // 结局名,\n 分隔
+    uint32_t end_name_count;      // 名表条数(与 SEC_BEND 的 name 下标对齐)
+    uint32_t end_name_size;
+    const uint8_t *ends;          // { page u32, name u16, pad u16 }
+    uint32_t end_count;
+    const uint8_t *nexts;         // { page u32, target u32 }:本页"推进"不走下一页
+    uint32_t next_count;
+    const uint8_t *backs;         // { page u32, target u32 }:本页"回退"的目标
+    uint32_t back_count;
+    const uint8_t *gates;         // { page u32, first_rule u32, rule_count u16,
+                                  //   pad u16, else_target u32 }
+    uint32_t gate_count;
+    const uint8_t *rules;         // { target u32, first_cond u32, cond_count u16, pad u16 }
+    uint32_t rule_count;
+    const uint8_t *conds;         // { page u32, value u8, pad u8, pad u16 }
+    uint32_t cond_count;
+    uint8_t branch_buf[TSXX_PACK_BRANCH_MAX];
+
     // ---- 存储方式 ----
     // false:tsxx_pack_open() 的"整块在内存"平坦模式(宿主机测试)。
     // true :tsxx_pack_open_partition() 的两层映射(设备),blob 指向常驻映射基址。
@@ -188,12 +222,19 @@ typedef struct {
     uint32_t img;      // FRAME:EVB 下标;PATCH:EVC 下标
 } tsxx_cg_t;
 
+// 玩家做过的一次选择:第 page 页的第 value 个选项(value 是**选项号**,从 1 起 ——
+// 源工程的闸门条件就是按 1 起写的)。历史是闸门判定的唯一输入。
+typedef struct {
+    uint32_t page;
+    uint8_t value;
+} tsxx_choice_t;
+
 // 校验魔数/版本/段自洽并建立各段视图;失败返回 false(不改动 pack)。
 // "平坦模式":整块资源包必须已经在内存里(宿主机测试走这条路)。
 bool tsxx_pack_open(tsxx_pack_t *pack, const uint8_t *data, uint32_t size);
 
 // 打开 label 分区里的资源包(设备模式):常驻映射脚本区间,图片与 CGDIR 用滑动窗口。
-// 校验与 tsxx_pack_open() 相同(魔数/版本/总长/22 个段/各段长度),只读包头 512 字节
+// 校验与 tsxx_pack_open() 相同(魔数/版本/总长/29 个段/各段长度),只读包头 512 字节
 // 就能判完,不会等到真正取图时才报错。失败返回 false("未打开"状态,调用方不要再使用)。
 //
 // **窗口契约**:tsxx_pack_bg()/tsxx_pack_sprite()/tsxx_pack_cg_image() 返回的指针只在
@@ -243,6 +284,26 @@ const char *tsxx_pack_meta(const tsxx_pack_t *pack);
 // 标题背景在背景表里的下标(META 的 title_bg=)。源素材没有可用的标题画,
 // 由打包器的 --title-image 单独提供;没有标题图时返回 0。
 uint8_t tsxx_pack_title_bg(const tsxx_pack_t *pack);
+
+// 第 page 页是不是结局点;是则把结局名写进 out(总是 NUL 结尾)并返回 true。
+bool tsxx_pack_end(const tsxx_pack_t *pack, uint32_t page, char *out, size_t capacity);
+
+// 按源工程的语义算出第 page 页"推进"后的下一页(不处理结局):
+//   no_next[p] → 跳到它;
+//   gates[p]   → 拿 hist 里做过的选择去匹配规则,第一条全中者胜出;
+//                都不中且 else 不是 0 时跳到 else;
+//   其余       → 返回 false(调用方按顺序推进到 p+1)。
+// hist 可以按任意顺序放,匹配是"存在同名条件"而不是按顺序对齐。
+// 返回 true 时 *out 是合法的目标页号。
+bool tsxx_pack_next(const tsxx_pack_t *pack, uint32_t page, const tsxx_choice_t *hist,
+                    uint32_t count, uint32_t *out);
+
+// 第 page 页"回退"的目标页:no_back[p] 存在则返回 true,否则 false(按顺序退回 p-1)。
+bool tsxx_pack_prev(const tsxx_pack_t *pack, uint32_t page, uint32_t *out);
+
+// 结局点数 / 闸门数,供日志与测试用。
+uint32_t tsxx_pack_end_count(const tsxx_pack_t *pack);
+uint32_t tsxx_pack_gate_count(const tsxx_pack_t *pack);
 
 // 第 page 页是不是选项点;是则返回选项数(1..5),否则 0。
 uint8_t tsxx_pack_choice_count(const tsxx_pack_t *pack, uint32_t page);

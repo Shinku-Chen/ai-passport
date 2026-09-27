@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import struct
 import tempfile
 import unittest
@@ -27,9 +28,17 @@ tsxx = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(tsxx)
 
 
-def build_min_pack(pages_text) -> bytes:
-    """只用纯逻辑拼一个最小但完整的包(不含任何图片)。"""
-    symbols, symbol_id = tsxx.build_symbol_table(pages_text)
+def build_min_pack(pages_text, choices=None, branch=None) -> bytes:
+    """只用纯逻辑拼一个最小但完整的包(不含任何图片)。
+
+    choices: [(页号(0-based), [(文案, 目标页), ...])] —— 闸门的条件要引用真选择点,
+        所以测分支时得给它一个。
+    branch:  与 assets/tsxx-source/branch.json 同形的分支配置(1-based 页号),
+        过 tsxx.parse_branch() 后再编成段。
+    """
+    choices = list(choices or [])
+    option_texts = [text for _, options in choices for text, _ in options]
+    symbols, symbol_id = tsxx.build_symbol_table(list(pages_text) + option_texts)
     blob = bytearray()
     lengths = bytearray()
     checkpoints = [0]
@@ -39,6 +48,19 @@ def build_min_pack(pages_text) -> bytes:
     checkpoints.append(len(blob))
     count = len(pages_text)
 
+    choice_blob = bytearray()
+    option_blob = bytearray()
+    first_option = 0
+    option_counts = {}
+    for page, options in choices:
+        choice_blob += struct.pack("<IBBHI", page, len(options), 0, 0, first_option)
+        option_counts[page] = len(options)
+        for text, target in options:
+            option_blob += struct.pack("<IBBHI", len(blob), len(text), 0, 0, target)
+            blob += tsxx.encode_text(text, symbol_id)
+        first_option += len(options)
+
+    parts = tsxx.branch_blob(tsxx.parse_branch(branch or {}), count, option_counts)
     sections = [
         tsxx.plain_section(tsxx.SEC_SYM,
                            b"".join(struct.pack("<I", ord(c)) for c in symbols), len(symbols)),
@@ -56,13 +78,14 @@ def build_min_pack(pages_text) -> bytes:
         tsxx.plain_section(tsxx.SEC_SPKNAME, b"", 0),
         tsxx.plain_section(tsxx.SEC_SPRNAME, b"", 0),
         tsxx.plain_section(tsxx.SEC_CGNAME, b"", 0),
-        tsxx.plain_section(tsxx.SEC_CHOICE, b"", 0),
-        tsxx.plain_section(tsxx.SEC_CHOICEOPT, b"", 0),
+        tsxx.plain_section(tsxx.SEC_CHOICE, bytes(choice_blob), len(choices)),
+        tsxx.plain_section(tsxx.SEC_CHOICEOPT, bytes(option_blob), first_option),
         tsxx.Section(tsxx.SEC_BG, tsxx.BG_ENTRY),
         tsxx.Section(tsxx.SEC_FG, tsxx.FG_ENTRY),
         tsxx.Section(tsxx.SEC_EVB, tsxx.EV_ENTRY),
         tsxx.Section(tsxx.SEC_EVC, tsxx.EV_ENTRY),
         tsxx.Section(tsxx.SEC_CGDIR, tsxx.CGD_ENTRY),
+        *[tsxx.plain_section(kind, payload, items) for kind, (payload, items) in parts.items()],
         tsxx.plain_section(tsxx.SEC_META,
                            f"generator=test\nart={tsxx.ART_W}x{tsxx.ART_H}"
                            f"\nbg={tsxx.ART_W}x{tsxx.ART_H}"
@@ -247,6 +270,196 @@ class ContainerTest(unittest.TestCase):
         self.write_broken(lambda blob: blob.__setitem__(meta_offset + index + 2, ord("q")))
 
 
+class BranchTest(unittest.TestCase):
+    """分支段:编码、自检与拒绝。合成包的页号与 branch.json 一样是 1-based。"""
+
+    PAGES = ["第一页", "第二页", "第三页", "第四页", "第五页", "第六页"]
+    # 第 2 页是选择点(两个选项);闸门的条件就引用它。
+    CHOICES = [(1, [("选项一", 2), ("选项二", 4)])]
+    BRANCH = {
+        "ends": {"6": "END"},
+        "no_next": {"1": 3},
+        "no_back": {"3": 1},
+        "gates": {"4": {"rules": [{"when": [[2, 2]], "to": 5}], "else": 2}},
+    }
+
+    def setUp(self):
+        self.blob = build_min_pack(self.PAGES, self.CHOICES, self.BRANCH)
+        self.tmp = tempfile.TemporaryDirectory()
+        self.path = Path(self.tmp.name, "pack.bin")
+        self.path.write_bytes(self.blob)
+        self.pack = tsxx.parse_pack(self.blob)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def section_bytes(self, kind: int) -> bytes:
+        return tsxx.section_bytes(self.pack, kind)
+
+    def write_broken(self, mutate) -> None:
+        broken = bytearray(self.blob)
+        mutate(broken)
+        self.path.write_bytes(bytes(broken))
+        with self.assertRaises(ValueError):
+            tsxx.verify(str(self.path))
+
+    def test_branch_pack_passes_self_check(self):
+        stats = tsxx.verify(str(self.path))
+        self.assertEqual(stats["endings"], 1)
+        self.assertEqual(stats["end_names"], 1)
+        self.assertEqual(stats["branch_next"], 1)
+        self.assertEqual(stats["branch_back"], 1)
+        self.assertEqual(stats["branch_gates"], 1)
+        self.assertEqual(stats["branch_rules"], 1)
+        self.assertEqual(stats["branch_conds"], 1)
+
+    def test_pages_are_stored_zero_based(self):
+        """1-based 的 6 / 1 / 3 / 4 / 2 在包里必须是 5 / 0 / 2 / 3 / 1。"""
+        page, name = struct.unpack("<IH", self.section_bytes(tsxx.SEC_BEND)[:6])
+        self.assertEqual((page, name), (5, 0))
+        self.assertEqual(struct.unpack("<II", self.section_bytes(tsxx.SEC_BNEXT)[:8]), (0, 2))
+        self.assertEqual(struct.unpack("<II", self.section_bytes(tsxx.SEC_BBACK)[:8]), (2, 0))
+        gate = struct.unpack("<IIHHI", self.section_bytes(tsxx.SEC_BGATE)[:16])
+        self.assertEqual(gate, (3, 0, 1, 0, 1))
+        rule = struct.unpack("<IIHH", self.section_bytes(tsxx.SEC_BRULE)[:12])
+        self.assertEqual(rule, (4, 0, 1, 0))
+        cond = struct.unpack("<IBBH", self.section_bytes(tsxx.SEC_BCOND)[:8])
+        self.assertEqual(cond, (1, 2, 0, 0))
+
+    def test_sequential_else_is_stored_as_zero(self):
+        branch = {"gates": {"4": {"rules": [{"when": [[2, 1]], "to": 5}], "else": 0}}}
+        pack = tsxx.parse_pack(build_min_pack(self.PAGES, self.CHOICES, branch))
+        self.assertEqual(struct.unpack_from("<I", tsxx.section_bytes(pack, tsxx.SEC_BGATE), 12)[0],
+                         0)
+
+    def test_empty_branch_is_allowed(self):
+        stats = tsxx.verify(str(self.write_empty_pack()))
+        self.assertEqual(stats["endings"], 0)
+        self.assertEqual(stats["branch_gates"], 0)
+
+    def write_empty_pack(self) -> Path:
+        path = Path(self.tmp.name, "empty.bin")
+        path.write_bytes(build_min_pack(self.PAGES, self.CHOICES))
+        return path
+
+    def test_condition_page_must_be_a_choice_point(self):
+        branch = {"gates": {"4": {"rules": [{"when": [[3, 1]], "to": 5}], "else": 0}}}
+        with self.assertRaises(ValueError):
+            build_min_pack(self.PAGES, self.CHOICES, branch)
+
+    def test_condition_option_must_exist(self):
+        branch = {"gates": {"4": {"rules": [{"when": [[2, 3]], "to": 5}], "else": 0}}}
+        with self.assertRaises(ValueError):
+            build_min_pack(self.PAGES, self.CHOICES, branch)
+
+    def test_gate_target_must_be_in_range(self):
+        branch = {"gates": {"4": {"rules": [{"when": [[2, 1]], "to": 99}], "else": 0}}}
+        with self.assertRaises(ValueError):
+            build_min_pack(self.PAGES, self.CHOICES, branch)
+
+    def test_jump_page_must_be_in_range(self):
+        with self.assertRaises(ValueError):
+            build_min_pack(self.PAGES, self.CHOICES, {"no_next": {"99": 1}})
+        with self.assertRaises(ValueError):
+            build_min_pack(self.PAGES, self.CHOICES, {"no_back": {"1": 99}})
+        with self.assertRaises(ValueError):
+            build_min_pack(self.PAGES, self.CHOICES, {"ends": {"0": "END"}})
+
+    def test_else_page_one_is_rejected(self):
+        """else=1 与 0-based 的"没有规则命中就 p+1"哨兵撞车,只能构建失败。"""
+        branch = {"gates": {"4": {"rules": [{"when": [[2, 1]], "to": 5}], "else": 1}}}
+        with self.assertRaises(ValueError):
+            build_min_pack(self.PAGES, self.CHOICES, branch)
+
+    def test_non_integer_page_is_rejected(self):
+        with self.assertRaises(ValueError):
+            tsxx.parse_branch({"no_next": {"2": "3"}})
+        with self.assertRaises(ValueError):
+            tsxx.parse_branch({"unknown": {}})
+        with self.assertRaises(ValueError):
+            tsxx.parse_branch({"gates": {"4": {"rules": [{"when": [[2]], "to": 5}]}}})
+
+    def test_end_name_with_newline_is_rejected(self):
+        with self.assertRaises(ValueError):
+            build_min_pack(self.PAGES, self.CHOICES, {"ends": {"6": "BAD\nEND"}})
+
+    def test_broken_branch_sections_are_rejected(self):
+        base = self.pack["sections"]
+        cond_off = base[tsxx.SEC_BCOND][0]
+        # 条件引用的选项号超出现有选项数。
+        self.write_broken(lambda blob: blob.__setitem__(cond_off + 4, 9))
+        # 条件页不是选择点。
+        self.write_broken(lambda blob: struct.pack_into("<I", blob, cond_off, 4))
+        # 规则的条件区间越界。
+        self.write_broken(lambda blob: struct.pack_into(
+            "<H", blob, base[tsxx.SEC_BRULE][0] + 8, 2))
+        # 闸门的规则区间越界。
+        self.write_broken(lambda blob: struct.pack_into(
+            "<H", blob, base[tsxx.SEC_BGATE][0] + 8, 3))
+        # 结局名下标越界。
+        self.write_broken(lambda blob: struct.pack_into(
+            "<H", blob, base[tsxx.SEC_BEND][0] + 4, 7))
+        # no_next 的目标越界。
+        self.write_broken(lambda blob: struct.pack_into(
+            "<I", blob, base[tsxx.SEC_BNEXT][0] + 4, 99))
+        # 结局名表的条数与 \n 分出来的条数不符。
+        self.write_broken(lambda blob: struct.pack_into(
+            "<I", blob, self.table_offset(tsxx.SEC_BENDNAME) + 8, 3))
+        # 步长 × 条数 != 段长:把 BCOND 的条数改大。
+        self.write_broken(lambda blob: struct.pack_into(
+            "<I", blob, self.table_offset(tsxx.SEC_BCOND) + 8, 2))
+
+    def test_branch_page_order_is_enforced(self):
+        """表必须按页号递增(固件按序查找)。把两个结局点的页号搅乱。"""
+        blob = bytearray(build_min_pack(
+            self.PAGES, self.CHOICES,
+            {"ends": {"6": "END", "1": "OTHER"}, "no_next": {}, "no_back": {},
+             "gates": {}}))
+        pack = tsxx.parse_pack(bytes(blob))
+        offset = pack["sections"][tsxx.SEC_BEND][0]
+        first, second = blob[offset:offset + 8], blob[offset + 8:offset + 16]
+        blob[offset:offset + 8], blob[offset + 8:offset + 16] = second, first
+        self.path.write_bytes(bytes(blob))
+        with self.assertRaises(ValueError):
+            tsxx.verify(str(self.path))
+
+    def table_offset(self, kind: int) -> int:
+        count = struct.unpack_from("<I", self.blob, 16)[0]
+        for index in range(count):
+            if struct.unpack_from("<I", self.blob, 20 + 16 * index)[0] == kind:
+                return 20 + 16 * index
+        raise AssertionError(f"段表里没有 {tsxx.SEC_NAMES[kind]}")
+
+    def test_comparison_with_branch_json_survives_a_round_trip(self):
+        """--verify-source 的那条比对:重建出的字节必须与包里的段一致。"""
+        branch_path = Path(self.tmp.name, "branch.json")
+        branch_path.write_text(json.dumps(self.BRANCH), encoding="utf-8")
+        stats = tsxx.verify(str(self.path), None, str(branch_path))
+        self.assertEqual(stats["source_ends"], 1)
+        self.assertEqual(stats["source_gates"], 1)
+
+
+class FirmwareContractTest(unittest.TestCase):
+    """打包器与固件共享的常量必须在两边一致(否则错误只能等到设备上才暴露)。"""
+
+    def header(self) -> str:
+        return (ROOT / "main" / "tsxx_pack.h").read_text(encoding="utf-8")
+
+    def test_section_count_matches_firmware(self):
+        self.assertIn(f"#define TSXX_PACK_SECTIONS {tsxx.SECTION_COUNT}", self.header())
+
+    def test_branch_buffer_limit_matches_firmware(self):
+        self.assertIn(f"#define TSXX_PACK_BRANCH_MAX {tsxx.BRANCH_BLOB_MAX}u", self.header())
+
+    def test_branch_blob_limit_is_enforced(self):
+        """结束名表长到超过固件常驻拷贝上限时,打包必须直接失败。"""
+        pages = [f"第 {i} 页" for i in range(64)]
+        long_name = "A" * (tsxx.BRANCH_BLOB_MAX // 2)
+        with self.assertRaises(ValueError):
+            build_min_pack(pages, [], {"ends": {f"{i + 1}": long_name + str(i)
+                                                 for i in range(4)}})
+
+
 class CommittedPackTest(unittest.TestCase):
     """仓库里带了资源包时,顺手自检一次真实产物。"""
 
@@ -257,6 +470,11 @@ class CommittedPackTest(unittest.TestCase):
         self.assertGreater(stats["pages"], 0)
         self.assertGreater(stats["backgrounds"], 0)
         self.assertGreater(stats["sprites"], 0)
+        # 分支段也必须真的进了包:没有它就是"结局被当普通页翻过去"的旧包。
+        self.assertGreater(stats["endings"], 0)
+        self.assertGreater(stats["branch_gates"], 0)
+        self.assertGreaterEqual(stats["branch_rules"], stats["branch_gates"])
+        self.assertGreaterEqual(stats["branch_conds"], stats["branch_rules"])
         # 每页最多 255 字,正文解码字符数必须与页数同量级
         self.assertLessEqual(stats["text_chars"], stats["pages"] * tsxx.MAX_PAGE_CHARS)
 
