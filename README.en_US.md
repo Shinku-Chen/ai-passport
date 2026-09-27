@@ -248,6 +248,46 @@ idle time.
 - **Offline data pipeline** — nothing is downloaded at runtime; the output of `tools/starry_pack.py` and `tools/starry_lvgl_font.py` is committed, so a plain checkout builds.
 - **Serial debugging channel** — `STARRYPAGE [title | <chapter> <scene>]` captures a frame from the LVGL flush path and streams it back as raw RGB565, which is how every layout check in this project was made; `STARRYJUMP` jumps straight to a chapter.
 
+### Tenshi☆Sousou RE-BOOT!
+
+A portrait visual novel ported from the Mi Band fan port of *Tenshi☆Sousou RE-BOOT!* and its Chinese fan
+translation: **61,436 script pages, 61,289 dialogue lines, 1,165,911 characters, 45 chapter points,
+13 choice points and 15 ending points** — six heroine routes (Noa, Amane, Kurumi, Kaguya, Orie,
+Fumika), two bad ends, one plain end and six return-to-title screens — fully offline. The script, art
+and translation come from [`hezdaaa/tsxxreboot-miband`](https://github.com/hezdaaa/tsxxreboot-miband)
+(a Mi Band quick app); this branch re-implements the reader on the ATRI / Starry Sky Railroad LVGL page
+system, adds the original branching system (15 endings, five flag gates, 18 forward jumps and 38 back
+jumps) and drives it with the three keys. Status: **released** — tag `v0.1.0-tsxx-reboot`, and submitted
+to the AI Passport community market.
+
+- Branch: [`feature/tsxx-reboot`](https://github.com/Shinku-Chen/ai-passport/tree/feature/tsxx-reboot)
+- Release: [`v0.1.0-tsxx-reboot`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-tsxx-reboot) — merged image `FoloToy-AI-Passport-full.bin`, 8,135,520 bytes
+- Upstream work: [`hezdaaa/tsxxreboot-miband`](https://github.com/hezdaaa/tsxxreboot-miband) — the Mi Band quick-app release this port derives from; it declares no licence, and the script, sprites and backgrounds belong to Yuzusoft and the original publisher. This port only converts and repacks: the firmware ships the converted resource pack and not the original material, which is committed under `assets/tsxx-source/` purely as attribution and as the input that reproduces the pack. It is a non-commercial fan study; please support the official release.
+- Asset toolchain: [`tools/tsxx_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/tsxx-reboot/tools/tsxx_pack.py) (script, images and the branch tables into `main/tsxx_data/tsxx_pack.bin`, 6.26 MiB) and [`tools/tsxx_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/tsxx-reboot/tools/tsxx_font.py) (16 px Chinese subset, 3,417 code points)
+
+**Controls (three keys):** on the title screen UP / DOWN move the cursor, **OK** enters and
+**OK (hold)** powers the device down. While reading, **UP**, **DOWN** and a short **OK** all advance one
+line (which also reveals a line that is still typing), **UP (hold)** fast-forwards while held and stops
+the moment you release it, **DOWN (hold)** toggles auto-reading, which waits 0.7 s after a page finishes
+and ends on any key press without counting as idle. **OK (hold)** opens the menu (continue, save, load,
+skip chapter, chapter jump, back to title); choices use UP / DOWN + OK; on lists **OK (hold)** goes back;
+on the save screen **OK** saves or loads and **OK (hold)** deletes a manual slot. Settings switch the
+text speed (slow / medium / fast — 50, 28 and 12 ms per character) and auto-reading.
+
+**Branching and saves:** five manual slots plus one automatic slot written on every scene change
+(throttled to once every four seconds, forced at choice points and before sleep), which the title
+screen offers as "continue"; the accumulated choice history is stored with the position, so loading a
+save cannot select the wrong branch. Idle for 45 s dims the backlight, 2.5 min turns it off and 7 min
+enters deep sleep; any key wakes the device.
+
+**Highlights:**
+
+- **The art layer is 1:1 with the screen** — the canvas is the 240 × 320 panel itself, so sprites are stored in canvas coordinates and are never resampled when composited; backgrounds and event images stay at 180 × 240 in the pack and are scaled up by 4/3 with nearest-neighbour sampling while the text layer is drawn at native resolution.
+- **Full-screen compositing without PSRAM** — the 150 KB RGB565 canvas uses no decode staging buffer at all: backgrounds, event frames, patches and sprites all decode chunk by chunk through the tjpgd callback interface, and sprites carry a 1 bpp mask that is blitted row by row from Flash.
+- **The resource pack is read through two mappings** — the script region at the head of the pack (about 1.9 MiB of page tables, text stream, choices and branch tables) is mapped read-only for the whole runtime, while images are fetched through a 256 KB sliding `esp_partition_mmap` window and decoded as soon as they arrive.
+- **The branching system is data-driven** — all 15 ending points, five flag gates (11 rules, 54 conditions), 18 forward and 38 back jumps come from [`assets/tsxx-source/branch.json`](assets/tsxx-source/branch.json); the packer checks every gate condition against a real choice point and the build fails if the configuration and the pack disagree.
+- **Parsing, advancing and gate resolution have host tests** — pack reading, the advance order (ending point, then jumps and gates, then the next page) and pagination do not depend on ESP-IDF or LVGL; a host test walks the entire page table with the real pack and then plays all six heroine routes.
+
 ## Notes
 
 - Each application is a separate `feature/*` branch off the upstream baseline.

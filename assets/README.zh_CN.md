@@ -83,6 +83,7 @@ python tools/tsxx_pack.py --source assets/tsxx-source --out main/tsxx_data/tsxx_
 | [`images/logo-wordmark.png`](images/logo-wordmark.png) | 1648 × 336，PNG RGBA | 从仓库原始 `images/logo.png` 中精确裁切并去除背景的黑色字标；用于中英文项目 README 的浅色主题。 |
 | [`images/logo-wordmark-dark.png`](images/logo-wordmark-dark.png) | 1648 × 336，PNG RGBA | 提取字标的白色版本；README 使用 `<picture>` 在 GitHub 深色主题下显示。 |
 | [`images/tsxx-reboot-cover.png`](images/tsxx-reboot-cover.png) | 420 × 582，PNG | `feature/tsxx-reboot` 上《天使☆騒々 RE－BOOT!》阅读器的封面，同时用作标题背景图。第三方主视觉，来自柚子社原发行版，由作者为本移植提供。 |
+| [`images/tsxx-reboot-market-cover.png`](images/tsxx-reboot-market-cover.png) | 1152 × 1536，PNG | 同一阅读器的社区市场与 release 封面。由 `images/tsxx-reboot-cover.png` 以中心为准裁到 420 × 560（上下各去 11 行，精确 3:4），再用 Lanczos 放大到 1152 × 1536；用于 AI Passport 社区投稿与 release 说明。 |
 
 - 使用描述性命名，并记录尺寸、像素格式、转换步骤与目标路径。
 - 优先采用适合 240 × 320 RGB565 显示的格式，并纳入 Flash 与内部 RAM 考量。
