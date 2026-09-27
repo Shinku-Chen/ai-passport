@@ -14,14 +14,25 @@ data API and the payloads from the jsDelivr CDN, with raw.githack.com as a
 fallback, because a direct github.com clone is not reachable from every build
 host.
 
-The port uses only the three asset families that upstream actually ships:
+The port uses only the game's own material, never its quick-app code:
 
   <dest>/bg/*.jpg       107 背景(336x480 JPEG)
   <dest>/sd/*.jpg       292 SD 装饰图(240x144 JPEG,源工程 .sd-image 的显示框)
+  <dest>/images/*.png    29 源工程的图标/装饰图(游戏素材,阅读器不使用)
   <dest>/title_bg.jpg     1 标题主视觉(336x480 JPEG)
+  <dest>/logo.png         1 源工程 logo(游戏素材,阅读器不使用)
   <dest>/game.txt         内容包清单:场景顺序(101 章的分组与次序)与 019 的选线规则
   <dest>/scn/*.txt      101 剧本(--chunks,打包剧本时需要)
-  <dest>/MANIFEST.json  每个文件的相对路径、字节数与 sha256,便于复现校验
+  <dest>/MANIFEST.json  每个文件的上游路径、字节数与 sha256,便于复现校验
+
+Alongside those it keeps the upstream repository's own reference material, so the
+material stays self-describing offline:
+
+  <dest>/upstream-screenshots/*.png   源工程 README 用的 4 张截图
+  <dest>/script-format-spec-v1.1.txt   上游的剧本格式规范(原文件名 剧本格式规范v1.1.md;本仓库打包器实现的即此格式)
+  <dest>/LICENSE                       上游 GPL-3.0 许可证正本(素材与其文档随此许可分发)
+
+src/**/*.ux、src/**/*.js、tests/、tools/ 等快应用代码不在此列。
 
 Upstream carries no `ev/` (event CG) and no `ch/` (standing art) directory: the
 script references 2,862 `ev*` and 19,224 standing-art entries that have no
@@ -47,6 +58,7 @@ import concurrent.futures
 import hashlib
 import json
 import sys
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -60,9 +72,12 @@ MIRRORS = (
     "https://cdn.jsdelivr.net/gh/{repo}@{ref}/{path}",
     "https://raw.githack.com/{repo}/{ref}/{path}",
 )
-ASSET_ROOTS = ("src/common/bg/", "src/common/sd/")
-EXTRA_FILES = ("src/common/title_bg.jpg", "src/common/game.txt")
+ASSET_ROOTS = ("src/common/bg/", "src/common/sd/", "src/common/images/")
+EXTRA_FILES = ("src/common/title_bg.jpg", "src/common/game.txt", "src/common/logo.png")
 SCRIPT_ROOT = "src/common/scn/"
+# 上游随仓库一起提供的参考材料:重定向前缀,以及逐个文件的重命名
+REFERENCE_ROOTS = (("screenshots/", "upstream-screenshots/"),)
+REFERENCE_FILES = (("docs/剧本格式规范v1.1.md", "script-format-spec-v1.1.txt"), ("LICENSE", "LICENSE"))
 MANIFEST = "MANIFEST.json"
 COMMON_PREFIX = "src/common/"
 
@@ -72,6 +87,7 @@ class RemoteFile:
     path: str          # 相对仓库根,如 src/common/bg/空_青空.jpg
     rel: str           # 落盘相对路径,如 bg/空_青空.jpg
     size: int
+    kind: str = "asset"  # asset(打包输入)/script(剧本)/reference(上游参考材料)
 
 
 def log(msg: str) -> None:
@@ -84,9 +100,23 @@ def http_get(url: str, timeout: float = 60.0) -> bytes:
         return response.read()
 
 
+def retry(fn, what: str, attempts: int = 5, delay: float = 3.0):
+    """构建机到 jsDelivr 的链路会间歇性握手超时,逐个退避重试。"""
+    last: Exception | None = None
+    for attempt in range(1, attempts + 1):
+        try:
+            return fn()
+        except Exception as exc:  # noqa: BLE001 - 网络异常类型很多,统一退避重试
+            last = exc
+            if attempt < attempts:
+                log(f"  {what} 第 {attempt}/{attempts} 次失败({exc}),{delay * attempt:.0f}s 后重试")
+                time.sleep(delay * attempt)
+    raise RuntimeError(f"{what}: {last}")
+
+
 def list_files(ref: str) -> tuple[str, list[RemoteFile]]:
     """Return the resolved version and every asset/script path we care about."""
-    payload = json.loads(http_get(DATA_API.format(repo=REPO, ref=ref)))
+    payload = json.loads(retry(lambda: http_get(DATA_API.format(repo=REPO, ref=ref)), "目录 API"))
     version = str(payload.get("version", ref))
     files: list[RemoteFile] = []
     for entry in payload.get("files", []):
@@ -97,7 +127,17 @@ def list_files(ref: str) -> tuple[str, list[RemoteFile]]:
         elif name in EXTRA_FILES:
             files.append(RemoteFile(name, name[len(COMMON_PREFIX):], size))
         elif name.startswith(SCRIPT_ROOT):
-            files.append(RemoteFile(name, name[len(COMMON_PREFIX):], size))
+            files.append(RemoteFile(name, name[len(COMMON_PREFIX):], size, "script"))
+        else:
+            for prefix, dest_prefix in REFERENCE_ROOTS:
+                if name.startswith(prefix):
+                    files.append(RemoteFile(name, dest_prefix + name[len(prefix):], size, "reference"))
+                    break
+            else:
+                for path, rel in REFERENCE_FILES:
+                    if name == path:
+                        files.append(RemoteFile(name, rel, size, "reference"))
+                        break
     if not files:
         sys.exit(f"ERROR: {REPO}@{ref} 没有列出任何素材,jsDelivr 目录 API 返回了 {len(payload.get('files', []))} 项")
     return version, files
@@ -113,8 +153,8 @@ def download(remote: RemoteFile, ref: str, timeout: float = 90.0) -> bytes:
     for template in MIRRORS:
         url = template.format(repo=REPO, ref=ref, path=quoted(remote.path))
         try:
-            return http_get(url, timeout=timeout)
-        except (urllib.error.URLError, TimeoutError, OSError) as exc:  # 换镜像重试
+            return retry(lambda: http_get(url, timeout=timeout), remote.path, attempts=3, delay=2.0)
+        except (urllib.error.URLError, TimeoutError, OSError, RuntimeError) as exc:  # 换镜像重试
             last = exc
     raise RuntimeError(f"{remote.path}: {last}")
 
@@ -141,15 +181,14 @@ def run(args: argparse.Namespace) -> int:
     ref = args.ref
     log(f"列出 {REPO}@{ref} 的文件…")
     version, files = list_files(ref)
-    assets = [f for f in files if f.path.startswith(ASSET_ROOTS) or f.path in EXTRA_FILES]
-    scripts = [f for f in files if f.path.startswith(SCRIPT_ROOT)]
-    if not args.chunks:
-        scripts = []
-    wanted = assets + scripts
+    assets = [f for f in files if f.kind == "asset"]
+    references = [f for f in files if f.kind == "reference"]
+    scripts = [f for f in files if f.kind == "script"] if args.chunks else []
+    wanted = assets + references + scripts
     if args.limit_images and args.limit_images < len(assets):
         # 只做冒烟测试用:按路径排序取前 N 个图
         assets = sorted(assets, key=lambda f: f.rel)[: args.limit_images]
-        wanted = assets + scripts
+        wanted = assets + references + scripts
     if not wanted:
         sys.exit("ERROR: 没有要下载的文件")
 

@@ -3,6 +3,11 @@
  "ref": "main",
  "requested_ref": "main",
  "files": {
+  "LICENSE": {
+   "path": "LICENSE",
+   "bytes": 35149,
+   "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+  },
   "bg/ヒロイン_めぐるの部屋a.jpg": {
    "path": "src/common/bg/ヒロイン_めぐるの部屋a.jpg",
    "bytes": 16054,
@@ -543,6 +548,156 @@
    "bytes": 10404,
    "sha256": "6ec23f9c555485ae90ae8d04f5ed51d31e73d8d420468d19f4425fdd65b936fe"
   },
+  "images/Switch_OFF.png": {
+   "path": "src/common/images/Switch_OFF.png",
+   "bytes": 5033,
+   "sha256": "b8f008e295019cc89f426dfd73ab9e8dafc43fe2b348be13113ede73a51ea4c6"
+  },
+  "images/Switch_ON.png": {
+   "path": "src/common/images/Switch_ON.png",
+   "bytes": 5090,
+   "sha256": "d3be10458c134d96554d15e6f7b3387f87f40ca6066f8613173b1b4bcdce82bf"
+  },
+  "images/add_bookmark.png": {
+   "path": "src/common/images/add_bookmark.png",
+   "bytes": 3813,
+   "sha256": "ec69cdc08fbee857f32852ff923c2f223e4f60915d8eb40ff9422d088ac630f4"
+  },
+  "images/back.png": {
+   "path": "src/common/images/back.png",
+   "bytes": 4246,
+   "sha256": "bd2d2a28380262856493dfebc33430372755d58c568675dcc731dc28ef8ea75d"
+  },
+  "images/bin.png": {
+   "path": "src/common/images/bin.png",
+   "bytes": 2310,
+   "sha256": "1f8b16b17878619cf7f6382382b9ece660c7d93e72d24ef3dbf3a5d2dac08b03"
+  },
+  "images/brightness.png": {
+   "path": "src/common/images/brightness.png",
+   "bytes": 4629,
+   "sha256": "87c62823e559e2a1a448dbddb7e5624cedf29736244cab2b32881ac246da539e"
+  },
+  "images/brightness_off.png": {
+   "path": "src/common/images/brightness_off.png",
+   "bytes": 4143,
+   "sha256": "cdfb3264a9b164043770e2ada8d6b245faa240b7680de941b112a85fb762aaf0"
+  },
+  "images/bt.png": {
+   "path": "src/common/images/bt.png",
+   "bytes": 511,
+   "sha256": "41165881076b1ea9aa1a9ed09c981c8ba91b5111441c4776f0067212bbea8c5d"
+  },
+  "images/check.png": {
+   "path": "src/common/images/check.png",
+   "bytes": 637,
+   "sha256": "3f6551f53bd4fb7400757a913e06fb95f78dd09f37d5153b1b32216c1ce3cfc8"
+  },
+  "images/choose.png": {
+   "path": "src/common/images/choose.png",
+   "bytes": 15993,
+   "sha256": "98d33a38c7b7a143ea421e7c483e9cdaa7c2ccc9c7ad9037d3c101d5c9cd03ef"
+  },
+  "images/conform.png": {
+   "path": "src/common/images/conform.png",
+   "bytes": 5156,
+   "sha256": "b9f11f099fab51687d00015ebd6bca8c7492c34d0148d27d14001aaab49f8e34"
+  },
+  "images/conform2.png": {
+   "path": "src/common/images/conform2.png",
+   "bytes": 5789,
+   "sha256": "627f1890bb9ae5c5583d8ab916ab2ddb1be482df7bdb312e1075f563d365a2be"
+  },
+  "images/connect.png": {
+   "path": "src/common/images/connect.png",
+   "bytes": 15677,
+   "sha256": "df206701511a00775ff7db5b37979317d3c24410e0f40557046963070205b47d"
+  },
+  "images/delete.png": {
+   "path": "src/common/images/delete.png",
+   "bytes": 4229,
+   "sha256": "fc3e405610c8660a7aaa8ba9a8631b374788fa3ac08e5946bed9ddb8beff9e9f"
+  },
+  "images/download.png": {
+   "path": "src/common/images/download.png",
+   "bytes": 9344,
+   "sha256": "02fc46487f76fdfa386aa703a019940b240e93c7bf01d2d870aa92bdd1d6edeb"
+  },
+  "images/edit.png": {
+   "path": "src/common/images/edit.png",
+   "bytes": 4433,
+   "sha256": "63f6ec1f327d0fd04b6cf00d50848fc520859d752f8eef717ee47020ee830c0e"
+  },
+  "images/empty.png": {
+   "path": "src/common/images/empty.png",
+   "bytes": 2772,
+   "sha256": "fd70bb55e583245809915f6a04e4c0004e982d3a15af7341a5c3f523ffd3f640"
+  },
+  "images/enter.png": {
+   "path": "src/common/images/enter.png",
+   "bytes": 295,
+   "sha256": "4a081c8ee839798692d8f78f05486bdc322f7b9d376467c6f1d786f6425e5a80"
+  },
+  "images/error.png": {
+   "path": "src/common/images/error.png",
+   "bytes": 11987,
+   "sha256": "6196829593e0a7e585fea8aaba489aaf80d8d950fe422018cacdb8931bc201c6"
+  },
+  "images/hd.png": {
+   "path": "src/common/images/hd.png",
+   "bytes": 512,
+   "sha256": "1cc1e7e8214f08f1050983df64eb0d71bf41cd6398045950af98c50d4da0df6d"
+  },
+  "images/info.png": {
+   "path": "src/common/images/info.png",
+   "bytes": 3916,
+   "sha256": "f782c362ed1bfd4edabe9c5f103d68f4f8ff861fd12f02e28f2c19a91e8981e6"
+  },
+  "images/minis.png": {
+   "path": "src/common/images/minis.png",
+   "bytes": 3736,
+   "sha256": "9d24bb29f5a5bc6f8a479aace92a63f6bbb94c2d7457d196a0c3b646c157fc53"
+  },
+  "images/more.png": {
+   "path": "src/common/images/more.png",
+   "bytes": 4212,
+   "sha256": "19fe0d2ad11bd935701e3af86d61648b3be9754e89bafeda4900859805a60ea6"
+  },
+  "images/next.png": {
+   "path": "src/common/images/next.png",
+   "bytes": 5260,
+   "sha256": "892d75ba90e97fe3801dc93a1086a08459f6ba0244fae7c282acd64d78c3d360"
+  },
+  "images/plus.png": {
+   "path": "src/common/images/plus.png",
+   "bytes": 3831,
+   "sha256": "507970c908479f5916fcb4ed2d2c76a350e05451b74868b8f0905f7f9c324f70"
+  },
+  "images/pre.png": {
+   "path": "src/common/images/pre.png",
+   "bytes": 5303,
+   "sha256": "3f59e83a39182b9b792e39263fc96de2d4675cf71bc97d9a38e20e7461988b7b"
+  },
+  "images/push.png": {
+   "path": "src/common/images/push.png",
+   "bytes": 5452,
+   "sha256": "0d2d7e8b8aa5e453edda22f6574a8402d4f2a0fd7af4b244fbad2a642cd2a6e4"
+  },
+  "images/reset.png": {
+   "path": "src/common/images/reset.png",
+   "bytes": 4507,
+   "sha256": "f8edd033f850b4ada692c84fdac86889a44ede1e4e300e48f33253dbae525590"
+  },
+  "images/succ.png": {
+   "path": "src/common/images/succ.png",
+   "bytes": 10024,
+   "sha256": "be6b2e969f5352ea2e47ced9d3379eff290814341c744613a45433b477a23c2c"
+  },
+  "logo.png": {
+   "path": "src/common/logo.png",
+   "bytes": 6322,
+   "sha256": "1b2de1b91047273a3aaa3f9828319aa1ddf9ed284120dcefe618066054fc4049"
+  },
   "scn/001.共通－オナニーマスター.ks.txt": {
    "path": "src/common/scn/001.共通－オナニーマスター.ks.txt",
    "bytes": 64246,
@@ -1047,6 +1202,11 @@
    "path": "src/common/scn/508.和奏－アフター.ks.txt",
    "bytes": 52635,
    "sha256": "b43f8c84a8d62bd59efe78794d0668e8206ab5db659131c2048f5053782e3beb"
+  },
+  "script-format-spec-v1.1.txt": {
+   "path": "docs/剧本格式规范v1.1.md",
+   "bytes": 5797,
+   "sha256": "4f73cd59fdb3e397710ea3acdc8afdadfc269944baceef13f01a01b655b50198"
   },
   "sd/sd101a.jpg": {
    "path": "src/common/sd/sd101a.jpg",
@@ -2512,6 +2672,26 @@
    "path": "src/common/title_bg.jpg",
    "bytes": 24774,
    "sha256": "2bfedf121f0e9ee672634b3130866b5778687c836537d492f5843a778beb3443"
+  },
+  "upstream-screenshots/about.png": {
+   "path": "screenshots/about.png",
+   "bytes": 204900,
+   "sha256": "7d667dedb3095f484c7c2edde7741efbaa7d7b291f624313900390684ece626c"
+  },
+  "upstream-screenshots/choice.png": {
+   "path": "screenshots/choice.png",
+   "bytes": 224815,
+   "sha256": "bc2ddea85ecff4827505a5fbab33300a468827ddaa8f5489514d50ee8bc4a82b"
+  },
+  "upstream-screenshots/index.png": {
+   "path": "screenshots/index.png",
+   "bytes": 322941,
+   "sha256": "7abbed7fce2647bd64a66a0558ca1a635e73464f9357d624552acf95d8926fda"
+  },
+  "upstream-screenshots/menu.png": {
+   "path": "screenshots/menu.png",
+   "bytes": 152615,
+   "sha256": "00b076a92c28242cda4a5a16e64d0c77d3107da00a764dd82968f2f126e468b0"
   }
  }
 }

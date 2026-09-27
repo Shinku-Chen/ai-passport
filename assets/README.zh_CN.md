@@ -33,18 +33,25 @@
 
 ## 第三方源素材(`sanoba-source/`)
 
-《魔女的夜宴》移植分支(`feature/sanoba-witch`)把"打包用的上游素材"一并入库,这样
-clone 下来就能离线重建资源包:
+《魔女的夜宴》移植分支(`feature/sanoba-witch`)把“打包用的上游素材”与其余游戏素材一并入库,
+这样 clone 下来既能离线重建资源包,也能看到这些包的取材来源:
 
 | 路径 | 内容 | 来源与版权 |
 | --- | --- | --- |
 | `sanoba-source/bg/` | 107 张背景,336 × 480 JPEG | Yuzusoft,取自手环移植版 [`hrk666666/Sanoba-Witch-MiBand-10`](https://github.com/hrk666666/Sanoba-Witch-MiBand-10)(其上游是已存档的 `futrw4v/Sanoba-Witch-MiBand-9Pro`) |
 | `sanoba-source/sd/` | 292 张 SD(Q 版)演出图,240 × 144 JPEG | 同上 |
 | `sanoba-source/scn/` | 101 章剧本,由原版 KiriKiri `.ks` 转成的节点数组 JSON | 同上;简体中文文本为暗鸽汉化组成果 |
+| `sanoba-source/images/` | 29 张源工程图标与装饰 PNG —— 游戏素材,阅读器不使用 | 同上 |
 | `sanoba-source/title_bg.jpg` | 标题主视觉,336 × 480 JPEG | 同上 |
+| `sanoba-source/logo.png` | 源工程 logo —— 游戏素材,阅读器不使用 | 同上 |
 | `sanoba-source/game.txt` | 内容包清单:场景顺序与 019 选线规则 | 同上 |
-| `sanoba-source/MANIFEST.json` | 每个文件的字节数与 sha256(记录取源版本) | 由 [`tools/sanoba_fetch_source.py`](../tools/sanoba_fetch_source.py) 生成 |
+| `sanoba-source/upstream-screenshots/` | 上游 README 用的 4 张截图,供对照参考 | 同上 |
+| `sanoba-source/script-format-spec-v1.1.txt` | 上游的剧本格式规范(上游原文件名为 `剧本格式规范v1.1.md`),本仓库打包器实现的就是这个格式 | 同上 |
+| `sanoba-source/LICENSE` | 上游 GPL-3.0 许可证正本,覆盖其素材与文档 | 上游仓库 |
+| `sanoba-source/MANIFEST.json` | 每个文件的上游路径、字节数与 sha256(记录取源版本) | 由 [`tools/sanoba_fetch_source.py`](../tools/sanoba_fetch_source.py) 生成 |
 
+- **快应用代码不入库**:`src/**/*.ux`、`src/**/*.js`、`src/engine/`、`tests/`、`tools/`
+  等上游代码不在这里,只镜像游戏自身的素材。
 - 来源、哈希与上游 commit 见 `MANIFEST.json`;要刷新这份拷贝用
   `python tools/sanoba_fetch_source.py --dest assets/sanoba-source --chunks`。
 - 直接从这里重建资源包:

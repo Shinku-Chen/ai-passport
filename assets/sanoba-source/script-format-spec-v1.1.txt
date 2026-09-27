@@ -1,0 +1,138 @@
+# VN 引擎剧本格式规范 v1.1
+
+> 适用对象：`src/engine/` 引擎核心。任何游戏内容包（game.txt + scn/ + 资源目录）只要符合本规范即可被引擎运行。
+> v1.1 与 v1.0（上游 1.1.2+5 格式）**完全向后兼容**：节点 0-6 语义不变，新增 7-10。
+
+## 1. 剧本文件
+
+- 位置：`src/common/scn/*.txt`（**必须用 .txt 扩展名存 JSON**——实体机读取 .json 扩展名文件存在兼容问题）
+- 内容：一个 JSON 数组，元素为节点
+- 示例：
+
+```json
+[
+  [0, "chapter1"],
+  [1, "第一章"],
+  [2, "空_青空"],
+  [7, "meguru_smile", "center", "fadein"],
+  [8, "bgm_001", "bgm", "loop"],
+  [3, "因幡めぐる", "「早上好！」", [["meguru_smile", "center", "change"]]],
+  [4, [["「一起去吃饭吧」", "eat", "f.meg_flag++"], ["「今天就算了」", "refuse", ""]]],
+  [6, "chapter2"]
+]
+```
+
+## 2. 节点类型
+
+| 类型 | 含义 | 结构 | 行为 |
+|------|------|------|------|
+| 0 | 标签/跳转点 | `[0, "label"]` | 无显示，作为跳转目标 |
+| 1 | 章节标题 | `[1, "章节标题"]` | 更新章节名 |
+| 2 | 背景 | `[2, "bg_name"]` | 切换背景（`/common/bg/bg_name.jpg`） |
+| 3 | 对话 | `[3, "说话人", "内容", [立绘列表?]]` | 显示说话人 + 打字机文本；立绘列表可选 |
+| 4 | 选项 | `[4, [["文字","跳转标签","表达式","条件?"], ...]]` | 弹出选项；表达式在选中后执行；条件为真才显示该项 |
+| 5 | 事件 CG | `[5, "sdXXX" / "evXXX"]` | 显示 SD 图 / 记录 EV（渲染层保留） |
+| 6 | 跳转 | `[6, "target_label"]` | 跳到本场景内的标签 |
+| 7 | 立绘 | `[7, "角色id_表情", "left\|center\|right", "fadein\|fadeout\|change"]` | 操作角色立绘槽位 |
+| 8 | 音乐 | `[8, "曲名", "bgm\|se", "loop\|once"]` | 播放/切换音频（资源在 `/common/audio/曲名.mp3`） |
+| 9 | 特效 | `[9, "whiteflash\|blackout\|fadein\|fadeout\|vibrate", 时长ms?]` | 触发特效（UI 层实现动画） |
+| 10 | 变量 | `[10, "f.x = 1, f.y++, f.z = rand(1,5)"]` | 执行变量指令（不阻塞） |
+
+### 对话节点第 4 字段（立绘列表）
+
+```json
+[3, "说话人", "文本", [["角色_表情", "位置", "动作"], ...]]
+```
+
+- 动作：`fadein`（淡入）/ `fadeout`（移除）/ `change`（换表情，保持原位）
+- 位置：`left` / `center` / `right`（最多三个槽位）
+
+## 3. 表达式语法（节点 4 第 3 字段、节点 10）
+
+指令（逗号分隔多条）：
+
+| 写法 | 含义 |
+|------|------|
+| `f.x = 1` | 赋值（数字或字符串） |
+| `f.x++` / `f.x--` | 自增/自减 |
+| `f.x += 2` / `f.x -= 2` | 加减赋值 |
+| `f.x = rand(1, 10)` | 随机整数 [a, b] |
+
+条件表达式（选项第 4 字段），返回 true/false：
+
+```
+f.flag >= 3
+f.item == "key" && !f.done
+f.love > f.hate || f.days > 5
+```
+
+支持：`== != > < >= <=`、`&& || !`、变量 `f.x`、数字、字符串、`rand(a,b)`、括号。
+
+## 4. 内容包（game.txt）
+
+位置：`src/common/game.txt`（JSON，同样用 .txt 扩展名）。
+
+```json
+{
+  "id": "sanoba-witch",
+  "title": "游戏标题",
+  "version": "1.0.0",
+  "engine": { "format": "vn-1.1", "minRuntime": "1.0" },
+  "initialState": { "flags": { "默认变量": 0 } },
+  "resources": { "base": "/common", "dirs": { "bg": "bg", "sd": "sd", "ev": "ev", "ch": "ch", "audio": "audio" } },
+  "scenarios": {
+    "列表名": [ { "id": "场景ID", "path": "剧本文件名.ks.txt" } ]
+  },
+  "routes": {
+    "场景ID": { "type": "flagRoute", "targets": [ { "id": "路线名", "flag": "变量名", "next": "下一场景ID" } ], "fallback": "默认下一场景ID" }
+  }
+}
+```
+
+场景推进规则（引擎通用逻辑）：
+- **默认**：场景在其所属列表内按顺序推进，最后一个结束即游戏结束。
+- **routes 特殊规则**：
+  - `flagRoute`：比较各 target 的 flag 变量，取最高者进入其 `next`；全 0 或并列最高时走 `fallback`。
+
+## 5. 资源目录约定
+
+| 类型 | 目录 | 格式 |
+|------|------|------|
+| 背景 bg | `src/common/bg/` | jpg |
+| SD 图 | `src/common/sd/` | jpg |
+| EV 图 | `src/common/ev/` | jpg |
+| 立绘 | `src/common/ch/` | **png（透明）** |
+| 音频 | `src/common/audio/` | mp3 |
+
+资源命名即引用名（不含扩展名）。立绘命名：`角色id_表情.png`（如 `meguru_smile.png`）。
+
+## 6. 引擎 API（供 UI 层调用）
+
+| 方法 | 说明 |
+|------|------|
+| `runtime.load(scnId, startIndex?, saved?)` | 加载场景 |
+| `runtime.advance()` | 玩家点击推进（未打完→打完整句；否则下一行） |
+| `runtime.markTextComplete()` | 打字机完成时调用 |
+| `runtime.choose(i)` | 选择第 i 个选项 |
+| `runtime.doFastForward()` / `stopFastForward()` | 快进 |
+| `runtime.skipToNextSelect()` | 跳过至下一选项 |
+| `runtime.save()` / `runtime.restore(state)` | 存档 / 读档 |
+| `saves.save(slot, state, meta)` / `saves.load(slot)` | 槽位存档 |
+| `audio.play(name, kind, mode)` | 播放音乐 |
+| `fx.trigger(name, param)` | 触发特效 |
+| `resources.preloadList(scriptData)` | 场景预加载清单 |
+
+## 7. 平台约束备忘（Vela QuickApp）
+
+- 音频为**单播放器**：同一时刻只能响一个声音。引擎策略为 BGM 为主、音效打断后自动恢复，语音/混音不实现。
+- 手环内存小：图片务必低分辨率压缩；引擎提供预加载清单，UI 应按场景懒加载。
+- 动画用 @keyframes（opacity/transform）；transition 不支持 transform。
+- 剧本、配置一律 .txt 扩展名存 JSON。
+
+## 8. 内容包制作流程（新游戏）
+
+1. 写剧本 → `src/common/scn/*.txt`（本规范节点格式）
+2. 放资源 → `bg/ sd/ ev/ ch/ audio/`
+3. 写 `game.txt`（场景清单 + routes + 初始变量）
+4. 跑 `tools/validate_game.py` 校验
+5. 引擎无需改动即可运行
