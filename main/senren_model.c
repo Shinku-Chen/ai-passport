@@ -6,6 +6,7 @@
 
 #include "senren_inflate.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 #define SENREN_SCN_HEADER_SIZE 20u
@@ -243,20 +244,33 @@ bool senren_scn_open(senren_scn_t *scn, const uint8_t *data, uint32_t size)
         }
         switch (type) {
         case SENREN_SCN_SEC_CHAR:
-            view.chars = data + offset;
+            // 段体 = u32 count + count × u16 码位
+            if (length < 4 || count == 0 || length < 4u + (uint64_t)count * 2u) {
+                return false;
+            }
+            view.chars = data + offset + 4;
             view.char_count = count;
             break;
         case SENREN_SCN_SEC_NAME:
+            // 段体 = 字典块连排(每块 u16 count + 条目),没有额外前缀
             view.names = data + offset;
             view.names_size = length;
             break;
         case SENREN_SCN_SEC_FLAG:
-            view.flag_pages = data + offset;
+            // 段体 = u32 count + count × u32 页号
+            if (length < 4 || count == 0 || length < 4u + (uint64_t)count * 4u) {
+                return false;
+            }
+            view.flag_pages = data + offset + 4;
             view.flag_count = count;
             break;
         case SENREN_SCN_SEC_CHUNK:
-            view.chunks = data + offset;
-            view.chunks_size = length;
+            // 段体 = u16 count + count × 16 字节记录
+            if (length < 2 || count == 0 || length < 2u + (uint64_t)count * SENREN_SCN_CHUNK_RECORD) {
+                return false;
+            }
+            view.chunks = data + offset + 2;
+            view.chunks_size = length - 2u;
             view.chunk_count = count;
             break;
         case SENREN_SCN_SEC_BLOB:
@@ -617,7 +631,15 @@ static bool player_load_chunk(senren_player_t *player, const senren_scn_t *scn, 
     if (player->loaded_chunk == chunk && player->loaded_len > 0) {
         return true;
     }
-    uint32_t length = senren_scn_chunk(scn, chunk, player->raw, SENREN_CHUNK_RAW_MAX);
+    if (player->raw == NULL) {
+        // 缓冲欠着用:本板静态段被画布与 LVGL 内存池占满,堆还有余地
+        player->raw = (uint8_t *)malloc(SENREN_CHUNK_RAW_MAX);
+        if (player->raw == NULL) {
+            return false;
+        }
+        player->raw_capacity = SENREN_CHUNK_RAW_MAX;
+    }
+    uint32_t length = senren_scn_chunk(scn, chunk, player->raw, player->raw_capacity);
     if (length == 0) {
         return false;
     }
@@ -808,8 +830,25 @@ void senren_player_reset(senren_player_t *player)
     if (player == NULL) {
         return;
     }
+    // 保留已申请的解压缓冲(重置的是阅读进度,不是内存)
+    uint8_t *raw = player->raw;
+    uint32_t capacity = player->raw_capacity;
     memset(player, 0, sizeof(*player));
+    player->raw = raw;
+    player->raw_capacity = capacity;
     player->loaded_chunk = 0xFFFF;
+}
+
+void senren_player_release(senren_player_t *player)
+{
+    if (player == NULL) {
+        return;
+    }
+    free(player->raw);
+    player->raw = NULL;
+    player->raw_capacity = 0;
+    player->loaded_chunk = 0xFFFF;
+    player->loaded_len = 0;
 }
 
 bool senren_player_start(senren_player_t *player, const senren_scn_t *scn, uint16_t chapter,

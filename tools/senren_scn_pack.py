@@ -27,7 +27,7 @@ independent raw-deflate block addressable by (offset, length):
     SEC_CHUNK chunk table : u16 count, per chunk
               { data_off u32, data_len u32, raw_len u32, node_count u32 }
               (data_off is relative to SEC_BLOB)
-    SEC_BLOB  112 raw-deflate blocks (one per chunk, zlib wbits=-15),
+    SEC_BLOB  112 zlib blocks (one per chunk, zlib.compress level 9),
               concatenated, every block 4-byte aligned
     SEC_META  key=value UTF-8 text, one per line (source repo, ref, counts)
 
@@ -565,7 +565,9 @@ def build_sections(story: Story, meta_blob: bytes) -> tuple[list[tuple[int, byte
         for node in nodes:
             encode_node(record, node, story)
         raw = bytes(record.buf)
-        compressor = zlib.compressobj(9, zlib.DEFLATED, -15)
+        # 用 zlib 格式(带 2 字节头 + adler32)而不是裸 deflate:固件侧与图片包的
+        # 掩码/像素流走同一个 inflate 调用(TINFL_FLAG_PARSE_ZLIB_HEADER),少一个分支
+        compressor = zlib.compressobj(9)
         payload = compressor.compress(raw) + compressor.flush()
         blob += b"\x00" * (-len(blob) % 4)   # 每块 4 字节对齐(段内相对地址)
         chunk_table.append((len(blob), len(payload), len(raw), len(nodes)))
@@ -720,7 +722,7 @@ class Pack:
     def decompress(self, index: int) -> bytes:
         info = self.chunks[index]
         payload = self.raw[self.blob_off + info.data_off:self.blob_off + info.data_off + info.data_len]
-        return zlib.decompress(payload, -15)
+        return zlib.decompress(payload)   # 逐块 zlib 流(带 adler32)
 
     def records(self, index: int) -> list:
         raw = self.decompress(index)
@@ -892,7 +894,7 @@ def build(args: argparse.Namespace) -> int:
         "target_enum": "0=same-chunk,1=cross-chunk,2=ending",
         "unknown_actions": ",".join(story.unknown_actions) if story.unknown_actions else "none",
         "text_encoding": "u16-count + u16 char-table indices, bijective",
-        "deflate": "raw, one block per chunk, wbits=-15, level 9",
+        "deflate": "zlib, one block per chunk, level 9",
     }
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)

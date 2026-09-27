@@ -168,10 +168,13 @@ typedef struct {
     uint32_t resume_node;
     // 条件/选项设置的标志位(下标 = flag_id)
     uint8_t flags[SENREN_FLAG_MAX];
-    // 解压缓冲与它当前装的是哪一块(0xFFFF = 空);由状态机自己维护
+    // 解压缓冲与它当前装的是哪一块(0xFFFF = 空);由状态机自己维护。
+    // 缓冲首次用到时 malloc:32 KB 放在结构体里会把 DRAM 静态段挤爆
+    // (本板静态段只有几百 KB,还装着 153 KB 画布与 LVGL 内存池)。
     uint16_t loaded_chunk;
     uint32_t loaded_len;
-    uint8_t raw[SENREN_CHUNK_RAW_MAX];
+    uint8_t *raw;
+    uint32_t raw_capacity;
 } senren_player_t;
 
 // 存档:位置 + 标志位 + 重新开画面所需的当前资源名
@@ -224,6 +227,9 @@ bool senren_player_skip_scene(senren_player_t *player, const senren_scn_t *scn,
 // 从存档恢复:位置与画面状态直接取存档,随后由 advance 推进到第一个可见步骤。
 bool senren_player_load(senren_player_t *player, const senren_scn_t *scn, const senren_save_t *save,
                         const senren_layout_t *layout);
+
+// 释放状态机自己申请的缓冲(掉电前/卸载时调用;重复调用安全)。
+void senren_player_release(senren_player_t *player);
 
 // 当前句还有下一页时翻页并返回 true;已经是最后一页返回 false。
 bool senren_player_next_page(senren_player_t *player);
