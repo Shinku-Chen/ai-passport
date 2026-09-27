@@ -34,8 +34,7 @@
 #define DRACU_UI_CHOICE_MAX DRACU_CHOICE_MAX
 
 typedef enum {
-    DRACU_PAGE_WARNING = 0,
-    DRACU_PAGE_TITLE,
+    DRACU_PAGE_TITLE = 0,
     DRACU_PAGE_CHAPTERS,
     DRACU_PAGE_GAME,
     DRACU_PAGE_MENU,
@@ -86,7 +85,6 @@ typedef struct {
 
     dracu_list_t lists[DRACU_LIST_COUNT];
 
-    struct _lv_obj_t *page_warning;
     struct _lv_obj_t *page_title;
     struct _lv_obj_t *page_chapters;
     struct _lv_obj_t *page_game;
@@ -99,8 +97,6 @@ typedef struct {
     struct _lv_obj_t *auto_hint;      // 自动阅读模式指示
     struct _lv_obj_t *notice;         // 瞬时提示(保存成功 / 无法跳过等)
 
-    struct _lv_obj_t *warning_body;
-    struct _lv_obj_t *warning_hint;
     struct _lv_obj_t *ending_kicker;
     struct _lv_obj_t *ending_name;
     struct _lv_obj_t *ending_hint;
@@ -160,9 +156,8 @@ void dracu_ui_set_list(dracu_ui_t *ui, dracu_list_id_t id, const char *title, co
 void dracu_ui_set_list_selected(dracu_ui_t *ui, dracu_list_id_t id, int selected);
 void dracu_ui_set_list_value(dracu_ui_t *ui, dracu_list_id_t id, int row, const char *value);
 
-// 结局页与警告页
+// 结局页
 void dracu_ui_set_ending(dracu_ui_t *ui, const char *kicker, const char *name, const char *hint);
-void dracu_ui_set_warning(dracu_ui_t *ui, const char *body, const char *hint);
 void dracu_ui_set_about(dracu_ui_t *ui, const char *body);
 // 关于页滚动:y 会被夹在 [0, 最大滚动量]，返回实际位置。三键设备没有触摸滑屏,
 // 所以滚动完全由按键驱动(dracu_app 调它)。

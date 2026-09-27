@@ -30,7 +30,7 @@ void dracu_settings_default(dracu_settings_t *settings)
     if (!settings) return;
     settings->text_speed = 1;   // 中速
     settings->font_large = 0;
-    settings->seen_tips = 0;
+    settings->seen_tips = 0;   // 兼容旧存档保留,界面不再使用
 }
 
 bool dracu_save_init(void)

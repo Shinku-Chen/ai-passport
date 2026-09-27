@@ -228,17 +228,6 @@ static void build_overlays(dracu_ui_t *ui, lv_obj_t *screen)
 
 static void build_pages(dracu_ui_t *ui, lv_obj_t *screen)
 {
-    // 警告页(首次运行)
-    ui->page_warning = new_box(screen, 0, 0, DRACU_UI_W, DRACU_UI_H, COL_PAGE_BG, LV_OPA_COVER);
-    lv_obj_set_style_pad_all(ui->page_warning, 0, 0);
-    ui->warning_body = new_label(ui->page_warning, ui->font_cjk, COL_TEXT, "");
-    lv_obj_set_size(ui->warning_body, DRACU_UI_W - 24, 240);
-    lv_obj_set_pos(ui->warning_body, 12, 30);
-    lv_label_set_long_mode(ui->warning_body, LV_LABEL_LONG_WRAP);
-    lv_obj_set_style_text_line_space(ui->warning_body, 4, 0);
-    ui->warning_hint = new_label(ui->page_warning, ui->font_cjk, COL_ACCENT, "");
-    lv_obj_align(ui->warning_hint, LV_ALIGN_BOTTOM_MID, 0, -18);
-
     // 标题页:标题图整屏铺底(在画布层),这里是叠在下方那条正文带上的菜单。
     ui->page_title = new_box(screen, 0, DRACU_BOX_Y, DRACU_UI_W, DRACU_BOX_H, COL_BOX_BG,
                              LV_OPA_TRANSP);
@@ -333,7 +322,6 @@ void dracu_ui_show_page(dracu_ui_t *ui, dracu_screen_t page)
     set_hidden(ui->choice_box, page != DRACU_PAGE_GAME || ui->choice_count == 0);
     // 名牌在正文页由 set_text 按"这句有没有说话人"决定显隐,离开正文页一律收起。
     if (page != DRACU_PAGE_GAME) set_hidden(ui->name_plate, true);
-    set_hidden(ui->page_warning, page != DRACU_PAGE_WARNING);
     set_hidden(ui->page_title, page != DRACU_PAGE_TITLE);
     set_hidden(ui->lists[DRACU_LIST_TITLE].page, page != DRACU_PAGE_TITLE);
     set_hidden(ui->page_chapters, page != DRACU_PAGE_CHAPTERS);
@@ -350,7 +338,6 @@ void dracu_ui_show_page(dracu_ui_t *ui, dracu_screen_t page)
     // 整屏页面按创建顺序叠放,把当前页提到最前,避免被后建的页面盖住。
     lv_obj_t *front = NULL;
     switch (page) {
-    case DRACU_PAGE_WARNING: front = ui->page_warning; break;
     case DRACU_PAGE_TITLE: front = ui->lists[DRACU_LIST_TITLE].page; break;
     case DRACU_PAGE_CHAPTERS: front = ui->page_chapters; break;
     case DRACU_PAGE_MENU: front = ui->lists[DRACU_LIST_MENU].page; break;
@@ -542,13 +529,6 @@ void dracu_ui_set_ending(dracu_ui_t *ui, const char *kicker, const char *name, c
     lv_label_set_text(ui->ending_kicker, kicker ? kicker : "");
     lv_label_set_text(ui->ending_name, name ? name : "");
     lv_label_set_text(ui->ending_hint, hint ? hint : "");
-}
-
-void dracu_ui_set_warning(dracu_ui_t *ui, const char *body, const char *hint)
-{
-    if (!ui) return;
-    lv_label_set_text(ui->warning_body, body ? body : "");
-    lv_label_set_text(ui->warning_hint, hint ? hint : "");
 }
 
 void dracu_ui_set_about(dracu_ui_t *ui, const char *body)

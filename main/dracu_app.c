@@ -506,15 +506,6 @@ static void key_list_move(dracu_app_t *app, int *selected, int count, int delta)
     dracu_ui_set_list_selected(&app->ui, id, *selected);
 }
 
-static void key_warning(dracu_app_t *app, const dracu_key_t *key)
-{
-    if (key->btn == BSP_BTN_OK && key->ev == BSP_BTN_CLICK) {
-        app->settings.seen_tips = 1;
-        (void)dracu_settings_store(&app->settings);
-        show_title(app);
-    }
-}
-
 static void title_select(dracu_app_t *app)
 {
     switch (app->title_sel) {
@@ -836,21 +827,9 @@ bool dracu_app_init(dracu_app_t *app, const uint8_t *pack_data, uint32_t pack_si
                  (unsigned)chars, sample);
     }
 
-    if (!app->settings.seen_tips) {
-        static const char tips[] =
-            "同人移植阅读器\n\n"
-            "本机运行的是《DRACU-RIOT!》阅读器,剧本与素材来自"
-            "小米手环同人移植工程,仅供个人学习与交流,请支持正版。\n\n"
-            "上/下 翻页\n"
-            "确定 继续\n"
-            "长按确定 菜单\n"
-            "长按上 快进\n"
-            "长按下 自动阅读";
-        dracu_ui_set_warning(&app->ui, tips, "知道了");
-        set_page(app, DRACU_PAGE_WARNING);
-    } else {
-        show_title(app);
-    }
+    // 开机直接进标题页 —— 不再有首次运行的「同人移植提示」页(2026-09-27 用户要求移除)。
+    // 操作说明保留在「系统设置 → 关于本作」里,不占一次开机交互。
+    show_title(app);
 
     ESP_LOGI(TAG, "就绪:页 %u / 块 %u(页表 %u) / 字符 %u / 字符串 %u / 选项 %u / 章节 %u",
              (unsigned)app->scn.page_count, (unsigned)app->scn.block_count,
@@ -887,7 +866,6 @@ void dracu_app_key(dracu_app_t *app, const dracu_key_t *key)
     }
 
     switch (app->page) {
-    case DRACU_PAGE_WARNING: key_warning(app, key); break;
     case DRACU_PAGE_TITLE: key_title(app, key); break;
     case DRACU_PAGE_CHAPTERS: key_chapters(app, key); break;
     case DRACU_PAGE_GAME: key_game(app, key); break;

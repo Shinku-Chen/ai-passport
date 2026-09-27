@@ -14,7 +14,7 @@
 typedef struct {
     uint8_t text_speed;   // 0=慢 1=中 2=快
     uint8_t font_large;   // 0=16px 1=20px
-    uint8_t seen_tips;    // 已看过首次启动的操作提示
+    uint8_t seen_tips;    // 兼容旧存档保留(首次运行提示页已移除,不再读写)
 } dracu_settings_t;
 
 void dracu_settings_default(dracu_settings_t *settings);
