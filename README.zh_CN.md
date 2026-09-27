@@ -153,6 +153,37 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 - **离线数据管线** —— 运行时不下载任何东西，`tools/atri_pack.py` 与 `tools/atri_font.py` 的产物提交进仓库，普通 checkout 直接能编。
 - **串口调试通道** —— `ATRISHOT <章> <幕>` 把任意一幕渲染进画面区并回传原始 240 × 320 帧，本版封面与历次版面验证靠的就是它；`ATRIJUMP` 可直接跳章。
 
+### limelight lemonade jam
+
+把小米手环上的《limelight lemonade jam》同人移植搬到 AI Passport 上的**竖屏视觉小说阅读器**：
+**230 个章节标记、68,229 句对白、约 120 万字、991 张打包图像、8 个选项点**，完全离线。剧本与素材取自
+[`skdkzzx/limelight-lemonade-jam-xiaomi-band10`](https://github.com/skdkzzx/limelight-lemonade-jam-xiaomi-band10)
+（面向小米手环的 Vela OS 触屏应用）；本分支用 C + LVGL 重写阅读引擎，改成三键操作。
+状态：**开发中** —— 已构建、刷机并通过真机验收，尚未打 tag。
+
+- 分支：[`cindy/curious-babbage`](https://github.com/Shinku-Chen/ai-passport/tree/cindy/curious-babbage)
+- 上游作品：[`skdkzzx/limelight-lemonade-jam-xiaomi-band10`](https://github.com/skdkzzx/limelight-lemonade-jam-xiaomi-band10) —— 本次移植所依据的手环版本，该仓库未声明许可；其美术与剧本随分支提交并打包进固件，来源以上游项目标注。
+- 素材工具链：[`tools/limelight_material_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_material_pack.py) 与 [`tools/limelight_script_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_script_pack.py)（打包成 `main/limelight_data/` 下的 4.05 MB + 1.81 MB），以及 [`tools/limelight_lvgl_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_lvgl_font.py)（Noto Sans SC 的 16px 中文字体子集，3,449 个码位）
+- 合并镜像：`FoloToy-AI-Passport-full.bin`，7,431,456 字节
+
+**操作方式（三键）：** 正文里**上 / 下短按**是下一句、**长按上**是快进（松手即停）、
+**长按下**开关自动阅读（打字完自动翻页，右下角显示「自动」，任意键停止，期间屏幕不熄灭）、
+**确定**打开菜单（继续阅读、保存进度、读取存档、章节跳转、CG 鉴赏、返回标题）、
+**长按确定**从列表返回；选项页上 / 下选择、确定确认。长按判定 500 ms、短按 180 ms ——
+由 BSP 显式下发，不用按键组件默认的 1,500 ms。
+
+**存档、章节与空闲：** 五个手动槽 + 一个自动槽（每次换幕自动写入，读取时单独一行提供）；
+存档页长按确定删除手动槽。章节跳转列表把上游剧本里的 230 个 `[CHAPTERx-y]` 标记显示成 `X-Y`，
+正文页左上角也显示同样的 `X-Y`。空闲 60 秒调暗、3 分钟熄屏、7 分钟深睡，任意键唤醒；
+自动阅读与快进不计入空闲，期间屏幕保持常亮。
+
+**亮点：**
+
+- **立绘贴屏幕右下角、下摆藏在对话框后面** —— 画面区只有 0~213 行，以下的立绘下摆用一个指向解码缓冲的 LVGL 图像对象绘制（不占额外 RAM），再被半透明正文带盖住，与原作版面一致。
+- **两张包共 5.9 MB，无 PSRAM** —— 背景与 CG 存 240 × 214 JPEG，立绘存 alpha 裁剪的 RGB565 + 1bpp 遮罩，剧本是 UTF-8 分块（每块 250 条）由 ESP32-C3 ROM 的 `tinfl` 解压，解压不占固件空间。
+- **上游文本在打包时清洗** —— 104 条带内联排版指令（`%f`、`$名字$`、`#rrggbbaa`）与 7 条混进正文的译者备注在打包阶段剔除，对白本身一字未改。
+- **串口验收通道** —— `LIMEIMAGE <偏移>` 回传原始帧、`LIMEPAGE` 跳对白或按名字切页、`LIMEAUTO on|off` 开关自动阅读、`LIMEBTN` 读按键 ADC 电压；每次亮度变化都带空闲毫秒数记日志，「自动阅读不调暗」就是靠它验证的。
+
 ## 说明
 
 - 每个应用都是基于上游基线的一个独立 `feature/*` 分支。不要把 demo 分支整支合入

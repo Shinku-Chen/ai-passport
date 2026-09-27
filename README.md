@@ -206,6 +206,43 @@ the original Mi Band app uses. Idle behaviour: 45 s dims the backlight, 2.5 min 
 - **Offline data pipeline** — nothing is downloaded at runtime; the output of `tools/atri_pack.py` and `tools/atri_font.py` is committed, so a plain checkout builds.
 - **Serial debugging channel** — `ATRISHOT <chapter> <scene>` renders any scene into the art area and streams the raw 240 × 320 frame back, which is how this release's cover and every layout check were captured; `ATRIJUMP` jumps straight to a chapter.
 
+### limelight lemonade jam
+
+A portrait visual novel ported from the Xiaomi Band release of *limelight lemonade jam*:
+**230 chapter markers, 68,229 lines of dialogue, about 1.2 million characters, 991 packed
+images and 8 choice points**, fully offline. The story and art come from
+[`skdkzzx/limelight-lemonade-jam-xiaomi-band10`](https://github.com/skdkzzx/limelight-lemonade-jam-xiaomi-band10),
+a touch app for Xiaomi's Vela OS; this branch re-implements the reading engine in C on LVGL
+and drives it with the three keys. Status: **in development** — built, flashed and accepted
+on hardware, no release tag yet.
+
+- Branch: [`cindy/curious-babbage`](https://github.com/Shinku-Chen/ai-passport/tree/cindy/curious-babbage)
+- Upstream work: [`skdkzzx/limelight-lemonade-jam-xiaomi-band10`](https://github.com/skdkzzx/limelight-lemonade-jam-xiaomi-band10) — the Xiaomi Band release this port is based on. That repository declares no licence; its artwork and script are committed with the branch, packed into the firmware, and credited to the upstream project as their source.
+- Asset toolchain: [`tools/limelight_material_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_material_pack.py) and [`tools/limelight_script_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_script_pack.py) (into `main/limelight_data/`, 4.05 MB + 1.81 MB) and [`tools/limelight_lvgl_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_lvgl_font.py) (16 px Chinese subset of Noto Sans SC, 3,449 code points)
+- Merged image: `FoloToy-AI-Passport-full.bin`, 7,431,456 bytes
+
+**Controls:** **UP / DOWN** advance line by line, **UP (hold)** fast-forwards while held and
+stops the moment you let go, **DOWN (hold)** toggles auto-read (advances once the line
+finishes typing, shows an auto marker bottom-right, any key stops it), **OK** opens the menu
+(continue, save, load, skip chapter, CG gallery, back to title), **OK (hold)** goes back from
+a list, and choices are picked with UP / DOWN and confirmed with OK. Press timing is 180 ms
+for a short press and 500 ms for a long press, which the BSP passes explicitly instead of
+using the button component's 1,500 ms default.
+
+**Saves, chapters and idle:** five manual slots plus one automatic slot written on every
+scene change (offered on its own row when loading); hold OK on a manual slot to delete it.
+The chapter jump list shows all 230 markers as `X-Y`, taken from the `[CHAPTERx-y]` field in
+the upstream script, and the in-game label shows the same `X-Y`. Idle behaviour: 60 s dims
+the backlight, 3 min turns it off, 7 min enters deep sleep, and any key wakes the device;
+auto-read and fast-forward count as activity, so the screen stays lit while they run.
+
+**Highlights:**
+
+- **Sprites sit at the bottom-right of the screen, behind the dialogue band** — the art canvas covers rows 0-213, so the rows below that are drawn by a second LVGL image object pointing into the decode buffer (no extra RAM) and are then covered by the translucent band, matching the original layout.
+- **Two packed images, 5.9 MB, without PSRAM** — backgrounds and CGs are stored as 240 × 214 JPEG, sprites as alpha-cut RGB565 with a 1 bpp mask, and the script is UTF-8 compressed in 250-entry blocks that the ESP32-C3 ROM `tinfl` inflater expands, so decompression costs no flash.
+- **The upstream text is cleaned at pack time** — 104 lines carrying inline layout directives (`%f`, `$name$`, `#rrggbbaa`) and 7 lines with a leaked translator memo are removed by the packer, which leaves the dialogue itself unchanged.
+- **Serial acceptance channel** — `LIMEIMAGE <offset>` streams the raw frame, `LIMEPAGE` jumps to a dialogue id or a named screen, `LIMEAUTO on|off` toggles auto-read and `LIMEBTN` reports the button ADC level; every backlight change is logged with the idle time, which is how the "auto-read must not dim" rule is verified.
+
 ## Notes
 
 - Each application is a separate `feature/*` branch off the upstream baseline.
