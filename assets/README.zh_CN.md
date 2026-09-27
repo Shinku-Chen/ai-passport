@@ -25,6 +25,7 @@
 | [`images/readme-hardware-specs.png`](images/readme-hardware-specs.png) | 2172 × 724，PNG RGBA | 保留为可选技术参考图，不再用于首页主视觉。于 2026-09-17 使用内置图像生成工具为本仓库生成；已根据文档中的硬件能力契约核对图中的六项标签与参数。 |
 | [`images/logo-wordmark.png`](images/logo-wordmark.png) | 1648 × 336，PNG RGBA | 从仓库原始 `images/logo.png` 中精确裁切并去除背景的黑色字标；用于中英文项目 README 的浅色主题。 |
 | [`images/logo-wordmark-dark.png`](images/logo-wordmark-dark.png) | 1648 × 336，PNG RGBA | 提取字标的白色版本；README 使用 `<picture>` 在 GitHub 深色主题下显示。 |
+| [`images/senren-banka-title.png`](images/senren-banka-title.png) | 402 × 560, PNG | 《千恋＊万花》(SAGA PLANETS)官方主视觉,2026-09-27 由开发者提供。它是本移植标题画面的构建源:`tools/senren_pack.py --title-art` 把它 cover 成 240 × 320,作为背景名字空间里的一个条目打进包,名字见 `main/senren_pack.h` 的 `SENREN_TITLE_ART_NAME`。美术版权归 SAGA PLANETS;本移植非商业、仅供学习交流(见打包器 docstring)。 |
 
 - 使用描述性命名，并记录尺寸、像素格式、转换步骤与目标路径。
 - 优先采用适合 240 × 320 RGB565 显示的格式，并纳入 Flash 与内部 RAM 考量。

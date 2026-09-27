@@ -57,6 +57,10 @@ enum {
 // 条目 flags
 #define SENREN_ASSET_ALIAS (1u << 0)  // 没有自己的载荷,画 base 指向的条目
 
+// 标题画面的背景条目名:由 tools/senren_pack.py 从 --title-art 打进背景名字空间。
+// 剧本不会引用这个名字,界面在标题页按下标查它。
+#define SENREN_TITLE_ART_NAME "标题画面"
+
 // SD 装饰在屏幕上的位置(源工程把它放在画布上方偏左,可左右拖动)
 #define SENREN_SD_X 0
 #define SENREN_SD_Y 24

@@ -199,10 +199,7 @@ static void build_overlays(atri_ui_t *ui, lv_obj_t *screen)
     lv_obj_set_style_text_opa(ui->auto_hint, LV_OPA_80, 0);
     set_hidden(ui->auto_hint, true);
 
-    // 标题页的画面区标题:图片包里没有标题画(标题页是黑底),标题文字改成 LVGL 标签。
-    ui->title_banner = new_label(screen, ui->font_cjk, COL_ACCENT, "千恋＊万花");
-    lv_obj_align(ui->title_banner, LV_ALIGN_TOP_MID, 0, 56);
-    set_hidden(ui->title_banner, true);
+    // 标题文字由标题图自带(官方主视觉上就是「千恋＊万花」),不再另外画横幅。
 
     ui->page_hint = new_label(screen, ui->font_tiny, COL_DIM, "");
     // 页码提示:右下角"自动"指示上方一行,避免两个标签重叠。
@@ -242,9 +239,9 @@ static void build_pages(atri_ui_t *ui, lv_obj_t *screen)
     ui->warning_hint = new_label(ui->page_warning, ui->font_cjk, COL_ACCENT, "");
     lv_obj_align(ui->warning_hint, LV_ALIGN_BOTTOM_MID, 0, -18);
 
-    // 标题页:画面区留给标题画,下面 110px 放菜单。
+    // 标题页:标题图整屏铺底(在画布层),这里是叠在下方那条正文带上的菜单。
     ui->page_title = new_box(screen, 0, ATRI_BOX_Y, ATRI_UI_W, ATRI_BOX_H, COL_BOX_BG,
-                             LV_OPA_80);
+                             LV_OPA_TRANSP);
     list_build(ui, &ui->lists[ATRI_LIST_TITLE], ui->page_title, 20, 6);
     set_hidden(ui->lists[ATRI_LIST_TITLE].title, true);
     set_hidden(ui->lists[ATRI_LIST_TITLE].hint, true);
@@ -325,7 +322,6 @@ void atri_ui_show_page(atri_ui_t *ui, atri_page_t page)
     set_hidden(ui->box, page != ATRI_PAGE_GAME);
     set_hidden(ui->auto_hint, page != ATRI_PAGE_GAME || !ui->auto_on);
     set_hidden(ui->progress, page != ATRI_PAGE_GAME);
-    set_hidden(ui->title_banner, page != ATRI_PAGE_TITLE);
     // 电量在标题页也显示(同一位于画面区右上角)。
     set_hidden(ui->battery, page != ATRI_PAGE_GAME && page != ATRI_PAGE_TITLE);
     set_hidden(ui->page_hint, page != ATRI_PAGE_GAME);

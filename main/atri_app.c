@@ -96,9 +96,10 @@ static void render_art(atri_app_t *app)
 // 标题页与章节卡的黑底画面(图片包里没有标题画,标题文字由 LVGL 画)。
 static void render_title_art(atri_app_t *app)
 {
-    atri_ui_compose(&app->ui, &app->pack, "", "", "");
+    // 标题页用包里的整屏标题图(官方主视觉),菜单叠在它下面那条正文带上。
+    atri_ui_compose(&app->ui, &app->pack, SENREN_TITLE_ART_NAME, "", "");
     app->rendered_valid = true;
-    app->rendered_bg[0] = '\0';
+    snprintf(app->rendered_bg, sizeof(app->rendered_bg), "%s", SENREN_TITLE_ART_NAME);
     app->rendered_sprite[0] = '\0';
     app->rendered_ev[0] = '\0';
 }

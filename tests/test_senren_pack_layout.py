@@ -23,6 +23,7 @@ Skips cleanly when the packs are absent (they are generated artifacts).
 from __future__ import annotations
 
 import struct
+import re
 import sys
 import unittest
 import zlib
@@ -131,6 +132,24 @@ class ImagePackLayoutTest(unittest.TestCase):
                 self.assertEqual(len(mask), expected_mask, f"{entry['name']} 掩码字节数不对")
                 marked = sum(bin(byte).count("1") for byte in mask)
                 self.assertEqual(len(pixels), marked * 2, f"{entry['name']} 像素数不等于掩码置位数")
+
+    def test_title_art_is_present(self) -> None:
+        """标题图必须按 main/senren_pack.h 里的宏观名打进背景名字空间。"""
+        header = (ROOT / "main" / "senren_pack.h").read_text(encoding="utf-8")
+        match = re.search(r'#define\s+SENREN_TITLE_ART_NAME\s+"([^"]+)"', header)
+        self.assertIsNotNone(match, "main/senren_pack.h 里没有 SENREN_TITLE_ART_NAME")
+        wanted = match.group(1).encode("utf-8")
+        names_off, _, names_size = self.sections[SEC_NAME]
+        asset_off, entry_count, _ = self.sections[SEC_ASSET]
+        names = self.raw[names_off:names_off + names_size]
+        found = False
+        for index in range(entry_count):
+            record = ASSET.unpack_from(self.raw, asset_off + index * ASSET.size)
+            if names[record[0]:record[0] + record[1]] == wanted:
+                found = True
+                self.assertEqual(record[2], KIND_BG, "标题图应该是背景类型")
+                self.assertEqual((record[5], record[6]), (240, 320), "标题图必须是整屏")
+        self.assertTrue(found, f"包里找不到标题图 {wanted!r}(先跑 tools/senren_pack.py)")
 
     def test_geometry_matches_the_screen(self) -> None:
         _, _, _ = self.sections[SEC_ASSET]

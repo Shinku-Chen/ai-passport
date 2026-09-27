@@ -42,6 +42,9 @@ authored for a 212x520 band canvas):
 
   背景 92 张 336x480 JPEG   -> cover 缩到 240x320(裁下方:那一块本来就压在正文带下
                               面),JPEG 质量按「像素数等比缩小后的源体积」标定
+  标题图(可选的 --title-art) -> 同上,作为背景名字空间里的一个条目打进包;
+                              剧本不会引用它,标题页按下标查(见 main/senren_pack.h 的
+                              SENREN_TITLE_ART_NAME 与 tests/test_senren_pack_layout.py)
   立绘 123 张 紧裁调色板 PNG -> 缩到 <=280 高(底部对齐画在屏幕上),RGBA 量化成
                                <=255 色调色板 PNG。_1/_2/_3 是同一套衣服的不同姿势,
                                不是表情差分,所以逐张存
@@ -440,6 +443,28 @@ class PackBuilder:
                 with Image.open(io.BytesIO(asset.payload)) as stored:
                     asset.verify = mean_abs_error(stored, image)
             self.finish(asset, "背景")
+        self.add_title_art()
+
+    def add_title_art(self) -> None:
+        """标题画面:整屏铺底的一张图,打进背景名字空间(剧本不引用它)。"""
+        if not self.args.title_art:
+            return
+        path = Path(self.args.title_art)
+        if not path.is_file():
+            log(f"--title-art 不存在,跳过标题图: {path}")
+            return
+        asset = Asset(name=self.args.title_name, pool=POOL_BG, kind=KIND_BG,
+                      source_bytes=path.stat().st_size)
+        with Image.open(path) as raw:
+            image = cover(raw.convert("RGB"), self.args.screen_w, self.args.screen_h, self.args.crop_bias)
+        # 标题图只有一张,不必按体积压:直接给高一些的质量
+        asset.payload = jpeg_bytes(image, 90)
+        asset.w, asset.h = image.size
+        asset.note = f"标题图 q90 {image.width}x{image.height}"
+        if self.args.verify:
+            with Image.open(io.BytesIO(asset.payload)) as stored:
+                asset.verify = mean_abs_error(stored, image)
+        self.finish(asset, "标题图")
 
     def add_sprites(self, source: Path, drop: set[str]) -> None:
         for path in sorted((source / "ch").glob("*.png")):
@@ -981,6 +1006,7 @@ def build(args: argparse.Namespace) -> int:
         "commit": args.commit or source_ref(source),
         "screen": f"{args.screen_w}x{args.screen_h}",
         "crop_bias": args.crop_bias,
+        "title_art": Path(args.title_art).name if args.title_art else "",
         "sprite_max_h": str(args.sprite_max_h),
         "sprite_colors": str(args.sprite_colors),
         "sd_width": str(args.sd_width),
@@ -1007,6 +1033,10 @@ def main(argv: Iterable[str] | None = None) -> int:
     parser.add_argument("--check", metavar="PACK", help="只校验一个已生成的 pack")
     parser.add_argument("--compare", metavar="PACK", help="独立核验:只读 pack 还原每条资产,与 --source 比误差")
     parser.add_argument("--json", help="额外写出条目清单 JSON")
+    parser.add_argument("--title-art", default="assets/images/senren-banka-title.png",
+                        help="标题画面图(PNG/JPG);默认用仓库里的官方主视觉,传空字符串则不打")
+    parser.add_argument("--title-name", default="标题画面",
+                        help="标题图在背景名字空间里的名字(要与 main/senren_pack.h 一致)")
     parser.add_argument("--commit", default="", help="源仓库 commit(记录到元数据)")
     parser.add_argument("--script-dir", help="剧本目录(默认 <source>/scn;用于选基准张)")
     parser.add_argument("--drop-file", help="要排除的素材名字清单(一行一个,# 注释)")

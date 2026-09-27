@@ -92,7 +92,7 @@ typedef struct {
     struct _lv_obj_t *page_ending;
     struct _lv_obj_t *page_about;
 
-    struct _lv_obj_t *title_banner;   // 标题页的画面区标题文字(包内没有标题画)
+    // 标题页不再需要单独的横幅标签:标题文字就在标题图上(见 SENREN_TITLE_ART_NAME)。
     struct _lv_obj_t *auto_hint;      // 自动阅读模式指示
     struct _lv_obj_t *notice;         // 瞬时提示(保存成功 / 无法跳过等)
 
