@@ -24,8 +24,9 @@ sprites are x280 (bottom-anchored), SD decorations are 240x144.
     SEC_BLOB  payload area, one blob per entry
     SEC_META  key=value UTF-8 text (source repo / conversion parameters)
 
-  kind : 0=BG JPEG | 1=SPRITE PNG | 2=SD PNG | 3=CG JPEG | 4=CG_DIFF masked patch
-         | 5=MISSING placeholder | 6=EFFECT PNG
+  kind : 0=BG JPEG | 1=SPRITE BLOCK | 2=SD BLOCK | 3=CG JPEG
+         | 4=CG_DIFF masked patch | 5=MISSING placeholder | 6=EFFECT BLOCK
+         BLOCK 是分块调色板格式,**不是 PNG**(见下)
   pool : 0=background 1=sprite 2=event —— matches the script's bg / 立绘 / ev namespaces
   flags: bit0 = alias entry: no payload, draw the `base` entry instead
 
@@ -37,6 +38,23 @@ sprites are x280 (bottom-anchored), SD decorations are 240x144.
   the marked pixels, so a patch costs one row of scratch RAM and is lossless
   with respect to the scaled source.
 
+  BLOCK payload (kinds 1/2/6; **not PNG** — 解码时不需要 32 KB inflate 字典):
+    u16 width
+    u16 height
+    u16 palette_count          # 1..256
+    u16 block_rows             # 每块的行数(打包用 8)
+    u16 block_count            # = ceil(height / block_rows)
+    u16 reserved               # 0
+    u32 raw_block_bytes        # block_rows * (width + 1)
+    palette : palette_count × u16   # RGB565 小端,一项一个索引
+    alpha   : palette_count × u8    # 0..255,一项一个索引
+    block_len[block_count] : u32    # 每一块的压缩长度,按顺序
+    block streams : block_count 段 zlib 流,首尾相接,没有填充
+  每块解压后是连续的若干行;每行 = 1 字节滤波器类型 + width 个索引字节,
+  滤波器用 PNG 的 0..4(None/Sub/Up/Average/Paeth),逐行挑「有符号字节绝对值之和」
+  最小的那个。Up/Average/Paeth 的上一行跨块保留(第 0 行的上一行全是 0)。
+  于是固件每块只要一块 <= raw_block_bytes(8 行 × 240 列约 1.9 KB)的缓冲。
+
 Conversion rules (dimensions come from the source project: 336x480 assets
 authored for a 212x520 band canvas):
 
@@ -46,15 +64,15 @@ authored for a 212x520 band canvas):
                               剧本不会引用它,标题页按下标查(见 main/senren_pack.h 的
                               SENREN_TITLE_ART_NAME 与 tests/test_senren_pack_layout.py)
   立绘 123 张 紧裁调色板 PNG -> 缩到 <=280 高(底部对齐画在屏幕上),RGBA 量化成
-                               <=255 色调色板 PNG。_1/_2/_3 是同一套衣服的不同姿势,
-                               不是表情差分,所以逐张存
+                               <=255 色的 BLOCK 载荷(逐行过滤 + 8 行一块 zlib)。
+                               _1/_2/_3 是同一套衣服的不同姿势,不是表情差分,所以逐张存
   SD   216 张 内容 336x201   -> 每组只留一张(按引用次数加权的中心张),裁到内容缩到
                                240x144(源工程 .sd-image 的显示框);其余变体写成
                                别名条目指向它
   CG   570 张 336x480 JPEG   -> 每组留引用最多的一张作基准(cover 到 240x320 + 标定
                                质量的 JPEG);其余张先算变化掩码,能比整张 JPEG 更省
                                就存掩码补丁(无损),否则整张存
-  其它 28 张 特效/道具/画面 PNG -> cover 到 240x320,按调色板 PNG 重存
+  其它 28 张 特效/道具/画面 PNG -> cover 到 240x320,按同样的 BLOCK 载荷重存
 
 Usage:
   python tools/senren_fetch_source.py --dest build/senren-source --chunks
@@ -93,12 +111,20 @@ assert ENTRY.size == 36, ENTRY.size
 
 # 段类型
 SEC_NAME, SEC_ASSET, SEC_BLOB, SEC_META = range(4)
+# 分块调色板载荷(SPRITE/SD/EFFECT):见文件头的 BLOCK payload 说明
+BLOCK_ROWS = 8
+MAX_COLORS = 256
+BLOCK_HEADER = struct.Struct("<6HI")
+assert BLOCK_HEADER.size == 16, BLOCK_HEADER.size
+FILTER_NONE, FILTER_SUB, FILTER_UP, FILTER_AVERAGE, FILTER_PAETH = range(5)
 # 条目类型
 KIND_BG, KIND_SPRITE, KIND_SD, KIND_CG, KIND_CG_DIFF, KIND_MISSING, KIND_EFFECT = range(7)
 KIND_NAMES = {
     KIND_BG: "BG", KIND_SPRITE: "SPRITE", KIND_SD: "SD", KIND_CG: "CG",
     KIND_CG_DIFF: "CG_DIFF", KIND_MISSING: "MISSING", KIND_EFFECT: "EFFECT",
 }
+# 这三种的载荷是分块调色板格式(不是 PNG)
+BLOCKED_KINDS = (KIND_SPRITE, KIND_SD, KIND_EFFECT)
 # 名字空间
 POOL_BG, POOL_CH, POOL_EV = 0, 1, 2
 FLAG_ALIAS = 1 << 0
@@ -254,16 +280,206 @@ def scale_to_height(image: "Image.Image", height: int) -> "Image.Image":
     return image.resize((width, height), Image.LANCZOS)
 
 
-def png_bytes(image: "Image.Image") -> bytes:
-    buffer = io.BytesIO()
-    image.save(buffer, "PNG", optimize=True)
-    return buffer.getvalue()
+def quantized_palette(quantized: "Image.Image"):
+    """从 quantize(FASTOCTREE) 得到的 P 图里取 (RGB 调色板, 每个索引的 alpha)。
+
+    Pillow 对 RGBA 输入会把 alpha 放进调色板(P 图的 palette.mode == "RGBA");
+    从 PNG 读回来的 P 图则把 alpha 放在 info["transparency"] —— 既可能是逐索引的
+    bytes,也可能是「哪个索引全透明」的单个整数。两种都认。
+    """
+    import numpy as np
+
+    raw = quantized.palette.palette
+    if quantized.palette.mode == "RGBA":
+        entries = len(raw) // 4
+        table = np.frombuffer(raw, dtype=np.uint8, count=entries * 4).reshape(entries, 4)
+        return table[:, :3].copy(), table[:, 3].copy()
+    entries = len(raw) // 3
+    table = np.frombuffer(raw, dtype=np.uint8, count=entries * 3).reshape(entries, 3).copy()
+    alpha = np.full(entries, 255, dtype=np.uint8)
+    transparency = quantized.info.get("transparency")
+    if isinstance(transparency, (bytes, bytearray)):
+        values = np.frombuffer(bytes(transparency), dtype=np.uint8)
+        count = min(entries, values.size)
+        alpha[:count] = values[:count]
+    elif isinstance(transparency, int) and 0 <= transparency < entries:
+        alpha[transparency] = 0
+    return table, alpha
 
 
-def palettize(image: "Image.Image", colors: int) -> bytes:
-    """量化成 <=colors 色调色板 PNG;透明通道与颜色一起进调色板(FASTOCTREE)。"""
+def quantize_blocked(image: "Image.Image", colors: int):
+    """量化到 <=colors 色调色板,并压成紧凑的调色板项(只留用到的索引)。"""
+    import numpy as np
+
     converted = image if image.mode == "RGBA" else image.convert("RGBA")
-    return png_bytes(converted.quantize(colors=colors, method=Image.FASTOCTREE))
+    quantized = converted.quantize(colors=colors, method=Image.FASTOCTREE)
+    rgb, alpha = quantized_palette(quantized)
+    used = sorted(index for _, index in quantized.getcolors(maxcolors=MAX_COLORS))
+    lookup = np.zeros(256, dtype=np.uint8)
+    for new, old in enumerate(used):
+        lookup[old] = new
+    width, height = image.size
+    indices = np.frombuffer(quantized.tobytes(), dtype=np.uint8, count=width * height).reshape(height, width)
+    indices = lookup[indices]
+    rgb, alpha = rgb[used], alpha[used]
+    packed = (((rgb[:, 0].astype(np.uint16) >> 3) << 11)
+              | ((rgb[:, 1].astype(np.uint16) >> 2) << 5)
+              | (rgb[:, 2].astype(np.uint16) >> 3))
+    return width, height, indices, packed.astype("<u2").tobytes(), alpha.tobytes()
+
+
+def paeth_predictor(left: int, up: int, upleft: int) -> int:
+    estimate = left + up - upleft
+    distance_left = abs(estimate - left)
+    distance_up = abs(estimate - up)
+    distance_upleft = abs(estimate - upleft)
+    if distance_left <= distance_up and distance_left <= distance_upleft:
+        return left
+    return up if distance_up <= distance_upleft else upleft
+
+
+def _paeth_rows(left, up, upleft):
+    import numpy as np
+
+    a, b, c = left.astype(np.int16), up.astype(np.int16), upleft.astype(np.int16)
+    estimate = a + b - c
+    distance_left, distance_up = np.abs(estimate - a), np.abs(estimate - b)
+    distance_upleft = np.abs(estimate - c)
+    predictor = np.where((distance_left <= distance_up) & (distance_left <= distance_upleft), a,
+                         np.where(distance_up <= distance_upleft, b, c))
+    return predictor.astype(np.uint8)
+
+
+def _filter_cost(row) -> int:
+    """PNG 编码器的启发式:把过滤后的字节当有符号看,绝对值之和小者胜。"""
+    import numpy as np
+
+    return int(np.abs(row.view(np.int8).astype(np.int16)).sum())
+
+
+def filter_rows(rows) -> bytes:
+    """逐行选最优 PNG 滤波器(0..4),拼成「1 字节类型 + width 字节」的整形数据流。
+
+    上一行跨块保留(第一行的上一行是全零),所以按 block_rows 分块解压时结果一致。
+    """
+    import numpy as np
+
+    width = rows.shape[1]
+    previous = np.zeros(width, dtype=np.uint8)
+    stream = bytearray()
+    for row in rows:
+        left = np.empty(width, dtype=np.uint8)
+        left[0] = 0
+        left[1:] = row[:-1]
+        upleft = np.empty(width, dtype=np.uint8)
+        upleft[0] = 0
+        upleft[1:] = previous[:-1]
+        average = ((left.astype(np.uint16) + previous) // 2).astype(np.uint8)
+        candidates = (
+            (FILTER_NONE, row),
+            (FILTER_SUB, (row - left) & 0xFF),
+            (FILTER_UP, (row - previous) & 0xFF),
+            (FILTER_AVERAGE, (row - average) & 0xFF),
+            (FILTER_PAETH, (row - _paeth_rows(left, previous, upleft)) & 0xFF),
+        )
+        filter_type, best = min(candidates, key=lambda candidate: _filter_cost(candidate[1]))
+        stream.append(filter_type)
+        stream += best.tobytes()
+        previous = row
+    return bytes(stream)
+
+
+def unfilter_row(filter_type: int, row, previous):
+    """还原一行索引字节(PNG 滤波器 0..4)。"""
+    import numpy as np
+
+    width = row.size
+    if filter_type == FILTER_NONE:
+        return row.copy()
+    if filter_type == FILTER_SUB:
+        return (np.cumsum(row.astype(np.uint32)) & 0xFF).astype(np.uint8)
+    if filter_type == FILTER_UP:
+        return ((row.astype(np.uint16) + previous) & 0xFF).astype(np.uint8)
+    out = np.empty(width, dtype=np.uint8)
+    left = 0
+    for index in range(width):
+        up = int(previous[index])
+        if filter_type == FILTER_AVERAGE:
+            predictor = (left + up) >> 1
+        elif filter_type == FILTER_PAETH:
+            predictor = paeth_predictor(left, up, int(previous[index - 1]) if index else 0)
+        else:
+            raise ValueError(f"未知滤波器 {filter_type}")
+        left = (int(row[index]) + predictor) & 0xFF
+        out[index] = left
+    return out
+
+
+def encode_blocked(image: "Image.Image", colors: int, block_rows: int = BLOCK_ROWS) -> bytes:
+    """把 RGBA 图编成分块调色板载荷(**不是 PNG**):逐行过滤 + 每 block_rows 行一段 zlib。
+
+    每块只解压成 block_rows 行,固件用一块约 2 KB 的缓冲就能解,不需要 32 KB inflate 字典。
+    """
+
+    width, height, indices, palette, alpha = quantize_blocked(image, colors)
+    block_count = (height + block_rows - 1) // block_rows
+    raw_block_bytes = block_rows * (width + 1)
+    stream = filter_rows(indices)
+    lengths: list[int] = []
+    blocks: list[bytes] = []
+    for index in range(block_count):
+        compressed = zlib.compress(stream[index * raw_block_bytes:(index + 1) * raw_block_bytes], 9)
+        blocks.append(compressed)
+        lengths.append(len(compressed))
+    header = BLOCK_HEADER.pack(width, height, len(palette) // 2, block_rows, block_count, 0, raw_block_bytes)
+    table = b"".join(struct.pack("<I", length) for length in lengths)
+    return header + palette + alpha + table + b"".join(blocks)
+
+
+def decode_blocked(payload: bytes) -> "Image.Image":
+    """按 pack 自身的信息还原分块调色板载荷(核验与固件同一条路径)。"""
+    import numpy as np
+
+    width, height, palette_count, _block_rows, block_count, _reserved, _raw = BLOCK_HEADER.unpack_from(payload)
+    position = BLOCK_HEADER.size
+    palette = np.frombuffer(payload, dtype="<u2", count=palette_count, offset=position).astype(np.uint32)
+    position += palette_count * 2
+    alpha = np.frombuffer(payload, dtype=np.uint8, count=palette_count, offset=position)
+    position += palette_count
+    lengths = np.frombuffer(payload, dtype="<u4", count=block_count, offset=position)
+    position += block_count * 4
+    row_bytes = width + 1
+    previous = np.zeros(width, dtype=np.uint8)
+    rows = []
+    for length in lengths:
+        block = zlib.decompress(payload[position:position + int(length)])
+        position += int(length)
+        for offset in range(0, len(block), row_bytes):
+            previous = unfilter_row(block[offset],
+                                    np.frombuffer(block, dtype=np.uint8, count=width, offset=offset + 1),
+                                    previous)
+            rows.append(previous)
+    rgb = np.empty((palette_count, 3), dtype=np.uint8)
+    rgb[:, 0] = ((palette >> 11) & 31).astype(np.uint8) << 3
+    rgb[:, 1] = ((palette >> 5) & 63).astype(np.uint8) << 2
+    rgb[:, 2] = (palette & 31).astype(np.uint8) << 3
+    indices = np.stack(rows[:height])
+    rgba = np.empty((height, width, 4), dtype=np.uint8)
+    rgba[:, :, :3] = rgb[indices]
+    rgba[:, :, 3] = alpha[indices]
+    return Image.fromarray(rgba, "RGBA")
+
+
+def decompress_bounded(blob: bytes, limit: int) -> bytes | None:
+    """解压一段 zlib 流,最多接受 limit 字节;超限或流没走完就返回 None。"""
+    engine = zlib.decompressobj()
+    try:
+        out = engine.decompress(blob, limit + 1)
+    except zlib.error:
+        return None
+    if len(out) > limit or not engine.eof or engine.unconsumed_tail:
+        return None
+    return out
 
 
 def jpeg_bytes(image: "Image.Image", quality: int) -> bytes:
@@ -357,28 +573,47 @@ def change_mask(base565, other565, threshold: int):
     return (x0, y0, x1 - x0 + 1, y1 - y0 + 1), patch, pixels
 
 
+# 补丁像素块的像素数(与 main/atri_image.c 的 PATCH_BLOCK_PIXELS 一致):
+# 每块最多 1024 个 RGB565 = 2 KB,设备端解压到固定小缓冲,不需要 32 KB inflate 字典。
+PATCH_BLOCK_PIXELS = 1024
+
+
 def encode_patch(rect: tuple[int, int, int, int], patch, pixels) -> bytes:
-    """掩码补丁载荷:1bpp 掩码 + 按扫描序排列的 RGB565 像素,各自 deflate 一段。"""
+    """掩码补丁载荷:1bpp 掩码 + 按扫描序排列的 RGB565 像素(分块压缩)。
+
+    布局: u32 掩码长度, u32 块数, u32 每块压缩长度[块数], 掩码 zlib 流, 逐块 zlib 流。
+    """
     import numpy as np
 
     packed = np.packbits(patch.reshape(-1).astype(np.uint8)).tobytes()
     mask_blob = zlib.compress(packed, 9)
-    pixels_blob = zlib.compress(pixels.astype("<u2").tobytes(), 9)
-    return struct.pack("<II", len(mask_blob), len(pixels_blob)) + mask_blob + pixels_blob
+    raw = pixels.astype("<u2").tobytes()
+    step = PATCH_BLOCK_PIXELS * 2
+    blocks = [zlib.compress(raw[start:start + step], 9) for start in range(0, len(raw), step)]
+    header = struct.pack("<II", len(mask_blob), len(blocks))
+    lengths = b"".join(struct.pack("<I", len(block)) for block in blocks)
+    return header + lengths + mask_blob + b"".join(blocks)
 
 
 def apply_patch(base: "Image.Image", payload: bytes, rect: tuple[int, int, int, int]) -> "Image.Image":
     """按 pack 自身的信息把补丁贴到基准图上(核验与固件同一条路径)。"""
     import numpy as np
 
-    mask_len = struct.unpack_from("<I", payload, 0)[0]
-    mask_blob = payload[8:8 + mask_len]
-    pixels_blob = payload[8 + mask_len:]
+    mask_len, block_count = struct.unpack_from("<II", payload, 0)
+    lengths = [struct.unpack_from("<I", payload, 8 + 4 * index)[0] for index in range(block_count)]
+    offset = 8 + 4 * block_count
+    mask_blob = payload[offset:offset + mask_len]
+    offset += mask_len
+    pieces = []
+    for length in lengths:
+        pieces.append(zlib.decompress(payload[offset:offset + length]))
+        offset += length
+    pixels_blob = b"".join(pieces)
     x, y, width, height = rect
     assert rect[2:] == (width, height)
     mask = np.unpackbits(np.frombuffer(zlib.decompress(mask_blob), dtype=np.uint8))[:width * height].astype(bool)
     mask = mask.reshape(height, width)
-    values = np.frombuffer(zlib.decompress(pixels_blob), dtype="<u2").astype(np.int32)
+    values = np.frombuffer(pixels_blob, dtype="<u2").astype(np.int32)
     assert int(mask.sum()) == values.size, (int(mask.sum()), values.size)
     canvas = np.asarray(base.convert("RGB"), dtype="int32").copy()
     region = canvas[y:y + height, x:x + width]
@@ -474,12 +709,11 @@ class PackBuilder:
             with Image.open(path) as raw:
                 image = raw.convert("RGBA")
             image = scale_to_height(image, self.args.sprite_max_h)
-            asset.payload = palettize(image, self.args.sprite_colors)
+            asset.payload = encode_blocked(image, self.args.sprite_colors)
             asset.w, asset.h = image.size
-            asset.note = f"{image.width}x{image.height} 调色板 PNG"
+            asset.note = f"{image.width}x{image.height} 分块调色板"
             if self.args.verify:
-                with Image.open(io.BytesIO(asset.payload)) as stored:
-                    asset.verify = mean_abs_error(stored, image)
+                asset.verify = mean_abs_error(decode_blocked(asset.payload), image)
             self.finish(asset, "立绘")
 
     def add_event_images(self, source: Path, refs: dict[tuple[int, str], int], drop: set[str]) -> None:
@@ -560,11 +794,10 @@ class PackBuilder:
             target = (max(1, round(width * self.args.sd_height / height)), self.args.sd_height)
         if target != image.size:
             image = image.resize(target, Image.LANCZOS)
-        asset.payload = palettize(image, self.args.sprite_colors)
+        asset.payload = encode_blocked(image, self.args.sprite_colors)
         asset.w, asset.h = image.size
         if self.args.verify:
-            with Image.open(io.BytesIO(asset.payload)) as stored:
-                asset.verify = mean_abs_error(stored, image)
+            asset.verify = mean_abs_error(decode_blocked(asset.payload), image)
 
     def build_cg(self, source: Path, groups: dict[str, list[str]], refs: dict[tuple[int, str], int], drop: set[str]) -> None:
         for group, members in sorted(groups.items()):
@@ -627,12 +860,11 @@ class PackBuilder:
                 continue
             with Image.open(path) as raw:
                 image = cover(raw.convert("RGBA"), self.args.screen_w, self.args.screen_h, self.args.crop_bias)
-            asset.payload = palettize(image, self.args.sprite_colors)
+            asset.payload = encode_blocked(image, self.args.sprite_colors)
             asset.w, asset.h = image.size
-            asset.note = "cover 到屏幕"
+            asset.note = "cover 到屏幕 · 分块调色板"
             if self.args.verify:
-                with Image.open(io.BytesIO(asset.payload)) as stored:
-                    asset.verify = mean_abs_error(stored, image)
+                asset.verify = mean_abs_error(decode_blocked(asset.payload), image)
             self.finish(asset, "特效/道具/画面")
 
     # -- 条目管理 ---------------------------------------------------------
@@ -814,6 +1046,56 @@ def payload_matches_source(raw: bytes, sections: dict[int, tuple[int, int, int]]
     return payload_of(raw, sections, entry) == source_path.read_bytes()
 
 
+def check_blocked(name: str, payload: bytes, entry: dict, errors: list[str]) -> None:
+    """校验一条分块调色板载荷(SPRITE/SD/EFFECT):头部、调色板、块表、逐块解压。"""
+    if len(payload) < BLOCK_HEADER.size:
+        errors.append(f"{name}: 分块载荷只有 {len(payload)} 字节,放不下头部")
+        return
+    (width, height, palette_count, block_rows, block_count,
+     reserved, raw_block_bytes) = BLOCK_HEADER.unpack_from(payload)
+    if (width, height) != (entry["w"], entry["h"]):
+        errors.append(f"{name}: 载荷尺寸 {width}x{height} 与条目 {entry['w']}x{entry['h']} 不符")
+    if not 1 <= palette_count <= MAX_COLORS:
+        errors.append(f"{name}: palette_count={palette_count} 越界")
+    if block_rows == 0:
+        errors.append(f"{name}: block_rows=0")
+    elif block_count != (height + block_rows - 1) // block_rows:
+        errors.append(f"{name}: block_count={block_count} != ceil({height}/{block_rows})")
+    if reserved:
+        errors.append(f"{name}: reserved={reserved} 应该是 0")
+    if raw_block_bytes != block_rows * (width + 1):
+        errors.append(f"{name}: raw_block_bytes={raw_block_bytes} != {block_rows}*({width}+1)")
+    table = BLOCK_HEADER.size + palette_count * 3 + block_count * 4
+    if table > len(payload):
+        errors.append(f"{name}: 调色板 {palette_count} 项加 {block_count} 块的长度表越过载荷末尾")
+        return
+    lengths = struct.unpack_from(f"<{block_count}I", payload, BLOCK_HEADER.size + palette_count * 3)
+    position = table
+    rows = 0
+    row_bytes = width + 1
+    for index, length in enumerate(lengths):
+        if position + length > len(payload):
+            errors.append(f"{name}: 第 {index} 块越出载荷")
+            return
+        block = decompress_bounded(payload[position:position + length], raw_block_bytes)
+        position += length
+        if block is None:
+            errors.append(f"{name}: 第 {index} 块解压失败或超过 raw_block_bytes")
+            return
+        if len(block) % row_bytes:
+            errors.append(f"{name}: 第 {index} 块解压出 {len(block)} 字节,不是整行")
+            return
+        for offset in range(0, len(block), row_bytes):
+            if block[offset] > FILTER_PAETH:
+                errors.append(f"{name}: 第 {index} 块含非法滤波器 {block[offset]}")
+                return
+        rows += len(block) // row_bytes
+    if position != len(payload):
+        errors.append(f"{name}: 块流之后还有 {len(payload) - position} 字节")
+    if rows != height:
+        errors.append(f"{name}: 解压行数 {rows} != height {height}")
+
+
 def check_pack(path: Path) -> int:
     raw, sections, entries = load_pack(path)
     asset_count = len(entries)
@@ -838,8 +1120,8 @@ def check_pack(path: Path) -> int:
         start = raw[blob_off + data_off:blob_off + data_off + 4]
         if kind in (KIND_BG, KIND_CG) and data_len and start[:1] != b"\xff":
             errors.append(f"{name}: 不是 JPEG")
-        if kind in (KIND_SPRITE, KIND_SD, KIND_EFFECT) and data_len and start != b"\x89PNG":
-            errors.append(f"{name}: 不是 PNG")
+        if kind in BLOCKED_KINDS and data_len:
+            check_blocked(name, raw[blob_off + data_off:blob_off + data_off + data_len], entry, errors)
         if kind == KIND_MISSING and data_len:
             errors.append(f"{name}: MISSING 条目不应该有载荷")
         if kind == KIND_CG_DIFF:
@@ -848,14 +1130,22 @@ def check_pack(path: Path) -> int:
             elif data_len < 8:
                 errors.append(f"{name}: 补丁载荷太短")
             else:
-                mask_len, pixels_len = struct.unpack_from("<II", raw, blob_off + data_off)
-                if 8 + mask_len + pixels_len != data_len:
-                    errors.append(f"{name}: 补丁载荷长度对不上(头里 {mask_len}+{pixels_len}+8,实际 {data_len})")
+                mask_len, block_count = struct.unpack_from("<II", raw, blob_off + data_off)
+                lengths = [struct.unpack_from("<I", raw, blob_off + data_off + 8 + 4 * index)[0]
+                           for index in range(block_count)]
+                total = 8 + 4 * block_count + mask_len + sum(lengths)
+                if block_count == 0 or total != data_len:
+                    errors.append(f"{name}: 补丁载荷长度对不上(算出 {total},实际 {data_len})")
                 else:
                     width, height = entry["dw"], entry["dh"]
                     expected_mask = (width * height + 7) // 8
-                    mask = zlib.decompress(raw[blob_off + data_off + 8:blob_off + data_off + 8 + mask_len])
-                    pixels = zlib.decompress(raw[blob_off + data_off + 8 + mask_len:])
+                    mask_start = blob_off + data_off + 8 + 4 * block_count
+                    mask = zlib.decompress(raw[mask_start:mask_start + mask_len])
+                    offset = mask_start + mask_len
+                    pixels = b""
+                    for length in lengths:
+                        pixels += zlib.decompress(raw[offset:offset + length])
+                        offset += length
                     if len(mask) != expected_mask:
                         errors.append(f"{name}: 掩码字节数 {len(mask)} != {expected_mask}")
                     else:
@@ -919,6 +1209,8 @@ def stored_image(raw: bytes, sections: dict[int, tuple[int, int, int]], entries:
     if entry["kind"] == KIND_CG_DIFF:
         base = stored_image(raw, sections, entries, entries[entry["base"]], depth + 1)
         return apply_patch(base, data, (entry["dx"], entry["dy"], entry["dw"], entry["dh"]))
+    if entry["kind"] in BLOCKED_KINDS:
+        return decode_blocked(data)
     return Image.open(io.BytesIO(data))
 
 

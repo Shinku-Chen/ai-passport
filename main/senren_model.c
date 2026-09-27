@@ -6,16 +6,35 @@
 
 #include "senren_inflate.h"
 
+#include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define SENREN_SCN_HEADER_SIZE 20u
 #define SENREN_SCN_SECTION_SIZE 16u
-#define SENREN_SCN_CHUNK_RECORD 16u
+#define SENREN_SCN_CHUNK_RECORD 20u
+#define SENREN_SCN_BLOCK_RECORD 16u
 // 一页最多切几段(单句最长 60 字 -> 每行 13 字 5 行,最多 2 页;留余量)
 #define SENREN_PAGE_MAX 8
 // 单个 NEXT 里最多几个条件(实测最多 4 个)
 #define SENREN_COND_MAX 8
+
+// 最近一次失败原因:静态缓冲,失败路径上写,调用方打完日志就丢
+static char s_error[160];
+
+const char *senren_get_error(void)
+{
+    return s_error[0] ? s_error : "无";
+}
+
+static void senren_set_error(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(s_error, sizeof(s_error), fmt, args);
+    va_end(args);
+}
 
 static uint16_t rd16(const uint8_t *p)
 {
@@ -224,8 +243,8 @@ bool senren_scn_open(senren_scn_t *scn, const uint8_t *data, uint32_t size)
     if (version != SENREN_SCN_VERSION || total != size) {
         return false;
     }
-    if (header_size < SENREN_SCN_HEADER_SIZE ||
-        (uint64_t)header_size + (uint64_t)section_count * SENREN_SCN_SECTION_SIZE > size) {
+    if (header_size < SENREN_SCN_HEADER_SIZE + (uint32_t)section_count * SENREN_SCN_SECTION_SIZE ||
+        (uint64_t)header_size > size) {
         return false;
     }
 
@@ -233,8 +252,9 @@ bool senren_scn_open(senren_scn_t *scn, const uint8_t *data, uint32_t size)
     memset(&view, 0, sizeof(view));
     view.blob = data;
     view.blob_size = size;
+    // 段表紧跟在 20 字节头部之后;header_size 是「段体起点」(头部 + 段表)
     for (uint16_t index = 0; index < section_count; index++) {
-        const uint8_t *section = data + header_size + (uint32_t)index * SENREN_SCN_SECTION_SIZE;
+        const uint8_t *section = data + SENREN_SCN_HEADER_SIZE + (uint32_t)index * SENREN_SCN_SECTION_SIZE;
         uint32_t type = rd32(section);
         uint32_t offset = rd32(section + 4);
         uint32_t count = rd32(section + 8);
@@ -265,13 +285,22 @@ bool senren_scn_open(senren_scn_t *scn, const uint8_t *data, uint32_t size)
             view.flag_count = count;
             break;
         case SENREN_SCN_SEC_CHUNK:
-            // 段体 = u16 count + count × 16 字节记录
+            // 段体 = u16 count + count × 20 字节记录
             if (length < 2 || count == 0 || length < 2u + (uint64_t)count * SENREN_SCN_CHUNK_RECORD) {
                 return false;
             }
             view.chunks = data + offset + 2;
             view.chunks_size = length - 2u;
             view.chunk_count = count;
+            break;
+        case SENREN_SCN_SEC_BLOCK:
+            // 段体 = u16 count + count × 16 字节记录
+            if (length < 2 || count == 0 || length < 2u + (uint64_t)count * SENREN_SCN_BLOCK_RECORD) {
+                return false;
+            }
+            view.blocks = data + offset + 2;
+            view.blocks_size = length - 2u;
+            view.block_count = count;
             break;
         case SENREN_SCN_SEC_BLOB:
             view.payload = data + offset;
@@ -285,11 +314,13 @@ bool senren_scn_open(senren_scn_t *scn, const uint8_t *data, uint32_t size)
             break;
         }
     }
-    if (view.chars == NULL || view.names == NULL || view.chunks == NULL || view.payload == NULL) {
+    if (view.chars == NULL || view.names == NULL || view.chunks == NULL || view.blocks == NULL ||
+        view.payload == NULL) {
         return false;
     }
-    if (view.char_count == 0 || view.chunk_count == 0 ||
-        (uint64_t)view.chunk_count * SENREN_SCN_CHUNK_RECORD > view.chunks_size) {
+    if (view.char_count == 0 || view.chunk_count == 0 || view.block_count == 0 ||
+        (uint64_t)view.chunk_count * SENREN_SCN_CHUNK_RECORD > view.chunks_size ||
+        (uint64_t)view.block_count * SENREN_SCN_BLOCK_RECORD > view.blocks_size) {
         return false;
     }
 
@@ -324,21 +355,28 @@ bool senren_scn_open(senren_scn_t *scn, const uint8_t *data, uint32_t size)
     return true;
 }
 
-uint32_t senren_scn_chunk(const senren_scn_t *scn, uint16_t index, uint8_t *raw, uint32_t capacity)
+uint32_t senren_scn_block(const senren_scn_t *scn, uint16_t block_index, uint8_t *raw, uint32_t capacity)
 {
-    if (scn == NULL || raw == NULL || index >= scn->chunk_count) {
+    if (scn == NULL || raw == NULL || block_index >= scn->block_count) {
         return 0;
     }
-    const uint8_t *record = scn->chunks + (uint32_t)index * SENREN_SCN_CHUNK_RECORD;
+    const uint8_t *record = scn->blocks + (uint32_t)block_index * SENREN_SCN_BLOCK_RECORD;
     uint32_t offset = rd32(record);
     uint32_t length = rd32(record + 4);
     uint32_t raw_len = rd32(record + 8);
     if (offset > scn->payload_size || length > scn->payload_size - offset || raw_len > capacity) {
+        senren_set_error("小块 %u 越界(off %u len %u raw %u,容量 %u)", (unsigned)block_index,
+                         (unsigned)offset, (unsigned)length, (unsigned)raw_len, (unsigned)capacity);
         return 0;
     }
     // ROM 里的 tinfl 解 zlib 流(见 senren_inflate.c)
     uint32_t produced = senren_inflate(scn->payload + offset, length, raw, capacity);
-    return produced == raw_len ? produced : 0;
+    if (produced != raw_len) {
+        senren_set_error("小块 %u 解压长度 %u != %u", (unsigned)block_index, (unsigned)produced,
+                         (unsigned)raw_len);
+        return 0;
+    }
+    return produced;
 }
 
 // 字典项里的 u16 是字符表下标,要借字符表才能还原成 UTF-8
@@ -626,29 +664,95 @@ static bool seek_node(cursor_t *cursor, uint32_t index)
 // 状态机内部
 // --------------------------------------------------------------------------
 
-static bool player_load_chunk(senren_player_t *player, const senren_scn_t *scn, uint16_t chunk)
+// ---- 块表字段 ----
+// chunk 记录: off u32, len u32, raw u32, node_count u16, first_block u16, block_count u16, rsv u16
+// block 记录: off u32, len u32, raw u32, first_node u32
+static uint32_t chunk_node_total(const senren_scn_t *scn, uint16_t chunk)
 {
-    if (player->loaded_chunk == chunk && player->loaded_len > 0) {
+    return rd16(scn->chunks + (uint32_t)chunk * SENREN_SCN_CHUNK_RECORD + 12);
+}
+
+static uint16_t chunk_first_block(const senren_scn_t *scn, uint16_t chunk)
+{
+    return rd16(scn->chunks + (uint32_t)chunk * SENREN_SCN_CHUNK_RECORD + 14);
+}
+
+static uint16_t chunk_blocks(const senren_scn_t *scn, uint16_t chunk)
+{
+    return rd16(scn->chunks + (uint32_t)chunk * SENREN_SCN_CHUNK_RECORD + 16);
+}
+
+static uint32_t block_first_node(const senren_scn_t *scn, uint16_t block)
+{
+    return rd32(scn->blocks + (uint32_t)block * SENREN_SCN_BLOCK_RECORD + 12);
+}
+
+static bool player_reserve(senren_player_t *player)
+{
+    if (player->raw != NULL) {
         return true;
     }
+    // 小块解压缓冲:打包器保证每块 <= 3002 字节(见 tools/senren_scn_pack.py)
+    player->raw = (uint8_t *)malloc(SENREN_BLOCK_RAW_MAX);
     if (player->raw == NULL) {
-        // 缓冲欠着用:本板静态段被画布与 LVGL 内存池占满,堆还有余地
-        player->raw = (uint8_t *)malloc(SENREN_CHUNK_RAW_MAX);
-        if (player->raw == NULL) {
-            return false;
-        }
-        player->raw_capacity = SENREN_CHUNK_RAW_MAX;
+        senren_set_error("小块缓冲 malloc(%u) 失败", (unsigned)SENREN_BLOCK_RAW_MAX);
+        return false;
     }
-    uint32_t length = senren_scn_chunk(scn, chunk, player->raw, player->raw_capacity);
-    if (length == 0) {
+    player->raw_capacity = SENREN_BLOCK_RAW_MAX;
+    player->loaded_chunk = 0xFFFF;
+    return true;
+}
+
+static bool player_load_block(senren_player_t *player, const senren_scn_t *scn, uint16_t chunk,
+                              uint16_t block)
+{
+    if (!player_reserve(player)) {
+        return false;
+    }
+    if (player->loaded_chunk == chunk && player->loaded_block == block && player->loaded_len > 0) {
+        return true;
+    }
+    const uint32_t length = senren_scn_block(scn, block, player->raw, player->raw_capacity);
+    if (length < 2) {
+        const uint8_t *rec = scn->blocks + (uint32_t)block * SENREN_SCN_BLOCK_RECORD;
+        senren_set_error("小块 %u 解压失败(chunk %u,off %u len %u raw %u)", (unsigned)block,
+                         (unsigned)chunk, (unsigned)rd32(rec), (unsigned)rd32(rec + 4),
+                         (unsigned)rd32(rec + 8));
         return false;
     }
     player->loaded_chunk = chunk;
+    player->loaded_block = block;
+    player->loaded_first_node = block_first_node(scn, block);
     player->loaded_len = length;
     return true;
 }
 
-static uint32_t chunk_node_count(const senren_player_t *player)
+// 保证 player->node 所在的小块已解开
+static bool player_ensure_node(senren_player_t *player, const senren_scn_t *scn)
+{
+    const uint16_t first = chunk_first_block(scn, player->chunk);
+    const uint16_t count = chunk_blocks(scn, player->chunk);
+    if (count == 0) {
+        senren_set_error("chunk %u 没有小块", (unsigned)player->chunk);
+        return false;
+    }
+    for (uint16_t step = 0; step < count; step++) {
+        const uint16_t block = (uint16_t)(first + step);
+        if (player->node < block_first_node(scn, block)) {
+            senren_set_error("节点 %u 落不进小块 %u(首节点 %u)", (unsigned)player->node,
+                             (unsigned)block, (unsigned)block_first_node(scn, block));
+            return false;
+        }
+        if (step + 1 < count && player->node >= block_first_node(scn, (uint16_t)(block + 1))) {
+            continue;
+        }
+        return player_load_block(player, scn, player->chunk, block);
+    }
+    return false;
+}
+
+// 当前小块里的节点数(首 u16)
+static uint32_t block_node_count(const senren_player_t *player)
 {
     return player->loaded_len >= 2 ? rd16(player->raw) : 0;
 }
@@ -691,30 +795,35 @@ bool senren_player_next_page(senren_player_t *player)
     return true;
 }
 
-// 在当前块里找页号对应的 LABEL 记录
+// 在当前块里找页号对应的 LABEL 节点(逐小块扫)
 static bool find_label(senren_player_t *player, const senren_scn_t *scn, uint16_t chunk, uint32_t page,
                        uint32_t *node_out)
 {
-    if (!player_load_chunk(player, scn, chunk)) {
-        return false;
-    }
-    uint32_t count = chunk_node_count(player);
-    cursor_t cursor = { player->raw + 2, player->raw + player->loaded_len };
-    for (uint32_t index = 0; index < count; index++) {
-        if (cursor.p >= cursor.end) {
+    const uint16_t first = chunk_first_block(scn, chunk);
+    const uint16_t count = chunk_blocks(scn, chunk);
+    for (uint16_t step = 0; step < count; step++) {
+        const uint16_t block = (uint16_t)(first + step);
+        if (!player_load_block(player, scn, chunk, block)) {
             return false;
         }
-        if (*cursor.p == SENREN_NODE_LABEL) {
-            cursor_t probe = cursor;
-            probe.p++;
-            uint32_t candidate = 0;
-            if (cursor_u32(&probe, &candidate) && candidate == page) {
-                *node_out = index;
-                return true;
+        const uint32_t nodes_here = block_node_count(player);
+        cursor_t cursor = { player->raw + 2, player->raw + player->loaded_len };
+        for (uint32_t index = 0; index < nodes_here; index++) {
+            if (cursor.p >= cursor.end) {
+                return false;
             }
-        }
-        if (!node_skip(&cursor)) {
-            return false;
+            if (*cursor.p == SENREN_NODE_LABEL) {
+                cursor_t probe = cursor;
+                probe.p++;
+                uint32_t candidate = 0;
+                if (cursor_u32(&probe, &candidate) && candidate == page) {
+                    *node_out = player->loaded_first_node + index;
+                    return true;
+                }
+            }
+            if (!node_skip(&cursor)) {
+                return false;
+            }
         }
     }
     return false;
@@ -821,13 +930,14 @@ void senren_player_reset(senren_player_t *player)
     if (player == NULL) {
         return;
     }
-    // 保留已申请的解压缓冲(重置的是阅读进度,不是内存)
+    // 保留已申请的小块解压缓冲(重置的是阅读进度,不是内存)
     uint8_t *raw = player->raw;
     uint32_t capacity = player->raw_capacity;
     memset(player, 0, sizeof(*player));
     player->raw = raw;
     player->raw_capacity = capacity;
     player->loaded_chunk = 0xFFFF;
+    player->loaded_block = 0xFFFF;
 }
 
 void senren_player_release(senren_player_t *player)
@@ -839,6 +949,7 @@ void senren_player_release(senren_player_t *player)
     player->raw = NULL;
     player->raw_capacity = 0;
     player->loaded_chunk = 0xFFFF;
+    player->loaded_block = 0xFFFF;
     player->loaded_len = 0;
 }
 
@@ -864,26 +975,32 @@ senren_step_t senren_player_advance(senren_player_t *player, const senren_scn_t 
         return SENREN_STEP_STUCK;
     }
     for (uint32_t guard = 0; guard < 200000; guard++) {
-        if (!player_load_chunk(player, scn, player->chunk)) {
-            return SENREN_STEP_STUCK;
-        }
-        uint32_t count = chunk_node_count(player);
-        if (player->node >= count) {
+        if (player->node >= chunk_node_total(scn, player->chunk)) {
             if ((uint32_t)player->chunk + 1 >= scn->chunk_count) {
                 return SENREN_STEP_ENDING;
             }
             player->chunk++;
             player->node = 0;
+            player->loaded_chunk = 0xFFFF;
             continue;
         }
+        if (!player_ensure_node(player, scn)) {
+            return SENREN_STEP_STUCK;
+        }
         cursor_t cursor = { player->raw + 2, player->raw + player->loaded_len };
-        if (!seek_node(&cursor, player->node)) {
+        if (!seek_node(&cursor, player->node - player->loaded_first_node)) {
+            senren_set_error("chunk %u 小块 %u 内第 %u 个节点走不动(块内共 %u 节点)",
+                             (unsigned)player->chunk, (unsigned)player->loaded_block,
+                             (unsigned)(player->node - player->loaded_first_node),
+                             (unsigned)block_node_count(player));
             return SENREN_STEP_STUCK;
         }
         uint32_t executed = player->node;
         player->node = executed + 1;
         record_t record;
         if (!record_read(&cursor, scn, &record, player->text, sizeof(player->text))) {
+            senren_set_error("chunk %u 节点 %u 记录解析失败(类型 %u)", (unsigned)player->chunk,
+                             (unsigned)executed, (unsigned)(cursor.p < cursor.end ? *cursor.p : 0xFF));
             return SENREN_STEP_STUCK;
         }
         player->resume_node = executed;
@@ -952,6 +1069,8 @@ senren_step_t senren_player_advance(senren_player_t *player, const senren_scn_t 
                                                                               : player->chunk;
             uint32_t target_node = 0;
             if (!find_label(player, scn, target_chunk, record.target_page, &target_node)) {
+                senren_set_error("跳转目标 chunk %u 页号 %u 找不到标签", (unsigned)target_chunk,
+                                 (unsigned)record.target_page);
                 return SENREN_STEP_STUCK;
             }
             player_goto(player, target_chunk, target_node);
@@ -992,20 +1111,20 @@ static bool skip_to(senren_player_t *player, const senren_scn_t *scn, bool chapt
         return false;
     }
     for (uint32_t guard = 0; guard < 200000; guard++) {
-        if (!player_load_chunk(player, scn, player->chunk)) {
-            return false;
-        }
-        uint32_t count = chunk_node_count(player);
-        if (player->node >= count) {
+        if (player->node >= chunk_node_total(scn, player->chunk)) {
             if ((uint32_t)player->chunk + 1 >= scn->chunk_count) {
                 return false;
             }
             player->chunk++;
             player->node = 0;
+            player->loaded_chunk = 0xFFFF;
             continue;
         }
+        if (!player_ensure_node(player, scn)) {
+            return false;
+        }
         cursor_t cursor = { player->raw + 2, player->raw + player->loaded_len };
-        if (!seek_node(&cursor, player->node)) {
+        if (!seek_node(&cursor, player->node - player->loaded_first_node)) {
             return false;
         }
         uint8_t kind = cursor.p < cursor.end ? *cursor.p : 0xFF;

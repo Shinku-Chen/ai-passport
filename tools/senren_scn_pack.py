@@ -25,10 +25,17 @@ independent raw-deflate block addressable by (offset, length):
               did not enumerate; decoders read blocks until the section ends.
     SEC_FLAG  flags : u32 count, count × u32 page (f.c<page> → index is flag_id)
     SEC_CHUNK chunk table : u16 count, per chunk
-              { data_off u32, data_len u32, raw_len u32, node_count u32 }
+              { data_off u32, data_len u32, raw_len u32, node_count u16,
+                first_block u16, block_count u16, reserved u16 }   (20 B)
               (data_off is relative to SEC_BLOB)
-    SEC_BLOB  112 zlib blocks (one per chunk, zlib.compress level 9),
-              concatenated, every block 4-byte aligned
+    SEC_BLOCK block table : u16 count, per small block
+              { data_off u32, data_len u32, raw_len u32, first_node u32 }  (16 B)
+              Every chunk's node stream is split into blocks of at most
+              BLOCK_MAX_BYTES bytes / BLOCK_MAX_NODES nodes, each its own zlib
+              stream starting with its own u16 node count, so the firmware only
+              ever needs a ~4 KB buffer (no 32 KB inflate dictionary).
+    SEC_BLOB  one zlib stream per small block (zlib level 9), concatenated,
+              every block 4-byte aligned
     SEC_META  key=value UTF-8 text, one per line (source repo, ref, counts)
 
   Per-chunk record stream (decompressed):
@@ -90,14 +97,19 @@ MAGIC = b"SENRSCN1"
 VERSION = 1
 HEADER = struct.Struct("<8sHHHHI")
 SECTION = struct.Struct("<IIII")
-CHUNK_ENTRY = struct.Struct("<IIII")
-assert HEADER.size == 20 and SECTION.size == 16 and CHUNK_ENTRY.size == 16
+CHUNK_ENTRY = struct.Struct("<IIIHHHH")
+# 块表:每个小块 = { 数据偏移 u32, 压缩长 u32, 解压长 u32, 块内首节点下标 u32 }
+BLOCK_ENTRY = struct.Struct("<IIII")
+# 小块切分上限:固件只有几 KB 空闲堆,不能整块解压。两个上限同时生效。
+BLOCK_MAX_BYTES = 3000
+BLOCK_MAX_NODES = 128
+assert HEADER.size == 20 and SECTION.size == 16 and CHUNK_ENTRY.size == 20 and BLOCK_ENTRY.size == 16
 
 # 段类型
-SEC_CHAR, SEC_NAME, SEC_FLAG, SEC_CHUNK, SEC_BLOB, SEC_META = range(6)
+SEC_CHAR, SEC_NAME, SEC_FLAG, SEC_CHUNK, SEC_BLOCK, SEC_BLOB, SEC_META = range(7)
 SECTION_NAMES = {
     SEC_CHAR: "SEC_CHAR", SEC_NAME: "SEC_NAME", SEC_FLAG: "SEC_FLAG",
-    SEC_CHUNK: "SEC_CHUNK", SEC_BLOB: "SEC_BLOB", SEC_META: "SEC_META",
+    SEC_CHUNK: "SEC_CHUNK", SEC_BLOCK: "SEC_BLOCK", SEC_BLOB: "SEC_BLOB", SEC_META: "SEC_META",
 }
 
 # 记录类型
@@ -556,34 +568,60 @@ def build_sections(story: Story, meta_blob: bytes) -> tuple[list[tuple[int, byte
     for page in story.flags:
         flag_writer.u32(page)
 
-    # 逐块压缩记录流:每块一个独立 raw-deflate,便于固件随机访问
+    # 逐块压缩记录流:每个小块一个独立 zlib 流,固件每次只解一块(<= BLOCK_MAX_BYTES)。
+    # 之前是整块(平均 21 KB)一个流,但设备端空闲堆只剩十几 KB,拿不到 32 KB 解压缓冲。
     blob = bytearray()
-    chunk_table: list[tuple[int, int, int, int]] = []
+    chunk_table: list[tuple] = []
+    block_table: list[tuple] = []
     for nodes in story.chunks:
-        record = Writer()
-        record.u16(len(nodes))
+        encoded = []
         for node in nodes:
-            encode_node(record, node, story)
-        raw = bytes(record.buf)
-        # 用 zlib 格式(带 2 字节头 + adler32)而不是裸 deflate:固件侧与图片包的
-        # 掩码/像素流走同一个 inflate 调用(TINFL_FLAG_PARSE_ZLIB_HEADER),少一个分支
-        compressor = zlib.compressobj(9)
-        payload = compressor.compress(raw) + compressor.flush()
-        blob += b"\x00" * (-len(blob) % 4)   # 每块 4 字节对齐(段内相对地址)
-        chunk_table.append((len(blob), len(payload), len(raw), len(nodes)))
-        blob += payload
+            node_writer = Writer()
+            encode_node(node_writer, node, story)
+            encoded.append(bytes(node_writer.buf))
+        chunk_start = len(blob)
+        first_block = len(block_table)
+        block_count = 0
+        index = 0
+        while index < len(encoded):
+            bytes_in_block = 0
+            count_in_block = 0
+            while index + count_in_block < len(encoded) and count_in_block < BLOCK_MAX_NODES:
+                following = len(encoded[index + count_in_block])
+                if count_in_block > 0 and bytes_in_block + following > BLOCK_MAX_BYTES:
+                    break
+                bytes_in_block += following
+                count_in_block += 1
+            record = Writer()
+            record.u16(count_in_block)
+            for node_bytes in encoded[index:index + count_in_block]:
+                record.buf += node_bytes
+            payload = zlib.compress(bytes(record.buf), 9)
+            blob += b"\x00" * (-len(blob) % 4)   # 每块 4 字节对齐(段内相对地址)
+            block_table.append((len(blob), len(payload), len(record.buf), index))
+            blob += payload
+            block_count += 1
+            index += count_in_block
+        chunk_table.append((chunk_start, len(blob) - chunk_start, 0, len(nodes), first_block,
+                            block_count, 0))
 
     chunk_writer = Writer()
     chunk_writer.u16(len(chunk_table))
     for entry in chunk_table:
         chunk_writer.buf += CHUNK_ENTRY.pack(*entry)
 
+    block_writer = Writer()
+    block_writer.u16(len(block_table))
+    for entry in block_table:
+        block_writer.buf += BLOCK_ENTRY.pack(*entry)
+
     sections = [
         (SEC_CHAR, bytes(char_writer.buf), len(story.char_table), len(char_writer.buf)),
         (SEC_NAME, bytes(name_writer.buf), len(NAME_BLOCKS), len(name_writer.buf)),
         (SEC_FLAG, bytes(flag_writer.buf), len(story.flags), len(flag_writer.buf)),
         (SEC_CHUNK, bytes(chunk_writer.buf), len(chunk_table), len(chunk_writer.buf)),
-        (SEC_BLOB, bytes(blob), len(chunk_table), len(blob)),
+        (SEC_BLOCK, bytes(block_writer.buf), len(block_table), len(block_writer.buf)),
+        (SEC_BLOB, bytes(blob), len(block_table), len(blob)),
         (SEC_META, meta_blob, 0, len(meta_blob)),
     ]
     return sections, chunk_table
@@ -618,6 +656,17 @@ class ChunkInfo:
     data_len: int
     raw_len: int
     node_count: int
+    first_block: int
+    block_count: int
+    reserved: int
+
+
+@dataclass
+class BlockInfo:
+    data_off: int
+    data_len: int
+    raw_len: int
+    first_node: int
 
 
 class Pack:
@@ -648,7 +697,7 @@ class Pack:
             self.sections[section_type] = (offset, count, size)
             self.section_order.append(section_type)
 
-        for required in (SEC_CHAR, SEC_NAME, SEC_FLAG, SEC_CHUNK, SEC_BLOB, SEC_META):
+        for required in (SEC_CHAR, SEC_NAME, SEC_FLAG, SEC_CHUNK, SEC_BLOCK, SEC_BLOB, SEC_META):
             if required not in self.sections:
                 raise ValueError(f"缺段 {SECTION_NAMES[required]}")
 
@@ -705,6 +754,18 @@ class Pack:
             for index in range(chunk_count)
         ]
 
+        # SEC_BLOCK:小块表(每个 chunk 的节点被切成若干 <=3 KB 的小块)
+        block_off, block_count, block_size = self.sections[SEC_BLOCK]
+        if block_size != 2 + BLOCK_ENTRY.size * block_count:
+            raise ValueError(f"SEC_BLOCK 大小不符: {block_size} vs 2+{BLOCK_ENTRY.size}*{block_count}")
+        stored_blocks = struct.unpack_from("<H", raw, block_off)[0]
+        if stored_blocks != block_count:
+            raise ValueError(f"SEC_BLOCK count 不符: {stored_blocks} vs {block_count}")
+        self.blocks = [
+            BlockInfo(*BLOCK_ENTRY.unpack_from(raw, block_off + 2 + BLOCK_ENTRY.size * index))
+            for index in range(block_count)
+        ]
+
         self.blob_off, _blob_count, self.blob_size = self.sections[SEC_BLOB]
         self.meta_off, _meta_count, self.meta_size = self.sections[SEC_META]
         self._ctx = Context(self.char_table, self.pools, self.flags)
@@ -719,18 +780,30 @@ class Pack:
                 result[key] = value
         return result
 
-    def decompress(self, index: int) -> bytes:
-        info = self.chunks[index]
+    def decompress_block(self, index: int) -> bytes:
+        info = self.blocks[index]
         payload = self.raw[self.blob_off + info.data_off:self.blob_off + info.data_off + info.data_len]
-        return zlib.decompress(payload)   # 逐块 zlib 流(带 adler32)
+        raw = zlib.decompress(payload)   # 每个小块一个 zlib 流(带 adler32)
+        if len(raw) != info.raw_len:
+            raise ValueError(f"第 {index + 1} 个小块解压长度不符: {len(raw)} != {info.raw_len}")
+        return raw
 
     def records(self, index: int) -> list:
-        raw = self.decompress(index)
-        reader = Reader(raw)
-        count = reader.u16()
-        nodes = [decode_node(reader, self._ctx) for _ in range(count)]
-        if not reader.done:
-            raise ValueError(f"第 {index + 1} 块记录流多余 {len(raw) - reader.pos} 字节")
+        """把一个 chunk 的各个小块拼回节点列表(同时校验块表与每块的节点数)。"""
+        chunk = self.chunks[index]
+        nodes: list = []
+        for step in range(chunk.block_count):
+            block = self.blocks[chunk.first_block + step]
+            if block.first_node != len(nodes):
+                raise ValueError(
+                    f"第 {index + 1} 块第 {step + 1} 个小块的 first_node={block.first_node} != {len(nodes)}")
+            reader = Reader(self.decompress_block(chunk.first_block + step))
+            count = reader.u16()
+            nodes.extend(decode_node(reader, self._ctx) for _ in range(count))
+            if not reader.done:
+                raise ValueError(f"第 {index + 1} 块第 {step + 1} 个小块记录流多余 {len(reader.raw) - reader.pos} 字节")
+        if len(nodes) != chunk.node_count:
+            raise ValueError(f"第 {index + 1} 块节点数不符: {len(nodes)} != {chunk.node_count}")
         return nodes
 
     def all_records(self) -> list[list]:
@@ -745,31 +818,49 @@ class Pack:
         for section_type, (offset, _count, size) in self.sections.items():
             if offset % 4:
                 errors.append(f"{SECTION_NAMES.get(section_type, section_type)} 未 4 字节对齐")
-        blob_end = self.blob_off + self.blob_size
-        for index, info in enumerate(self.chunks):
+        for index, info in enumerate(self.blocks):
             if info.data_off % 4:
-                errors.append(f"第 {index + 1} 块未 4 字节对齐: {info.data_off}")
+                errors.append(f"第 {index + 1} 个小块未 4 字节对齐: {info.data_off}")
             if info.data_off + info.data_len > self.blob_size:
-                errors.append(f"第 {index + 1} 块越界: {info.data_off}+{info.data_len}")
+                errors.append(f"第 {index + 1} 个小块越界: {info.data_off}+{info.data_len}")
             try:
-                raw = self.decompress(index)
+                raw = zlib.decompress(
+                    self.raw[self.blob_off + info.data_off:self.blob_off + info.data_off + info.data_len])
             except zlib.error as exc:
-                errors.append(f"第 {index + 1} 块解压失败: {exc}")
+                errors.append(f"第 {index + 1} 个小块解压失败: {exc}")
                 continue
             if len(raw) != info.raw_len:
-                errors.append(f"第 {index + 1} 块 raw_len 不符: {len(raw)} vs {info.raw_len}")
+                errors.append(f"第 {index + 1} 个小块 raw_len 不符: {len(raw)} vs {info.raw_len}")
             try:
                 reader = Reader(raw)
                 count = reader.u16()
-                if count != info.node_count:
-                    errors.append(f"第 {index + 1} 块 node_count 不符: {count} vs {info.node_count}")
                 for _ in range(count):
                     decode_node(reader, self._ctx)
                 if not reader.done:
-                    errors.append(f"第 {index + 1} 块记录流有多余字节")
+                    errors.append(f"第 {index + 1} 个小块记录流有多余字节")
             except (ValueError, IndexError) as exc:
-                errors.append(f"第 {index + 1} 块记录流异常: {exc}")
+                errors.append(f"第 {index + 1} 个小块记录流异常: {exc}")
+        for index, info in enumerate(self.chunks):
+            if info.first_block + info.block_count > len(self.blocks):
+                errors.append(f"第 {index + 1} 块的块表越界")
+                continue
+            counted = 0
+            for step in range(info.block_count):
+                block = self.blocks[info.first_block + step]
+                if block.first_node != counted:
+                    errors.append(
+                        f"第 {index + 1} 块第 {step + 1} 个小块 first_node 不符: "
+                        f"{block.first_node} != {counted}")
+                counted = block.first_node + self._block_node_count(info.first_block + step)
+            if counted != info.node_count:
+                errors.append(f"第 {index + 1} 块 node_count 不符: {counted} vs {info.node_count}")
         return errors
+
+    def _block_node_count(self, index: int) -> int:
+        info = self.blocks[index]
+        raw = zlib.decompress(
+            self.raw[self.blob_off + info.data_off:self.blob_off + info.data_off + info.data_len])
+        return struct.unpack_from("<H", raw)[0]
 
 
 def read_pack(path: Path) -> Pack:
@@ -818,13 +909,18 @@ def report(pack: Pack, out_path: Path, story: Story, meta: dict[str, str], args:
         f"事件图 {len(story.pools['event'])} / 背景 {len(story.pools['background'])} / "
         f"结局 {len(story.pools['ending'])}")
     log(f"  旗标: {len(story.flags)}  标签: {story.counts['labels']}  条件: {story.counts['conditions']}")
-    compressed = [entry[1] for entry in chunk_table]
-    raw_sizes = [entry[2] for entry in chunk_table]
-    log(f"  压缩分布(每块): 最小 {percentile(compressed, 0.0)} / 中位 {percentile(compressed, 0.5)} / "
+    compressed = [block.data_len for block in pack.blocks]
+    raw_sizes = [block.raw_len for block in pack.blocks]
+    nodes_per_block = sorted(
+        (pack.chunks[index].node_count, ) for index in range(len(pack.chunks)))
+    log(f"  小块数: {len(pack.blocks)}(平均每 chunk "
+        f"{len(pack.blocks) / max(1, len(pack.chunks)):.1f} 块)")
+    log(f"  压缩分布(每小块): 最小 {percentile(compressed, 0.0)} / 中位 {percentile(compressed, 0.5)} / "
         f"均值 {sum(compressed) / len(compressed):.0f} / p90 {percentile(compressed, 0.9)} / "
         f"最大 {percentile(compressed, 1.0)} 字节")
-    log(f"  原始分布(每块): 最小 {percentile(raw_sizes, 0.0)} / 中位 {percentile(raw_sizes, 0.5)} / "
-        f"最大 {percentile(raw_sizes, 1.0)} 字节,整体压缩率 {100 * sum(compressed) / sum(raw_sizes):.1f}%")
+    log(f"  原始分布(每小块): 最小 {percentile(raw_sizes, 0.0)} / 中位 {percentile(raw_sizes, 0.5)} / "
+        f"最大 {percentile(raw_sizes, 1.0)} 字节(固件解压缓冲需 >= 最大值),"
+        f"整体压缩率 {100 * sum(compressed) / sum(raw_sizes):.1f}%")
     if story.unknown_actions:
         log(f"  未知立绘动作(折进 change): {story.unknown_actions}")
     log(f"写出 {out_path}")

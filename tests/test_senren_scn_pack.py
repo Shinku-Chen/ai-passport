@@ -176,7 +176,9 @@ class SenrenScriptPackTest(unittest.TestCase):
         self.assertEqual(self.out.read_bytes(), second.read_bytes(), "两次构建结果不同")
         size = self.out.stat().st_size
         self.assertGreaterEqual(size, 1_150_000)
-        self.assertLessEqual(size, 1_300_000)
+        # 分块(每块 <=3 KB,固件只需要 4 KB 解压缓冲)让压缩率从 49% 降到 ~57%,
+        # 包体比整块压缩大 ~200 KB;上限留出余量,超了说明切分参数被改坏。
+        self.assertLessEqual(size, 1_600_000)
 
     def test_metadata_records_the_provenance(self) -> None:
         meta = self.pack.meta

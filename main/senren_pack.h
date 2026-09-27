@@ -14,11 +14,19 @@
 //
 // 载荷都已经是屏幕原生几何,固件不需要缩放:
 //   BG / CG / EFFECT  JPEG 240x320(解出来直接就是画布内容)
-//   SPRITE           调色板 PNG,宽 x 320(底部对齐,水平居中;实测 93..173 px 宽)
-//   SD               调色板 PNG 240x144
-//   CG_DIFF          { mask_len u32, pixels_len u32, deflate(mask), deflate(pixels) }
-//                    mask 是矩形内 1bpp(行优先,高位在左),pixels 是置位像素的
-//                    RGB565 小端序列,按扫描序排列
+//   SPRITE           分块调色板图,宽 x 320(底部对齐,水平居中)
+//   SD               分块调色板图 240x144
+//   CG_DIFF          { mask_len u32, block_count u32, block_len[block_count] u32,
+//                       deflate(mask), 像素块... }
+//                    mask 是矩形内 1bpp(行优先,高位在左);像素是置位像素的
+//                    RGB565 小端序列,按扫描序切块压缩(每块 <= 1024 像素)
+//
+// 分块调色板图(不是 PNG):
+//   u16 宽, u16 高, u16 调色板数, u16 每块行数, u16 块数, u16 保留,
+//   u32 每块解压字节(= 每块行数 x (宽 + 1)),
+//   u16 调色板[每项 RGB565 小端], u8 alpha[每项], u32 每块压缩长度[块数], 逐块 zlib 流。
+//   每块解压出来是若干行,每行 = 1 字节 PNG 滤波类型 + 宽度个索引,上一行跨块沿用。
+//   这样每块只要一个 2 KB 级行缓冲,不需要 tinfl 的 32 KB 环形字典(本板空闲堆很紧)。
 #pragma once
 
 #include <stdbool.h>

@@ -53,8 +53,8 @@ bool senren_pack_open(senren_pack_t *pack, const uint8_t *data, uint32_t size)
     if (version != SENREN_PACK_VERSION || total != size) {
         return false;
     }
-    if (header_size < SENREN_HEADER_SIZE ||
-        (uint64_t)header_size + (uint64_t)section_count * SENREN_SECTION_SIZE > size) {
+    if (header_size < SENREN_HEADER_SIZE + (uint32_t)section_count * SENREN_SECTION_SIZE ||
+        (uint64_t)header_size > size) {
         return false;
     }
 
@@ -62,8 +62,9 @@ bool senren_pack_open(senren_pack_t *pack, const uint8_t *data, uint32_t size)
     memset(&view, 0, sizeof(view));
     view.blob = data;
     view.blob_size = size;
+    // 段表紧跟在 20 字节头部之后;header_size 是「段体起点」(头部 + 段表)
     for (uint16_t index = 0; index < section_count; index++) {
-        const uint8_t *section = data + header_size + (uint32_t)index * SENREN_SECTION_SIZE;
+        const uint8_t *section = data + SENREN_HEADER_SIZE + (uint32_t)index * SENREN_SECTION_SIZE;
         uint32_t type = rd32(section);
         uint32_t offset = rd32(section + 4);
         uint32_t count = rd32(section + 8);
@@ -159,7 +160,8 @@ bool senren_pack_find(const senren_pack_t *pack, uint8_t pool, const char *name,
         uint32_t entry_name_len = rd16(record + 4);
         int cmp;
         if (pool != record[7]) {
-            cmp = pool < record[7] ? -1 : 1;
+            // cmp 的语义是「条目前还是目标前」:条目所在池更小就先走右边
+            cmp = record[7] < pool ? -1 : 1;
         } else {
             cmp = compare_bytes(pack->names + entry_name_off, entry_name_len,
                                 (const uint8_t *)name, name_len);

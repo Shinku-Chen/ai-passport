@@ -48,8 +48,8 @@
 #define SENREN_FLAG_MAX 64
 // 单句最多切几页(最长 60 字 -> 每行 13 字 5 行,实测最多 2 页)
 #define SENREN_PAGE_MAX 8
-// 单块解压缓冲上限(实测最大 23 KB,留余量)
-#define SENREN_CHUNK_RAW_MAX 32768
+// 单个小块解压缓冲上限:打包器把每块的原始字节压到 <= 3002 字节(见 BLOCK_MAX_BYTES)
+#define SENREN_BLOCK_RAW_MAX 4096
 
 // 节点类型,与转换脚本一一对应
 enum {
@@ -93,8 +93,9 @@ enum {
     SENREN_SCN_SEC_NAME = 1,
     SENREN_SCN_SEC_FLAG = 2,
     SENREN_SCN_SEC_CHUNK = 3,
-    SENREN_SCN_SEC_BLOB = 4,
-    SENREN_SCN_SEC_META = 5,
+    SENREN_SCN_SEC_BLOCK = 4,
+    SENREN_SCN_SEC_BLOB = 5,
+    SENREN_SCN_SEC_META = 6,
 };
 
 typedef struct {
@@ -109,6 +110,9 @@ typedef struct {
     const uint8_t *chunks;   // SEC_CHUNK 数据区
     uint32_t chunks_size;
     uint32_t chunk_count;
+    const uint8_t *blocks;   // SEC_BLOCK 数据区(每个 chunk 的节点被切成若干小块)
+    uint32_t blocks_size;
+    uint32_t block_count;
     const uint8_t *payload;  // SEC_BLOB 数据区
     uint32_t payload_size;
     const uint8_t *meta;
@@ -168,10 +172,10 @@ typedef struct {
     uint32_t resume_node;
     // 条件/选项设置的标志位(下标 = flag_id)
     uint8_t flags[SENREN_FLAG_MAX];
-    // 解压缓冲与它当前装的是哪一块(0xFFFF = 空);由状态机自己维护。
-    // 缓冲首次用到时 malloc:32 KB 放在结构体里会把 DRAM 静态段挤爆
-    // (本板静态段只有几百 KB,还装着 153 KB 画布与 LVGL 内存池)。
+    // 当前装的是哪一个小块(0xFFFF = 空)与它的首节点下标
     uint16_t loaded_chunk;
+    uint16_t loaded_block;
+    uint32_t loaded_first_node;
     uint32_t loaded_len;
     uint8_t *raw;
     uint32_t raw_capacity;
@@ -193,8 +197,8 @@ typedef struct {
 // ---- 剧本包 ---------------------------------------------------------------
 bool senren_scn_open(senren_scn_t *scn, const uint8_t *data, uint32_t size);
 
-// 解开一块到 raw 缓冲(容量必须 >= 该块 raw_len);返回解压后字节数,失败返回 0。
-uint32_t senren_scn_chunk(const senren_scn_t *scn, uint16_t index, uint8_t *raw, uint32_t capacity);
+// 解开一个小块到 raw 缓冲(容量必须 >= SENREN_BLOCK_RAW_MAX);返回解压后字节数,失败返回 0。
+uint32_t senren_scn_block(const senren_scn_t *scn, uint16_t block_index, uint8_t *raw, uint32_t capacity);
 
 // 把字典项解码成 UTF-8。越界返回 0 并写空串。
 size_t senren_scn_speaker(const senren_scn_t *scn, uint16_t index, char *out, size_t capacity);
@@ -238,6 +242,10 @@ bool senren_player_next_page(senren_player_t *player);
 size_t senren_player_page_text(const senren_player_t *player, char *out, size_t capacity);
 size_t senren_player_text(const senren_player_t *player, char *out, size_t capacity);
 size_t senren_player_speaker(const senren_player_t *player, char *out, size_t capacity);
+
+// 最近一次失败的原因(静态字符串,单线程使用)。调 senren_player_* 失败后打印它,
+// 能直接看出是"小块解压失败 / 找不到标签 / 记录流走不动"里的哪一种。
+const char *senren_get_error(void);
 
 // ---- 纯排版逻辑(宿主机可测)------------------------------------------------
 // 字符宽度单位:全角 2、半角 1(与界面字号无关,只用于断行)。

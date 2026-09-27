@@ -38,12 +38,17 @@ SCN_MAGIC = b"SENRSCN1"
 HEADER = struct.Struct("<8sHHHHI")
 SECTION = struct.Struct("<IIII")
 ASSET = struct.Struct("<IHBBHHHHHHHIIIH")
-CHUNK = struct.Struct("<IIII")
+CHUNK = struct.Struct("<IIIHHHH")
+BLOCK = struct.Struct("<IIII")
 
 SEC_NAME, SEC_ASSET, SEC_BLOB, SEC_META = range(4)
-SCN_SEC_CHAR, SCN_SEC_NAME, SCN_SEC_FLAG, SCN_SEC_CHUNK, SCN_SEC_BLOB, SCN_SEC_META = range(6)
+SCN_SEC_CHAR, SCN_SEC_NAME, SCN_SEC_FLAG, SCN_SEC_CHUNK, SCN_SEC_BLOCK, SCN_SEC_BLOB, SCN_SEC_META = range(7)
 
 KIND_BG, KIND_SPRITE, KIND_SD, KIND_CG, KIND_CG_DIFF, KIND_MISSING, KIND_EFFECT = range(7)
+BLOCKED_KINDS = (KIND_SPRITE, KIND_SD, KIND_EFFECT)
+# SPRITE/SD/EFFECT 的载荷是分块调色板格式(不是 PNG):见 tools/senren_pack.py 文件头
+BLOCK_HEADER = struct.Struct("<6HI")   # w, h, palette_count, block_rows, block_count, reserved, raw_block_bytes
+FILTER_PAETH = 4
 
 NODE_LABEL, NODE_CHAPTER, NODE_BG, NODE_DIALOGUE = 0, 1, 2, 3
 NODE_SELECT, NODE_EV, NODE_NEXT, NODE_SPRITE_OFF = 4, 5, 6, 7
@@ -116,22 +121,134 @@ class ImagePackLayoutTest(unittest.TestCase):
                 self.assertEqual(base["kind"], KIND_CG, "差分基准必须是完整 CG")
                 self.assertLessEqual(entry["dx"] + entry["dw"], base["width"])
                 self.assertLessEqual(entry["dy"] + entry["dh"], base["height"])
-                self.assertGreaterEqual(entry["data_len"], 8)
+                self.assertGreaterEqual(entry["data_len"], 12)
+                # 补丁 = u32 掩码长度 + u32 块数 + 每块 u32 长度 + 掩码流 + 各像素块
+                start = entry["data_off"]
+                mask_len, block_count = struct.unpack_from("<II", blob, start)
+                self.assertGreater(block_count, 0, "补丁至少要有一块像素")
+                lengths = [struct.unpack_from("<I", blob, start + 8 + 4 * index)[0]
+                           for index in range(block_count)]
+                self.assertEqual(8 + 4 * block_count + mask_len + sum(lengths), entry["data_len"],
+                                 "补丁长度与块账对不上")
+                expected_mask = (entry["dw"] * entry["dh"] + 7) // 8
+                offset = start + 8 + 4 * block_count
+                mask = zlib.decompress(blob[offset:offset + mask_len])
+                self.assertEqual(len(mask), expected_mask, "掩码字节数不对")
+                offset += mask_len
+                pixels = b""
+                for length in lengths:
+                    pixels += zlib.decompress(blob[offset:offset + length])
+                    offset += length
+                marked = sum(bin(byte).count("1") for byte in mask)
+                self.assertEqual(len(pixels), marked * 2, "像素数不等于掩码置位数")
             if entry["kind"] in (KIND_BG, KIND_CG):
                 head = blob[entry["data_off"]] if entry["data_len"] else 0
                 self.assertEqual(head, 0xFF, f"{entry['name']} 不是 JPEG")
-            if entry["kind"] == KIND_CG_DIFF:
-                # 补丁载荷 = u32 掩码长度 + u32 像素长度 + 两段 zlib 流
-                mask_len, pixels_len = struct.unpack_from("<II", blob, entry["data_off"])
-                self.assertEqual(mask_len + pixels_len + 8, entry["data_len"],
-                                 f"{entry['name']} 补丁长度对不上")
-                expected_mask = (entry["dw"] * entry["dh"] + 7) // 8
-                mask = zlib.decompress(blob[entry["data_off"] + 8:
-                                            entry["data_off"] + 8 + mask_len])
-                pixels = zlib.decompress(blob[entry["data_off"] + 8 + mask_len:])
-                self.assertEqual(len(mask), expected_mask, f"{entry['name']} 掩码字节数不对")
-                marked = sum(bin(byte).count("1") for byte in mask)
-                self.assertEqual(len(pixels), marked * 2, f"{entry['name']} 像素数不等于掩码置位数")
+
+    def test_blocked_payloads_decode(self) -> None:
+        """SPRITE/SD/EFFECT 是分块调色板载荷(**不是 PNG**):头部 + 逐块解压都要对得上。
+
+        固件按 block_rows 一块块解压:块表错一位、滤波器类型越界或行数对不上,
+        真机是画面错位/越界读,这里先把整包逐块走一遍。
+        """
+        names_off, _, names_size = self.sections[SEC_NAME]
+        asset_off, entry_count, _ = self.sections[SEC_ASSET]
+        blob_off, _, blob_size = self.sections[SEC_BLOB]
+        names = self.raw[names_off:names_off + names_size]
+        blob = self.raw[blob_off:blob_off + blob_size]
+        checked = 0
+        for index in range(entry_count):
+            record = ASSET.unpack_from(self.raw, asset_off + index * ASSET.size)
+            kind = record[2]
+            if kind not in BLOCKED_KINDS:
+                continue
+            name = names[record[0]:record[0] + record[1]].decode("utf-8")
+            if record[13] & 1:      # ALIAS:没有载荷,直接指向基准条目
+                self.assertEqual(record[12], 0, f"{name} 别名条目不该有载荷")
+                continue
+            payload = blob[record[11]:record[11] + record[12]]
+            # 载荷以 u16 宽/高开头 —— 不可能再命中 PNG 魔数
+            self.assertNotEqual(payload[:4], b"\x89PNG", f"{name} 不该是 PNG")
+            (width, height, palette_count, block_rows, block_count,
+             reserved, raw_block_bytes) = BLOCK_HEADER.unpack_from(payload)
+            self.assertEqual((width, height), (record[5], record[6]), f"{name} 载荷尺寸与条目不符")
+            self.assertTrue(1 <= palette_count <= 256, f"{name} palette_count 越界")
+            self.assertGreater(block_rows, 0, f"{name} block_rows=0")
+            self.assertEqual(block_count, (height + block_rows - 1) // block_rows,
+                             f"{name} block_count 不等于 ceil(height / block_rows)")
+            self.assertEqual(reserved, 0, f"{name} reserved 应该是 0")
+            self.assertEqual(raw_block_bytes, block_rows * (width + 1),
+                             f"{name} raw_block_bytes 不等于 block_rows * (width + 1)")
+            table = BLOCK_HEADER.size + palette_count * 3 + block_count * 4
+            self.assertLessEqual(table, len(payload), f"{name} 调色板/块表越界")
+            lengths = struct.unpack_from(f"<{block_count}I", payload,
+                                         BLOCK_HEADER.size + palette_count * 3)
+            position = table
+            rows = 0
+            first_filter = None
+            row_bytes = width + 1
+            for block_index, length in enumerate(lengths):
+                self.assertLessEqual(position + length, len(payload),
+                                     f"{name} 第 {block_index} 块越界")
+                plain = zlib.decompress(payload[position:position + length])
+                position += length
+                self.assertLessEqual(len(plain), raw_block_bytes,
+                                     f"{name} 第 {block_index} 块解压后超过 raw_block_bytes")
+                self.assertEqual(len(plain) % row_bytes, 0, f"{name} 第 {block_index} 块不是整行")
+                for offset in range(0, len(plain), row_bytes):
+                    if first_filter is None:
+                        first_filter = plain[offset]
+                    self.assertLessEqual(plain[offset], FILTER_PAETH,
+                                         f"{name} 第 {block_index} 块滤波器非法")
+                rows += len(plain) // row_bytes
+            self.assertEqual(position, len(payload), f"{name} 块流后还有多余字节")
+            self.assertEqual(rows, height, f"{name} 解压行数不等于 height")
+            self.assertIsNotNone(first_filter, f"{name} 没有解压出任何行")
+            self.assertLessEqual(first_filter, FILTER_PAETH, f"{name} 首行滤波器非法")
+            checked += 1
+        self.assertGreater(checked, 0, "包里没有分块调色板条目")
+
+    def test_lookup_finds_every_entry(self) -> None:
+        """按 main/senren_pack.c 的senren_pack_find 同逻辑二分查找:每条都应该查到自己。
+
+        池比较的方向写反时,池 0/1 的条目会永远收敛不到(真机表现为标题图/立绘查不到)。
+        """
+        names_off, _, names_size = self.sections[SEC_NAME]
+        asset_off, entry_count, _ = self.sections[SEC_ASSET]
+        names = self.raw[names_off:names_off + names_size]
+
+        def lookup(pool: int, wanted: bytes) -> int:
+            low, high = 0, entry_count
+            while low < high:
+                middle = low + (high - low) // 2
+                record = ASSET.unpack_from(self.raw, asset_off + middle * ASSET.size)
+                entry_name = names[record[0]:record[0] + record[1]]
+                if pool != record[3]:
+                    # 与 C 一致:cmp<0 表示「条目排在目标之前」-> 往右半区找
+                    cmp = -1 if record[3] < pool else 1
+                elif entry_name < wanted:
+                    cmp = -1
+                elif entry_name > wanted:
+                    cmp = 1
+                else:
+                    cmp = 0
+                if cmp == 0:
+                    return middle
+                if cmp < 0:
+                    low = middle + 1
+                else:
+                    high = middle
+            return -1
+
+        checked = 0
+        for index in range(entry_count):
+            record = ASSET.unpack_from(self.raw, asset_off + index * ASSET.size)
+            entry_name = names[record[0]:record[0] + record[1]]
+            self.assertEqual(lookup(record[3], entry_name), index,
+                             f"{entry_name!r}(pool {record[3]}) 二分查找落到了别的条目")
+            checked += 1
+        self.assertEqual(checked, entry_count)
+        self.assertGreater(checked, 700, "条目数太少了,不像完整包")
 
     def test_title_art_is_present(self) -> None:
         """标题图必须按 main/senren_pack.h 里的宏观名打进背景名字空间。"""
@@ -186,10 +303,14 @@ class ScnPackLayoutTest(unittest.TestCase):
         flag_off, flag_count, flag_size = self.sections[SCN_SEC_FLAG]
         self.assertEqual(struct.unpack_from("<I", self.raw, flag_off)[0], flag_count)
         self.assertEqual(flag_size, 4 + 4 * flag_count)
-        # SEC_CHUNK: u16 count + count × 16
+        # SEC_CHUNK: u16 count + count × 20
         chunk_off, chunk_count, chunk_size = self.sections[SCN_SEC_CHUNK]
         self.assertEqual(struct.unpack_from("<H", self.raw, chunk_off)[0], chunk_count)
         self.assertEqual(chunk_size, 2 + CHUNK.size * chunk_count)
+        # SEC_BLOCK: u16 count + count × 16(每个 chunk 的节点被切成 <=3 KB 的小块)
+        block_off, block_count, block_size = self.sections[SCN_SEC_BLOCK]
+        self.assertEqual(struct.unpack_from("<H", self.raw, block_off)[0], block_count)
+        self.assertEqual(block_size, 2 + BLOCK.size * block_count)
 
     def test_char_table_is_plausible(self) -> None:
         """固件把 SEC_CHAR 当作「u32 计数之后的码位数组」;错位会读出垃圾码位。"""
@@ -200,19 +321,38 @@ class ScnPackLayoutTest(unittest.TestCase):
         for code in codes[:32]:
             self.assertTrue(0x20 <= code <= 0xFFFF, f"码位不像字符: U+{code:04X}")
 
-    def test_chunks_decompress_to_their_declared_size(self) -> None:
+    def test_chunks_are_split_into_small_blocks(self) -> None:
+        """每个 chunk 由若干小块组成;固件每次只解一块(空闲堆只有十几 KB)。
+
+        这里按 main/senren_model.c 的读法逐块走:块首节点连续、每块节点数合得上、
+        每块解压长度 == raw_len、块内记录走完不留尾巴。
+        """
         chunk_off, chunk_count, _ = self.sections[SCN_SEC_CHUNK]
+        block_off, block_count, _ = self.sections[SCN_SEC_BLOCK]
         blob_off, _, blob_size = self.sections[SCN_SEC_BLOB]
+        blocks = [BLOCK.unpack_from(self.raw, block_off + 2 + index * BLOCK.size)
+                  for index in range(block_count)]
+        max_raw = 0
         for index in range(chunk_count):
-            data_off, data_len, raw_len, node_count = CHUNK.unpack_from(
+            data_off, data_len, _raw_total, node_count, first_block, count, _ = CHUNK.unpack_from(
                 self.raw, chunk_off + 2 + index * CHUNK.size)
-            self.assertLessEqual(data_off + data_len, blob_size, f"块 {index} 越界")
-            block = self.raw[blob_off + data_off:blob_off + data_off + data_len]
-            plain = zlib.decompress(block)
-            self.assertEqual(len(plain), raw_len, f"块 {index} 解压长度不符")
-            self.assertEqual(struct.unpack_from("<H", plain)[0], node_count,
-                             f"块 {index} 的节点数与记录不符")
-            self.assertEqual(self.walk_nodes(plain), node_count, f"块 {index} 记录走不完")
+            self.assertEqual(data_off + data_len <= blob_size, True, f"块 {index} 越界")
+            seen = 0
+            for step in range(count):
+                entry = blocks[first_block + step]
+                block_data_off, block_len, raw_len, first_node = entry
+                self.assertEqual(first_node, seen, f"块 {index} 第 {step} 个小块 first_node 不连续")
+                self.assertLessEqual(block_data_off + block_len, blob_size, "小块越界")
+                plain = zlib.decompress(
+                    self.raw[blob_off + block_data_off:blob_off + block_data_off + block_len])
+                self.assertEqual(len(plain), raw_len, f"小块 {first_block + step} 解压长度不符")
+                nodes_here = struct.unpack_from("<H", plain)[0]
+                self.assertEqual(self.walk_nodes(plain), nodes_here, "小块内记录走不完")
+                seen += nodes_here
+                max_raw = max(max_raw, raw_len)
+            self.assertEqual(seen, node_count, f"块 {index} 节点总数不符: {seen} != {node_count}")
+        self.assertLessEqual(max_raw, 4096,
+                             f"最大小块 {max_raw} 字节超过固件缓冲(SENREN_BLOCK_RAW_MAX=4096)")
 
     def walk_nodes(self, plain: bytes) -> int:
         """按 main/senren_model.c 的 node_skip 逐条走,返回节点数(走不完就抛错)。"""

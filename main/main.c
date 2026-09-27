@@ -389,7 +389,9 @@ void app_main(void)
         ESP_LOGE(TAG, "输入队列创建失败");
         return;
     }
-    if (xTaskCreate(input_task, "atri_input", 4096, NULL, 5, &s_input_task) != pdPASS) {
+    // 输入任务里跑的是"按键 -> 模型推进 -> 画面合成"整条链路:模型一次小块解压、
+    // 立绘逐块解码都在这里,4 KB 栈会直接触发 Stack protection fault(实测)。
+    if (xTaskCreate(input_task, "atri_input", 8192, NULL, 5, &s_input_task) != pdPASS) {
         ESP_LOGE(TAG, "输入任务创建失败");
         vQueueDelete(s_input_queue);
         s_input_queue = NULL;

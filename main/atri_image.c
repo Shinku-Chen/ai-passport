@@ -1,16 +1,21 @@
 // main/atri_image.c —— 画面区合成实现。
 //
-// 三套解码路径,共同点是"没有中间大缓冲":
+// 三套解码路径,共同点是"没有中间大缓冲、不用 32 KB inflate 字典":
 //   1. 背景 / 事件 CG:JPEG 240x320,esp_jpeg 直接解进画布(输出缓冲就是画布);
-//   2. 立绘 / SD / 特效:调色板 PNG,逐行解压 -> 反滤波 -> 查调色板 -> 混进画布,
-//      只占一个 32 KB 环形字典(见 senren_inflate.c)加两行缓冲;
+//   2. 立绘 / SD / 特效:**分块调色板格式**(不是 PNG),每块解压到 ≤2 KB 的行缓冲,
+//      逐行反滤波 -> 查调色板 -> 混进画布;
 //   3. 事件 CG 补丁:先解基准 JPEG,再按 1bpp 掩码把 RGB565 像素逐行覆写上去
-//      (掩码整段解进一块 bbox/8 字节的缓冲,像素流边解边写)。
+//      (掩码整段解压,像素按块解压,边解边写)。
+//
+// 为什么不用 PNG / 流式解压:本板空闲堆只有十几 KB,而 tinfl 的流式解压需要一块
+// 32 KB 环形字典。分块格式把字典需求压到 0(每块单独解压,不用 TINFL 的环形模式),
+// 代价是压缩率略低 —— 由 tools/senren_pack.py 承担。
 #include "atri_image.h"
 
 #include "senren_inflate.h"
 
 #include "esp_log.h"
+#include "esp_system.h"
 #include "esp_timer.h"
 #include "jpeg_decoder.h"
 #include "lvgl.h"
@@ -36,6 +41,21 @@ static const char *TAG = "senren_img";
 #define SENREN_SCRIM_B 20
 #define SENREN_SCRIM_ALPHA_TOP 24
 #define SENREN_SCRIM_ALPHA_BOTTOM 96
+
+// 分块调色板格式头部:8 个 u16(见 tools/senren_pack.py)
+#define BLOCKED_HEADER 16u
+// 补丁像素块的像素数(与打包器一致):每块最多 1024 个 RGB565 = 2 KB
+#define PATCH_BLOCK_PIXELS 1024u
+
+static uint16_t rd16(const uint8_t *p)
+{
+    return (uint16_t)(p[0] | ((uint16_t)p[1] << 8));
+}
+
+static uint32_t rd32(const uint8_t *p)
+{
+    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
+}
 
 static void canvas_invalidate(atri_image_t *img)
 {
@@ -141,145 +161,94 @@ static bool decode_jpeg(atri_image_t *img, const senren_asset_t *asset)
                  (unsigned)out.height);
         return false;
     }
+    ESP_LOGI(TAG, "背景/CG %s %u ms,空闲堆 %u", asset->name, (unsigned)img->last_bg_ms,
+             (unsigned)esp_get_free_heap_size());
     return true;
 }
 
 // --------------------------------------------------------------------------
-// 调色板 PNG(立绘 / SD / 特效)
+// 分块调色板图像(立绘 / SD / 特效)
 // --------------------------------------------------------------------------
-
-#define PNG_TYPE(a, b, c, d) \
-    (((uint32_t)(a) << 24) | ((uint32_t)(b) << 16) | ((uint32_t)(c) << 8) | (uint32_t)(d))
-
-typedef struct {
-    const uint8_t *data;
-    uint32_t len;
-    uint32_t offset;
-} png_walker_t;
-
-static bool png_next_chunk(png_walker_t *walker, uint32_t *type, const uint8_t **body,
-                           uint32_t *body_len)
-{
-    // chunk = 长度 u32 + 类型 4B + 数据 + CRC 4B
-    if (walker->offset + 12 > walker->len) {
-        return false;
-    }
-    const uint8_t *header = walker->data + walker->offset;
-    uint32_t length = ((uint32_t)header[0] << 24) | ((uint32_t)header[1] << 16) |
-                      ((uint32_t)header[2] << 8) | header[3];
-    if (walker->offset + 12 + length > walker->len) {
-        return false;
-    }
-    *type = ((uint32_t)header[4] << 24) | ((uint32_t)header[5] << 16) | ((uint32_t)header[6] << 8) |
-            header[7];
-    *body = header + 8;
-    *body_len = length;
-    walker->offset += 12 + length;
-    return true;
-}
 
 typedef struct {
     uint16_t width;
     uint16_t height;
     uint16_t palette_count;
-    uint16_t palette565[256];
-    uint8_t palette_alpha[256];
-    const uint8_t *idat;
-    uint32_t idat_len;
-} png_info_t;
+    uint16_t block_rows;
+    uint16_t block_count;
+    uint32_t raw_block_bytes;
+    const uint8_t *palette;     // u16 RGB565 × palette_count
+    const uint8_t *alpha;       // u8 × palette_count
+    const uint8_t *block_lens;  // u32 × block_count
+    const uint8_t *blocks;      // 各块 zlib 流
+} blocked_info_t;
 
-static uint16_t expand565(uint8_t red, uint8_t green, uint8_t blue)
+static bool blocked_read_info(const senren_asset_t *asset, blocked_info_t *info)
 {
-    return (uint16_t)(((red >> 3) << 11) | ((green >> 2) << 5) | (blue >> 3));
-}
-
-static bool png_read_info(const senren_asset_t *asset, png_info_t *info)
-{
-    memset(info, 0, sizeof(*info));
-    png_walker_t walker = { asset->data, asset->data_len, 0 };
-    bool have_header = false;
-    bool have_palette = false;
-    uint32_t type = 0;
-    const uint8_t *body = NULL;
-    uint32_t body_len = 0;
-    uint32_t idat_offset = 0;
-    uint32_t idat_length = 0;
-    while (png_next_chunk(&walker, &type, &body, &body_len)) {
-        if (type == PNG_TYPE('I', 'H', 'D', 'R')) {
-            if (body_len < 13) {
-                return false;
-            }
-            info->width = (uint16_t)(((uint16_t)body[0] << 8) | body[1]);
-            info->height = (uint16_t)(((uint16_t)body[2] << 8) | body[3]);
-            const uint8_t depth = body[8];
-            const uint8_t color_type = body[9];
-            const uint8_t interlace = body[12];
-            // 只支持 8 位调色板、非隔行 —— tools/senren_pack.py 生成的就是这种
-            if (depth != 8 || color_type != 3 || interlace != 0) {
-                ESP_LOGE(TAG, "%s: 不支持的 PNG(深度 %u 类型 %u 隔行 %u)", asset->name, depth,
-                         color_type, interlace);
-                return false;
-            }
-            have_header = true;
-        } else if (type == PNG_TYPE('P', 'L', 'T', 'E')) {
-            const uint32_t entries = body_len / 3;
-            if (entries == 0 || entries > 256) {
-                return false;
-            }
-            info->palette_count = (uint16_t)entries;
-            for (uint32_t index = 0; index < entries; index++) {
-                info->palette565[index] = expand565(body[index * 3], body[index * 3 + 1],
-                                                    body[index * 3 + 2]);
-                info->palette_alpha[index] = 255;
-            }
-            have_palette = true;
-        } else if (type == PNG_TYPE('t', 'R', 'N', 'S')) {
-            for (uint32_t index = 0; index < body_len && index < 256; index++) {
-                info->palette_alpha[index] = body[index];
-            }
-        } else if (type == PNG_TYPE('I', 'D', 'A', 'T')) {
-            // IDAT 可能分成多块;它们在文件里首尾相接,所以只记起点与总长
-            if (idat_length == 0) {
-                idat_offset = (uint32_t)(body - asset->data);
-            }
-            idat_length += body_len;
-        }
-    }
-    if (!have_header || !have_palette || idat_length == 0) {
-        ESP_LOGE(TAG, "%s: PNG 结构不完整", asset->name);
+    if (asset->data == NULL || asset->data_len < BLOCKED_HEADER) {
         return false;
     }
-    info->idat = asset->data + idat_offset;
-    info->idat_len = idat_length;
+    const uint8_t *p = asset->data;
+    info->width = rd16(p);
+    info->height = rd16(p + 2);
+    info->palette_count = rd16(p + 4);
+    info->block_rows = rd16(p + 6);
+    info->block_count = rd16(p + 8);
+    info->raw_block_bytes = rd32(p + 12);
+    if (info->width == 0 || info->height == 0 || info->palette_count == 0 ||
+        info->palette_count > 256 || info->block_rows == 0 || info->block_count == 0) {
+        ESP_LOGE(TAG, "%s: 分块格式头部不合法", asset->name);
+        return false;
+    }
+    if (info->raw_block_bytes != (uint32_t)info->block_rows * (info->width + 1u)) {
+        ESP_LOGE(TAG, "%s: raw_block_bytes 与 block_rows/width 不符", asset->name);
+        return false;
+    }
+    const uint32_t expected_blocks = (info->height + info->block_rows - 1u) / info->block_rows;
+    if (info->block_count != expected_blocks) {
+        ESP_LOGE(TAG, "%s: block_count %u != %u", asset->name, (unsigned)info->block_count,
+                 (unsigned)expected_blocks);
+        return false;
+    }
+    const uint32_t palette_bytes = (uint32_t)info->palette_count * 2u;
+    const uint32_t alpha_bytes = info->palette_count;
+    const uint32_t lens_bytes = (uint32_t)info->block_count * 4u;
+    if (BLOCKED_HEADER + palette_bytes + alpha_bytes + lens_bytes > asset->data_len) {
+        ESP_LOGE(TAG, "%s: 分块格式长度不够", asset->name);
+        return false;
+    }
+    info->palette = p + BLOCKED_HEADER;
+    info->alpha = info->palette + palette_bytes;
+    info->block_lens = info->alpha + alpha_bytes;
+    info->blocks = info->block_lens + lens_bytes;
+    uint32_t available = asset->data_len - (uint32_t)(info->blocks - asset->data);
+    for (uint16_t block = 0; block < info->block_count; block++) {
+        const uint32_t length = rd32(info->block_lens + (uint32_t)block * 4u);
+        if (length > available) {
+            ESP_LOGE(TAG, "%s: 第 %u 块越界", asset->name, (unsigned)block);
+            return false;
+        }
+        available -= length;
+    }
     return true;
 }
 
-// 逐行解一张调色板 PNG:解压流按行喂给本结构,一行凑齐就反滤波 + 混进画布。
-typedef struct {
-    atri_image_t *img;
-    const png_info_t *info;
-    uint32_t width;
-    uint8_t *row;        // width + 1(首字节是滤波类型)
-    uint8_t *previous;   // width
-    uint32_t have;       // 当前行已收到多少字节
-    uint32_t y;
-    uint32_t written;
-    int origin_x;
-    int origin_y;
-    bool failed;
-} png_stream_t;
-
-static bool png_emit_row(png_stream_t *state)
+// 把一行索引反滤波并混进画布;previous 是上一行(首行全 0)
+static void blocked_emit_row(atri_image_t *img, const blocked_info_t *info, uint8_t *row,
+                             const uint8_t *previous, int y, int origin_x, int origin_y,
+                             uint32_t *written)
 {
-    const uint8_t filter = state->row[0];
-    uint8_t *indices = state->row + 1;
-    if (filter > 4) {
-        return false;
+    const uint8_t filter = row[0];
+    uint8_t *indices = row + 1;
+    const int dst_y = origin_y + y;
+    uint16_t *dst_row = NULL;
+    if (dst_y >= 0 && dst_y < ATRI_ART_H) {
+        dst_row = img->pixels + (size_t)dst_y * ATRI_ART_W;
     }
-    for (uint32_t x = 0; x < state->width; x++) {
+    for (uint32_t x = 0; x < info->width; x++) {
         const uint8_t left = x ? indices[x - 1] : 0;
-        const uint8_t up = state->previous[x];
-        const uint8_t up_left = x ? state->previous[x - 1] : 0;
+        const uint8_t up = previous[x];
+        const uint8_t up_left = x ? previous[x - 1] : 0;
         uint8_t value = indices[x];
         switch (filter) {
         case 0:
@@ -293,7 +262,7 @@ static bool png_emit_row(png_stream_t *state)
         case 3:
             value = (uint8_t)(value + ((left + up) >> 1));
             break;
-        default: {
+        case 4: {
             const int p = (int)left + (int)up - (int)up_left;
             const int pa = p > (int)left ? p - (int)left : (int)left - p;
             const int pb = p > (int)up ? p - (int)up : (int)up - p;
@@ -302,118 +271,139 @@ static bool png_emit_row(png_stream_t *state)
             value = (uint8_t)(value + predictor);
             break;
         }
+        default:
+            value = 0;   // 未知滤波类型:当 0 处理,不让整幅画报废
+            break;
         }
         indices[x] = value;
-
-        const int dst_y = state->origin_y + (int)state->y;
-        if (dst_y < 0 || dst_y >= ATRI_ART_H) {
+        if (dst_row == NULL) {
             continue;
         }
-        const int dst_x = state->origin_x + (int)x;
-        if (dst_x < 0 || dst_x >= ATRI_ART_W) {
+        const int dst_x = origin_x + (int)x;
+        if (dst_x < 0 || dst_x >= ATRI_ART_W || value >= info->palette_count) {
             continue;
         }
-        if (value >= state->info->palette_count) {
-            continue;
-        }
-        const uint8_t alpha = state->info->palette_alpha[value];
+        const uint8_t alpha = info->alpha[value];
         if (alpha == 0) {
             continue;
         }
-        uint16_t *target = state->img->pixels + (size_t)dst_y * ATRI_ART_W + (size_t)dst_x;
-        *target = blend565(*target, state->info->palette565[value], alpha);
-        state->written++;
+        const uint16_t color = rd16(info->palette + (uint32_t)value * 2u);
+        uint16_t *target = dst_row + dst_x;
+        *target = blend565(*target, color, alpha);
+        (*written)++;
     }
-    memcpy(state->previous, indices, state->width);
-    return true;
 }
 
-static bool png_sink_bytes(const uint8_t *data, uint32_t length, void *context)
+static bool blocked_blit(atri_image_t *img, const senren_asset_t *asset, int origin_x, int origin_y,
+                         uint32_t *written_out)
 {
-    png_stream_t *state = (png_stream_t *)context;
-    while (length > 0) {
-        if (state->y >= state->info->height) {
-            state->failed = true;   // 数据比声明尺寸多
-            return false;
-        }
-        const uint32_t need = state->width + 1u - state->have;
-        const uint32_t take = length < need ? length : need;
-        memcpy(state->row + state->have, data, take);
-        state->have += take;
-        data += take;
-        length -= take;
-        if (state->have == state->width + 1u) {
-            if (!png_emit_row(state)) {
-                state->failed = true;
-                return false;
-            }
-            state->have = 0;
-            state->y++;
-        }
-    }
-    return true;
-}
-
-// 逐行解一张调色板 PNG 并混进画布。origin_x/origin_y 是左上角在画布里的位置。
-static bool png_blit(atri_image_t *img, const senren_asset_t *asset, int origin_x, int origin_y,
-                     uint32_t *written_out)
-{
-    png_info_t info;
-    if (!png_read_info(asset, &info)) {
+    blocked_info_t info;
+    if (!blocked_read_info(asset, &info)) {
         return false;
     }
-    const uint32_t width = info.width;
-    if (width == 0 || width > 1024 || info.height == 0) {
-        return false;
-    }
-    uint8_t *row = (uint8_t *)malloc(width + 1u);
-    uint8_t *previous = (uint8_t *)malloc(width ? width : 1u);
-    if (!row || !previous) {
-        free(row);
+    const uint32_t row_bytes = (uint32_t)info.width + 1u;
+    uint8_t *scratch = (uint8_t *)malloc(info.raw_block_bytes);
+    uint8_t *previous = (uint8_t *)malloc(info.width);
+    if (scratch == NULL || previous == NULL) {
+        ESP_LOGE(TAG, "%s: 行缓冲分配失败(空闲堆 %u)", asset->name,
+                 (unsigned)esp_get_free_heap_size());
+        free(scratch);
         free(previous);
         return false;
     }
-    memset(previous, 0, width);
+    memset(previous, 0, info.width);
 
-    png_stream_t state = {
-        .img = img, .info = &info, .width = width, .row = row, .previous = previous,
-        .have = 0, .y = 0, .written = 0, .origin_x = origin_x, .origin_y = origin_y,
-        .failed = false,
-    };
-    const bool ok = senren_inflate_stream(info.idat, info.idat_len, png_sink_bytes, &state);
-    const uint32_t written = state.written;
-    free(row);
+    const uint8_t *block = info.blocks;
+    uint32_t written = 0;
+    int y = 0;
+    bool ok = true;
+    for (uint16_t index = 0; index < info.block_count && ok; index++) {
+        const uint32_t length = rd32(info.block_lens + (uint32_t)index * 4u);
+        const uint32_t produced = senren_inflate(block, length, scratch, info.raw_block_bytes);
+        block += length;
+        if (produced == 0 || produced % row_bytes != 0) {
+            ESP_LOGE(TAG, "%s: 第 %u 块解压异常(%u 字节)", asset->name, (unsigned)index,
+                     (unsigned)produced);
+            ok = false;
+            break;
+        }
+        const uint32_t rows = produced / row_bytes;
+        for (uint32_t row = 0; row < rows; row++) {
+            uint8_t *line = scratch + (size_t)row * row_bytes;
+            blocked_emit_row(img, &info, line, previous, y, origin_x, origin_y, &written);
+            memcpy(previous, line + 1, info.width);
+            y++;
+        }
+    }
+    free(scratch);
     free(previous);
-    if (!ok || state.failed || state.y != info.height) {
-        ESP_LOGE(TAG, "%s: PNG 解码失败(解出 %u/%u 行)", asset->name, (unsigned)state.y,
-                 (unsigned)info.height);
-        return false;
+    if (ok && y != info.height) {
+        ESP_LOGE(TAG, "%s: 行数不符(%d/%u)", asset->name, y, (unsigned)info.height);
+        ok = false;
     }
     if (written_out) {
         *written_out = written;
     }
-    return true;
+    return ok;
 }
 
 // --------------------------------------------------------------------------
 // 事件 CG 掩码补丁
 // --------------------------------------------------------------------------
 
+// 像素块解压出来的字节流:掩码说哪些位置要覆写,像素按扫描序从这里取
 typedef struct {
     atri_image_t *img;
     const senren_asset_t *asset;
     const uint8_t *mask;
     uint32_t row_bytes;
-    uint32_t y;        // 下一个待填像素所在行
-    uint32_t x;        // 该行的下一个待查位
+    const uint8_t *blocks;
+    const uint8_t *block_lens;
+    uint32_t block_count;
+    uint32_t block_index;
+    uint32_t block_left;      // 当前块剩余未消费的字节
+    uint8_t *scratch;         // PATCH_BLOCK_PIXELS * 2 字节
+    uint32_t scratch_used;
     uint8_t pair[2];
-    uint32_t have;
+    uint32_t pair_have;
+    uint32_t y;
+    uint32_t x;
     uint32_t written;
-    bool failed;
 } patch_stream_t;
 
-// 找下一个置位像素(按扫描序);找不到返回 false(像素流比掩码长)
-static bool patch_next_pixel(patch_stream_t *state, uint32_t *out_y, uint32_t *out_x)
+static bool patch_next_block(patch_stream_t *state)
+{
+    if (state->block_index >= state->block_count) {
+        return false;
+    }
+    const uint32_t length = rd32(state->block_lens + state->block_index * 4u);
+    const uint32_t produced =
+        senren_inflate(state->blocks, length, state->scratch, PATCH_BLOCK_PIXELS * 2u);
+    state->blocks += length;
+    state->block_index++;
+    if (produced == 0) {
+        return false;
+    }
+    state->scratch_used = produced;
+    state->block_left = produced;
+    return true;
+}
+
+// 取下一个像素(2 字节小端);没有更多数据返回 false
+static bool patch_next_pixel_bytes(patch_stream_t *state, uint8_t out[2])
+{
+    for (int index = 0; index < 2; index++) {
+        if (state->block_left == 0 && !patch_next_block(state)) {
+            return false;
+        }
+        out[index] = state->scratch[state->scratch_used - state->block_left];
+        state->block_left--;
+    }
+    return true;
+}
+
+// 生成下一个置位像素的位置(行内 x 递增,行末换行)
+static bool patch_next_position(patch_stream_t *state, uint32_t *out_y, uint32_t *out_x)
 {
     while (state->y < state->asset->dh) {
         while (state->x < state->asset->dw) {
@@ -431,73 +421,79 @@ static bool patch_next_pixel(patch_stream_t *state, uint32_t *out_y, uint32_t *o
     return false;
 }
 
-static bool patch_sink_bytes(const uint8_t *data, uint32_t length, void *context)
-{
-    patch_stream_t *state = (patch_stream_t *)context;
-    while (length > 0) {
-        state->pair[state->have++] = *data++;
-        length--;
-        if (state->have < 2) {
-            continue;
-        }
-        state->have = 0;
-        uint32_t y = 0;
-        uint32_t x = 0;
-        if (!patch_next_pixel(state, &y, &x)) {
-            state->failed = true;
-            return false;   // 像素比掩码多
-        }
-        const int dst_y = (int)state->asset->dy + (int)y;
-        const int dst_x = (int)state->asset->dx + (int)x;
-        if (dst_y >= 0 && dst_y < ATRI_ART_H && dst_x >= 0 && dst_x < ATRI_ART_W) {
-            state->img->pixels[(size_t)dst_y * ATRI_ART_W + (size_t)dst_x] =
-                (uint16_t)(state->pair[0] | ((uint16_t)state->pair[1] << 8));
-            state->written++;
-        }
-    }
-    return true;
-}
-
-// 掩码整段解进 bbox/8 字节的缓冲,像素流按扫描序边解边覆写。
 static bool apply_patch(atri_image_t *img, const senren_asset_t *asset)
 {
-    const uint8_t *packed_mask = NULL;
-    const uint8_t *packed_pixels = NULL;
-    uint32_t packed_mask_len = 0;
-    uint32_t packed_pixels_len = 0;
-    if (!senren_patch_parts(asset, &packed_mask, &packed_mask_len, &packed_pixels, &packed_pixels_len)) {
+    if (asset->data == NULL || asset->data_len < 12 || asset->dw == 0 || asset->dh == 0) {
         ESP_LOGE(TAG, "%s: 补丁载荷不完整", asset->name);
         return false;
     }
-    const uint32_t width = asset->dw;
-    const uint32_t height = asset->dh;
-    const uint32_t row_bytes = (width + 7u) / 8u;
-    const uint32_t mask_size = row_bytes * height;
-    uint8_t *mask = (uint8_t *)malloc(mask_size ? mask_size : 1u);
-    if (!mask) {
+    const uint8_t *p = asset->data;
+    const uint32_t mask_len = rd32(p);
+    const uint32_t block_count = rd32(p + 4);
+    const uint32_t lens_bytes = block_count * 4u;
+    if (block_count == 0 || 8u + lens_bytes + mask_len > asset->data_len) {
+        ESP_LOGE(TAG, "%s: 补丁头长度不合法", asset->name);
         return false;
     }
-    const uint32_t mask_produced = senren_inflate(packed_mask, packed_mask_len, mask, mask_size);
+    const uint8_t *mask_stream = p + 8 + lens_bytes;
+    const uint8_t *block_lens = p + 8;
+    const uint8_t *blocks = mask_stream + mask_len;
+
+    const uint32_t row_bytes = (asset->dw + 7u) / 8u;
+    const uint32_t mask_size = row_bytes * asset->dh;
+    uint8_t *mask = (uint8_t *)malloc(mask_size);
+    uint8_t *scratch = (uint8_t *)malloc(PATCH_BLOCK_PIXELS * 2u);
+    if (mask == NULL || scratch == NULL) {
+        ESP_LOGE(TAG, "%s: 补丁缓冲分配失败(空闲堆 %u)", asset->name,
+                 (unsigned)esp_get_free_heap_size());
+        free(mask);
+        free(scratch);
+        return false;
+    }
+    const uint32_t mask_produced = senren_inflate(mask_stream, mask_len, mask, mask_size);
     if (mask_produced != mask_size) {
         ESP_LOGE(TAG, "%s: 掩码解压失败(%u/%u)", asset->name, (unsigned)mask_produced,
                  (unsigned)mask_size);
         free(mask);
+        free(scratch);
         return false;
     }
 
     patch_stream_t state = {
         .img = img, .asset = asset, .mask = mask, .row_bytes = row_bytes,
-        .y = 0, .x = 0, .have = 0, .written = 0, .failed = false,
+        .blocks = blocks, .block_lens = block_lens, .block_count = block_count,
+        .block_index = 0, .block_left = 0, .scratch = scratch, .scratch_used = 0,
+        .pair_have = 0, .y = 0, .x = 0, .written = 0,
     };
-    const bool ok = senren_inflate_stream(packed_pixels, packed_pixels_len, patch_sink_bytes, &state);
-    free(mask);
-    if (!ok || state.failed) {
-        ESP_LOGE(TAG, "%s: 像素流解压失败(已写 %u)", asset->name, (unsigned)state.written);
-        return false;
+    bool ok = true;
+    for (;;) {
+        uint32_t y = 0;
+        uint32_t x = 0;
+        if (!patch_next_position(&state, &y, &x)) {
+            break;   // 掩码走完
+        }
+        uint8_t pair[2];
+        if (!patch_next_pixel_bytes(&state, pair)) {
+            ESP_LOGE(TAG, "%s: 像素流比掩码短(已写 %u)", asset->name, (unsigned)state.written);
+            ok = false;
+            break;
+        }
+        const int dst_y = (int)asset->dy + (int)y;
+        const int dst_x = (int)asset->dx + (int)x;
+        if (dst_y >= 0 && dst_y < ATRI_ART_H && dst_x >= 0 && dst_x < ATRI_ART_W) {
+            img->pixels[(size_t)dst_y * ATRI_ART_W + (size_t)dst_x] =
+                (uint16_t)(pair[0] | ((uint16_t)pair[1] << 8));
+            state.written++;
+        }
     }
-    ESP_LOGI(TAG, "CG 补丁 %s %ux%u@%u,%u -> %u 像素", asset->name, (unsigned)width,
-             (unsigned)height, (unsigned)asset->dx, (unsigned)asset->dy, (unsigned)state.written);
-    return true;
+    free(mask);
+    free(scratch);
+    if (ok) {
+        ESP_LOGI(TAG, "CG 补丁 %s %ux%u@%u,%u -> %u 像素", asset->name, (unsigned)asset->dw,
+                 (unsigned)asset->dh, (unsigned)asset->dx, (unsigned)asset->dy,
+                 (unsigned)state.written);
+    }
+    return ok;
 }
 
 // --------------------------------------------------------------------------
@@ -551,9 +547,9 @@ static bool draw_event(atri_image_t *img, const char *name)
         return patched;
     }
     case SENREN_KIND_SD:
-        return png_blit(img, &asset, SENREN_SD_X, SENREN_SD_Y, NULL);
+        return blocked_blit(img, &asset, SENREN_SD_X, SENREN_SD_Y, NULL);
     case SENREN_KIND_EFFECT:
-        return png_blit(img, &asset, 0, 0, NULL);
+        return blocked_blit(img, &asset, 0, 0, NULL);
     case SENREN_KIND_MISSING:
         return true;   // 被排除的素材:跳过绘制,不报错
     default:
@@ -576,10 +572,11 @@ static bool draw_sprite(atri_image_t *img, const char *name)
     const int y = ATRI_ART_H - (int)asset.h;
     const int64_t start = esp_timer_get_time();
     uint32_t written = 0;
-    const bool ok = png_blit(img, &asset, x, y, &written);
+    const bool ok = blocked_blit(img, &asset, x, y, &written);
     img->last_sprite_ms = (uint32_t)((esp_timer_get_time() - start) / 1000);
-    ESP_LOGI(TAG, "立绘 %s %ux%u @(%d,%d) -> %u 像素, %u ms", name, (unsigned)asset.w,
-             (unsigned)asset.h, x, y, (unsigned)written, (unsigned)img->last_sprite_ms);
+    ESP_LOGI(TAG, "立绘 %s %ux%u @(%d,%d) -> %u 像素, %u ms, 空闲堆 %u", name, (unsigned)asset.w,
+             (unsigned)asset.h, x, y, (unsigned)written, (unsigned)img->last_sprite_ms,
+             (unsigned)esp_get_free_heap_size());
     return ok;
 }
 

@@ -203,6 +203,7 @@ static void advance_reading(atri_app_t *app, bool skip_typing)
             show_ending(app);
             return;
         case SENREN_STEP_STUCK:
+            ESP_LOGE(TAG, "剧情数据异常: %s", senren_get_error());
         default:
             app->at_choice = false;
             app->fast_forward = false;
@@ -215,7 +216,7 @@ static void advance_reading(atri_app_t *app, bool skip_typing)
             return;
         }
     }
-    ESP_LOGE(TAG, "连续 %d 个 CHAPTER 标记都没有正文,回到标题页", ATRI_CHAPTER_MARK_MAX);
+    ESP_LOGE(TAG, "连续 %d 个 CHAPTER 标记都没有正文: %s", ATRI_CHAPTER_MARK_MAX, senren_get_error());
     show_title(app);
 }
 
@@ -701,11 +702,11 @@ bool atri_app_init(atri_app_t *app, const uint8_t *pack_data, uint32_t pack_size
         show_title(app);
     }
 
-    ESP_LOGI(TAG, "就绪:块 %u / 字符 %u / 说话人 %u / 立绘 %u / 事件图 %u / 背景 %u / 结局 %u",
-             (unsigned)app->scn.chunk_count, (unsigned)app->scn.char_count,
-             (unsigned)app->scn.speaker_count, (unsigned)app->scn.sprite_count,
-             (unsigned)app->scn.event_count, (unsigned)app->scn.bg_count,
-             (unsigned)app->scn.ending_count);
+    ESP_LOGI(TAG, "就绪[v3 小块]:块 %u / 小块 %u / 字符 %u / 说话人 %u / 立绘 %u / 事件图 %u / 背景 %u / 结局 %u",
+             (unsigned)app->scn.chunk_count, (unsigned)app->scn.block_count,
+             (unsigned)app->scn.char_count, (unsigned)app->scn.speaker_count,
+             (unsigned)app->scn.sprite_count, (unsigned)app->scn.event_count,
+             (unsigned)app->scn.bg_count, (unsigned)app->scn.ending_count);
     ESP_LOGI(TAG, "图片包:条目 %u(背景 %u 池 / 立绘 %u 池 / 事件 %u 池)",
              (unsigned)app->pack.entry_count, (unsigned)app->scn.bg_count,
              (unsigned)app->scn.sprite_count, (unsigned)app->scn.event_count);
@@ -872,6 +873,7 @@ static bool debug_seek(atri_app_t *app, uint16_t chapter, uint16_t step)
             return false;
         case SENREN_STEP_ENDING:
         case SENREN_STEP_STUCK:
+            ESP_LOGE(TAG, "剧情数据异常: %s", senren_get_error());
         default:
             return false;
         }
