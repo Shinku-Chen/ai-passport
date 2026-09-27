@@ -213,10 +213,11 @@ A portrait visual novel ported from the Xiaomi Band release of *limelight lemona
 images and 8 choice points**, fully offline. The story and art come from
 [`skdkzzx/limelight-lemonade-jam-xiaomi-band10`](https://github.com/skdkzzx/limelight-lemonade-jam-xiaomi-band10),
 a touch app for Xiaomi's Vela OS; this branch re-implements the reading engine in C on LVGL
-and drives it with the three keys. Status: **in development** — built, flashed and accepted
-on hardware, no release tag yet.
+and drives it with the three keys. Status: **released** as `v0.1.0-limelight`, submitted to the AI
+Passport community market (under review).
 
 - Branch: [`cindy/curious-babbage`](https://github.com/Shinku-Chen/ai-passport/tree/cindy/curious-babbage)
+- Release: [`v0.1.0-limelight`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-limelight) — merged image `FoloToy-AI-Passport-full.bin`, 7,442,400 bytes
 - Upstream work: [`skdkzzx/limelight-lemonade-jam-xiaomi-band10`](https://github.com/skdkzzx/limelight-lemonade-jam-xiaomi-band10) — the Xiaomi Band release this port is based on. That repository declares no licence; its artwork and script are committed with the branch, packed into the firmware, and credited to the upstream project as their source.
 - Asset toolchain: [`tools/limelight_material_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_material_pack.py) and [`tools/limelight_script_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_script_pack.py) (into `main/limelight_data/`, 4.05 MB + 1.81 MB) and [`tools/limelight_lvgl_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_lvgl_font.py) (16 px Chinese subset of Noto Sans SC, 3,449 code points)
 - Merged image: `FoloToy-AI-Passport-full.bin`, 7,431,456 bytes

@@ -159,9 +159,10 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 **230 个章节标记、68,229 句对白、约 120 万字、991 张打包图像、8 个选项点**，完全离线。剧本与素材取自
 [`skdkzzx/limelight-lemonade-jam-xiaomi-band10`](https://github.com/skdkzzx/limelight-lemonade-jam-xiaomi-band10)
 （面向小米手环的 Vela OS 触屏应用）；本分支用 C + LVGL 重写阅读引擎，改成三键操作。
-状态：**开发中** —— 已构建、刷机并通过真机验收，尚未打 tag。
+状态：**已发布** —— tag `v0.1.0-limelight`，并已投稿到 AI Passport 社区市场（审核中）。
 
 - 分支：[`cindy/curious-babbage`](https://github.com/Shinku-Chen/ai-passport/tree/cindy/curious-babbage)
+- 发布：[`v0.1.0-limelight`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-limelight) —— 合并镜像 `FoloToy-AI-Passport-full.bin`，7,442,400 字节
 - 上游作品：[`skdkzzx/limelight-lemonade-jam-xiaomi-band10`](https://github.com/skdkzzx/limelight-lemonade-jam-xiaomi-band10) —— 本次移植所依据的手环版本，该仓库未声明许可；其美术与剧本随分支提交并打包进固件，来源以上游项目标注。
 - 素材工具链：[`tools/limelight_material_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_material_pack.py) 与 [`tools/limelight_script_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_script_pack.py)（打包成 `main/limelight_data/` 下的 4.05 MB + 1.81 MB），以及 [`tools/limelight_lvgl_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_lvgl_font.py)（Noto Sans SC 的 16px 中文字体子集，3,449 个码位）
 - 合并镜像：`FoloToy-AI-Passport-full.bin`，7,431,456 字节
