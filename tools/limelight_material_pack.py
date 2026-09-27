@@ -422,8 +422,15 @@ def scan_references(source: Path) -> dict:
                         refs[key].add(name)
                         if key == "char":
                             refs["char_count"][name] += 1   # 用于挑选姿势代表
+    # 鉴赏页引用的 CG:优先读随素材入库的名单(assets/gal-source/src/common/gallery_cgs.txt);
+    # 上游快应用的页面文件本身不上传,只在本地存在时兜底读它。
     page = source / "src" / "pages" / "cgs" / "cgs.ux"
-    if page.is_file():
+    listing = source / "src" / "common" / "gallery_cgs.txt"
+    if listing.is_file():
+        refs["gallery"] = {line.strip() for line in listing.read_text(
+            encoding="utf-8", errors="replace").splitlines()
+            if line.strip() and not line.startswith("#")}
+    elif page.is_file():
         text = page.read_text(encoding="utf-8", errors="replace")
         refs["gallery"] = {Path(m).name for m in re.findall(r'"(/common/evig/[^"]+)"', text)}
     return refs
