@@ -100,12 +100,12 @@ SPRITE_EDGE_BLEED = 3
 # 取 22,000 px:上半身取景后立绘约 105x210 = 22k px(全身取景时约 65x252 = 16.4k)。
 # 实测(2026-09-27,q30/4:4:4)上半身 16k/18k/20k/22k 相对旧包只 +47/+42/+110/+162 KiB,
 # 因为裁掉下半身后总像素并没有增加,而字节率几乎不变(0.225 B/px)。
-SPRITE_MAX_PIXELS = 30000
+SPRITE_MAX_PIXELS = 23000
 DEFAULT_QUALITY = 30
 # 立绘单独一套参数:它是画面主体,和背景共用 q30/4:2:0 会明显发糊(色度被砍半、
 # 高频细节被量化掉)。背景大片色块对压缩不敏感,立绘细节敏感,所以分开。
 # 实测各配置的包体积见 tools/README 或 REPORT 注释。
-DEFAULT_SPRITE_QUALITY = 70
+DEFAULT_SPRITE_QUALITY = 35
 DEFAULT_SPRITE_SUBSAMPLING = 0        # 0 = 4:4:4;立绘色度细节比省下的几十 KB 值钱
 # 实测(2026-09-27,全部素材 + 名字表 + 1bpp RLE 遮罩,图片预算 5,590,384 B):
 #   q35/CG 320 行 = 5,533,336 B(仅余 57 KiB,太紧);q32 = 5,240,392 B(余 0.33 MiB);
@@ -338,14 +338,13 @@ def bleed_edges(rgba: Image.Image, sigma: float = 4.0) -> Image.Image:
         premul.filter(ImageFilter.GaussianBlur(sigma)), dtype=_numpy.float32)
     blurred_a = _numpy.asarray(
         a8.filter(ImageFilter.GaussianBlur(sigma)), dtype=_numpy.float32)
-    alpha = _numpy.asarray(a8, dtype=_numpy.float32) / 255.0
+    alpha8 = _numpy.asarray(a8, dtype=_numpy.float32)          # 0..255
     rgb = _numpy.asarray(rgb8, dtype=_numpy.float32)
-    weight = _numpy.maximum(blurred_a[..., None], 1.0)                     # 归一化
+    weight = _numpy.maximum(blurred_a[..., None], 1.0)         # 归一化分母
     extended = blurred_rgb * 255.0 / weight
-    out_rgb = _numpy.where(alpha[..., None] > 254.0, rgb, extended)
-    merged = _numpy.concatenate(
-        [_numpy.clip(out_rgb, 0, 255),
-         (alpha[..., None] * 255.0)], axis=-1)
+    # 不透明处必须保持原样:alpha 是 0..255,阈值也要按 0..255 写
+    out_rgb = _numpy.where(alpha8[..., None] >= 255.0, rgb, extended)
+    merged = _numpy.concatenate([_numpy.clip(out_rgb, 0, 255), alpha8[..., None]], axis=-1)
     return Image.fromarray(merged.astype(_numpy.uint8), "RGBA")
 
 
