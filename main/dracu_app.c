@@ -19,7 +19,7 @@ static const char *TAG = "dracu_app";
 // 自动阅读:打字机打完之后再等这么久翻到下一页(与源工程的 0.9s 一致)。
 #define DRACU_AUTO_MS 900u
 // 标题页 4 行:开始阅读 / 继续阅读 / 读取进度 / 系统设置。
-#define DRACU_TITLE_ROWS 4
+#define DRACU_TITLE_ROWS 5
 // 存档页:自动存档 + 5 个手动存档 + 返回。
 #define DRACU_SLOT_ROWS (DRACU_SAVE_SLOTS + 2)
 // 章节列表页一次显示几行(与界面里的行数一致)
@@ -414,6 +414,11 @@ static void title_refresh(dracu_app_t *app)
     labels[n] = "读取进度";
     value_ptrs[n] = NULL;
     ++n;
+    // 章节跳转(源工程的流程图页):不是"开始游戏"的入口 —— galgame 的流程是
+    // 从头一路读下去,章节列表只是给回看/跳线用的辅助入口。
+    labels[n] = "章节跳转";
+    value_ptrs[n] = NULL;
+    ++n;
     labels[n] = "系统设置";
     value_ptrs[n] = NULL;
     ++n;
@@ -509,8 +514,12 @@ static void key_list_move(dracu_app_t *app, int *selected, int count, int delta)
 static void title_select(dracu_app_t *app)
 {
     switch (app->title_sel) {
-    case 0:   // 开始阅读:从章节列表选一章开始(第一个条目就是序章)
-        open_chapters(app, DRACU_PAGE_TITLE);
+    case 0:   // 开始阅读:从第 1 页(序幕)开始,一路连续读到结局
+        if (start_reading(app, 1)) {
+            (void)dracu_auto_clear();   // 新游戏:旧的自动续读点作废
+            app->have_auto = false;
+            auto_save(app);
+        }
         return;
     case 1: {   // 继续阅读:接自动存档
         dracu_save_t save;
@@ -524,6 +533,9 @@ static void title_select(dracu_app_t *app)
     }
     case 2:   // 读取进度
         open_slots(app, false, DRACU_PAGE_TITLE);
+        return;
+    case 3:   // 章节跳转(流程图)
+        open_chapters(app, DRACU_PAGE_TITLE);
         return;
     default:   // 系统设置
         open_settings(app, DRACU_PAGE_TITLE);
@@ -1059,14 +1071,26 @@ int dracu_app_debug_info(dracu_app_t *app, char *out, size_t capacity)
     chapter_label(app, app->player.chapter, chapter, sizeof(chapter));
     dracu_layers_t layers;
     current_layers(app, &layers);
+    char text[96] = { 0 };
+    char speaker[DRACU_NAME_MAX] = { 0 };
+    size_t used = dracu_player_page_text(&app->player, text, sizeof(text));
+    if (used > 0) {
+        // 正文截到 42 字节左右(UTF-8 边界),串口一行看得下
+        size_t cut = 0;
+        while (cut < used && cut < 42u) {
+            cut = dracu_utf8_next_boundary(text, used, cut);
+        }
+        text[cut] = ' ';
+    }
+    dracu_player_speaker(&app->player, &app->scn, speaker, sizeof(speaker));
     return snprintf(out, capacity,
                     "page=%u chapter=%u '%s' bg=%u cg=%u sd=%u sprite=%u screen=%d/%d"
-                    " idle=%ums auto=%d ff=%d state=%d",
+                    " idle=%ums auto=%d ff=%d state=%d speaker='%s' text='%s'",
                     (unsigned)app->player.page, (unsigned)app->player.chapter, chapter,
                     (unsigned)layers.bg, (unsigned)layers.cg, (unsigned)layers.sd,
                     (unsigned)layers.sprite, (int)app->player.page_index + 1,
                     (int)app->player.page_count, (unsigned)app->idle_ms, app->auto_play ? 1 : 0,
-                    app->fast_forward ? 1 : 0, (int)app->page);
+                    app->fast_forward ? 1 : 0, (int)app->page, speaker, text);
 }
 
 bool dracu_app_take_sleep_request(dracu_app_t *app)

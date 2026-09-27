@@ -47,7 +47,11 @@ static const uint8_t *load_block(dracu_scn_t *scn, uint32_t index, bool is_page)
     if (scn->scratch == NULL || scn->scratch_size < 256) {
         return NULL;
     }
+    // 页表与正文共用同一块解压缓冲,所以两边的缓存必须互相作废:只记一边的话,
+    // 读完正文再读下一页会命中"过期的页表缓存",拿到的其实是正文数据 —— 表现是
+    // 第二页开始记录乱掉、正文解不出来,一路退回标题页(章节"接不上")。
     int32_t *cache = is_page ? &scn->cached_page_block : &scn->cached_text_block;
+    int32_t *other = is_page ? &scn->cached_text_block : &scn->cached_page_block;
     if (*cache == (int32_t)index) {
         return scn->scratch;
     }
@@ -67,6 +71,7 @@ static const uint8_t *load_block(dracu_scn_t *scn, uint32_t index, bool is_page)
         return NULL;
     }
     *cache = (int32_t)index;
+    *other = -1;   // 这次解压把缓冲里另一边的数据冲掉了
     return scn->scratch;
 }
 

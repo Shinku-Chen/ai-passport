@@ -231,7 +231,7 @@ static void build_pages(dracu_ui_t *ui, lv_obj_t *screen)
     // 标题页:标题图整屏铺底(在画布层),这里是叠在下方那条正文带上的菜单。
     ui->page_title = new_box(screen, 0, DRACU_BOX_Y, DRACU_UI_W, DRACU_BOX_H, COL_BOX_BG,
                              LV_OPA_TRANSP);
-    list_build(ui, &ui->lists[DRACU_LIST_TITLE], ui->page_title, 20, 6);
+    list_build(ui, &ui->lists[DRACU_LIST_TITLE], ui->page_title, 18, 4);
     set_hidden(ui->lists[DRACU_LIST_TITLE].title, true);
     set_hidden(ui->lists[DRACU_LIST_TITLE].hint, true);
 
