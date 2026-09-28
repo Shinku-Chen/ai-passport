@@ -44,3 +44,8 @@ esp_err_t bsp_audio_read(void *pcm, size_t bytes);
 
 // 输出音量 0..100(%)。
 void bsp_audio_set_volume(uint8_t percent);
+
+// 麦克风输入增益(dB)。对讲/录音场景由 App 下发(默认 30dB,与旧行为一致)。
+// db 超出 ES8311 可用范围(0..32)时钳位而不是报错:取值来自用户/App,越界不应导致录音失败。
+// 与 bsp_audio_set_volume 一样立即生效并记住;codec 重新打开(休眠唤醒/改采样率)后自动套用。
+esp_err_t bsp_audio_set_mic_gain(float db);

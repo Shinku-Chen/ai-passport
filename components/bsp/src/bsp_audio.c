@@ -30,6 +30,7 @@ static bool     s_initialized;
 static esp_err_t s_sleep_result;
 static bool     s_codec_release_failed;
 static uint8_t  s_volume;
+static float    s_mic_gain_db = 30.0f;   // 与旧硬编码值一致:上电即 30dB
 static int      s_io_error;
 
 // esp_codec_dev 1.6.2 discards some control/data interface errors. Remember the
@@ -464,7 +465,7 @@ esp_err_t bsp_audio_set_format(uint32_t hz, uint8_t bits, uint8_t ch) {
     // ⚠ open 之后【不要】手动覆写 ES8311 的时钟分频寄存器(REG01~06):
     //   驱动已按采样率与 MCLK 精确算好,覆写会导致 ADC/DAC 时序错乱、录音回放全是杂音。
     //   这里只设麦克风模拟 PGA 增益。
-    r = esp_codec_dev_set_in_gain(s_dev, 30.0f);
+    r = esp_codec_dev_set_in_gain(s_dev, s_mic_gain_db);
     if (r == ESP_CODEC_DEV_OK) r = esp_codec_dev_set_out_vol(s_dev, s_volume);
     if (r != ESP_CODEC_DEV_OK || s_io_error != ESP_CODEC_DEV_OK) {
         e = ESP_FAIL;
@@ -567,4 +568,13 @@ esp_err_t bsp_audio_read(void *pcm, size_t bytes) {
 void bsp_audio_set_volume(uint8_t percent) {
     s_volume = percent > 100 ? 100 : percent;
     if (s_dev && s_opened && !s_sleeping) esp_codec_dev_set_out_vol(s_dev, s_volume);
+}
+
+esp_err_t bsp_audio_set_mic_gain(float db) {
+    // 钳位而不是报错:取值来自用户/App,越界不应该让录音直接失败。
+    if (db < 0.0f) db = 0.0f;
+    if (db > 32.0f) db = 32.0f;   // ES8311 模拟 PGA 上限
+    s_mic_gain_db = db;
+    if (!s_dev || !s_opened || s_sleeping) return ESP_OK;   // 下次打开时套用
+    return esp_codec_dev_set_in_gain(s_dev, s_mic_gain_db) == ESP_CODEC_DEV_OK ? ESP_OK : ESP_FAIL;
 }
