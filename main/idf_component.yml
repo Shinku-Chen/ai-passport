@@ -1,0 +1,5 @@
+dependencies:
+  idf: ">=5.5.3,<5.6.0"
+  # 上行语音编码:16kHz 单声道 Opus,60ms 帧(见 docs/development/engineering/intercom-wire-protocol.md)。
+  # 与同芯片族参考固件同源:定点编译、complexity 0、每帧约 3 KB/s,比裸 PCM 省 10 倍空口时间。
+  78/esp-opus: "^1.0.5"

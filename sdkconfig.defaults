@@ -32,7 +32,8 @@ CONFIG_LV_MEM_SIZE_KILOBYTES=24
 CONFIG_FREERTOS_HZ=1000
 
 # --- Bluetooth LE / NimBLE ---
-# ESP32-C3 仅支持 BLE；示例只启用单连接 peripheral 所需的最小 host 配置。
+# ESP32-C3 仅支持 BLE。对讲机是纯外设:设备广播、手机连接,所以只需要
+# peripheral + broadcaster(central/observer 关掉可省下 RAM)。
 CONFIG_BT_ENABLED=y
 CONFIG_BT_NIMBLE_ENABLED=y
 CONFIG_BT_NIMBLE_ROLE_CENTRAL=n
@@ -41,4 +42,10 @@ CONFIG_BT_NIMBLE_ROLE_BROADCASTER=y
 CONFIG_BT_NIMBLE_ROLE_OBSERVER=n
 CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
 CONFIG_BT_NIMBLE_HOST_BASED_PRIVACY=n
-CONFIG_BT_NIMBLE_NVS_PERSIST=n
+# bonding 要落 NVS:不然每次重连都要重新配对(屏上再出一次数密码)。
+CONFIG_BT_NIMBLE_NVS_PERSIST=y
+# ble_store_util_* (删除对端/存储状态回调)需要 util API。
+CONFIG_BT_NIMBLE_UTIL_API=y
+# 只走 LE Secure Connections:配对码是 MITM 的,不能回落到 legacy pairing。
+CONFIG_BT_NIMBLE_SM_SC=y
+CONFIG_BT_NIMBLE_SM_LEGACY=n
