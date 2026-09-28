@@ -1,0 +1,501 @@
+// main/oc_ui.c —— 对讲机界面实现(见 oc_ui.h)。
+//
+// 布局(240x320 竖屏):
+//   ┌───────────────────────────────┐
+//   │ ● 就绪            12:34  85%  │  状态栏:状态灯 + 状态字 + 时间 + 电量
+//   ├───────────────────────────────┤
+//   │  我: 今天天气怎么样            │  对话区:可滚动的消息气泡(角色 + 正文)
+//   │  助手: 今天多云,最高 24 度…   │  最多保留最近 6 条,自动滚到最新
+//   ├───────────────────────────────┤
+//   │ 长按 OK 说话 · 短按设置        │  提示行:操作指引 / 错误提示
+//   └───────────────────────────────┘
+//
+// 内存约束(无 PSRAM):每条消息最多显示 1024 字节(约 340 个汉字),超出截断并提示去
+// App 看全文;只保留最近 6 条气泡,避免长回复把 LVGL 堆吃光。
+#include "oc_ui.h"
+
+#include <stdio.h>
+#include <string.h>
+
+#include "bsp_display.h"
+#include "esp_log.h"
+#include "lvgl.h"
+#include "oc_proto.h"
+#include "oc_settings.h"
+
+#include "fonts/gb2312_14.h"
+
+// 完整 GB2312 字库(6763 汉字 + 全角/数学/单位符号 + ASCII):对讲机显示的是 App 识别
+// 文本与网关回复,内容不可预测,所以用全量字库而不是子集,避免出现缺字方框。
+#define OC_UI_FONT (&lv_font_gb2312_14)
+
+static const char *TAG = "oc_ui";
+
+#define OC_UI_BUBBLES 6U                 // 对话区保留的气泡数
+#define OC_UI_TEXT_MAX 1024U             // 单条消息显示上限(字节,UTF-8)
+#define OC_UI_BG 0x0E1116
+#define OC_UI_BAR_BG 0x161B22
+#define OC_UI_PANEL 0x1B222C
+#define OC_UI_INK 0xE6EDF3
+#define OC_UI_INK_DIM 0x8B949E
+#define OC_UI_ACCENT_U 0x6FC3FF          // 用户文本
+#define OC_UI_ACCENT_A 0x9BE9A8          // 助手文本
+#define OC_UI_ACCENT_R 0xFFC66D          // 系统提示
+#define OC_UI_DOT_OK 0x3FB950
+#define OC_UI_DOT_WARN 0xD29922
+#define OC_UI_DOT_OFF 0x8B949E
+#define OC_UI_DOT_BUSY 0x58A6FF
+
+static struct {
+    lv_obj_t *scr;
+    lv_obj_t *dot;
+    lv_obj_t *state;
+    lv_obj_t *clock;
+    lv_obj_t *batt;
+    lv_obj_t *conv;
+    lv_obj_t *hint;
+    lv_obj_t *pair_panel;
+    lv_obj_t *pair_label;
+    lv_obj_t *bubbles[OC_UI_BUBBLES];
+    unsigned bubble_next;
+    unsigned bubble_used;
+    // 设置页另起一屏:进入时整屏切换,退出时切回对讲屏。
+    lv_obj_t *set_scr;
+    lv_obj_t *set_title;
+    lv_obj_t *set_body;
+    lv_obj_t *set_hint;
+    bool settings_active;
+    lv_timer_t *timer;
+    uint32_t idle_ms;             // 距离上次活动的毫秒数(1s 计时器累加)
+    bool backlight_on;
+    int battery;                  // -1 = 不可用
+    int64_t epoch;                // 0 = 未同步
+    int last_clock_minutes;       // 只在分钟变化时刷新标签
+    char device_name[24];
+} s_ui;
+
+static const char *state_text(oc_ui_state_t state)
+{
+    switch (state) {
+    case OC_UI_STATE_IDLE: return "未连接";
+    case OC_UI_STATE_CONNECTING: return "连接中";
+    case OC_UI_STATE_PAIRING: return "配对中";
+    case OC_UI_STATE_READY: return "就绪";
+    case OC_UI_STATE_RECORDING: return "录音中";
+    case OC_UI_STATE_SENDING: return "发送中";
+    case OC_UI_STATE_RECEIVING: return "接收中";
+    default: return "";
+    }
+}
+
+static uint32_t state_color(oc_ui_state_t state)
+{
+    switch (state) {
+    case OC_UI_STATE_READY: return OC_UI_DOT_OK;
+    case OC_UI_STATE_RECORDING: return OC_UI_DOT_BUSY;
+    case OC_UI_STATE_SENDING:
+    case OC_UI_STATE_RECEIVING: return OC_UI_DOT_BUSY;
+    case OC_UI_STATE_PAIRING: return OC_UI_DOT_WARN;
+    default: return OC_UI_DOT_OFF;
+    }
+}
+
+static void apply_backlight(void)
+{
+    uint8_t bright = oc_settings_brightness();
+    bsp_display_backlight(bright);
+    s_ui.backlight_on = bright > 0;
+}
+
+// 1s 计时器(跑在 LVGL 任务里):背光超时 + 状态栏时间。
+static void ui_timer(lv_timer_t *timer)
+{
+    (void)timer;
+    s_ui.idle_ms += 1000;
+
+    uint16_t timeout_s = oc_settings_backlight_timeout_s();
+    if (s_ui.backlight_on && s_ui.idle_ms >= (uint32_t)timeout_s * 1000U) {
+        // 背光熄灭不影响 BLE 连接与录音:链路常连,按键会把屏幕点亮。
+        bsp_display_backlight(0);
+        s_ui.backlight_on = false;
+    }
+
+    if (s_ui.epoch > 0 && s_ui.clock != NULL) {
+        // 设备没有时区数据库,按东八区(用户所在地)换算显示。
+        int minutes = (int)(((s_ui.epoch + 8 * 3600) % 86400) / 60);
+        if (minutes != s_ui.last_clock_minutes) {
+            s_ui.last_clock_minutes = minutes;
+            lv_label_set_text_fmt(s_ui.clock, "%02d:%02d", minutes / 60, minutes % 60);
+        }
+    }
+}
+
+void oc_ui_note_activity(void)
+{
+    s_ui.idle_ms = 0;
+    if (!s_ui.backlight_on) {
+        apply_backlight();
+    }
+}
+
+void oc_ui_apply_brightness(void)
+{
+    apply_backlight();
+}
+
+// ---- 构建对讲屏 ----
+static void build_conv_area(lv_obj_t *parent)
+{
+    s_ui.conv = lv_obj_create(parent);
+    lv_obj_set_size(s_ui.conv, 232, 226);
+    lv_obj_align(s_ui.conv, LV_ALIGN_TOP_MID, 0, 34);
+    lv_obj_set_style_bg_color(s_ui.conv, lv_color_hex(OC_UI_BG), 0);
+    lv_obj_set_style_border_width(s_ui.conv, 0, 0);
+    lv_obj_set_style_pad_all(s_ui.conv, 6, 0);
+    lv_obj_set_style_pad_row(s_ui.conv, 6, 0);
+    lv_obj_set_flex_flow(s_ui.conv, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_scroll_dir(s_ui.conv, LV_DIR_VER);
+    lv_obj_set_scrollbar_mode(s_ui.conv, LV_SCROLLBAR_MODE_AUTO);
+}
+
+esp_err_t oc_ui_init(const char *device_name)
+{
+    memset(&s_ui, 0, sizeof(s_ui));
+    s_ui.battery = -1;
+    s_ui.last_clock_minutes = -1;
+    if (device_name != NULL) {
+        snprintf(s_ui.device_name, sizeof(s_ui.device_name), "%s", device_name);
+    }
+
+    if (!bsp_lvgl_lock(1000)) {
+        ESP_LOGE(TAG, "LVGL 加锁失败,界面未建立");
+        return ESP_FAIL;
+    }
+
+    s_ui.scr = lv_obj_create(NULL);
+    lv_obj_set_style_bg_color(s_ui.scr, lv_color_hex(OC_UI_BG), 0);
+    lv_obj_set_style_pad_all(s_ui.scr, 0, 0);
+    lv_obj_clear_flag(s_ui.scr, LV_OBJ_FLAG_SCROLLABLE);
+
+    // 状态栏
+    lv_obj_t *bar = lv_obj_create(s_ui.scr);
+    lv_obj_set_size(bar, 240, 30);
+    lv_obj_align(bar, LV_ALIGN_TOP_MID, 0, 0);
+    lv_obj_set_style_bg_color(bar, lv_color_hex(OC_UI_BAR_BG), 0);
+    lv_obj_set_style_border_width(bar, 0, 0);
+    lv_obj_set_style_radius(bar, 0, 0);
+    lv_obj_set_style_pad_all(bar, 0, 0);
+    lv_obj_clear_flag(bar, LV_OBJ_FLAG_SCROLLABLE);
+
+    s_ui.dot = lv_obj_create(bar);
+    lv_obj_set_size(s_ui.dot, 8, 8);
+    lv_obj_align(s_ui.dot, LV_ALIGN_LEFT_MID, 8, 0);
+    lv_obj_set_style_radius(s_ui.dot, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_border_width(s_ui.dot, 0, 0);
+    lv_obj_set_style_bg_color(s_ui.dot, lv_color_hex(OC_UI_DOT_OFF), 0);
+
+    s_ui.state = lv_label_create(bar);
+    lv_obj_set_style_text_font(s_ui.state, OC_UI_FONT, 0);
+    lv_obj_set_style_text_color(s_ui.state, lv_color_hex(OC_UI_INK), 0);
+    lv_obj_align(s_ui.state, LV_ALIGN_LEFT_MID, 22, 0);
+    lv_label_set_text(s_ui.state, state_text(OC_UI_STATE_IDLE));
+
+    s_ui.batt = lv_label_create(bar);
+    lv_obj_set_style_text_font(s_ui.batt, OC_UI_FONT, 0);
+    lv_obj_set_style_text_color(s_ui.batt, lv_color_hex(OC_UI_INK_DIM), 0);
+    lv_obj_align(s_ui.batt, LV_ALIGN_RIGHT_MID, -8, 0);
+    lv_label_set_text(s_ui.batt, "--");
+
+    s_ui.clock = lv_label_create(bar);
+    lv_obj_set_style_text_font(s_ui.clock, OC_UI_FONT, 0);
+    lv_obj_set_style_text_color(s_ui.clock, lv_color_hex(OC_UI_INK_DIM), 0);
+    lv_obj_align(s_ui.clock, LV_ALIGN_RIGHT_MID, -52, 0);
+    lv_label_set_text(s_ui.clock, "");
+
+    build_conv_area(s_ui.scr);
+
+    s_ui.hint = lv_label_create(s_ui.scr);
+    lv_obj_set_style_text_font(s_ui.hint, OC_UI_FONT, 0);
+    lv_obj_set_style_text_color(s_ui.hint, lv_color_hex(OC_UI_INK_DIM), 0);
+    lv_obj_set_width(s_ui.hint, 228);
+    lv_label_set_long_mode(s_ui.hint, LV_LABEL_LONG_WRAP);
+    lv_obj_align(s_ui.hint, LV_ALIGN_BOTTOM_MID, 0, -6);
+    lv_label_set_text(s_ui.hint, "长按 OK 说话 · 短按 OK 设置");
+
+    lv_screen_load(s_ui.scr);
+
+    s_ui.timer = lv_timer_create(ui_timer, 1000, NULL);
+    s_ui.backlight_on = true;
+    apply_backlight();
+    bsp_lvgl_unlock();
+
+    ESP_LOGI(TAG, "界面就绪(%s)", s_ui.device_name[0] ? s_ui.device_name : "无名");
+    return ESP_OK;
+}
+
+// ---- 状态栏与提示 ----
+void oc_ui_set_state(oc_ui_state_t state, const char *detail)
+{
+    if (!bsp_lvgl_lock(500)) {
+        return;
+    }
+    if (s_ui.state != NULL) {
+        lv_label_set_text(s_ui.state, detail != NULL ? detail : state_text(state));
+        lv_obj_set_style_text_color(s_ui.state,
+                                    detail != NULL ? lv_color_hex(state_color(state)) : lv_color_hex(OC_UI_INK), 0);
+    }
+    if (s_ui.dot != NULL) {
+        lv_obj_set_style_bg_color(s_ui.dot, lv_color_hex(state_color(state)), 0);
+    }
+    bsp_lvgl_unlock();
+}
+
+void oc_ui_set_hint(const char *text)
+{
+    if (!bsp_lvgl_lock(500)) {
+        return;
+    }
+    if (s_ui.hint != NULL) {
+        lv_label_set_text(s_ui.hint, text != NULL ? text : "");
+    }
+    bsp_lvgl_unlock();
+}
+
+void oc_ui_set_battery(int percent)
+{
+    s_ui.battery = percent;
+    if (!bsp_lvgl_lock(500)) {
+        return;
+    }
+    if (s_ui.batt != NULL) {
+        if (percent < 0) {
+            lv_label_set_text(s_ui.batt, "--");   // 读不到就不画数字,避免显示 0% 误导
+        } else {
+            lv_label_set_text_fmt(s_ui.batt, "%d%%", percent);
+        }
+    }
+    bsp_lvgl_unlock();
+}
+
+void oc_ui_set_time(int64_t epoch_seconds)
+{
+    s_ui.epoch = epoch_seconds;
+    s_ui.last_clock_minutes = -1;   // 强制下一拍刷新
+}
+
+// ---- 对话区 ----
+static uint32_t role_color(char role)
+{
+    if (role == 'U') return OC_UI_ACCENT_U;
+    if (role == 'R') return OC_UI_ACCENT_R;
+    return OC_UI_ACCENT_A;
+}
+
+static const char *role_name(char role)
+{
+    if (role == 'U') return "我";
+    if (role == 'R') return "提示";
+    return "助手";
+}
+
+static void bubble_delete_oldest(void)
+{
+    if (s_ui.bubbles[s_ui.bubble_next] != NULL) {
+        lv_obj_delete(s_ui.bubbles[s_ui.bubble_next]);
+        s_ui.bubbles[s_ui.bubble_next] = NULL;
+    }
+}
+
+void oc_ui_append(char role, const char *text)
+{
+    if (text == NULL) {
+        text = "";
+    }
+    if (!bsp_lvgl_lock(800)) {
+        return;
+    }
+
+    bubble_delete_oldest();
+    lv_obj_t *box = lv_obj_create(s_ui.conv);
+    lv_obj_set_width(box, 216);
+    lv_obj_set_height(box, LV_SIZE_CONTENT);
+    lv_obj_set_style_bg_color(box, lv_color_hex(OC_UI_PANEL), 0);
+    lv_obj_set_style_border_width(box, 1, 0);
+    lv_obj_set_style_border_color(box, lv_color_hex(role_color(role)), 0);
+    lv_obj_set_style_radius(box, 6, 0);
+    lv_obj_set_style_pad_all(box, 6, 0);
+    lv_obj_clear_flag(box, LV_OBJ_FLAG_SCROLLABLE);
+
+    lv_obj_t *who = lv_label_create(box);
+    lv_obj_set_style_text_font(who, OC_UI_FONT, 0);
+    lv_obj_set_style_text_color(who, lv_color_hex(role_color(role)), 0);
+    lv_label_set_text(who, role_name(role));
+    lv_obj_align(who, LV_ALIGN_TOP_LEFT, 0, 0);
+
+    // 长文本按显示上限截断,且不切在多字节 UTF-8 字符中间。
+    char buf[OC_UI_TEXT_MAX + 16];
+    size_t len = strlen(text);
+    size_t keep = len;
+    bool clipped = false;
+    if (keep > OC_UI_TEXT_MAX) {
+        keep = oc_utf8_safe_len((const uint8_t *)text, OC_UI_TEXT_MAX);
+        clipped = true;
+    }
+    memcpy(buf, text, keep);
+    buf[keep] = '\0';
+    if (clipped) {
+        strncat(buf, "…(全文见 App)", sizeof(buf) - keep - 1);
+    }
+
+    lv_obj_t *body = lv_label_create(box);
+    lv_obj_set_style_text_font(body, OC_UI_FONT, 0);
+    lv_obj_set_style_text_color(body, lv_color_hex(OC_UI_INK), 0);
+    lv_obj_set_width(body, 202);
+    lv_label_set_long_mode(body, LV_LABEL_LONG_WRAP);
+    lv_label_set_text(body, buf);
+    lv_obj_align(body, LV_ALIGN_TOP_LEFT, 0, 18);
+
+    s_ui.bubbles[s_ui.bubble_next] = box;
+    s_ui.bubble_next = (s_ui.bubble_next + 1U) % OC_UI_BUBBLES;
+    if (s_ui.bubble_used < OC_UI_BUBBLES) {
+        s_ui.bubble_used++;
+    }
+
+    lv_obj_scroll_to_view(box, LV_ANIM_OFF);   // 新消息总是滚到可见
+    bsp_lvgl_unlock();
+}
+
+void oc_ui_clear_conversation(void)
+{
+    if (!bsp_lvgl_lock(800)) {
+        return;
+    }
+    for (unsigned i = 0; i < OC_UI_BUBBLES; i++) {
+        if (s_ui.bubbles[i] != NULL) {
+            lv_obj_delete(s_ui.bubbles[i]);
+            s_ui.bubbles[i] = NULL;
+        }
+    }
+    s_ui.bubble_next = 0;
+    s_ui.bubble_used = 0;
+    bsp_lvgl_unlock();
+}
+
+void oc_ui_scroll(int direction)
+{
+    if (!bsp_lvgl_lock(500)) {
+        return;
+    }
+    // direction > 0 = 往前(更旧):内容向上滚;LVGL 自己会夹在滚动范围内。
+    lv_obj_scroll_by(s_ui.conv, 0, direction > 0 ? 80 : -80, LV_ANIM_ON);
+    bsp_lvgl_unlock();
+}
+
+// ---- 配对码面板 ----
+void oc_ui_show_pairing(uint32_t passkey)
+{
+    if (!bsp_lvgl_lock(800) || s_ui.scr == NULL) {
+        if (s_ui.scr != NULL) {
+            bsp_lvgl_unlock();
+        }
+        return;
+    }
+    if (s_ui.pair_panel == NULL) {
+        s_ui.pair_panel = lv_obj_create(s_ui.scr);
+        lv_obj_set_size(s_ui.pair_panel, 216, 132);
+        lv_obj_center(s_ui.pair_panel);
+        lv_obj_set_style_bg_color(s_ui.pair_panel, lv_color_hex(OC_UI_PANEL), 0);
+        lv_obj_set_style_border_width(s_ui.pair_panel, 2, 0);
+        lv_obj_set_style_border_color(s_ui.pair_panel, lv_color_hex(OC_UI_DOT_WARN), 0);
+        lv_obj_set_style_radius(s_ui.pair_panel, 8, 0);
+        lv_obj_clear_flag(s_ui.pair_panel, LV_OBJ_FLAG_SCROLLABLE);
+
+        s_ui.pair_label = lv_label_create(s_ui.pair_panel);
+        lv_obj_set_style_text_font(s_ui.pair_label, OC_UI_FONT, 0);
+        lv_obj_set_style_text_color(s_ui.pair_label, lv_color_hex(OC_UI_INK), 0);
+        lv_obj_set_style_text_align(s_ui.pair_label, LV_TEXT_ALIGN_CENTER, 0);
+        lv_obj_center(s_ui.pair_label);
+    }
+    lv_obj_clear_flag(s_ui.pair_panel, LV_OBJ_FLAG_HIDDEN);
+    lv_label_set_text_fmt(s_ui.pair_label, "配对中\n\n配对密码\n%06u\n\n请在手机上输入", (unsigned)passkey);
+    lv_obj_move_foreground(s_ui.pair_panel);
+    bsp_lvgl_unlock();
+}
+
+void oc_ui_hide_pairing(void)
+{
+    if (!bsp_lvgl_lock(800)) {
+        return;
+    }
+    if (s_ui.pair_panel != NULL) {
+        lv_obj_add_flag(s_ui.pair_panel, LV_OBJ_FLAG_HIDDEN);
+    }
+    bsp_lvgl_unlock();
+}
+
+// ---- 设置页 ----
+void oc_ui_settings_open(const char *title, const char *body, const char *hint)
+{
+    if (!bsp_lvgl_lock(800)) {
+        return;
+    }
+    if (s_ui.set_scr == NULL) {
+        s_ui.set_scr = lv_obj_create(NULL);
+        lv_obj_set_style_bg_color(s_ui.set_scr, lv_color_hex(OC_UI_BG), 0);
+        lv_obj_set_style_pad_all(s_ui.set_scr, 0, 0);
+        lv_obj_clear_flag(s_ui.set_scr, LV_OBJ_FLAG_SCROLLABLE);
+
+        s_ui.set_title = lv_label_create(s_ui.set_scr);
+        lv_obj_set_style_text_font(s_ui.set_title, OC_UI_FONT, 0);
+        lv_obj_set_style_text_color(s_ui.set_title, lv_color_hex(OC_UI_INK), 0);
+        lv_obj_align(s_ui.set_title, LV_ALIGN_TOP_LEFT, 12, 12);
+
+        s_ui.set_body = lv_label_create(s_ui.set_scr);
+        lv_obj_set_style_text_font(s_ui.set_body, OC_UI_FONT, 0);
+        lv_obj_set_style_text_color(s_ui.set_body, lv_color_hex(OC_UI_INK), 0);
+        lv_obj_set_width(s_ui.set_body, 216);
+        lv_label_set_long_mode(s_ui.set_body, LV_LABEL_LONG_WRAP);
+        lv_obj_align(s_ui.set_body, LV_ALIGN_TOP_LEFT, 12, 48);
+
+        s_ui.set_hint = lv_label_create(s_ui.set_scr);
+        lv_obj_set_style_text_font(s_ui.set_hint, OC_UI_FONT, 0);
+        lv_obj_set_style_text_color(s_ui.set_hint, lv_color_hex(OC_UI_INK_DIM), 0);
+        lv_obj_set_width(s_ui.set_hint, 216);
+        lv_label_set_long_mode(s_ui.set_hint, LV_LABEL_LONG_WRAP);
+        lv_obj_align(s_ui.set_hint, LV_ALIGN_BOTTOM_LEFT, 12, -10);
+    }
+    lv_label_set_text(s_ui.set_title, title != NULL ? title : "");
+    lv_label_set_text(s_ui.set_body, body != NULL ? body : "");
+    lv_label_set_text(s_ui.set_hint, hint != NULL ? hint : "");
+    lv_screen_load(s_ui.set_scr);
+    s_ui.settings_active = true;
+    bsp_lvgl_unlock();
+}
+
+void oc_ui_settings_update(const char *body)
+{
+    if (!bsp_lvgl_lock(500)) {
+        return;
+    }
+    if (s_ui.set_body != NULL) {
+        lv_label_set_text(s_ui.set_body, body != NULL ? body : "");
+    }
+    bsp_lvgl_unlock();
+}
+
+void oc_ui_settings_close(void)
+{
+    if (!bsp_lvgl_lock(800)) {
+        return;
+    }
+    if (s_ui.scr != NULL) {
+        lv_screen_load(s_ui.scr);
+    }
+    s_ui.settings_active = false;
+    bsp_lvgl_unlock();
+}
+
+bool oc_ui_settings_active(void)
+{
+    return s_ui.settings_active;
+}

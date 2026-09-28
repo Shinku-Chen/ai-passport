@@ -1,8 +1,12 @@
 idf_component_register(
     SRCS "main.c"
-         "oc_proto.c"
+         "oc_app.c"
          "oc_audio.c"
          "oc_link.c"
+         "oc_proto.c"
+         "oc_settings.c"
+         "oc_ui.c"
+         "fonts/gb2312_14.c"
          "demo_navigation.c"
          "ui_pixel.c"
          "ui_pixel_math.c"
@@ -15,7 +19,7 @@ idf_component_register(
          "demo_ble.c"
          "demo_low_power.c"
     INCLUDE_DIRS "."
-    REQUIRES bsp bt esp_event esp_hw_support esp_netif esp_timer esp_wifi nvs_flash
+    REQUIRES bsp bt esp_event esp_hw_support esp_netif esp_timer esp_wifi json nvs_flash
 )
 
 # ESP-IDF 5.5.3 只把 WRITE_ENC 应用到自动生成的 CCCD;包一层注册边界让受保护的 CCCD
