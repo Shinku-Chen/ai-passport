@@ -15,6 +15,8 @@
 #include "bsp_button.h"
 #include "cJSON.h"
 #include "esp_log.h"
+#include "esp_heap_caps.h"
+#include "esp_system.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
@@ -28,7 +30,7 @@
 static const char *TAG = "oc_app";
 
 #define OC_APP_TASK_STACK 8192U
-#define OC_APP_QUEUE_DEPTH 16U
+#define OC_APP_QUEUE_DEPTH 32U
 #define OC_APP_TICK_MS 50U
 #define OC_APP_BATTERY_POLL_MS 10000U
 
@@ -63,6 +65,10 @@ typedef struct {
 static struct {
     QueueHandle_t queue;
     TaskHandle_t task;
+    // 应用任务栈也用静态栈:堆在 NimBLE/LVGL/DMA 之后只剩十几 KB 连续块,
+    // 关键任务不应该因为堆碎片建不出来(实测就是这样整个应用静止的)。
+    StaticTask_t task_tcb;
+    StackType_t task_stack[OC_APP_TASK_STACK / sizeof(StackType_t)];
     oc_reassembler_t rx;
     oc_text_merge_t merge;
     bool running;
@@ -74,8 +80,10 @@ static struct {
     oc_set_page_t set_page;
     int set_index;
     uint32_t battery_poll_ms;
+    uint32_t heartbeat_ms;
     int battery;
     uint32_t tx_drop_seen;
+    char last_gw_reason[96];   // 网关原因系统消息去重
 } s_app;
 
 // ---- 发送 ----
@@ -157,18 +165,17 @@ static void turn_start(void)
         return;
     }
     if (!oc_link_ready()) {
-        oc_ui_set_hint("设备未连接,请先在 App 里连接");
+        oc_ui_append('R', "设备未连接,请先在 App 里连接");
         oc_ui_note_activity();
         return;
     }
     if (oc_audio_begin_turn() != ESP_OK) {
-        oc_ui_set_hint("音频启动失败");
+        oc_ui_append('R', "音频启动失败");
         return;
     }
     s_app.turn_active = true;
     send_event_json("{\"ev\":\"turn_start\"}");
     oc_ui_set_state(OC_UI_STATE_RECORDING, NULL);
-    oc_ui_set_hint("松开 OK 发送");
     oc_ui_note_activity();
 }
 
@@ -195,7 +202,6 @@ static void turn_end(void)
              st.frames_encoded ? (unsigned)(st.opus_bytes / st.frames_encoded) : 0u);
 
     oc_ui_set_state(OC_UI_STATE_SENDING, NULL);
-    oc_ui_set_hint("等待回复…");
 }
 
 // ---- 设置页 ----
@@ -259,7 +265,6 @@ static void settings_close(void)
 {
     s_app.settings_active = false;
     oc_ui_settings_close();
-    oc_ui_set_hint("长按 OK 说话 · 短按 OK 设置");
 }
 
 // 返回 true 表示这次按键已在设置页内处理掉。
@@ -336,7 +341,12 @@ static void handle_button(bsp_btn_t btn, bsp_btn_ev_t ev)
         turn_end();
         return;
     }
+    // 短按 OK 只用来把屏幕点亮(背光已在函数开头恢复),不再打开设置页:
+    // 设置页改成长按 UP 打开,避免想看一眼屏幕/误碰时误入菜单。
     if (btn == BSP_BTN_OK && ev == BSP_BTN_CLICK) {
+        return;
+    }
+    if (btn == BSP_BTN_UP && ev == BSP_BTN_LONG) {
         settings_open();
         return;
     }
@@ -394,6 +404,30 @@ static void handle_control(const uint8_t *payload, size_t len)
         }
     } else if (strcmp(cmd->valuestring, "clear_display") == 0) {
         oc_ui_clear_conversation();
+    } else if (strcmp(cmd->valuestring, "gateway") == 0) {
+        // 手机上报网关状态。设备自己连不上网关,左上角把「设备」与「网关」分开显示,
+        // 两者都就绪才显示单个「就绪」;这里的 detail 是网关异常时的可读原因。
+        const cJSON *state = cJSON_GetObjectItemCaseSensitive(root, "state");
+        const cJSON *detail = cJSON_GetObjectItemCaseSensitive(root, "detail");
+        const char *st = cJSON_IsString(state) ? state->valuestring : "";
+        const char *dt = (cJSON_IsString(detail) && detail->valuestring[0] != '\0') ? detail->valuestring : NULL;
+        if (strcmp(st, "ready") == 0) {
+            oc_ui_set_gateway_state(OC_UI_GATEWAY_READY, NULL);
+        } else if (strcmp(st, "connecting") == 0) {
+            oc_ui_set_gateway_state(OC_UI_GATEWAY_CONNECTING, dt);
+        } else if (strcmp(st, "working") == 0) {
+            // 已连上、agent 正在跑(带阶段):与 App 状态卡显示同一组词(工作中)。
+            oc_ui_set_gateway_state(OC_UI_GATEWAY_WORKING, dt);
+        } else {
+            oc_ui_set_gateway_state(OC_UI_GATEWAY_OFFLINE, dt);
+            // 底部提示行已去掉:网关不可用的原因作为系统消息上屏,同一条只加一次,
+            // 避免网络抖动时把对话区刷满。
+            if (dt != NULL && strcmp(dt, s_app.last_gw_reason) != 0) {
+                snprintf(s_app.last_gw_reason, sizeof(s_app.last_gw_reason), "%s", dt);
+                oc_ui_append('R', dt);
+            }
+        }
+        ESP_LOGI(TAG, "网关状态: %s%s%s", st, dt ? " / " : "", dt ? dt : "");
     } else if (strcmp(cmd->valuestring, "turn_start") == 0) {
         const cJSON *codec = cJSON_GetObjectItemCaseSensitive(root, "codec");
         ESP_LOGI(TAG, "手机接受本轮(codec=%s)", cJSON_IsString(codec) ? codec->valuestring : "?");
@@ -410,7 +444,6 @@ static void on_frame(uint8_t type, uint8_t flags, const uint8_t *payload, size_t
         if (oc_text_merge_push(&s_app.merge, flags, payload, len)) {
             oc_ui_set_state(OC_UI_STATE_RECEIVING, NULL);
             oc_ui_append(s_app.merge.role, s_app.merge.text);
-            oc_ui_set_hint(s_app.merge.role == 'A' ? "长按 OK 继续说话" : "识别完成,等待回复…");
             if (s_app.merge.overflow) {
                 ESP_LOGW(TAG, "本条文本超出显示上限,已截断");
             }
@@ -460,25 +493,25 @@ static void handle_link_event(const oc_link_event_t *ev)
         s_app.link_secure = false;
         s_app.link_subscribed = false;
         s_app.app_hello = false;
+        ESP_LOGI(TAG, "事件: 已连接");
         oc_ui_set_state(OC_UI_STATE_CONNECTING, NULL);
-        oc_ui_set_hint("已连接,正在加密…");
         break;
     case OC_LINK_EV_PASSKEY:
+        ESP_LOGI(TAG, "事件: 配对码 %06u", (unsigned)ev->data.passkey.passkey);
         oc_ui_set_state(OC_UI_STATE_PAIRING, NULL);
         oc_ui_show_pairing(ev->data.passkey.passkey);
-        oc_ui_set_hint("在手机上输入屏幕上的配对密码");
         break;
     case OC_LINK_EV_SECURED:
         s_app.link_secure = oc_link_ready() || oc_link_connected();
+        ESP_LOGI(TAG, "事件: 已加密");
         oc_ui_set_state(OC_UI_STATE_CONNECTING, NULL);
-        oc_ui_set_hint("加密完成,等待订阅…");
         break;
     case OC_LINK_EV_SUBSCRIBED:
         s_app.link_subscribed = oc_link_ready();
+        ESP_LOGI(TAG, "事件: 订阅=%d", (int)s_app.link_subscribed);
         oc_ui_hide_pairing();
         if (s_app.link_subscribed) {
             oc_ui_set_state(OC_UI_STATE_READY, NULL);
-            oc_ui_set_hint("长按 OK 说话");
             send_hello();
         }
         break;
@@ -486,12 +519,13 @@ static void handle_link_event(const oc_link_event_t *ev)
         s_app.link_secure = false;
         s_app.link_subscribed = false;
         s_app.app_hello = false;
+        ESP_LOGI(TAG, "事件: 断开 reason=%d", ev->data.disconnected.reason);
         if (s_app.turn_active) {
             turn_end();   // 断开时把当前轮收尾,避免手机侧永远等 turn_end
         }
         oc_ui_hide_pairing();
+        oc_ui_set_gateway_state(OC_UI_GATEWAY_UNKNOWN, NULL);   // 链路断了,手机不会再上报网关状态
         oc_ui_set_state(OC_UI_STATE_IDLE, NULL);
-        oc_ui_set_hint("已断开,等待重连");
         oc_reassembler_reset(&s_app.rx);   // 半截帧作废
         oc_link_flush_rx();
         break;
@@ -502,7 +536,7 @@ static void handle_link_event(const oc_link_event_t *ev)
         if ((oc_link_tx_drop_count() / 20U) > s_app.tx_drop_seen) {
             s_app.tx_drop_seen = oc_link_tx_drop_count() / 20U;
             ESP_LOGW(TAG, "发送丢帧累计 %u", (unsigned)oc_link_tx_drop_count());
-            oc_ui_set_hint("链路拥塞,部分内容可能丢失");
+            oc_ui_append('R', "链路拥塞,部分内容可能丢失");
         }
         break;
     default:
@@ -538,6 +572,15 @@ static void app_task(void *arg)
         }
         drain_rx();   // 每拍兜底一次,保证不积压
 
+        // 心跳:用来判断应用任务是否还在正常消费事件(队列满/界面卡住时靠它定位)。
+        s_app.heartbeat_ms += OC_APP_TICK_MS;
+        if (s_app.heartbeat_ms >= 5000U) {
+            s_app.heartbeat_ms = 0;
+            ESP_LOGI(TAG, "心跳 队列空闲=%u 堆=%u 说话=%d 设置页=%d",
+                     (unsigned)uxQueueSpacesAvailable(s_app.queue),
+                     (unsigned)esp_get_free_heap_size(), (int)s_app.turn_active, (int)s_app.settings_active);
+        }
+
         s_app.battery_poll_ms += OC_APP_TICK_MS;
         if (s_app.battery_poll_ms >= OC_APP_BATTERY_POLL_MS) {
             s_app.battery_poll_ms = 0;
@@ -562,8 +605,22 @@ esp_err_t oc_app_start(void)
     oc_text_merge_init(&s_app.merge);
     oc_reassembler_init(&s_app.rx, on_frame, NULL);
 
+    // 堆预算在这块板子上很紧(无 PSRAM):NimBLE 约 60KB、音频任务 24KB、LVGL 绘制缓冲与
+    // DMA 缓冲都要从内部堆拿。每步都打印剩余堆与最大连续块,分配失败时能直接看出卡在哪。
+    ESP_LOGI(TAG, "启动堆: 空闲=%u 最大块=%u", (unsigned)esp_get_free_heap_size(),
+             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
+
     s_app.queue = xQueueCreate(OC_APP_QUEUE_DEPTH, sizeof(oc_msg_t));
     if (s_app.queue == NULL) {
+        ESP_LOGE(TAG, "事件队列创建失败");
+        return ESP_ERR_NO_MEM;
+    }
+
+    // 先把小而关键的任务建出来(静态栈,不占堆),再建音频任务。
+    s_app.task = xTaskCreateStatic(app_task, "oc_app", OC_APP_TASK_STACK, NULL, 5, s_app.task_stack,
+                                   &s_app.task_tcb);
+    if (s_app.task == NULL) {
+        ESP_LOGE(TAG, "应用任务创建失败");
         return ESP_ERR_NO_MEM;
     }
 
@@ -571,7 +628,21 @@ esp_err_t oc_app_start(void)
     bsp_audio_set_volume(oc_settings_volume());
     bsp_audio_set_mic_gain((float)oc_settings_mic_gain_db());
 
-    esp_err_t e = oc_link_init(on_link_event, NULL);
+    // 音频要早初始化:Opus 编码器状态是一块几十 KB 的连续分配,必须在 NimBLE 拿走
+    // ~70KB 之前拿到;放到后面就只剩十几 KB 的连续块,opus_encoder_create 直接
+    // 返回 OPUS_ALLOC_FAIL(-7)。采集任务本身是静态栈,早启动也没关系(没开始说话时空转)。
+    esp_err_t e = oc_audio_init(on_audio_frame, NULL);
+    if (e != ESP_OK) {
+        ESP_LOGE(TAG, "音频初始化失败: %s(空闲=%u 最大块=%u)", esp_err_to_name(e),
+                 (unsigned)esp_get_free_heap_size(),
+                 (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
+    } else if ((e = oc_audio_start()) != ESP_OK) {
+        ESP_LOGE(TAG, "音频任务启动失败: %s", esp_err_to_name(e));
+    }
+    ESP_LOGI(TAG, "音频后堆: 空闲=%u 最大块=%u", (unsigned)esp_get_free_heap_size(),
+             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
+
+    e = oc_link_init(on_link_event, NULL);
     if (e != ESP_OK) {
         ESP_LOGE(TAG, "链路初始化失败: %s", esp_err_to_name(e));
         return e;
@@ -581,6 +652,8 @@ esp_err_t oc_app_start(void)
         ESP_LOGE(TAG, "链路启动失败: %s", esp_err_to_name(e));
         return e;
     }
+    ESP_LOGI(TAG, "链路后堆: 空闲=%u 最大块=%u", (unsigned)esp_get_free_heap_size(),
+             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
 
     e = oc_ui_init(oc_link_device_name());
     if (e != ESP_OK) {
@@ -588,24 +661,16 @@ esp_err_t oc_app_start(void)
         return e;
     }
     oc_ui_set_state(OC_UI_STATE_IDLE, NULL);
-
-    e = oc_audio_init(on_audio_frame, NULL);
-    if (e != ESP_OK) {
-        ESP_LOGE(TAG, "音频初始化失败: %s", esp_err_to_name(e));
-        oc_ui_set_hint("音频初始化失败,只能收发文字");
-    } else if ((e = oc_audio_start()) != ESP_OK) {
-        ESP_LOGE(TAG, "音频任务启动失败: %s", esp_err_to_name(e));
-    }
+    ESP_LOGI(TAG, "界面后堆: 空闲=%u 最大块=%u", (unsigned)esp_get_free_heap_size(),
+             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
 
     if (bsp_battery_init() != ESP_OK) {
         ESP_LOGW(TAG, "电量计初始化失败,状态栏不显示电量");
     }
     poll_battery();
 
-    if (xTaskCreate(app_task, "oc_app", OC_APP_TASK_STACK, NULL, 5, &s_app.task) != pdPASS) {
-        return ESP_ERR_NO_MEM;
-    }
-    ESP_LOGI(TAG, "对讲机应用启动(设备 %s,固件 %s)", oc_link_device_name(), OC_APP_VERSION);
+    ESP_LOGI(TAG, "对讲机应用启动(设备 %s,固件 %s) 空闲堆=%u", oc_link_device_name(), OC_APP_VERSION,
+             (unsigned)esp_get_free_heap_size());
     return ESP_OK;
 }
 

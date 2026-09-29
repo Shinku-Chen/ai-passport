@@ -6,7 +6,6 @@ idf_component_register(
          "oc_proto.c"
          "oc_settings.c"
          "oc_ui.c"
-         "fonts/gb2312_14.c"
          "demo_navigation.c"
          "ui_pixel.c"
          "ui_pixel_math.c"
@@ -26,3 +25,9 @@ idf_component_register(
 # 也拿到 READ_ENC,否则手机读不到 CCCD、表现为"订阅不上通知"。
 target_link_libraries(${COMPONENT_LIB} INTERFACE "-Wl,--wrap=ble_att_svr_register")
 target_link_libraries(${COMPONENT_LIB} INTERFACE "-Wl,-u,__wrap_ble_att_svr_register")
+
+# 中文字库:assets/fonts 下由 tools/intercom_font.py 生成(16 px / 4 bpp / PLAIN)。
+# 之前的 14 px / 2 bpp 字库在屏上太模糊,已整体替换(见 assets/README.md)。
+target_sources(${COMPONENT_LIB} PRIVATE
+    "${CMAKE_CURRENT_LIST_DIR}/../assets/fonts/intercom_cjk_16.c"
+)

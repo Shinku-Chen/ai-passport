@@ -176,9 +176,19 @@ Rules:
 | `{"cmd":"clear_display"}` | host to device | clear the conversation area |
 | `{"cmd":"status"}` | host to device | request device status (battery, volume, microphone gain, link) for the app console |
 | `{"cmd":"audio","volume":<percent>,"mic_gain_db":<number>}` | host to device | set output volume and microphone gain; the app owns both settings |
+| `{"cmd":"gateway","state":"ready"\|"connecting"\|"working"\|"offline","detail":"<text>"}` | host to device | report the phone-side gateway state so the device can show device and gateway readiness separately. The status words are shared with the phone: `ready`, `connecting`, `working` (connected, agent running), `offline`. `detail` carries the readable reason or progress phase for anything that is not `ready`; an unknown state is treated as `offline` |
 
 Unknown commands must be ignored, not treated as an error, so a newer phone can
 talk to an older device.
+
+The device cannot reach the gateway itself, so the phone reports it. The device
+status bar therefore has two lines: the BLE link state and the last reported
+gateway state. Only when both are ready does the bar collapse to a single
+`ready` label; otherwise it names the side that is not ready, and an unusable
+gateway shows its `detail` in the hint line so the reason stays readable. The
+phone must send `gateway` once after the handshake and again whenever the state
+or the reason changes; before the first report the device shows the gateway as
+unknown rather than guessing.
 
 ## Events
 
@@ -289,7 +299,8 @@ Not part of the wire contract, but the app side must not contradict it:
 | --- | --- |
 | Hold `OK` | Start a turn; audio frames flow until release |
 | Release `OK` | End the turn; the phone finalizes recognition |
-| Short press `OK` | Open the device settings page (device information, brightness, back) |
+| Short press `OK` | Wake the screen only; it does not open anything |
+| Long press `UP` | Open the device settings page (device information, brightness, back) |
 | `UP` / `DOWN` | Browse conversation history, newest first; inside the settings page they move the highlight or step the value |
 
 Output volume and microphone gain are not adjustable on the device; they come from

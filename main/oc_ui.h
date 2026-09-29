@@ -21,14 +21,26 @@ typedef enum {
     OC_UI_STATE_RECEIVING,  // 收到内容
 } oc_ui_state_t;
 
+// 手机侧的网关状态(由 App 用 CONTROL gateway 命令推送)。
+// 设备自己连不上网关,所以左上角要分别展示「设备」与「网关」两种状态:
+// 两者都就绪才显示单个「就绪」,否则把不正常的那一项连同原因显示出来。
+typedef enum {
+    OC_UI_GATEWAY_UNKNOWN = 0,  // 还没收到手机上报(刚重连/刚开机)
+    OC_UI_GATEWAY_READY,        // 网关可用
+    OC_UI_GATEWAY_CONNECTING,   // 正在连接/重连/鉴权中
+    OC_UI_GATEWAY_WORKING,      // 已连上,agent 正在跑(带阶段,如 preparing_context)
+    OC_UI_GATEWAY_OFFLINE,      // 不可用(带原因)
+} oc_ui_gateway_state_t;
+
 // 建屏并显示对讲屏。device_name 显示在状态栏(可为 NULL)。
 esp_err_t oc_ui_init(const char *device_name);
 
 // 状态栏状态;detail 可空(用状态默认文案)。
 void oc_ui_set_state(oc_ui_state_t state, const char *detail);
 
-// 底部提示行(操作指引/错误提示)。
-void oc_ui_set_hint(const char *text);
+// 手机上报的网关状态。detail 是网关不可用时的可读原因(可空)。
+// 设备侧状态与网关状态都就绪时,状态栏只显示一个「就绪」。
+void oc_ui_set_gateway_state(oc_ui_gateway_state_t state, const char *detail);
 
 // 电量百分比;-1 表示读取不可用(此时不画数字,也不画 0%)。
 void oc_ui_set_battery(int percent);

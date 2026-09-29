@@ -14,31 +14,31 @@ Store reusable font files and generated font sources in `fonts/`.
 
 | File | Format and size | Use and source |
 | --- | --- | --- |
-| [`../main/fonts/gb2312_14.c`](../main/fonts/gb2312_14.c) and [`gb2312_14.h`](../main/fonts/gb2312_14.h) | LVGL 9 C font source, 14 px, 2 bpp, PLAIN (uncompressed) bitmaps, 7540 glyphs; 3,073,296 bytes (2.93 MiB) and 659 bytes | Complete GB2312 Chinese coverage for the Chinese device screen. Generated with `lv_font_conv` 1.5.3 from Noto Sans SC (SIL OFL 1.1); regenerate with `tools/gen_chinese_font.py`. |
+| [`fonts/intercom_cjk_16.c`](fonts/intercom_cjk_16.c) | LVGL 9 C font source, 16 px, 4 bpp, PLAIN (uncompressed) bitmaps, 7540 glyphs, 900,691 bytes of linked bitmap data; 6,622,442 bytes (6.32 MiB) of source | Complete GB2312 Chinese coverage for the intercom device screen. Rasterised with Pillow (FreeType) from Source Han Sans SC Normal (SIL OFL 1.1); regenerate with `tools/intercom_font.py`. |
+| [`fonts/intercom_cjk_symbols.txt`](fonts/intercom_cjk_symbols.txt) | Code-point list, one `U+XXXX` per line, ascending and unique; 52,780 bytes | The 7540 covered code points, so a copy-coverage guard can compare against the font without parsing the `.c`. Regenerated together with the font. |
 
 - Use descriptive names that include the family, weight, size, and format when relevant.
 - Document the source, license, character range, conversion command, and expected destination.
 - Check Flash and internal-RAM impact before adding a font; the ESP32-C3 has no PSRAM.
 - Do not commit fonts whose license does not permit redistribution.
 
-### GB2312 Chinese font (`lv_font_gb2312_14`)
+### GB2312 Chinese font (`lv_font_intercom_cjk_16`)
 
-- Generation command: `python3 tools/gen_chinese_font.py` from the repository root (add `--verify-only` to re-check an existing artifact without converting). The script runs the pinned converter as:
+- Generation command: `python3 tools/intercom_font.py` from the repository root (`--check` re-verifies an existing artifact without regenerating). The script rasterises with Pillow/FreeType and writes the LVGL 9 `fmt_txt` format itself:
 
 ```bash
-lv_font_conv --font C:/Windows/Fonts/NotoSansSC-VF.ttf --size 14 --bpp 2 \
-  --format lvgl --no-compress --no-prefilter --lv-include lvgl.h \
-  --symbols <the 7540 code points listed by the script> \
-  --lv-font-name lv_font_gb2312_14 --output main/fonts/gb2312_14.c
+python3 tools/intercom_font.py                 # generate, then compare pixel by pixel
+python3 tools/intercom_font.py --check         # verify the committed artifact only
+python3 tools/intercom_font.py --font <static CJK font>
 ```
 
-- Tool version: `lv_font_conv` 1.5.3 (global npm install, `node` 24.18.0). The complete option set is also recorded in the `Opts:` header comment of the generated `.c` file.
-- Character inventory: 7540 code points requested, all 7540 glyphs generated. It covers the complete GB2312 character set, that is 6763 Han characters (levels 1 and 2, rows 0xB0-0xF7) plus 682 symbols (rows 0xA1-0xA9: Chinese punctuation, full-width ASCII U+FF01-U+FF5E, units and currency signs, arrows, box drawing, circled numbers, Greek and Cyrillic letters), and 95 printable ASCII code points U+0020-U+007E for status lines and hints.
-- Options pinned for this repository: `--no-compress --no-prefilter` keep `bitmap_format = 0` (PLAIN), because the RLE stream that lv_font_conv 1.5.3 emits by default is not decoded by this LVGL 9.6 configuration. `--lv-include lvgl.h` makes both include branches resolve to `#include "lvgl.h"`, matching how `main` includes LVGL: the `lvgl/lvgl.h` form has no matching include directory because the managed component directory is `lvgl__lvgl`, and `main` does not define `LV_LVGL_H_INCLUDE_SIMPLE`.
-- Destination and integration: the generated pair lives in `main/fonts/` next to the application that compiles it. `main/fonts/gb2312_14.c` must be listed in the `main` component's `SRCS`, and consumers declare the symbol with `LV_FONT_DECLARE(lv_font_gb2312_14)`. Regenerating at another size produces `gb2312_<size>.c` with the symbol `lv_font_gb2312_<size>`.
-- Source and license: the glyphs are rendered from `C:/Windows/Fonts/NotoSansSC-VF.ttf` (Noto Sans SC), which is published under the SIL Open Font License 1.1 and may be redistributed and embedded; the TTF itself is not committed. The font file with the same name is installed by Microsoft Windows or can be downloaded from the Noto project. Do not substitute a field font such as SimHei or Microsoft YaHei: those are licensed with Windows, so a bitmap table derived from them cannot be published with the firmware. Regenerate from any other redistributable font with `--font`.
-- Flash and RAM: the generated source is 2.93 MiB, and the linked glyph data is read-only constant data in Flash. Measured cost of enabling it: the application image grew from 1.24 MiB to 1.59 MiB, and 80% of the 8 MB application partition is still free. LVGL decodes individual glyph bitmaps on demand, so the table is not loaded into internal RAM wholesale. This is still significant on an ESP32-C3 with no PSRAM, so re-check `idf.py size-components` after changing the size or bpp.
-- Verification: `python3 tools/gen_chinese_font.py --verify-only` re-checks the glyph count, the exported symbol, and the PLAIN bitmap format; the generated source is also syntax-checked with the real `main` compile flags from `build/compile_commands.json`.
+- Why a hand-written rasteriser instead of `lv_font_conv`: that tool stopped at 1.5.3 (2021) and, under Node 24, writes 4 bpp bitmaps that the LVGL 9 PLAIN decoder reads back as noise, which shows up as garbled text on the device. The generator is ported from the `feature/sanoba-witch` branch (`tools/sanoba_font.py`), which validated the same approach on device; the two branch-specific parts (character set and UI constants) are the intercom's own.
+- Source and license: the glyphs are rendered from `SourceHanSansSC-Normal.otf` (Source Han Sans SC Normal), published under the SIL Open Font License 1.1, which permits redistribution and embedding. Auto-detection prefers the copy shipped with the LVGL component, `managed_components/lvgl__lvgl/scripts/generators/built_in_font/SourceHanSansSC-Normal.otf`; the font file itself is never committed. Do not substitute a Windows-bundled field font such as SimHei or Microsoft YaHei — a bitmap table derived from them cannot be published with the firmware — and do not switch to the variable `NotoSansSC-VF.ttf`, whose too-light default instance is what made the previous 14 px / 2 bpp table look blurry on screen.
+- Character inventory: 7540 code points requested, all 7540 glyphs generated (the source font covers all of them). It covers the complete GB2312 character set, that is 6763 Han characters (levels 1 and 2, rows 0xB0-0xF7) plus 682 symbols (rows 0xA1-0xA9: Chinese punctuation, full-width ASCII U+FF01-U+FF5E, units and currency signs, arrows, box drawing, circled numbers, Greek and Cyrillic letters), and 95 printable ASCII code points U+0020-U+007E for status lines and hints. `fonts/intercom_cjk_symbols.txt` lists the same set.
+- Format pinned for this repository: 16 px, 4 bpp, PLAIN (uncompressed) bitmaps, `line_height = 20`, `base_line = 3`. Glyphs are packed as continuous nibbles with every glyph byte-aligned, so `stride` stays 0; ASCII uses the compact `FORMAT0_TINY` cmap and all other code points the `SPARSE_TINY` cmap. `main/oc_ui.c` is laid out for the resulting 20 px line box.
+- Destination and integration: `main/CMakeLists.txt` compiles the generated source with `target_sources(${COMPONENT_LIB} PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../assets/fonts/intercom_cjk_16.c")`, and `main/oc_ui.c` declares the symbol with `LV_FONT_DECLARE(lv_font_intercom_cjk_16)`. No header is generated; the `.c` is self-contained and includes only `"lvgl.h"`.
+- Flash and RAM: the bitmap payload is 900,691 bytes (880 KiB) and is linked as read-only data in Flash (DROM); the 6.32 MiB source text is build input, not image content. Measured cost of this change: the application image grew from 1,669,472 bytes (1.59 MiB) to 2,218,384 bytes (2.12 MiB), that is +548,912 bytes, and 73% of the 8 MB application partition is still free. LVGL decodes individual glyph bitmaps on demand, so the table is not loaded into internal RAM wholesale. This is still significant on an ESP32-C3 with no PSRAM, so re-check `idf.py size-components` after changing the size or bpp.
+- Verification: `python3 tools/intercom_font.py --check` re-rasterises the source font and compares every glyph pixel by pixel against the committed `.c`; it also checks the exported symbol, the glyph count, the PLAIN bitmap format, the ASCII `FORMAT0_TINY` range, the line height and the code-point coverage. The regenerated font was additionally built into the firmware with ESP-IDF 5.5.3 (`idf.py -B build build`).
 
 ## Images
 

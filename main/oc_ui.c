@@ -23,11 +23,13 @@
 #include "oc_proto.h"
 #include "oc_settings.h"
 
-#include "fonts/gb2312_14.h"
-
 // 完整 GB2312 字库(6763 汉字 + 全角/数学/单位符号 + ASCII):对讲机显示的是 App 识别
 // 文本与网关回复,内容不可预测,所以用全量字库而不是子集,避免出现缺字方框。
-#define OC_UI_FONT (&lv_font_gb2312_14)
+// 16 px / 4 bpp 的 PLAIN 位图,由 tools/intercom_font.py 生成到 assets/fonts/
+// (旧的 14 px / 2 bpp 版本屏上太糊,已整体替换)。
+LV_FONT_DECLARE(lv_font_intercom_cjk_16);
+
+#define OC_UI_FONT (&lv_font_intercom_cjk_16)
 
 static const char *TAG = "oc_ui";
 
@@ -37,6 +39,7 @@ static const char *TAG = "oc_ui";
 #define OC_UI_BAR_BG 0x161B22
 #define OC_UI_PANEL 0x1B222C
 #define OC_UI_INK 0xE6EDF3
+#define OC_UI_INK_READY 0xFFFFFF   // 「就绪」两行都用纯白
 #define OC_UI_INK_DIM 0x8B949E
 #define OC_UI_ACCENT_U 0x6FC3FF          // 用户文本
 #define OC_UI_ACCENT_A 0x9BE9A8          // 助手文本
@@ -45,15 +48,17 @@ static const char *TAG = "oc_ui";
 #define OC_UI_DOT_WARN 0xD29922
 #define OC_UI_DOT_OFF 0x8B949E
 #define OC_UI_DOT_BUSY 0x58A6FF
+#define OC_UI_BG_RECORD 0x5C0F0F        // 录音中整屏转红(松开立刻恢复)
 
 static struct {
     lv_obj_t *scr;
     lv_obj_t *dot;
     lv_obj_t *state;
+    lv_obj_t *gw_dot;
+    lv_obj_t *gw;
     lv_obj_t *clock;
     lv_obj_t *batt;
     lv_obj_t *conv;
-    lv_obj_t *hint;
     lv_obj_t *pair_panel;
     lv_obj_t *pair_label;
     lv_obj_t *bubbles[OC_UI_BUBBLES];
@@ -72,6 +77,11 @@ static struct {
     int64_t epoch;                // 0 = 未同步
     int last_clock_minutes;       // 只在分钟变化时刷新标签
     char device_name[24];
+    // 两种状态:设备(BLE 链路)与网关(手机上报)。两者都就绪才显示单个「就绪」。
+    oc_ui_state_t dev_state;
+    char dev_detail[48];
+    oc_ui_gateway_state_t gw_state;
+    char gw_detail[96];
 } s_ui;
 
 static const char *state_text(oc_ui_state_t state)
@@ -97,6 +107,78 @@ static uint32_t state_color(oc_ui_state_t state)
     case OC_UI_STATE_RECEIVING: return OC_UI_DOT_BUSY;
     case OC_UI_STATE_PAIRING: return OC_UI_DOT_WARN;
     default: return OC_UI_DOT_OFF;
+    }
+}
+
+static const char *gw_text(oc_ui_gateway_state_t state)
+{
+    switch (state) {
+    case OC_UI_GATEWAY_READY: return "就绪";
+    case OC_UI_GATEWAY_CONNECTING: return "连接中";
+    case OC_UI_GATEWAY_WORKING: return "工作中";
+    case OC_UI_GATEWAY_OFFLINE: return "异常";
+    default: return "未知";
+    }
+}
+
+static uint32_t gw_color(oc_ui_gateway_state_t state)
+{
+    switch (state) {
+    case OC_UI_GATEWAY_READY: return OC_UI_DOT_OK;
+    case OC_UI_GATEWAY_CONNECTING:
+    case OC_UI_GATEWAY_WORKING: return OC_UI_DOT_BUSY;
+    case OC_UI_GATEWAY_OFFLINE: return OC_UI_DOT_WARN;
+    default: return OC_UI_DOT_OFF;
+    }
+}
+
+// 重画状态栏与底部提示(调用时必须已持 LVGL 锁)。
+// 规则:设备与网关都就绪 → 只显示一个「就绪」;否则分别列出设备与网关状态,
+// 并把网关不可用的具体原因顶到底部提示行(那里能换行,看得全)。
+static void refresh_status(void)
+{
+    bool gw_ready = (s_ui.gw_state == OC_UI_GATEWAY_READY);
+
+    if (s_ui.state == NULL) {
+        return;
+    }
+
+    // 两行状态常驻显示(不因“都就绪”而隐藏网关那行):
+    // 用户要知道“设备通、网关也通”,而不是只能看到一个“就绪”。
+    const char *dev_text = s_ui.dev_detail[0] ? s_ui.dev_detail : state_text(s_ui.dev_state);
+    lv_label_set_text_fmt(s_ui.state, "设备 %s", dev_text);
+    // 「就绪」和录音中(红底)用纯白,其余保持浅灰
+    bool dev_white = (s_ui.dev_state == OC_UI_STATE_READY) || (s_ui.dev_state == OC_UI_STATE_RECORDING);
+    lv_obj_set_style_text_color(s_ui.state, lv_color_hex(dev_white ? OC_UI_INK_READY : OC_UI_INK), 0);
+    lv_obj_set_style_bg_color(s_ui.dot, lv_color_hex(state_color(s_ui.dev_state)), 0);
+
+    if (s_ui.gw != NULL) {
+        lv_obj_clear_flag(s_ui.gw_dot, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_style_bg_color(s_ui.gw_dot, lv_color_hex(gw_color(s_ui.gw_state)), 0);
+        lv_obj_set_style_text_color(s_ui.gw,
+                                    lv_color_hex(gw_ready ? OC_UI_INK_READY : OC_UI_INK_DIM), 0);
+        if (s_ui.gw_state == OC_UI_GATEWAY_UNKNOWN) {
+            lv_label_set_text(s_ui.gw, "网关 未知");
+        } else if (gw_ready) {
+            lv_label_set_text(s_ui.gw, "网关 就绪");
+        } else {
+            // 状态词与 App 侧保持一致(连接中/工作中/异常),具体原因放到底部提示行。
+            lv_label_set_text_fmt(s_ui.gw, "网关 %s", gw_text(s_ui.gw_state));
+        }
+    }
+
+    // 底部不再有提示行:对话区一直占满到屏幕底部,提示信息走状态栏或系统消息。
+}
+
+// 录音中的整屏红底:一眼能看出“正在采集”,松开立刻恢复。
+static void apply_recording_theme(bool recording)
+{
+    const uint32_t bg = recording ? OC_UI_BG_RECORD : OC_UI_BG;
+    if (s_ui.scr != NULL) {
+        lv_obj_set_style_bg_color(s_ui.scr, lv_color_hex(bg), 0);
+    }
+    if (s_ui.conv != NULL) {
+        lv_obj_set_style_bg_color(s_ui.conv, lv_color_hex(bg), 0);
     }
 }
 
@@ -147,8 +229,8 @@ void oc_ui_apply_brightness(void)
 static void build_conv_area(lv_obj_t *parent)
 {
     s_ui.conv = lv_obj_create(parent);
-    lv_obj_set_size(s_ui.conv, 232, 226);
-    lv_obj_align(s_ui.conv, LV_ALIGN_TOP_MID, 0, 34);
+    lv_obj_set_size(s_ui.conv, 232, 264);
+    lv_obj_align(s_ui.conv, LV_ALIGN_TOP_MID, 0, 50);
     lv_obj_set_style_bg_color(s_ui.conv, lv_color_hex(OC_UI_BG), 0);
     lv_obj_set_style_border_width(s_ui.conv, 0, 0);
     lv_obj_set_style_pad_all(s_ui.conv, 6, 0);
@@ -156,6 +238,8 @@ static void build_conv_area(lv_obj_t *parent)
     lv_obj_set_flex_flow(s_ui.conv, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_scroll_dir(s_ui.conv, LV_DIR_VER);
     lv_obj_set_scrollbar_mode(s_ui.conv, LV_SCROLLBAR_MODE_AUTO);
+    // 关掉回弹与惯性:历史只应该从首条滚到末条,到头就停(有回弹/惯性时会“滚过头”)。
+    lv_obj_remove_flag(s_ui.conv, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
 }
 
 esp_err_t oc_ui_init(const char *device_name)
@@ -177,9 +261,9 @@ esp_err_t oc_ui_init(const char *device_name)
     lv_obj_set_style_pad_all(s_ui.scr, 0, 0);
     lv_obj_clear_flag(s_ui.scr, LV_OBJ_FLAG_SCROLLABLE);
 
-    // 状态栏
+    // 状态栏:两行 —— 第一行「设备」(含时间/电量),第二行「网关」。
     lv_obj_t *bar = lv_obj_create(s_ui.scr);
-    lv_obj_set_size(bar, 240, 30);
+    lv_obj_set_size(bar, 240, 46);
     lv_obj_align(bar, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_set_style_bg_color(bar, lv_color_hex(OC_UI_BAR_BG), 0);
     lv_obj_set_style_border_width(bar, 0, 0);
@@ -189,7 +273,7 @@ esp_err_t oc_ui_init(const char *device_name)
 
     s_ui.dot = lv_obj_create(bar);
     lv_obj_set_size(s_ui.dot, 8, 8);
-    lv_obj_align(s_ui.dot, LV_ALIGN_LEFT_MID, 8, 0);
+    lv_obj_align(s_ui.dot, LV_ALIGN_TOP_LEFT, 8, 8);
     lv_obj_set_style_radius(s_ui.dot, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_border_width(s_ui.dot, 0, 0);
     lv_obj_set_style_bg_color(s_ui.dot, lv_color_hex(OC_UI_DOT_OFF), 0);
@@ -197,32 +281,42 @@ esp_err_t oc_ui_init(const char *device_name)
     s_ui.state = lv_label_create(bar);
     lv_obj_set_style_text_font(s_ui.state, OC_UI_FONT, 0);
     lv_obj_set_style_text_color(s_ui.state, lv_color_hex(OC_UI_INK), 0);
-    lv_obj_align(s_ui.state, LV_ALIGN_LEFT_MID, 22, 0);
+    lv_obj_set_width(s_ui.state, 128);
+    lv_label_set_long_mode(s_ui.state, LV_LABEL_LONG_DOT);
+    lv_obj_align(s_ui.state, LV_ALIGN_TOP_LEFT, 22, 2);
     lv_label_set_text(s_ui.state, state_text(OC_UI_STATE_IDLE));
+
+    s_ui.gw_dot = lv_obj_create(bar);
+    lv_obj_set_size(s_ui.gw_dot, 8, 8);
+    lv_obj_align(s_ui.gw_dot, LV_ALIGN_TOP_LEFT, 8, 29);
+    lv_obj_set_style_radius(s_ui.gw_dot, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_border_width(s_ui.gw_dot, 0, 0);
+    lv_obj_set_style_bg_color(s_ui.gw_dot, lv_color_hex(OC_UI_DOT_OFF), 0);
+
+    s_ui.gw = lv_label_create(bar);
+    lv_obj_set_style_text_font(s_ui.gw, OC_UI_FONT, 0);
+    lv_obj_set_style_text_color(s_ui.gw, lv_color_hex(OC_UI_INK_DIM), 0);
+    lv_obj_set_width(s_ui.gw, 210);
+    lv_label_set_long_mode(s_ui.gw, LV_LABEL_LONG_DOT);
+    lv_obj_align(s_ui.gw, LV_ALIGN_TOP_LEFT, 22, 23);
+    lv_label_set_text(s_ui.gw, "");
 
     s_ui.batt = lv_label_create(bar);
     lv_obj_set_style_text_font(s_ui.batt, OC_UI_FONT, 0);
     lv_obj_set_style_text_color(s_ui.batt, lv_color_hex(OC_UI_INK_DIM), 0);
-    lv_obj_align(s_ui.batt, LV_ALIGN_RIGHT_MID, -8, 0);
+    lv_obj_align(s_ui.batt, LV_ALIGN_TOP_RIGHT, -8, 2);
     lv_label_set_text(s_ui.batt, "--");
 
     s_ui.clock = lv_label_create(bar);
     lv_obj_set_style_text_font(s_ui.clock, OC_UI_FONT, 0);
     lv_obj_set_style_text_color(s_ui.clock, lv_color_hex(OC_UI_INK_DIM), 0);
-    lv_obj_align(s_ui.clock, LV_ALIGN_RIGHT_MID, -52, 0);
+    lv_obj_align(s_ui.clock, LV_ALIGN_TOP_RIGHT, -52, 2);
     lv_label_set_text(s_ui.clock, "");
 
     build_conv_area(s_ui.scr);
 
-    s_ui.hint = lv_label_create(s_ui.scr);
-    lv_obj_set_style_text_font(s_ui.hint, OC_UI_FONT, 0);
-    lv_obj_set_style_text_color(s_ui.hint, lv_color_hex(OC_UI_INK_DIM), 0);
-    lv_obj_set_width(s_ui.hint, 228);
-    lv_label_set_long_mode(s_ui.hint, LV_LABEL_LONG_WRAP);
-    lv_obj_align(s_ui.hint, LV_ALIGN_BOTTOM_MID, 0, -6);
-    lv_label_set_text(s_ui.hint, "长按 OK 说话 · 短按 OK 设置");
-
     lv_screen_load(s_ui.scr);
+    refresh_status();   // 初始状态:设备未连接、网关未知
 
     s_ui.timer = lv_timer_create(ui_timer, 1000, NULL);
     s_ui.backlight_on = true;
@@ -236,30 +330,39 @@ esp_err_t oc_ui_init(const char *device_name)
 // ---- 状态栏与提示 ----
 void oc_ui_set_state(oc_ui_state_t state, const char *detail)
 {
+    bool was_recording = (s_ui.dev_state == OC_UI_STATE_RECORDING);
+    s_ui.dev_state = state;
+    if (detail != NULL) {
+        snprintf(s_ui.dev_detail, sizeof(s_ui.dev_detail), "%s", detail);
+    } else {
+        s_ui.dev_detail[0] = '\0';
+    }
+    bool recording = (state == OC_UI_STATE_RECORDING);
     if (!bsp_lvgl_lock(500)) {
         return;
     }
-    if (s_ui.state != NULL) {
-        lv_label_set_text(s_ui.state, detail != NULL ? detail : state_text(state));
-        lv_obj_set_style_text_color(s_ui.state,
-                                    detail != NULL ? lv_color_hex(state_color(state)) : lv_color_hex(OC_UI_INK), 0);
+    if (recording != was_recording) {
+        apply_recording_theme(recording);
     }
-    if (s_ui.dot != NULL) {
-        lv_obj_set_style_bg_color(s_ui.dot, lv_color_hex(state_color(state)), 0);
-    }
+    refresh_status();
     bsp_lvgl_unlock();
 }
 
-void oc_ui_set_hint(const char *text)
+void oc_ui_set_gateway_state(oc_ui_gateway_state_t state, const char *detail)
 {
+    s_ui.gw_state = state;
+    if (detail != NULL && detail[0] != '\0') {
+        snprintf(s_ui.gw_detail, sizeof(s_ui.gw_detail), "%s", detail);
+    } else {
+        s_ui.gw_detail[0] = '\0';
+    }
     if (!bsp_lvgl_lock(500)) {
         return;
     }
-    if (s_ui.hint != NULL) {
-        lv_label_set_text(s_ui.hint, text != NULL ? text : "");
-    }
+    refresh_status();
     bsp_lvgl_unlock();
 }
+
 
 void oc_ui_set_battery(int percent)
 {
@@ -353,7 +456,8 @@ void oc_ui_append(char role, const char *text)
     lv_obj_set_width(body, 202);
     lv_label_set_long_mode(body, LV_LABEL_LONG_WRAP);
     lv_label_set_text(body, buf);
-    lv_obj_align(body, LV_ALIGN_TOP_LEFT, 0, 18);
+    // 角色行占一整行(16 px 字 + 4 px 行距 = 20 px),正文从第二行开始。
+    lv_obj_align(body, LV_ALIGN_TOP_LEFT, 0, 20);
 
     s_ui.bubbles[s_ui.bubble_next] = box;
     s_ui.bubble_next = (s_ui.bubble_next + 1U) % OC_UI_BUBBLES;
@@ -386,23 +490,37 @@ void oc_ui_scroll(int direction)
     if (!bsp_lvgl_lock(500)) {
         return;
     }
-    // direction > 0 = 往前(更旧):内容向上滚;LVGL 自己会夹在滚动范围内。
-    lv_obj_scroll_by(s_ui.conv, 0, direction > 0 ? 80 : -80, LV_ANIM_ON);
+    // direction > 0 = 往前(更旧):内容下移,靠近首条;
+    //   direction < 0 = 往后(更新):内容上移,靠近末条。
+    // 到首/末条就不再移动:在边缘继续按不应有任何滚动手感。
+    if (direction > 0 && lv_obj_get_scroll_top(s_ui.conv) <= 0) {
+        bsp_lvgl_unlock();
+        return;
+    }
+    if (direction < 0 && lv_obj_get_scroll_bottom(s_ui.conv) <= 0) {
+        bsp_lvgl_unlock();
+        return;
+    }
+    lv_obj_scroll_by_bounded(s_ui.conv, 0, direction > 0 ? 80 : -80, LV_ANIM_ON);
     bsp_lvgl_unlock();
 }
 
 // ---- 配对码面板 ----
 void oc_ui_show_pairing(uint32_t passkey)
 {
-    if (!bsp_lvgl_lock(800) || s_ui.scr == NULL) {
-        if (s_ui.scr != NULL) {
-            bsp_lvgl_unlock();
-        }
+    // 注意:加锁失败时绝不能去 unlock —— 这不是自己的锁,错误释放会把 LVGL 的递归
+    // 互斥量状态弄坏,后续所有加锁都会超时(表现为界面卡住、事件队列堆满)。
+    if (!bsp_lvgl_lock(800)) {
+        return;
+    }
+    if (s_ui.scr == NULL) {
+        bsp_lvgl_unlock();
         return;
     }
     if (s_ui.pair_panel == NULL) {
         s_ui.pair_panel = lv_obj_create(s_ui.scr);
-        lv_obj_set_size(s_ui.pair_panel, 216, 132);
+        // 面板里的提示共 6 行 × 20 px = 120 px,留出内边距不裁切。
+        lv_obj_set_size(s_ui.pair_panel, 216, 148);
         lv_obj_center(s_ui.pair_panel);
         lv_obj_set_style_bg_color(s_ui.pair_panel, lv_color_hex(OC_UI_PANEL), 0);
         lv_obj_set_style_border_width(s_ui.pair_panel, 2, 0);
