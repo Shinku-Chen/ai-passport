@@ -23,7 +23,9 @@
 
 static const char *TAG = "oc_audio";
 
-#define OC_AUDIO_TASK_STACK 6144U
+// 音频任务栈:Opus(SILK)编码在定点实现下局部数组很大,栈给小了会直接崩。
+// 参考同芯片族固件把 opus 编解码任务开到 2048*13 = 26624 字节,这里给 24KB。
+#define OC_AUDIO_TASK_STACK 24576U
 #define OC_AUDIO_TASK_PRIO 4U
 #define OC_AUDIO_IDLE_POLL_MS 20U
 #define OC_AUDIO_END_TURN_TIMEOUT_MS 300U
@@ -34,6 +36,11 @@ typedef struct {
     oc_audio_frame_cb_t frame_cb;
     void *ctx;
     TaskHandle_t task;
+    // 任务栈放在 .bss(静态):24KB 在堆上已经放不下——NimBLE + LVGL 绘制缓冲 + I2S DMA
+    // 之后,内部堆只剩约 18KB 的最大连续块,建 24KB 任务会直接 ESP_ERR_NO_MEM。
+    // 静态栈从 DRAM 出,不参与堆碎片,也不会因为堆紧张而拿不到。
+    StaticTask_t task_tcb;
+    StackType_t task_stack[OC_AUDIO_TASK_STACK / sizeof(StackType_t)];
     OpusEncoder *enc;
     SemaphoreHandle_t done_sem;      // end_turn 等待"尾巴已发完、codec 已挂起"
     SemaphoreHandle_t stopped_sem;   // stop 等待采集任务退出(避免在任务还活着时销毁编码器)
@@ -199,9 +206,10 @@ esp_err_t oc_audio_start(void)
         return ESP_OK;
     }
     s_aud.running = true;
-    if (xTaskCreate(audio_task, "oc_audio", OC_AUDIO_TASK_STACK, NULL, OC_AUDIO_TASK_PRIO, &s_aud.task) != pdPASS) {
+    s_aud.task = xTaskCreateStatic(audio_task, "oc_audio", OC_AUDIO_TASK_STACK, NULL, OC_AUDIO_TASK_PRIO,
+                                   s_aud.task_stack, &s_aud.task_tcb);
+    if (s_aud.task == NULL) {
         s_aud.running = false;
-        s_aud.task = NULL;
         return ESP_ERR_NO_MEM;
     }
     return ESP_OK;

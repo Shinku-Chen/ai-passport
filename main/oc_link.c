@@ -85,6 +85,11 @@ static struct {
     uint8_t rx_ring[OC_LINK_RX_RING];
     size_t rx_head;
     size_t rx_tail;
+    // 已有未消费的 RX 唤醒:一次通知可能触发很多个 notify/写,不合并会把事件队列刷满
+    // （实测后果:配对码/断开等关键事件被丢掉,界面看不到任何反应）。
+    volatile bool rx_signaled;
+    // TX_DROP 事件限流:拥塞时每帧一条会把队列刷满
+    int64_t last_tx_drop_us;
 } s_link;
 
 static const ble_uuid128_t s_nus_service_uuid = BLE_UUID128_INIT(OC_NUS_SERVICE_UUID_BYTES);
@@ -174,7 +179,8 @@ static int oc_gatt_access(uint16_t conn_handle, uint16_t attr_handle,
             break;
         }
     }
-    if (total > 0) {
+    if (total > 0 && !s_link.rx_signaled) {
+        s_link.rx_signaled = true;   // 应用任务排空后才允许下一次唤醒
         oc_link_event_t ev = { .type = OC_LINK_EV_RX };
         ev.data.rx.bytes = total;
         oc_emit(&ev);
@@ -458,8 +464,13 @@ static void oc_tx_task(void *arg)
         ESP_LOGD(TAG, "发送帧 %u 字节", (unsigned)slot->len);
         if (oc_notify_frame(slot->data, slot->len) != ESP_OK) {
             s_link.tx_drop++;
-            oc_link_event_t ev = { .type = OC_LINK_EV_TX_DROP };
-            oc_emit(&ev);
+            // 拥塞时限流上报:每帧一条会把上层事件队列刷满,反而丢掉关键事件。
+            int64_t now = esp_timer_get_time();
+            if (now - s_link.last_tx_drop_us > 1000000) {
+                s_link.last_tx_drop_us = now;
+                oc_link_event_t ev = { .type = OC_LINK_EV_TX_DROP };
+                oc_emit(&ev);
+            }
         }
         xQueueSend(s_link.tx_free, &idx, 0);
         xSemaphoreGive(s_link.tx_free_sem);
@@ -508,6 +519,9 @@ size_t oc_link_read(uint8_t *out, size_t cap)
         out[i] = s_link.rx_ring[(s_link.rx_tail + i) % OC_LINK_RX_RING];
     }
     s_link.rx_tail = (s_link.rx_tail + n) % OC_LINK_RX_RING;
+    if (n == 0) {
+        s_link.rx_signaled = false;   // 环已排空,下批字节可以再唤醒一次
+    }
     xSemaphoreGive(s_link.mutex);
     return n;
 }
@@ -516,6 +530,7 @@ void oc_link_flush_rx(void)
 {
     xSemaphoreTake(s_link.mutex, portMAX_DELAY);
     s_link.rx_tail = s_link.rx_head;
+    s_link.rx_signaled = false;
     xSemaphoreGive(s_link.mutex);
 }
 
