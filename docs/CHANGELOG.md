@@ -10,6 +10,13 @@
 > with `CHANGELOG.zh_CN.md`. The entries currently under `Unreleased` are pending
 > review for the next release; they are not a finalized release history.
 
+## v1.8.0-intercom — 2026-09-30
+
+- Added the OpenClaw intercom application: a BLE NUS peripheral with LE Secure Connections pairing, a framed wire protocol (16 kHz Opus audio uplink plus text, control, and event channels), on-device Opus encoding at 60 ms frames, and a purpose-built LVGL interface with a 16 px 4 bpp CJK font.
+- Added press-to-talk feedback: the screen turns red on the OK press and green once the phone reports its recognition channel is ready, with an 800 ms fallback so a missing report cannot stall the user. The screen size is now set explicitly so centered content is not clamped to the status bar.
+- Added an optional text-to-speech downlink path (frame type `0x06` with Opus payloads, static-buffer decoding, I2S playback, half-duplex with capture). It stays inactive unless the phone sends TTS frames.
+- Documented the wire protocol and the TTS playback plan in English and Simplified Chinese, and added host tests for the protocol, framing, queue, and statistics logic.
+
 ## Unreleased
 
 - Added the supplied 80-byte CW2017 profile for the specified 520 mAh cell, including content/update-flag checks, verified writes, the required restart sequence, and bounded SOC-readiness polling.
