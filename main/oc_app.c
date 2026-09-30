@@ -33,6 +33,9 @@ static const char *TAG = "oc_app";
 #define OC_APP_QUEUE_DEPTH 32U
 #define OC_APP_TICK_MS 50U
 #define OC_APP_BATTERY_POLL_MS 10000U
+// 按下后等 App 的 turn_ready(录音/识别真正就绪)的兜底上限:到点仍未收到也切绿,
+// 不让用户一直对着红屏等(名称按 UI 行为取,见 oc_ui.h 的两个轮次状态)。
+#define OC_UI_TURN_READY_TIMEOUT_MS 800U   // App 就绪(turn_ready)兜底:真机反馈 2500ms 变绿太慢,收到 ack 仍是即时变绿
 
 // 设置页菜单项
 enum {
@@ -76,10 +79,14 @@ static struct {
     bool link_subscribed;
     bool app_hello;
     bool turn_active;
+    bool turn_pressed;         // OK 已按下(可能还没真正开始一轮)
+    bool turn_ready_pending;   // 本轮已开始,等 App 的 turn_ready 或兜底超时
+    bool playing;              // 正在播放手机推来的 TTS 音频(turn_ready 是上行,这个是下行)
     bool settings_active;
     oc_set_page_t set_page;
     int set_index;
     uint32_t battery_poll_ms;
+    int64_t turn_ready_deadline_us;   // 等待就绪的绝对截止时刻(esp_timer 单调时钟)
     uint32_t heartbeat_ms;
     int battery;
     uint32_t tx_drop_seen;
@@ -150,33 +157,91 @@ static void send_status(void)
 static void send_hello(void)
 {
     char json[192];
+    // caps 里的 tts_opus 是下行音频的开关:没它手机必须把回复留在屏幕上(见协议文档)。
+    // 解码器没就绪(静态区不够/初始化失败)就不报这个能力,免得手机白推音频。
+    const char *downlink = oc_audio_play_available() ? ",\"tts_opus\"" : "";
     snprintf(json, sizeof(json),
-             "{\"ev\":\"hello\",\"proto\":%u,\"caps\":[\"opus\",\"pcm\",\"text\",\"time\",\"status\"],"
+             "{\"ev\":\"hello\",\"proto\":%u,\"caps\":[\"opus\",\"pcm\",\"text\",\"time\",\"status\"%s],"
              "\"model\":\"%s\",\"fw\":\"%s\"}",
-             (unsigned)OC_PROTO_VERSION, oc_link_device_name(), OC_APP_VERSION);
+             (unsigned)OC_PROTO_VERSION, downlink, oc_link_device_name(), OC_APP_VERSION);
     send_event_json(json);
-    ESP_LOGI(TAG, "已发 hello(proto=%u)", (unsigned)OC_PROTO_VERSION);
+    ESP_LOGI(TAG, "已发 hello(proto=%u, 下行=%s)", (unsigned)OC_PROTO_VERSION, downlink[0] ? "tts_opus" : "无");
 }
 
 // ---- 一轮对讲 ----
+// 按下 OK 的第一件事就是整屏红:给用户即时反馈,不等链路就绪/音频启动。
+// 之后真正能说话时(turn_ready 或兜底超时)才切绿,见 turn_mark_ready。
 static void turn_start(void)
 {
-    if (s_app.turn_active) {
+    if (s_app.turn_pressed) {
         return;
     }
+    s_app.turn_pressed = true;
+
+    // 打断(barge-in):设备正在出声时按下 OK 就是“我要说话”。先把喇叭停掉并等采集
+    // 真正交还 codec(flush 是同步的),否则第一个字会被自己的喇叭录进去。
+    if (s_app.playing || !oc_audio_play_idle()) {
+        oc_audio_play_flush();
+        s_app.playing = false;   // aborted 事件由应用任务的下一拍补发
+    }
+
+    oc_ui_set_state(OC_UI_STATE_RECORDING, NULL);
+    oc_ui_note_activity();
+
     if (!oc_link_ready()) {
+        // 链路未就绪:保持红底不闪回,用系统气泡说明原因;松开时由 turn_release 收尾。
         oc_ui_append('R', "设备未连接,请先在 App 里连接");
         oc_ui_note_activity();
         return;
     }
     if (oc_audio_begin_turn() != ESP_OK) {
         oc_ui_append('R', "音频启动失败");
-        return;
+        return;   // 同上:红底保持
     }
     s_app.turn_active = true;
+    s_app.turn_ready_deadline_us =
+        esp_timer_get_time() + (int64_t)OC_UI_TURN_READY_TIMEOUT_MS * 1000;
+    s_app.turn_ready_pending = true;
     send_event_json("{\"ev\":\"turn_start\"}");
-    oc_ui_set_state(OC_UI_STATE_RECORDING, NULL);
+    ESP_LOGI(TAG, "本轮开始:等待 App 就绪(turn_ready 或 %ums 兜底)", (unsigned)OC_UI_TURN_READY_TIMEOUT_MS);
+}
+
+// 收到 App 的 turn_ready(录音/识别真正就绪)或兜底超时:切绿,明确告诉用户可以说话。
+static void turn_mark_ready(void)
+{
+    if (!s_app.turn_active || !s_app.turn_ready_pending) {
+        return;
+    }
+    s_app.turn_ready_pending = false;
+    s_app.turn_ready_deadline_us = 0;
+    oc_ui_set_state(OC_UI_STATE_RECORDING_READY, NULL);
     oc_ui_note_activity();
+    ESP_LOGI(TAG, "本轮就绪:可以说话了");
+}
+
+static void turn_end(void);
+
+// 松开 OK:结束本轮(正常收尾)或收掉没能开始的红底。
+static void turn_release(void)
+{
+    s_app.turn_pressed = false;
+    if (s_app.playing) {
+        // 按下的瞬间没走到 turn_start(例如设置页里按键被吃掉)时,松开也算打断。
+        oc_audio_play_flush();
+        s_app.playing = false;
+    }
+    if (s_app.turn_active) {
+        turn_end();
+        return;
+    }
+    // 按下但没能进入本轮(链路未就绪 / 音频启动失败):把红底收掉,回到链路对应的状态。
+    // 只在红底还挂着时收尾;期间若已被别的状态覆盖(断开、收到文本),不要抢回去。
+    if (oc_ui_get_state() == OC_UI_STATE_RECORDING) {
+        oc_ui_set_state(oc_link_ready() ? OC_UI_STATE_READY
+                                        : (oc_link_connected() ? OC_UI_STATE_CONNECTING
+                                                               : OC_UI_STATE_IDLE),
+                        NULL);
+    }
 }
 
 static void turn_end(void)
@@ -185,6 +250,8 @@ static void turn_end(void)
         return;
     }
     s_app.turn_active = false;
+    s_app.turn_ready_pending = false;   // 已经松开,不必再等 turn_ready
+    s_app.turn_ready_deadline_us = 0;
     oc_audio_end_turn();   // 等尾巴编完(codec 也在这里挂起)
 
     oc_audio_stats_t st = {0};
@@ -333,14 +400,15 @@ static void handle_button(bsp_btn_t btn, bsp_btn_ev_t ev)
     if (settings_handle_key(btn, ev)) {
         return;
     }
-    if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG) {
-        turn_start();
+    if (btn == BSP_BTN_OK && ev == BSP_BTN_PRESS) {
+        turn_start();   // 按下瞬间就红(不再等长按 500ms)
         return;
     }
     if (btn == BSP_BTN_OK && ev == BSP_BTN_RELEASE) {
-        turn_end();
+        turn_release();
         return;
     }
+    // OK 的长按不再触发开始(PRESS 已先触发,否则 500ms 后会重复开始)。
     // 短按 OK 只用来把屏幕点亮(背光已在函数开头恢复),不再打开设置页:
     // 设置页改成长按 UP 打开,避免想看一眼屏幕/误碰时误入菜单。
     if (btn == BSP_BTN_OK && ev == BSP_BTN_CLICK) {
@@ -353,6 +421,88 @@ static void handle_button(bsp_btn_t btn, bsp_btn_ev_t ev)
     if (ev == BSP_BTN_CLICK && (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN)) {
         oc_ui_scroll(btn == BSP_BTN_UP ? 1 : -1);
     }
+}
+
+// ---- TTS 下行播放 ----
+// 手机侧的 TTS 音频经 BLE 推下来,设备解码后从喇叭放出来。规范见
+// docs/development/engineering/intercom-wire-protocol.md 的 "TTS audio downlink";
+// 解码/播放/半双工由 oc_audio 的播放任务负责,应用任务只做三件事:
+//   * 把 tts_start/tts_stop/tts_abort 转成 oc_audio_play_*() 的状态迁移;
+//   * 把 TTS_OPUS 帧交给 oc_audio_play_push_frame();
+//   * 把播放结果组帧上报(tts_playback_done / tts_playback_aborted)。
+// 状态词沿用现有的“接收中”,不新增居中大字(用户明确要求)。
+static void handle_tts_start(void)
+{
+    if (s_app.turn_active || s_app.turn_pressed) {
+        // 两边不能同时跑:用户还按着 OK 时来的 tts_start 直接忽略,手机应先结束本轮。
+        ESP_LOGW(TAG, "本轮录音未结束,忽略 tts_start");
+        return;
+    }
+    if (s_app.playing) {
+        ESP_LOGW(TAG, "已在播放 TTS,忽略重复的 tts_start");
+        return;
+    }
+    oc_audio_play_start();
+    s_app.playing = true;
+    oc_ui_set_state(OC_UI_STATE_RECEIVING, NULL);
+    oc_ui_note_activity();
+    ESP_LOGI(TAG, "手机开始推 TTS 音频");
+}
+
+static void handle_tts_stop(void)
+{
+    // 幂等:没在播就是空操作(手机重复发 tts_stop 也不会出错)。
+    oc_audio_play_stop();
+    if (!s_app.playing) {
+        ESP_LOGD(TAG, "没有在播的 TTS,忽略 tts_stop");
+        return;
+    }
+    ESP_LOGI(TAG, "TTS 音频结束,等队列播空");
+}
+
+static void handle_tts_abort(void)
+{
+    if (!s_app.playing && oc_audio_play_idle()) {
+        return;
+    }
+    // flush 是同步的:返回时 I2S 已停、codec 已挂起、上行采集已恢复。
+    oc_audio_play_flush();
+    s_app.playing = false;   // aborted 事件由应用任务的下一拍补发
+    ESP_LOGW(TAG, "手机要求中止 TTS 播放");
+}
+
+// 播放任务把结果放在一个粘性事件里,由应用任务(唯一组帧者)发出:
+// 组帧缓冲 s_frame_ctrl 归应用任务所有,不能在播放任务里直接用。
+static void report_playback_event(oc_audio_play_ev_t ev)
+{
+    oc_audio_play_stats_t st = { 0 };
+    oc_audio_play_get_stats(&st);
+    if (ev == OC_AUDIO_PLAY_EV_DONE) {
+        char json[192];
+        snprintf(json, sizeof(json),
+                 "{\"ev\":\"tts_playback_done\",\"frames\":%u,\"decoded\":%u,\"dropped\":%u,"
+                 "\"underruns\":%u,\"decode_us_max\":%u}",
+                 (unsigned)st.frames, (unsigned)st.decoded, (unsigned)st.dropped,
+                 (unsigned)st.underruns, (unsigned)st.decode_us_max);
+        send_event_json(json);
+        ESP_LOGI(TAG, "TTS 播完: 收=%u 解=%u 丢=%u 欠载=%u 解码最长=%uus", (unsigned)st.frames,
+                 (unsigned)st.decoded, (unsigned)st.dropped, (unsigned)st.underruns,
+                 (unsigned)st.decode_us_max);
+    } else {
+        // 规范里这个事件不带计数;数字留在设备日志里(串口能看到)。
+        send_event_json("{\"ev\":\"tts_playback_aborted\"}");
+        ESP_LOGW(TAG, "TTS 播放中止: 收=%u 解=%u 丢=%u 欠载=%u", (unsigned)st.frames,
+                 (unsigned)st.decoded, (unsigned)st.dropped, (unsigned)st.underruns);
+    }
+    s_app.playing = false;
+    // 播完回到常规状态。但用户此刻可能正按着 OK(打断):那就不要抢掉红/绿屏。
+    if (!s_app.turn_pressed && !s_app.turn_active) {
+        oc_ui_set_state(oc_link_ready() ? OC_UI_STATE_READY
+                                        : (oc_link_connected() ? OC_UI_STATE_CONNECTING
+                                                               : OC_UI_STATE_IDLE),
+                        NULL);
+    }
+    oc_ui_note_activity();
 }
 
 // ---- 手机下发的帧 ----
@@ -369,6 +519,36 @@ static void handle_control(const uint8_t *payload, size_t len)
         return;
     }
     const cJSON *cmd = cJSON_GetObjectItemCaseSensitive(root, "cmd");
+    // App → 设备的新事件 turn_ready:手机侧录音/识别已真正开始,设备可以切绿了。
+    // 手机用 CONTROL 帧承载该事件(payload 与设备侧 EVENT 同形),所以事件名在 ev 字段;
+    // 少数实现可能写成 {"cmd":"turn_ready"},一并接受。
+    const cJSON *ev = cJSON_GetObjectItemCaseSensitive(root, "ev");
+    if ((cJSON_IsString(ev) && strcmp(ev->valuestring, "turn_ready") == 0) ||
+        (cJSON_IsString(cmd) && strcmp(cmd->valuestring, "turn_ready") == 0)) {
+        ESP_LOGI(TAG, "手机上报 turn_ready");
+        turn_mark_ready();
+        cJSON_Delete(root);
+        return;
+    }
+    // 下行 TTS 的三个事件:与 turn_ready 同形(手机→设备都是 CONTROL + ev 字段)。
+    if (cJSON_IsString(ev)) {
+        const char *name = ev->valuestring;
+        if (strcmp(name, "tts_start") == 0) {
+            handle_tts_start();
+            cJSON_Delete(root);
+            return;
+        }
+        if (strcmp(name, "tts_stop") == 0) {
+            handle_tts_stop();
+            cJSON_Delete(root);
+            return;
+        }
+        if (strcmp(name, "tts_abort") == 0) {
+            handle_tts_abort();
+            cJSON_Delete(root);
+            return;
+        }
+    }
     if (!cJSON_IsString(cmd)) {
         cJSON_Delete(root);
         return;
@@ -447,13 +627,27 @@ static void on_frame(uint8_t type, uint8_t flags, const uint8_t *payload, size_t
             if (s_app.merge.overflow) {
                 ESP_LOGW(TAG, "本条文本超出显示上限,已截断");
             }
-            if (s_app.merge.role == 'A') {
+            if (s_app.merge.role == 'A' && !s_app.playing) {
+                // 正在放 TTS 时保持“接收中”:播完由 report_playback_event 回到常规状态。
                 oc_ui_set_state(OC_UI_STATE_READY, NULL);
             }
             oc_ui_note_activity();
         }
     } else if (type == OC_FRAME_CONTROL) {
         handle_control(payload, len);
+    } else if (type == OC_FRAME_EVENT) {
+        // 手机 → 设备的事件帧:协议里“手机下发”走 CONTROL,但 App 侧实现用 EVENT 帧型
+        // (payload 形状与 CONTROL 相同,都是 JSON)。两种帧型都接受,避免 turn_ready 被静默丢弃。
+        handle_control(payload, len);
+    } else if (type == OC_FRAME_TTS_OPUS) {
+        // 手机 → 设备的下行 TTS:载荷 [SEQ][rate_khz][frame_ms] + Opus 包。
+        // 长度边界在这里先挡一道(4..515),具体校验/解码队列在 oc_audio 里。
+        if (len < OC_TTS_OPUS_HEADER + 1u || len > OC_TTS_OPUS_FRAME_MAX) {
+            ESP_LOGW(TAG, "TTS_OPUS 载荷长度非法: %u", (unsigned)len);
+        } else if (oc_audio_play_push_frame(payload, len) != ESP_OK) {
+            // 没在播放态/参数非法:一行 DEBUG 就够(手机上会看到没有 tts_playback_done)
+            ESP_LOGD(TAG, "TTS_OPUS 未接受(播放态=%d)", (int)s_app.playing);
+        }
     } else if (type == OC_FRAME_AUDIO_PCM || type == OC_FRAME_AUDIO_OPUS) {
         ESP_LOGD(TAG, "忽略上行帧的本地回环 type=%u", type);
     }
@@ -520,6 +714,13 @@ static void handle_link_event(const oc_link_event_t *ev)
         s_app.link_subscribed = false;
         s_app.app_hello = false;
         ESP_LOGI(TAG, "事件: 断开 reason=%d", ev->data.disconnected.reason);
+        if (s_app.playing) {
+            // 断连也要立刻把喇叭停下、把采集还给用户;事件发不出去就只记日志。
+            oc_audio_play_flush();
+            (void)oc_audio_play_take_event();
+            s_app.playing = false;
+            ESP_LOGW(TAG, "链路断开:中止 TTS 播放");
+        }
         if (s_app.turn_active) {
             turn_end();   // 断开时把当前轮收尾,避免手机侧永远等 turn_end
         }
@@ -572,6 +773,22 @@ static void app_task(void *arg)
         }
         drain_rx();   // 每拍兜底一次,保证不积压
 
+        // 下行播放的结果(播完/中止):在这里组帧上报,保证 s_frame_ctrl 只被应用任务写。
+        oc_audio_play_ev_t pev = oc_audio_play_take_event();
+        if (pev != OC_AUDIO_PLAY_EV_NONE) {
+            report_playback_event(pev);
+        }
+        // 播放期间保持背光:用户要看得见正在朗读的那段回答。
+        if (s_app.playing) {
+            oc_ui_note_activity();
+        }
+
+        // 兜底:App 的 turn_ready 迟迟不来也要切绿,不让用户一直对着红屏。
+        // 用单调时钟比较绝对截止时刻,不受队列繁忙时循环快慢的影响。
+        if (s_app.turn_ready_pending && esp_timer_get_time() >= s_app.turn_ready_deadline_us) {
+            turn_mark_ready();
+        }
+
         // 心跳:用来判断应用任务是否还在正常消费事件(队列满/界面卡住时靠它定位)。
         s_app.heartbeat_ms += OC_APP_TICK_MS;
         if (s_app.heartbeat_ms >= 5000U) {
@@ -579,6 +796,8 @@ static void app_task(void *arg)
             ESP_LOGI(TAG, "心跳 队列空闲=%u 堆=%u 说话=%d 设置页=%d",
                      (unsigned)uxQueueSpacesAvailable(s_app.queue),
                      (unsigned)esp_get_free_heap_size(), (int)s_app.turn_active, (int)s_app.settings_active);
+            // LVGL 池水位:下行音频的静态内存是从这个池子让出来的,真机上靠这条日志确认余量。
+            oc_ui_log_memory();
         }
 
         s_app.battery_poll_ms += OC_APP_TICK_MS;

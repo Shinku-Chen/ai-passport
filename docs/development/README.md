@@ -21,6 +21,7 @@ This directory contains AI Passport engineering rules and reusable workflows, gr
 - [lvgl-chinese-fonts.md](engineering/lvgl-chinese-fonts.md): step-by-step CJK configuration, font generation/linking, fallback examples, glyph checks, and troubleshooting.
 - [wifi-provisioning.md](engineering/wifi-provisioning.md): Bluetooth-based Wi-Fi setup using the BLUFI reference branch, the companion mini program, and integration checks.
 - [intercom-wire-protocol.md](engineering/intercom-wire-protocol.md): the device-to-phone BLE contract for the intercom application — framing, the Opus uplink, text merging, loss accounting, and pairing rules.
+- [intercom-tts-playback.md](engineering/intercom-tts-playback.md): the device-side plan for the TTS audio downlink — static memory budget, playback task and queues, firmware interface, statistics, and staged delivery.
 
 ## CI
 

@@ -5,6 +5,7 @@ idf_component_register(
          "oc_link.c"
          "oc_proto.c"
          "oc_settings.c"
+         "oc_tts.c"
          "oc_ui.c"
          "demo_navigation.c"
          "ui_pixel.c"

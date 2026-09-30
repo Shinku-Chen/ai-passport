@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "bsp_display.h"
+#include "bsp_pins.h"   // BSP_LCD_W/H:屏幕逻辑尺寸(红/绿两态提示要按整屏居中)
 #include "esp_log.h"
 #include "lvgl.h"
 #include "oc_proto.h"
@@ -48,7 +49,8 @@ static const char *TAG = "oc_ui";
 #define OC_UI_DOT_WARN 0xD29922
 #define OC_UI_DOT_OFF 0x8B949E
 #define OC_UI_DOT_BUSY 0x58A6FF
-#define OC_UI_BG_RECORD 0x5C0F0F        // 录音中整屏转红(松开立刻恢复)
+#define OC_UI_BG_RECORD 0x5C0F0F        // 按下准备中:整屏转红(即时反馈,松开/切绿后恢复)
+#define OC_UI_BG_RECORD_READY 0x0F5C0F  // 真正可说话:整屏转绿(亮度观感与红底一致)
 
 static struct {
     lv_obj_t *scr;
@@ -59,6 +61,7 @@ static struct {
     lv_obj_t *clock;
     lv_obj_t *batt;
     lv_obj_t *conv;
+    lv_obj_t *turn_hint;             // 红/绿两态的居中大字提示
     lv_obj_t *pair_panel;
     lv_obj_t *pair_label;
     lv_obj_t *bubbles[OC_UI_BUBBLES];
@@ -91,7 +94,8 @@ static const char *state_text(oc_ui_state_t state)
     case OC_UI_STATE_CONNECTING: return "连接中";
     case OC_UI_STATE_PAIRING: return "配对中";
     case OC_UI_STATE_READY: return "就绪";
-    case OC_UI_STATE_RECORDING: return "录音中";
+    case OC_UI_STATE_RECORDING: return "准备中";
+    case OC_UI_STATE_RECORDING_READY: return "可说话";
     case OC_UI_STATE_SENDING: return "发送中";
     case OC_UI_STATE_RECEIVING: return "接收中";
     default: return "";
@@ -102,6 +106,7 @@ static uint32_t state_color(oc_ui_state_t state)
 {
     switch (state) {
     case OC_UI_STATE_READY: return OC_UI_DOT_OK;
+    case OC_UI_STATE_RECORDING_READY: return OC_UI_DOT_OK;
     case OC_UI_STATE_RECORDING: return OC_UI_DOT_BUSY;
     case OC_UI_STATE_SENDING:
     case OC_UI_STATE_RECEIVING: return OC_UI_DOT_BUSY;
@@ -147,8 +152,10 @@ static void refresh_status(void)
     // 用户要知道“设备通、网关也通”,而不是只能看到一个“就绪”。
     const char *dev_text = s_ui.dev_detail[0] ? s_ui.dev_detail : state_text(s_ui.dev_state);
     lv_label_set_text_fmt(s_ui.state, "设备 %s", dev_text);
-    // 「就绪」和录音中(红底)用纯白,其余保持浅灰
-    bool dev_white = (s_ui.dev_state == OC_UI_STATE_READY) || (s_ui.dev_state == OC_UI_STATE_RECORDING);
+    // 「就绪」与红/绿两态(整屏有色)用纯白,其余保持浅灰
+    bool dev_white = (s_ui.dev_state == OC_UI_STATE_READY) ||
+                     (s_ui.dev_state == OC_UI_STATE_RECORDING) ||
+                     (s_ui.dev_state == OC_UI_STATE_RECORDING_READY);
     lv_obj_set_style_text_color(s_ui.state, lv_color_hex(dev_white ? OC_UI_INK_READY : OC_UI_INK), 0);
     lv_obj_set_style_bg_color(s_ui.dot, lv_color_hex(state_color(s_ui.dev_state)), 0);
 
@@ -170,15 +177,27 @@ static void refresh_status(void)
     // 底部不再有提示行:对话区一直占满到屏幕底部,提示信息走状态栏或系统消息。
 }
 
-// 录音中的整屏红底:一眼能看出“正在采集”,松开立刻恢复。
-static void apply_recording_theme(bool recording)
+// 整屏主题:按下准备中 = 红、真正可说话 = 绿,其余 = 常规底色。
+// 红/绿两态额外显示居中大字,因为状态栏只有几个字,放不下完整句子。
+static void apply_turn_theme(oc_ui_state_t state)
 {
-    const uint32_t bg = recording ? OC_UI_BG_RECORD : OC_UI_BG;
+    uint32_t bg = OC_UI_BG;
+    // 红/绿两态只改整屏底色:轮次状态文字只出现在顶部「设备」那一行(设备 准备中 / 设备 可说话),
+    // 屏中间不再放任何提示(用户要求:不要居中大字,只在设备状态显示)。
+    if (state == OC_UI_STATE_RECORDING) {
+        bg = OC_UI_BG_RECORD;
+    } else if (state == OC_UI_STATE_RECORDING_READY) {
+        bg = OC_UI_BG_RECORD_READY;
+    }
+
     if (s_ui.scr != NULL) {
         lv_obj_set_style_bg_color(s_ui.scr, lv_color_hex(bg), 0);
     }
     if (s_ui.conv != NULL) {
         lv_obj_set_style_bg_color(s_ui.conv, lv_color_hex(bg), 0);
+    }
+    if (s_ui.turn_hint != NULL) {
+        lv_obj_add_flag(s_ui.turn_hint, LV_OBJ_FLAG_HIDDEN);   // 居中提示恒隐藏(保留控件以免其它路径引用)
     }
 }
 
@@ -257,6 +276,10 @@ esp_err_t oc_ui_init(const char *device_name)
     }
 
     s_ui.scr = lv_obj_create(NULL);
+    // 屏幕尺寸必须显式设定:lv_obj_create(NULL) 建的是「挂在当前屏上的普通对象」,
+    // 不给尺寸时它的内容盒很小,LV_ALIGN_CENTER 就只能在那个小盒里居中
+    // (真机现象:红/绿两态的居中提示跑到了顶部状态栏那一条)。
+    lv_obj_set_size(s_ui.scr, BSP_LCD_W, BSP_LCD_H);
     lv_obj_set_style_bg_color(s_ui.scr, lv_color_hex(OC_UI_BG), 0);
     lv_obj_set_style_pad_all(s_ui.scr, 0, 0);
     lv_obj_clear_flag(s_ui.scr, LV_OBJ_FLAG_SCROLLABLE);
@@ -315,6 +338,15 @@ esp_err_t oc_ui_init(const char *device_name)
 
     build_conv_area(s_ui.scr);
 
+    // 红/绿两态的居中大字:整屏有色时顶在最前面,常规状态下隐藏。
+    s_ui.turn_hint = lv_label_create(s_ui.scr);
+    lv_obj_set_style_text_font(s_ui.turn_hint, OC_UI_FONT, 0);
+    lv_obj_set_style_text_color(s_ui.turn_hint, lv_color_hex(OC_UI_INK_READY), 0);
+    lv_obj_set_width(s_ui.turn_hint, 224);
+    lv_obj_set_style_text_align(s_ui.turn_hint, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_align(s_ui.turn_hint, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_add_flag(s_ui.turn_hint, LV_OBJ_FLAG_HIDDEN);
+
     lv_screen_load(s_ui.scr);
     refresh_status();   // 初始状态:设备未连接、网关未知
 
@@ -330,22 +362,28 @@ esp_err_t oc_ui_init(const char *device_name)
 // ---- 状态栏与提示 ----
 void oc_ui_set_state(oc_ui_state_t state, const char *detail)
 {
-    bool was_recording = (s_ui.dev_state == OC_UI_STATE_RECORDING);
+    oc_ui_state_t prev = s_ui.dev_state;
     s_ui.dev_state = state;
     if (detail != NULL) {
         snprintf(s_ui.dev_detail, sizeof(s_ui.dev_detail), "%s", detail);
     } else {
         s_ui.dev_detail[0] = '\0';
     }
-    bool recording = (state == OC_UI_STATE_RECORDING);
     if (!bsp_lvgl_lock(500)) {
         return;
     }
-    if (recording != was_recording) {
-        apply_recording_theme(recording);
+    // 状态一变就重算整屏主题:红→绿(两个都是轮次态)也必须切换,
+    // 所以只比较状态本身,不比较“是否处于轮次态”。
+    if (state != prev) {
+        apply_turn_theme(state);
     }
     refresh_status();
     bsp_lvgl_unlock();
+}
+
+oc_ui_state_t oc_ui_get_state(void)
+{
+    return s_ui.dev_state;
 }
 
 void oc_ui_set_gateway_state(oc_ui_gateway_state_t state, const char *detail)
@@ -616,4 +654,18 @@ void oc_ui_settings_close(void)
 bool oc_ui_settings_active(void)
 {
     return s_ui.settings_active;
+}
+
+void oc_ui_log_memory(void)
+{
+    if (!bsp_lvgl_lock(0)) {
+        return;
+    }
+    lv_mem_monitor_t mon;
+    lv_mem_monitor(&mon);
+    bsp_lvgl_unlock();
+    // used_pct=当前占用百分比, max_used=历史峰值(界面全部建完后的峰值最值得看)。
+    ESP_LOGI(TAG, "LVGL 池: 已用=%u%% 峰值=%u 空闲=%u 总量=%u 碎片=%u%%",
+             (unsigned)mon.used_pct, (unsigned)mon.max_used, (unsigned)mon.free_size,
+             (unsigned)mon.total_size, (unsigned)mon.frag_pct);
 }

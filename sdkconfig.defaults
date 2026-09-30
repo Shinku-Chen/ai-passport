@@ -26,7 +26,11 @@ CONFIG_LV_FONT_MONTSERRAT_14=y
 CONFIG_LV_FONT_MONTSERRAT_20=y
 # LVGL 内置 malloc 池大小(KB)。它是独立静态区、不与系统堆共享,配大了会白白占用 RAM。
 # 本 demo UI 简单,24KB 足够;若自建复杂界面出现绘制卡死/看门狗,调大此值。
-CONFIG_LV_MEM_SIZE_KILOBYTES=24
+#
+# 用 CONFIG_LV_MEM_SIZE(字节),不用已废弃的 CONFIG_LV_MEM_SIZE_KILOBYTES:后者在 LVGL 9
+# 里不生效,池子会回到默认的 64KB —— 对讲机的下行音频需要约 40KB 静态内存,正是从这块
+# 池子里让出来的(见 docs/development/engineering/intercom-tts-playback.md)。
+CONFIG_LV_MEM_SIZE=24576
 
 # --- 系统 ---
 CONFIG_FREERTOS_HZ=1000

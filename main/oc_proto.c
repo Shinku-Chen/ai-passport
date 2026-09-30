@@ -14,6 +14,7 @@ bool oc_type_known(uint8_t type)
     case OC_FRAME_CONTROL:
     case OC_FRAME_EVENT:
     case OC_FRAME_AUDIO_OPUS:
+    case OC_FRAME_TTS_OPUS:
         return true;
     default:
         return false;
@@ -27,6 +28,10 @@ size_t oc_payload_limit(uint8_t type)
         return OC_PCM_PAYLOAD_MAX;
     case OC_FRAME_AUDIO_OPUS:
         return OC_OPUS_PAYLOAD_MAX;
+    case OC_FRAME_TTS_OPUS:
+        // 上限是整帧载荷(3 字节头 + 512 字节 Opus 包),不是 512:
+        // 重组器用这个值判断帧头是否合理,给 512 会把合法的 515 字节帧当成错位。
+        return OC_TTS_OPUS_FRAME_MAX;
     case OC_FRAME_TEXT:
         return OC_TEXT_PAYLOAD_MAX;
     case OC_FRAME_CONTROL:
@@ -100,7 +105,8 @@ static bool header_valid(const uint8_t *h)
 
 static bool is_audio_type(uint8_t type)
 {
-    return type == OC_FRAME_AUDIO_PCM || type == OC_FRAME_AUDIO_OPUS;
+    return type == OC_FRAME_AUDIO_PCM || type == OC_FRAME_AUDIO_OPUS ||
+           type == OC_FRAME_TTS_OPUS;
 }
 
 // 在已攒的帧内容里寻找"被插进来的新帧头"(固件会在音频帧中途插 EVENT)。

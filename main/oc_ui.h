@@ -12,13 +12,14 @@
 #include "esp_err.h"
 
 typedef enum {
-    OC_UI_STATE_IDLE = 0,   // 未连接
-    OC_UI_STATE_CONNECTING, // 已连接,等待加密/订阅
-    OC_UI_STATE_PAIRING,    // 正在配对(屏幕显示 6 位密码)
-    OC_UI_STATE_READY,      // 就绪,可以按住说话
-    OC_UI_STATE_RECORDING,  // 录音中
-    OC_UI_STATE_SENDING,    // 已发送,等回复
-    OC_UI_STATE_RECEIVING,  // 收到内容
+    OC_UI_STATE_IDLE = 0,         // 未连接
+    OC_UI_STATE_CONNECTING,       // 已连接,等待加密/订阅
+    OC_UI_STATE_PAIRING,          // 正在配对(屏幕显示 6 位密码)
+    OC_UI_STATE_READY,            // 就绪,可以按住说话
+    OC_UI_STATE_RECORDING,        // 已按下,正在准备(整屏红,即时反馈)
+    OC_UI_STATE_RECORDING_READY,  // 真正可以说话(整屏绿:此刻说话一定被识别)
+    OC_UI_STATE_SENDING,          // 已发送,等回复
+    OC_UI_STATE_RECEIVING,        // 收到内容
 } oc_ui_state_t;
 
 // 手机侧的网关状态(由 App 用 CONTROL gateway 命令推送)。
@@ -37,6 +38,10 @@ esp_err_t oc_ui_init(const char *device_name);
 
 // 状态栏状态;detail 可空(用状态默认文案)。
 void oc_ui_set_state(oc_ui_state_t state, const char *detail);
+
+// 读取当前设备状态(按键松开时用来判断是否还挂着「按下准备中」的红底)。
+// 只读缓存的枚举字段,不访问 LVGL,因此不加减锁。
+oc_ui_state_t oc_ui_get_state(void);
 
 // 手机上报的网关状态。detail 是网关不可用时的可读原因(可空)。
 // 设备侧状态与网关状态都就绪时,状态栏只显示一个「就绪」。
@@ -66,6 +71,12 @@ void oc_ui_note_activity(void);
 
 // 亮度设置变化后立即套用(不重置闲置计时)。
 void oc_ui_apply_brightness(void);
+
+// 把 LVGL 自带内存池的水位打进日志(调试用)。
+// 池子是静态 .bss,把下行音频所需的内存从它那里让出来是有代价的,所以真机上要能看到
+// "界面实际用了多少、离上限还有多远"(见 intercom-tts-playback.md 的内存预算)。
+// 拿不到 LVGL 锁时直接返回(只影响这条日志)。
+void oc_ui_log_memory(void);
 
 // 设置页(内容由调用方给:对讲机菜单/设备信息/亮度由 oc_app 组装)。
 void oc_ui_settings_open(const char *title, const char *body, const char *hint);

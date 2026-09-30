@@ -64,10 +64,16 @@ byte offset, and it lets the receiver resynchronize after any loss.
 | `0x03` | `CONTROL` | both | UTF-8 JSON object, command or acknowledgement |
 | `0x04` | `EVENT` | device to host | UTF-8 JSON object |
 | `0x05` | `AUDIO_OPUS` | device to host | `[SEQ:1]` + one Opus packet, at most 512 payload bytes |
+| `0x06` | `TTS_OPUS` | host to device | `[SEQ:1]` + `[rate_khz:1]` + `[frame_ms:1]` + one Opus packet, at most `OC_TTS_OPUS_PAYLOAD_MAX` (512) packet bytes |
 
 `AUDIO_OPUS` is the default uplink. `AUDIO_PCM` remains implemented as the
 fallback path so a device that cannot meet the encoder budget can still talk, and
 so the app can be tested against a build without the encoder.
+
+`TTS_OPUS` is the only audio downlink and is specified in
+[TTS audio downlink](#tts-audio-downlink). Raw PCM is not an option in this
+direction: 24 kHz mono 16-bit is about 48 KB/s, which the link cannot carry while
+the device also keeps its side of the connection alive.
 
 ### Flags
 
@@ -100,7 +106,9 @@ encrypted, subscribed, and hello exchanged.
 Capability negotiation is deliberately one-way and advisory: the phone picks the
 uplink codec from `caps` (`opus` when present, otherwise `pcm`) and reports its
 choice through the `turn_start` control frame, so a mismatch is visible in the log
-instead of being silent.
+instead of being silent. The same list gates the downlink: `tts_opus` means the
+device implements [TTS audio downlink](#tts-audio-downlink), and without it the
+phone must keep the reply on screen instead of sending `TTS_OPUS` frames.
 
 ## Audio uplink
 
@@ -164,6 +172,63 @@ Rules:
   message and surface it, because the device screen is the only place the user can
   read the answer.
 
+## TTS audio downlink
+
+The gateway reply is spoken by the device. The audio is synthesized on the phone
+side and pushed down as `TTS_OPUS` frames; the device does not call a speech
+service itself, so the downlink does not depend on any cloud path beyond the one
+the phone already owns. Playback semantics, memory budget, and the implementation
+plan are in
+[intercom-tts-playback.md](intercom-tts-playback.md).
+
+Payload:
+
+| Offset | Field | Meaning |
+| --- | --- | --- |
+| `0` | `SEQ` | one-byte counter, incremented per frame and wrapped at 256; same meaning as in the uplink, used only for gap accounting |
+| `1` | `rate_khz` | `16` or `24` |
+| `2` | `frame_ms` | frame duration in milliseconds; currently always `60` |
+| `3..` | Opus packet | one Opus packet, at most `OC_TTS_OPUS_PAYLOAD_MAX` (512) bytes |
+
+Rules:
+
+- Frame length and sample rate travel inside every frame, so no per-frame
+  metadata depends on history. A rate change inside a stream is legal: the device
+  re-initializes its decoder for the new rate and continues with the next frame,
+  instead of silently misplaying it at the old rate.
+- Total payload length is `3 + packet length`, therefore `4` to `515` bytes. A
+  declared length outside that range is corruption and is handled by the
+  resynchronization rules, not by a decoder error.
+- `OC_TTS_OPUS_PAYLOAD_MAX` is `512u`; it bounds the Opus packet, not the whole
+  payload. The firmware defines it next to the other payload limits.
+- `SEQ` gaps are counted and reported, never asked for again. A lost 60 ms packet
+  is a slight roughness in one word, not a reason to stall the speaker.
+- A device that implements this path advertises `tts_opus` in the `caps` array of
+  its hello. The phone must not send `TTS_OPUS` to a device that did not advertise
+  it: an unknown type is treated as misalignment by the receiver, which would cost
+  the frame that follows the rejected header.
+
+### Queueing and flow control
+
+The device is a static-memory target with no PSRAM, so both queues are fixed:
+
+| Buffer | Depth | Purpose |
+| --- | --- | --- |
+| Decode queue | 24 packets, about 1.44 s at 60 ms | absorbs a BLE burst and phone scheduling jitter without starving playback |
+| Playback queue | 2 blocks of decoded PCM | one block feeds the codec while the next is filled, so a decode hiccup does not produce silence |
+
+- On overflow the device drops the **oldest** queued packet and increments a
+  counter. Newly synthesized speech is what the user is waiting for, so the newest
+  audio wins.
+- The phone must not run more than about **2 s** of audio ahead of the device.
+  Beyond that the bounded queue starts discarding speech, which is worse than
+  simply pausing the sender; the phone paces itself and uses
+  `tts_playback_done` / `tts_playback_aborted` as the end-of-stream signals,
+  not as per-frame credit.
+- Playback is half duplex: while the device is in the TTS playback state it stops
+  capturing the uplink, so the microphone does not record the speaker. Capture
+  resumes when the queue drains or when `tts_abort` arrives.
+
 ## Control channel
 
 `CONTROL` payload is a JSON object. Defined commands:
@@ -177,6 +242,10 @@ Rules:
 | `{"cmd":"status"}` | host to device | request device status (battery, volume, microphone gain, link) for the app console |
 | `{"cmd":"audio","volume":<percent>,"mic_gain_db":<number>}` | host to device | set output volume and microphone gain; the app owns both settings |
 | `{"cmd":"gateway","state":"ready"\|"connecting"\|"working"\|"offline","detail":"<text>"}` | host to device | report the phone-side gateway state so the device can show device and gateway readiness separately. The status words are shared with the phone: `ready`, `connecting`, `working` (connected, agent running), `offline`. `detail` carries the readable reason or progress phase for anything that is not `ready`; an unknown state is treated as `offline` |
+| `{"ev":"tts_start"}` | host to device | the phone is about to push TTS audio; the device enters the playback state, pauses uplink capture, and keeps the backlight lit so the user can watch the answer arrive |
+| `{"ev":"tts_stop"}` | host to device | no more audio follows; the device plays out what is already queued and then leaves the playback state |
+| `{"ev":"tts_abort"}` | host to device | discard the queue immediately: the user pressed `OK` again, the app is barging in, or the gateway stream broke. Capture may resume at once |
+| `{"ev":"turn_ready"}` | host to device | the phone's capture and recognition are actually live, so the user's speech will be recognized from now on; the device turns its turn indicator green. It travels in a `CONTROL` frame and uses the event shape because it reports something the phone observed, not a request the device must execute |
 
 Unknown commands must be ignored, not treated as an error, so a newer phone can
 talk to an older device.
@@ -190,6 +259,15 @@ phone must send `gateway` once after the handshake and again whenever the state
 or the reason changes; before the first report the device shows the gateway as
 unknown rather than guessing.
 
+`turn_ready` is the phone half of the device's turn feedback. The device cannot
+know when the phone-side recorder and recognizer are actually listening, so it
+treats this event as the "you can speak now" signal instead of guessing. The
+device UI is therefore: press `OK` → the screen turns red (`pressed, preparing`)
+at once; the phone's `turn_ready`, or a 2.5 second fallback timeout when it never
+arrives, → the screen turns green (`ready to speak`, speech is now captured);
+release `OK` → the turn ends and the normal screen returns. A phone that never
+sends `turn_ready` degrades to the fallback timeout instead of breaking.
+
 ## Events
 
 `EVENT` payload is a JSON object. Defined events:
@@ -201,6 +279,8 @@ unknown rather than guessing.
 | `{"ev":"turn_end","frames":<n>,"codec":"opus","dropped":<n>}` | the user released the button; the phone may now finalize recognition |
 | `{"ev":"status","battery":<percent>,"volume":<percent>,"mic_gain_db":<number>,"link":"ready"}` | device status snapshot, also sent on request and after any change |
 | `{"ev":"error","code":"<code>","detail":"<text>"}` | device-side failure worth showing in the app console |
+| `{"ev":"tts_playback_done","frames":N,"decoded":D,"dropped":X,"underruns":U,"decode_us_max":M}` | the device finished a TTS stream; `frames` is the number of accepted packets, `decoded` the number decoded, `dropped` the packets discarded (queue overflow plus `SEQ` gaps), `underruns` the times playback ran out of decoded audio, and `decode_us_max` the longest single-packet decode time in microseconds |
+| `{"ev":"tts_playback_aborted"}` | the device discarded the rest of a TTS stream because of `tts_abort` or a decoder that failed repeatedly |
 
 `turn_end` is the only signal that ends a turn. The phone must never infer the end
 of speech from a gap in audio frames, because DTX produces legitimate silence with
@@ -222,6 +302,13 @@ rules that keep the pipeline honest are:
   processed on one worker, never in the BLE callback.
 - Phone: starting a new turn clears any queued but unsent text frames, so a stale
   answer cannot be rendered after the user has started speaking again.
+- Device: `TTS_OPUS` frames are never retransmitted. The device drops the oldest
+  queued packet on overflow and reports what it actually decoded and played in
+  `tts_playback_done`, so "sent" and "heard" stay distinguishable.
+- Phone: `tts_start`, `tts_stop`, and `tts_abort` are written with response,
+  because they bracket a stream and their ordering against the audio matters;
+  `TTS_OPUS` audio frames are written without response, so the audio rate does not
+  pay an ATT round trip per frame.
 
 ## Resynchronization
 
@@ -297,9 +384,8 @@ Not part of the wire contract, but the app side must not contradict it:
 
 | Input | Behaviour |
 | --- | --- |
-| Hold `OK` | Start a turn; audio frames flow until release |
-| Release `OK` | End the turn; the phone finalizes recognition |
-| Short press `OK` | Wake the screen only; it does not open anything |
+| Press `OK` | Wake the screen and start a turn on the press edge: the screen turns red (`pressed, preparing`) immediately, then green (`ready to speak`) on the phone's `turn_ready` or the 2.5 second fallback; audio frames flow until release |
+| Release `OK` | End the turn; the phone finalizes recognition; the normal screen returns |
 | Long press `UP` | Open the device settings page (device information, brightness, back) |
 | `UP` / `DOWN` | Browse conversation history, newest first; inside the settings page they move the highlight or step the value |
 

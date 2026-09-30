@@ -37,6 +37,7 @@ typedef enum {
     OC_FRAME_CONTROL    = 0x03,  // 双向:      JSON 命令/确认
     OC_FRAME_EVENT      = 0x04,  // 设备→手机: JSON 事件
     OC_FRAME_AUDIO_OPUS = 0x05,  // 设备→手机: [SEQ:1B] + 一个 Opus 包(默认上行)
+    OC_FRAME_TTS_OPUS   = 0x06,  // 手机→设备: [SEQ:1B][rate_khz:1B][frame_ms:1B] + 一个 Opus 包(下行 TTS)
 } oc_frame_type_t;
 
 // ---- 标志位 ----
@@ -47,6 +48,13 @@ typedef enum {
 // ---- 各类载荷上限(超限的帧一律按错位处理) ----
 #define OC_PCM_PAYLOAD_MAX  1024u   // 512 samples × 2B,不含 SEQ
 #define OC_OPUS_PAYLOAD_MAX 512u
+
+// 下行 TTS_OPUS 载荷:[SEQ][rate_khz][frame_ms] + Opus 包。
+// 512 是"单个 Opus 包"的上限(与上行 OC_OPUS_PAYLOAD_MAX 同一量级);整帧载荷的上限
+// 是 3+512,因此 TTS 帧合法长度是 4..515 —— 两处都不要混用(见 oc_payload_limit)。
+#define OC_TTS_OPUS_HEADER      3u
+#define OC_TTS_OPUS_PAYLOAD_MAX 512u
+#define OC_TTS_OPUS_FRAME_MAX   (OC_TTS_OPUS_HEADER + OC_TTS_OPUS_PAYLOAD_MAX)
 #define OC_TEXT_PAYLOAD_MAX 2048u   // 含 role 字节
 #define OC_JSON_PAYLOAD_MAX 512u
 #define OC_PAYLOAD_MAX      OC_TEXT_PAYLOAD_MAX
