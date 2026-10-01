@@ -698,6 +698,10 @@ static void handle_link_event(const oc_link_event_t *ev)
     case OC_LINK_EV_SECURED:
         s_app.link_secure = oc_link_ready() || oc_link_connected();
         ESP_LOGI(TAG, "事件: 已加密");
+        // 加密完成 = 配对已经成功:此刻就把配对码面板收起。
+        // 之前只在“订阅完成”时隐藏,而订阅要等手机走完 MTU 协商,
+        // 中间任何一步慢一步或失败,面板就会一直挡在屏幕中间。
+        oc_ui_hide_pairing();
         oc_ui_set_state(OC_UI_STATE_CONNECTING, NULL);
         break;
     case OC_LINK_EV_SUBSCRIBED:

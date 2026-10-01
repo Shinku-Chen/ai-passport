@@ -43,6 +43,7 @@ static const char *TAG = "oc_ui";
 #define OC_UI_INK_READY 0xFFFFFF   // 「就绪」两行都用纯白
 #define OC_UI_INK_DIM 0x8B949E
 #define OC_UI_ACCENT_U 0x6FC3FF          // 用户文本
+#define OC_UI_PAIRING_PANEL_TIMEOUT_MS 90000U   // 配对码面板最长停留(超时自动隐藏)
 #define OC_UI_ACCENT_A 0x9BE9A8          // 助手文本
 #define OC_UI_ACCENT_R 0xFFC66D          // 系统提示
 #define OC_UI_DOT_OK 0x3FB950
@@ -64,6 +65,7 @@ static struct {
     lv_obj_t *turn_hint;             // 红/绿两态的居中大字提示
     lv_obj_t *pair_panel;
     lv_obj_t *pair_label;
+    uint32_t pair_ms;             // 配对码面板已显示的毫秒数(0=未显示;1s 计时器累加,超时兜底)
     lv_obj_t *bubbles[OC_UI_BUBBLES];
     unsigned bubble_next;
     unsigned bubble_used;
@@ -219,6 +221,18 @@ static void ui_timer(lv_timer_t *timer)
         // 背光熄灭不影响 BLE 连接与录音:链路常连,按键会把屏幕点亮。
         bsp_display_backlight(0);
         s_ui.backlight_on = false;
+    }
+
+    // 配对码面板兜底:正常路径在加密完成/订阅完成/断开时都会立刻隐藏它(见 oc_app.c 的事件处理),
+    // 但用户可能在手机上取消配对、或对端卡在加密阶段 —— 面板不能无限期挡住对话界面。
+    if (s_ui.pair_ms > 0) {
+        s_ui.pair_ms += 1000;
+        if (s_ui.pair_ms > OC_UI_PAIRING_PANEL_TIMEOUT_MS) {
+            s_ui.pair_ms = 0;
+            if (s_ui.pair_panel != NULL) {
+                lv_obj_add_flag(s_ui.pair_panel, LV_OBJ_FLAG_HIDDEN);
+            }
+        }
     }
 
     if (s_ui.epoch > 0 && s_ui.clock != NULL) {
@@ -575,6 +589,7 @@ void oc_ui_show_pairing(uint32_t passkey)
     lv_obj_clear_flag(s_ui.pair_panel, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text_fmt(s_ui.pair_label, "配对中\n\n配对密码\n%06u\n\n请在手机上输入", (unsigned)passkey);
     lv_obj_move_foreground(s_ui.pair_panel);
+    s_ui.pair_ms = 1;   // 启动兜底计时(>0 即视为正在显示)
     bsp_lvgl_unlock();
 }
 
@@ -586,6 +601,7 @@ void oc_ui_hide_pairing(void)
     if (s_ui.pair_panel != NULL) {
         lv_obj_add_flag(s_ui.pair_panel, LV_OBJ_FLAG_HIDDEN);
     }
+    s_ui.pair_ms = 0;   // 停掉兜底计时
     bsp_lvgl_unlock();
 }
 
