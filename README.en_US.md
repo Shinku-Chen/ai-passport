@@ -406,8 +406,10 @@ Turn the AI Passport into a pocket AI intercom: **hold OK to speak → the phone
 middleman — it hands your words to the backend AI and brings the answer back to both the device
 screen and the phone**. The backend can be **OpenClaw**, an **OpenAI-compatible Hermes** endpoint,
 or any other OpenAI-compatible API. The device itself never touches the network: audio travels over
-Bluetooth between device and phone only. Status: **released** — tag `v1.8.0-intercom`, submitted to
-the AI Passport community market (`community-82cbed79`, under review).
+Bluetooth between device and phone only. Status: **released** — tag `v1.8.0-intercom`, published on
+the AI Passport community.
+
+- Community play: [Pocket Intercom](https://ai-passport.folotoy.cn/plays/799/) (`community-82cbed79`)
 
 - Branch: [`feature/openclaw-intercom`](https://github.com/Shinku-Chen/ai-passport/tree/feature/openclaw-intercom)
 - Release: [`v1.8.0-intercom`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.8.0-intercom) — `FoloToy-AI-Passport-full.bin` (built by CI); for newer builds, pick the latest release whose name contains `intercom` on the [Releases page](https://github.com/Shinku-Chen/ai-passport/releases)

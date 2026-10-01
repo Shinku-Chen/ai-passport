@@ -262,8 +262,9 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 把 AI Passport 变成一台随身 AI 对讲机：**按住 OK 说话 → 手机端 App 作为中介，把你的话交给
 后端 AI → 回答同时回到设备小屏和手机里**。手机端作为中介，连接你的对讲机和后端 AI：后端
 **可以是 OpenClaw**，**也可以是兼容 OpenAI 的 Hermes 等接口**。设备本身不用联网，语音只在
-「设备 ↔ 手机」之间走蓝牙。状态：**已发布** —— tag `v1.8.0-intercom`，已在 AI Passport
-社区市场投稿（`community-82cbed79`，审核中）。
+「设备 ↔ 手机」之间走蓝牙。状态：**已发布** —— tag `v1.8.0-intercom`，并已在 AI Passport 社区上架。
+
+- 社区作品：[随身 AI 对讲机 · Pocket Intercom](https://ai-passport.folotoy.cn/plays/799/)（`community-82cbed79`）
 
 - 分支：[`feature/openclaw-intercom`](https://github.com/Shinku-Chen/ai-passport/tree/feature/openclaw-intercom)
 - 发布：[`v1.8.0-intercom`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.8.0-intercom) —— `FoloToy-AI-Passport-full.bin`（由 CI 构建）；后续版本到 [Releases 列表](https://github.com/Shinku-Chen/ai-passport/releases) 里找名字带 `intercom` 的最新一版
