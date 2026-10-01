@@ -39,7 +39,8 @@ static const char *TAG = "oc_app";
 
 // 设置页菜单项
 enum {
-    OC_SET_MENU_INFO = 0,
+    OC_SET_MENU_REPAIR = 0,
+    OC_SET_MENU_INFO,
     OC_SET_MENU_BRIGHT,
     OC_SET_MENU_BACK,
     OC_SET_MENU_COUNT,
@@ -49,6 +50,7 @@ typedef enum {
     OC_SET_PAGE_MENU = 0,
     OC_SET_PAGE_INFO,
     OC_SET_PAGE_BRIGHT,
+    OC_SET_PAGE_REPAIR,
 } oc_set_page_t;
 
 typedef enum {
@@ -85,6 +87,9 @@ static struct {
     bool settings_active;
     oc_set_page_t set_page;
     int set_index;
+
+    /** 手机端在 hello 里上报的 App 版本号(设备信息页展示;未上报时为空串)。 */
+    char app_version[16];
     uint32_t battery_poll_ms;
     int64_t turn_ready_deadline_us;   // 等待就绪的绝对截止时刻(esp_timer 单调时钟)
     uint32_t heartbeat_ms;
@@ -280,7 +285,7 @@ static void settings_render(void)
     switch (s_app.set_page) {
     case OC_SET_PAGE_MENU: {
         char body[256];
-        const char *items[OC_SET_MENU_COUNT] = { "设备信息", "亮度", "返回" };
+        const char *items[OC_SET_MENU_COUNT] = { "重新配对", "设备信息", "亮度", "返回" };
         int off = 0;
         for (int i = 0; i < OC_SET_MENU_COUNT; i++) {
             off += snprintf(body + off, sizeof(body) - (size_t)off, "%s%s\n", i == s_app.set_index ? "> " : "  ",
@@ -290,15 +295,26 @@ static void settings_render(void)
         break;
     }
     case OC_SET_PAGE_INFO: {
-        char body[320];
+        char body[384];
         snprintf(body, sizeof(body),
-                 "设备名: %s\n固件: %s\n链路: %s\n电量: %s\n音量: %u%%\n麦克风: %udB\n"
+                 "设备名: %s\n固件: %s\n协议: v%u\n手机 App: %s\n链路: %s\n电量: %s\n音量: %u%%\n麦克风: %udB\n"
                  "发帧丢弃: %u",
-                 oc_link_device_name(), OC_APP_VERSION,
+                 oc_link_device_name(), OC_APP_VERSION, (unsigned)OC_PROTO_VERSION,
+                 s_app.app_version[0] != '\0' ? s_app.app_version : "未上报",
                  oc_link_ready() ? "就绪" : (oc_link_connected() ? "加密中" : "未连接"),
                  s_app.battery >= 0 ? "见状态栏" : "不可用",
                  oc_settings_volume(), oc_settings_mic_gain_db(), (unsigned)oc_link_tx_drop_count());
         oc_ui_settings_update(body);
+        break;
+    }
+    case OC_SET_PAGE_REPAIR: {
+        // 设备侧的配对信息已清掉:剩下要用户做的是在手机上取消配对,然后重新扫描连接。
+        oc_ui_settings_update(
+            "已清除本机配对信息。\n\n"
+            "接下来在手机上：\n"
+            "1) 设置 → 蓝牙 → 找到本设备 → 取消配对\n"
+            "2) 回到 App 设备页点「扫描并连接」\n"
+            "3) 按小屏新显示的 6 位码完成配对");
         break;
     }
     case OC_SET_PAGE_BRIGHT: {
@@ -353,6 +369,14 @@ static bool settings_handle_key(bsp_btn_t btn, bsp_btn_ev_t ev)
         } else if (btn == BSP_BTN_DOWN) {
             s_app.set_index = (s_app.set_index + 1) % OC_SET_MENU_COUNT;
         } else if (btn == BSP_BTN_OK) {
+            if (s_app.set_index == OC_SET_MENU_REPAIR) {
+                // 重新配对:设备侧清掉 bond 并断开,手机侧需自行取消配对(见页面提示)
+                oc_link_forget_peer();
+                s_app.set_page = OC_SET_PAGE_REPAIR;
+                oc_ui_settings_open("重新配对", "", "OK / 长按 OK 返回");
+                settings_render();
+                return true;
+            }
             if (s_app.set_index == OC_SET_MENU_INFO) {
                 s_app.set_page = OC_SET_PAGE_INFO;
                 oc_ui_settings_open("设备信息", "", "OK 返回 · 长按 OK 退出设置");
@@ -382,6 +406,11 @@ static bool settings_handle_key(bsp_btn_t btn, bsp_btn_ev_t ev)
             oc_ui_note_activity();
         }
     } else if (s_app.set_page == OC_SET_PAGE_INFO) {
+        if (btn == BSP_BTN_OK) {
+            s_app.set_page = OC_SET_PAGE_MENU;
+            oc_ui_settings_open("设置", "", "UP/DOWN 选择 · OK 确认 · 长按 OK 返回");
+        }
+    } else if (s_app.set_page == OC_SET_PAGE_REPAIR) {
         if (btn == BSP_BTN_OK) {
             s_app.set_page = OC_SET_PAGE_MENU;
             oc_ui_settings_open("设置", "", "UP/DOWN 选择 · OK 确认 · 长按 OK 返回");
@@ -557,6 +586,11 @@ static void handle_control(const uint8_t *payload, size_t len)
     if (strcmp(cmd->valuestring, "hello") == 0) {
         const cJSON *proto = cJSON_GetObjectItemCaseSensitive(root, "proto");
         s_app.app_hello = true;
+        // 手机端可选上报 App 版本号(设备信息页展示),便于现场核对“固件/App 版本是否一致”
+        const cJSON *app = cJSON_GetObjectItemCaseSensitive(root, "app");
+        if (cJSON_IsString(app) && app->valuestring != NULL) {
+            snprintf(s_app.app_version, sizeof(s_app.app_version), "%s", app->valuestring);
+        }
         ESP_LOGI(TAG, "手机 hello(proto=%d)", cJSON_IsNumber(proto) ? proto->valueint : -1);
         send_status();   // 握手完成即回报一次状态
     } else if (strcmp(cmd->valuestring, "status") == 0) {

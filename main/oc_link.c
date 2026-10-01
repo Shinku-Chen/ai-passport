@@ -539,6 +539,28 @@ const char *oc_link_device_name(void)
     return s_link.device_name;
 }
 
+/**
+ * 忘记配对(设备侧):清除本机保存的全部 bond 并断开当前连接。
+ *
+ * 用于设置菜单里的「重新配对」。Android 不允许 App 自行解除绑定,所以手机侧仍需用户
+ * 到系统蓝牙里取消配对;设备侧清掉后,下一次连接会重新生成 6 位配对码。
+ */
+void oc_link_forget_peer(void)
+{
+    int rc = ble_store_clear();
+    xSemaphoreTake(s_link.mutex, portMAX_DELAY);
+    uint16_t conn = s_link.conn_handle;
+    s_link.encrypted = false;
+    s_link.secure = false;
+    s_link.notify_subscribed = false;
+    xSemaphoreGive(s_link.mutex);
+    ESP_LOGW(TAG, "已清除配对信息(rc=%d),conn=%u", rc, (unsigned)conn);
+    if (conn != BLE_HS_CONN_HANDLE_NONE) {
+        (void)ble_gap_terminate(conn, BLE_ERR_REM_USER_CONN_TERM);
+    }
+    (void)oc_reconcile_advertising();
+}
+
 // ---- host 生命周期 ----
 static void oc_on_sync(void)
 {

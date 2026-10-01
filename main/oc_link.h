@@ -71,5 +71,8 @@ void oc_link_flush_rx(void);
 // 本机广播名(设置页显示用),如 "Passport-3A2B"。
 const char *oc_link_device_name(void);
 
+/** 清除本机全部配对信息并断开当前连接(设置菜单里的「重新配对」)。 */
+void oc_link_forget_peer(void);
+
 // 发送侧丢弃计数(未就绪 / 背压),用于诊断。
 uint32_t oc_link_tx_drop_count(void);
