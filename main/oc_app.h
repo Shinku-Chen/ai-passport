@@ -11,7 +11,7 @@
 #include "esp_err.h"
 
 // 固件版本(设备信息页显示;发布时与 release tag 对齐)。
-#define OC_APP_VERSION "0.1.0"
+#define OC_APP_VERSION "1.8.0"   // 与发布 tag 保持一致(v1.8.0-intercom)并同步 App 的 versionName
 
 // 启动应用:建界面、起链路、起音频、注册按键。成功返回 ESP_OK。
 // 需要调用方已完成 bsp_display_init() + bsp_lvgl_init()。
