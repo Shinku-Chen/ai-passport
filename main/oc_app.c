@@ -90,6 +90,9 @@ static struct {
 
     /** 手机端在 hello 里上报的 App 版本号(设备信息页展示;未上报时为空串)。 */
     char app_version[16];
+
+    /** 本次连接是否已经提示过版本不一致(避免每次重连都刷一条)。 */
+    bool version_notice_shown;
     uint32_t battery_poll_ms;
     int64_t turn_ready_deadline_us;   // 等待就绪的绝对截止时刻(esp_timer 单调时钟)
     uint32_t heartbeat_ms;
@@ -167,8 +170,8 @@ static void send_hello(void)
     const char *downlink = oc_audio_play_available() ? ",\"tts_opus\"" : "";
     snprintf(json, sizeof(json),
              "{\"ev\":\"hello\",\"proto\":%u,\"caps\":[\"opus\",\"pcm\",\"text\",\"time\",\"status\"%s],"
-             "\"model\":\"%s\",\"fw\":\"%s\"}",
-             (unsigned)OC_PROTO_VERSION, downlink, oc_link_device_name(), OC_APP_VERSION);
+             "\"model\":\"%s\",\"fw\":\"%s\",\"minApp\":\"%s\"}",
+             (unsigned)OC_PROTO_VERSION, downlink, oc_link_device_name(), OC_APP_VERSION, OC_APP_VERSION);
     send_event_json(json);
     ESP_LOGI(TAG, "已发 hello(proto=%u, 下行=%s)", (unsigned)OC_PROTO_VERSION, downlink[0] ? "tts_opus" : "无");
 }
@@ -586,10 +589,28 @@ static void handle_control(const uint8_t *payload, size_t len)
     if (strcmp(cmd->valuestring, "hello") == 0) {
         const cJSON *proto = cJSON_GetObjectItemCaseSensitive(root, "proto");
         s_app.app_hello = true;
-        // 手机端可选上报 App 版本号(设备信息页展示),便于现场核对“固件/App 版本是否一致”
+        // 手机端可选上报 App 版本号(设备信息页展示),并检查固件/App 是否配套:
+        // 两者按同一版本号发布,不一致只提示、不阻断(旧 App 仍能对话,但会看到提示)。
         const cJSON *app = cJSON_GetObjectItemCaseSensitive(root, "app");
         if (cJSON_IsString(app) && app->valuestring != NULL) {
             snprintf(s_app.app_version, sizeof(s_app.app_version), "%s", app->valuestring);
+            if (strcmp(app->valuestring, OC_APP_VERSION) != 0 && !s_app.version_notice_shown) {
+                s_app.version_notice_shown = true;
+                char msg[112];
+                snprintf(msg, sizeof(msg), "版本提示：手机 App %s 与本机固件 %s 不一致，请更新 APP",
+                         app->valuestring, OC_APP_VERSION);
+                ESP_LOGW(TAG, "%s", msg);
+                oc_ui_append('A', msg);
+            }
+        }
+        if (cJSON_IsNumber(proto) && (unsigned)proto->valueint < OC_PROTO_VERSION &&
+            !s_app.version_notice_shown) {
+            s_app.version_notice_shown = true;
+            char msg[112];
+            snprintf(msg, sizeof(msg), "版本提示：手机端协议 v%d 低于本机 v%u，请更新 APP",
+                     proto->valueint, (unsigned)OC_PROTO_VERSION);
+            ESP_LOGW(TAG, "%s", msg);
+            oc_ui_append('A', msg);
         }
         ESP_LOGI(TAG, "手机 hello(proto=%d)", cJSON_IsNumber(proto) ? proto->valueint : -1);
         send_status();   // 握手完成即回报一次状态
@@ -721,6 +742,7 @@ static void handle_link_event(const oc_link_event_t *ev)
         s_app.link_secure = false;
         s_app.link_subscribed = false;
         s_app.app_hello = false;
+        s_app.version_notice_shown = false;   // 新一次连接:版本提示重新计一次
         ESP_LOGI(TAG, "事件: 已连接");
         oc_ui_set_state(OC_UI_STATE_CONNECTING, NULL);
         break;
