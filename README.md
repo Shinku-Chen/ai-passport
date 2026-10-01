@@ -257,6 +257,31 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 - **内容与授权** —— 剧情含大量血腥内容，保留源移植版的开机警告；《沙耶之歌》是 Nitroplus 的商业作品，本移植为个人同人作品，生成的资源包不得作为素材再分发。
 
 
+### AI Passport 随身AI对讲机（Pocket Intercom）
+
+把 AI Passport 变成一台随身 AI 对讲机：**按住 OK 说话 → 手机端 App 作为中介，把你的话交给
+后端 AI → 回答同时回到设备小屏和手机里**。手机端作为中介，连接你的对讲机和后端 AI：后端
+**可以是 OpenClaw**，**也可以是兼容 OpenAI 的 Hermes 等接口**。设备本身不用联网，语音只在
+「设备 ↔ 手机」之间走蓝牙。状态：**已发布** —— tag `v1.8.0-intercom`，已在 AI Passport
+社区市场投稿（`community-82cbed79`，审核中）。
+
+- 分支：[`feature/openclaw-intercom`](https://github.com/Shinku-Chen/ai-passport/tree/feature/openclaw-intercom)
+- 发布：[`v1.8.0-intercom`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.8.0-intercom) —— `FoloToy-AI-Passport-full.bin`（由 CI 构建）；后续版本到 [Releases 列表](https://github.com/Shinku-Chen/ai-passport/releases) 里找名字带 `intercom` 的最新一版
+- 手机端 App（另一个仓库）：[`Shinku-Chen/ai-passport-openclaw-android`](https://github.com/Shinku-Chen/ai-passport-openclaw-android) —— Android 8+，在它的 Releases 里下载已签名的 `app-release.apk`
+- 协议文档：[`docs/development/engineering/intercom-wire-protocol.md`](https://github.com/Shinku-Chen/ai-passport/blob/feature/openclaw-intercom/docs/development/engineering/intercom-wire-protocol.md)（中英各一份）
+
+**操作（三键）：** 按住 **OK** 说话 —— 设备屏立刻变红表示正在准备，变绿就**可以说**，松手即发送；**短按 OK** 只点亮屏幕，**长按 UP** 进设置（亮度 / 设备信息），**UP / DOWN** 翻看历史消息。
+
+**亮点：**
+
+- **设备端 Opus 上行** —— 16 kHz 采集、60 ms 帧、DTX，约 3 KB/s（PCM 的十分之一）；在没有 PSRAM 的 ESP32-C3 上用静态栈跑编码，避开堆碎片。
+- **手机端当网关** —— App 负责语音识别、把文本交给后端（OpenClaw 走 websocket RPC + ed25519 设备身份；Hermes / 自定义走 OpenAI 兼容 HTTP），再把回答回传设备；设备端不解析 HTTP、不存密钥。
+- **按下即红、就绪变绿** —— 按键一按下就变红并开始听，网关就绪后转绿，实测按下到变绿约 280–290 ms；识别通道常驻预热，不用等连接。
+- **网关授权闭环** —— OpenClaw 要求设备先被批准，未批时 App 直接显示「等待网关授权……（deviceId …）」，在控制台 Devices 页批准或跑 `openclaw devices approve <deviceId>`，批准后自动继续。
+- **回复收集** —— 网关的状态话术、流式片段与工具输出分开处理，正文取终局消息并用 `chat.history` 补正，设备只显示一轮一个正文气泡。
+- **没有语音生成** —— 当前版本不接 TTS：回答只以文字上屏（设备屏 + App），设备不会念出来。
+
+
 ## 说明
 
 - 每个应用都是基于上游基线的一个独立 `feature/*` 分支。不要把 demo 分支整支合入
