@@ -400,6 +400,34 @@ and any key wakes the device at the last automatic save; auto-play keeps the scr
   content warning; *Saya no Uta* is a commercial Nitroplus title, so this is a personal fan
   port whose generated pack must not be republished as an asset.
 
+### AI Passport Pocket Intercom
+
+Turn the AI Passport into a pocket AI intercom: **hold OK to speak → the phone app acts as the
+middleman — it hands your words to the backend AI and brings the answer back to both the device
+screen and the phone**. The backend can be **OpenClaw**, an **OpenAI-compatible Hermes** endpoint,
+or any other OpenAI-compatible API. The device itself never touches the network: audio travels over
+Bluetooth between device and phone only. Status: **released** — tag `v1.8.0-intercom`, submitted to
+the AI Passport community market (`community-82cbed79`, under review).
+
+- Branch: [`feature/openclaw-intercom`](https://github.com/Shinku-Chen/ai-passport/tree/feature/openclaw-intercom)
+- Release: [`v1.8.0-intercom`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.8.0-intercom) — `FoloToy-AI-Passport-full.bin` (built by CI); for newer builds, pick the latest release whose name contains `intercom` on the [Releases page](https://github.com/Shinku-Chen/ai-passport/releases)
+- Phone app (separate repository): [`Shinku-Chen/ai-passport-openclaw-android`](https://github.com/Shinku-Chen/ai-passport-openclaw-android) — Android 8+, download the signed `app-release.apk` from its Releases
+- Wire protocol: [`docs/development/engineering/intercom-wire-protocol.md`](https://github.com/Shinku-Chen/ai-passport/blob/feature/openclaw-intercom/docs/development/engineering/intercom-wire-protocol.md) (English and Chinese)
+
+**Controls (three keys):** hold **OK** to talk — the screen turns red while it is getting ready and
+green once you can speak; release to send. A short **OK** press only lights the screen, a long
+**UP** press opens settings (brightness / device info), and **UP / DOWN** scroll the history.
+
+**Highlights:**
+
+- **Opus uplink on the device** — 16 kHz capture, 60 ms frames, DTX, about 3 KB/s (a tenth of PCM), encoded on static stacks on a PSRAM-less ESP32-C3 to dodge heap fragmentation.
+- **The phone is the gateway** — the app does speech recognition, talks to the backend (websocket RPC with an ed25519 device identity for OpenClaw; OpenAI-compatible HTTP for Hermes and custom endpoints), and sends the answer back to the device. The device parses no HTTP and stores no keys.
+- **Press-to-red, ready-to-green** — the screen turns red the instant the key goes down and green once the gateway is ready; measured about 280–290 ms. The recognition channel is pre-warmed, so there is nothing to wait for.
+- **Closed-loop gateway approval** — OpenClaw requires each device to be approved first; until then the app shows `Waiting for gateway approval … (deviceId …)`. Approve it on the console's Devices page or run `openclaw devices approve <deviceId>`, and the app continues by itself.
+- **Reply collection** — gateway status lines, streaming fragments and tool output are handled separately; the body comes from the terminal message and is corrected from `chat.history`, so the device shows exactly one body bubble per turn.
+- **No speech synthesis** — this version does not do TTS: answers are text on the device screen and in the app, and the device never reads them aloud.
+
+
 ## Notes
 
 - Each application is a separate `feature/*` branch off the upstream baseline.
