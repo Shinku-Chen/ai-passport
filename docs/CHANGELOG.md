@@ -10,6 +10,13 @@
 > with `CHANGELOG.zh_CN.md`. The entries currently under `Unreleased` are pending
 > review for the next release; they are not a finalized release history.
 
+## v1.9.0-intercom — 2026-10-01
+
+- The pairing-code panel now disappears as soon as encryption completes. It used to wait for the phone to finish subscribing, so a slow or failed subscribe left the panel covering the screen; a 90-second fallback hides it even when the pairing is abandoned.
+- Added a **re-pair** entry to the settings menu (long-press UP): it clears the device-side bond store (`ble_store_clear()`), drops the current connection and starts advertising again, so a fresh 6-digit pairing can be started from the device. The page also lists what is left to do on the phone.
+- The device-information page now reports the firmware version, the protocol version and the phone-app version (when the app reports one), next to the device name, link state, battery, volume, microphone gain and dropped-frame count.
+- The reported firmware version now matches the release tag and the Android app: `OC_APP_VERSION` is `1.9.0`, so firmware, app and community listing describe the same revision.
+
 ## v1.8.0-intercom — 2026-09-30
 
 - Added the OpenClaw intercom application: a BLE NUS peripheral with LE Secure Connections pairing, a framed wire protocol (16 kHz Opus audio uplink plus text, control, and event channels), on-device Opus encoding at 60 ms frames, and a purpose-built LVGL interface with a 16 px 4 bpp CJK font.
