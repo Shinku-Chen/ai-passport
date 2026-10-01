@@ -343,7 +343,7 @@ static void settings_open(void)
     s_app.settings_active = true;
     s_app.set_page = OC_SET_PAGE_MENU;
     s_app.set_index = 0;
-    oc_ui_settings_open("设置", "  设备信息\n  亮度\n  返回", "UP/DOWN 选择 · OK 确认 · 长按 OK 返回");
+    oc_ui_settings_open("设置", "  设备信息\n  亮度\n  返回", "UP/DOWN 选择，OK 确认，长按 OK 返回");
     settings_render();
 }
 
@@ -382,10 +382,10 @@ static bool settings_handle_key(bsp_btn_t btn, bsp_btn_ev_t ev)
             }
             if (s_app.set_index == OC_SET_MENU_INFO) {
                 s_app.set_page = OC_SET_PAGE_INFO;
-                oc_ui_settings_open("设备信息", "", "OK 返回 · 长按 OK 退出设置");
+                oc_ui_settings_open("设备信息", "", "OK 返回，长按 OK 退出设置");
             } else if (s_app.set_index == OC_SET_MENU_BRIGHT) {
                 s_app.set_page = OC_SET_PAGE_BRIGHT;
-                oc_ui_settings_open("亮度", "", "UP/DOWN 调节 · OK 确认 · 长按 OK 退出设置");
+                oc_ui_settings_open("亮度", "", "UP/DOWN 调节，OK 确认，长按 OK 退出设置");
             } else {
                 settings_close();
                 return true;
@@ -399,7 +399,7 @@ static bool settings_handle_key(bsp_btn_t btn, bsp_btn_ev_t ev)
             b = b >= 20 ? b - 10 : 10;
         } else if (btn == BSP_BTN_OK) {
             s_app.set_page = OC_SET_PAGE_MENU;
-            oc_ui_settings_open("设置", "", "UP/DOWN 选择 · OK 确认 · 长按 OK 返回");
+            oc_ui_settings_open("设置", "", "UP/DOWN 选择，OK 确认，长按 OK 返回");
             settings_render();
             return true;
         }
@@ -411,12 +411,12 @@ static bool settings_handle_key(bsp_btn_t btn, bsp_btn_ev_t ev)
     } else if (s_app.set_page == OC_SET_PAGE_INFO) {
         if (btn == BSP_BTN_OK) {
             s_app.set_page = OC_SET_PAGE_MENU;
-            oc_ui_settings_open("设置", "", "UP/DOWN 选择 · OK 确认 · 长按 OK 返回");
+            oc_ui_settings_open("设置", "", "UP/DOWN 选择，OK 确认，长按 OK 返回");
         }
     } else if (s_app.set_page == OC_SET_PAGE_REPAIR) {
         if (btn == BSP_BTN_OK) {
             s_app.set_page = OC_SET_PAGE_MENU;
-            oc_ui_settings_open("设置", "", "UP/DOWN 选择 · OK 确认 · 长按 OK 返回");
+            oc_ui_settings_open("设置", "", "UP/DOWN 选择，OK 确认，长按 OK 返回");
         }
     }
     oc_ui_note_activity();

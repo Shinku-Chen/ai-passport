@@ -10,6 +10,12 @@
 > with `CHANGELOG.zh_CN.md`. The entries currently under `Unreleased` are pending
 > review for the next release; they are not a finalized release history.
 
+## v1.10-intercom — 2026-10-01
+
+- Fixed the settings-menu hint lines: they used a middle dot (`·`) as a separator, which the 16 px device font can leave blank, so the line looked like it had stray spaces. The hints now use a Chinese comma and no surrounding spaces.
+- Firmware and phone app now exchange versions after pairing: the device's `hello` carries `fw` (firmware version) and `minApp` (minimum app version), and the app answers with `{"cmd":"hello","proto":1,"app":"<versionName>"}`. A mismatch is reported on both sides — the app state card shows the reason and the device screen gets a text bubble — without blocking the conversation. Information that is not reported (older firmware) is left alone rather than guessed, and each connection reports at most once.
+- The reported firmware version uses the new two-segment scheme: `OC_APP_VERSION` is `1.10`, matching the release tag `v1.10-intercom` and the Android app's `versionName`.
+
 ## v1.9.0-intercom — 2026-10-01
 
 - The pairing-code panel now disappears as soon as encryption completes. It used to wait for the phone to finish subscribing, so a slow or failed subscribe left the panel covering the screen; a 90-second fallback hides it even when the pairing is abandoned.
