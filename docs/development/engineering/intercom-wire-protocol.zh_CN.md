@@ -234,6 +234,7 @@ payload：
 | `{"ev":"hello",...}` | 握手设备侧，每次订阅成功发送一次 |
 | `{"ev":"turn_start"}` | 用户按下对讲键，后续为音频帧；**短于约 350 ms 的按下只当唤醒屏幕**，不发 `turn_start`、不采音频、也没有 `turn_end` |
 | `{"ev":"turn_end","frames":<n>,"codec":"opus","dropped":<n>}` | 用户松开对讲键，手机可以结束识别 |
+| `{"ev":"turn_cancel"}` | 设备**撤销本轮**:短于约 350 ms 的按下(只唤醒屏幕)。手机必须丢弃本轮音频与识别结果,不发任何气泡 |
 | `{"ev":"status","battery":<百分比>,"volume":<百分比>,"mic_gain_db":<数值>,"link":"ready"}` | 设备状态快照，也会在被请求时以及任一项变更后发送 |
 | `{"ev":"error","code":"<code>","detail":"<text>"}` | 设备侧故障，值得在 App 控制台显示 |
 | `{"ev":"tts_playback_done","frames":N,"decoded":D,"dropped":X,"underruns":U,"decode_us_max":M}` | 设备播完一条 TTS 流；`frames` 是收下的包数，`decoded` 是解码成功的包数，`dropped` 是被丢弃的包数（队列溢出 + `SEQ` 缺口），`underruns` 是播放时无解码数据可用的次数，`decode_us_max` 是单包最长解码耗时（微秒） |

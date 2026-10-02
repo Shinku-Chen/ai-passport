@@ -277,6 +277,7 @@ sends `turn_ready` degrades to the fallback timeout instead of breaking.
 | `{"ev":"hello",...}` | device half of the handshake, sent once per subscription |
 | `{"ev":"turn_start"}` | the user started holding the talk button; audio frames follow. A press shorter than ~350 ms is a screen wake-up only: no `turn_start`, no audio, no `turn_end` |
 | `{"ev":"turn_end","frames":<n>,"codec":"opus","dropped":<n>}` | the user released the button; the phone may now finalize recognition |
+| `{"ev":"turn_cancel"}` | the device **withdrew** the turn: a press shorter than ~350 ms (screen wake-up only). The phone must discard the audio and any recognition result — send no reply/bubble |
 | `{"ev":"status","battery":<percent>,"volume":<percent>,"mic_gain_db":<number>,"link":"ready"}` | device status snapshot, also sent on request and after any change |
 | `{"ev":"error","code":"<code>","detail":"<text>"}` | device-side failure worth showing in the app console |
 | `{"ev":"tts_playback_done","frames":N,"decoded":D,"dropped":X,"underruns":U,"decode_us_max":M}` | the device finished a TTS stream; `frames` is the number of accepted packets, `decoded` the number decoded, `dropped` the packets discarded (queue overflow plus `SEQ` gaps), `underruns` the times playback ran out of decoded audio, and `decode_us_max` the longest single-packet decode time in microseconds |

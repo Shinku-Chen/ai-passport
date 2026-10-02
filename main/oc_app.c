@@ -38,13 +38,12 @@ static const char *TAG = "oc_app";
 // 不让用户一直对着红屏等(名称按 UI 行为取,见 oc_ui.h 的两个轮次状态)。
 #define OC_UI_TURN_READY_TIMEOUT_MS 800U   // App 就绪(turn_ready)兜底:真机反馈 2500ms 变绿太慢,收到 ack 仍是即时变绿
 
-// 「按住多久才算真的要说话」。按下只给即时反馈(整屏红),在这个时长之前松手一律当【短按】处理:
-// 只点亮屏幕、**不发起本轮**(不发 turn_start/turn_end、不开采集)。
-// 为什么是 350ms:BSP 的短按门限是 180ms(误触/唤醒的轻点都在这个量级),而真要说话的用户
-// 按下后本来就在等绿灯(turn_ready)才会开口,所以这段等待不会丢掉任何一句话 ——
-// 反而把「按一下看看屏幕 → App 收到空音频 → 设备屏弹一条『无语音』」这个真机 bug 去掉。
-// 行为与文档一致:按住 OK 说话,短按 OK 只点亮屏幕。见 docs/development/engineering/intercom-wire-protocol.md。
-#define OC_PTT_ANNOUNCE_MS 350U
+// 短按门限:按下 **立刻** 开本轮(识别零延迟,不吃掉第一个字),但若在这个时长内松手,
+// 说明用户只是在唤醒屏幕 —— 松开时发 turn_cancel 撤销本轮(不是 turn_end),App 侧静默丢弃,
+// 不会冒出「无语音」气泡。为什么是 350ms:BSP 的短按门限是 180ms,误触/看一眼屏幕的轻点
+// 都在这个量级,而真要说话的人不会按住不到 0.35 秒。
+// 见 docs/development/engineering/intercom-wire-protocol.md 的 turn_cancel。
+#define OC_PTT_TAP_MS 350U
 
 // 设置页菜单项。**枚举顺序就是屏上顺序**：三个可调项在前，然后是只读的「设备信息」，
 // 「重新配对」是不可逆动作，固定放在**倒数第二**（用户要求），最后一项才是「返回」。
@@ -98,8 +97,6 @@ static struct {
     bool turn_pressed;         // OK 已按下(可能还没真正开始一轮)
     /** 按下时刻(esp_timer 单调时钟):到 OC_PTT_ANNOUNCE_MS 才真的发本轮,之前松手算短按。 */
     int64_t turn_press_us;
-    /** 本次按住是否已经 announce 过(不管成功与否):避免节拍重试导致日志/气泡刷屏。 */
-    bool turn_announced;
     bool turn_ready_pending;   // 本轮已开始,等 App 的 turn_ready 或兜底超时
     bool playing;              // 正在播放手机推来的 TTS 音频(turn_ready 是上行,这个是下行)
     // 【诊断】帧到达统计:定位“手机推的 TTS 到底有没有到应用层”(见 on_frame / app_task 汇总)。
@@ -199,9 +196,9 @@ static void send_hello(void)
 }
 
 // ---- 一轮对讲 ----
-// 按下 OK 的第一件事就是整屏红:给用户即时反馈,不等链路就绪/音频启动。
-// 但**先不发起本轮**——短按(见 OC_PTT_ANNOUNCE_MS)只点亮屏幕,不开发任何帧;
-// 按住超过门限才由 turn_announce 真正开采集 + 发 turn_start。
+// 按下 OK:第一件事就是整屏红(即时反馈),并**立刻**开本轮 —— 识别要按下秒级就开始,
+// 否则第一个字会被吃掉(真机反馈:改晚 announce 后识别晚约一秒)。
+// 「只点亮屏幕」的短按不在这里区分,而是交给 turn_cancel(见下)。
 static void turn_press(void)
 {
     if (s_app.turn_pressed) {
@@ -209,21 +206,6 @@ static void turn_press(void)
     }
     s_app.turn_pressed = true;
     s_app.turn_press_us = esp_timer_get_time();
-    s_app.turn_announced = false;
-    oc_ui_set_state(OC_UI_STATE_RECORDING, NULL);
-    oc_ui_note_activity();
-}
-
-// 按住够久:真正开始本轮(打断正在播放的 TTS → 开采集 → 发 turn_start 等 App 就绪)。
-static void turn_announce(void)
-{
-    if (!s_app.turn_pressed || s_app.turn_active || s_app.turn_announced) {
-        return;
-    }
-    // 先置位:下面「链路未就绪 / 音频启动失败」两条会提前 return,
-    // 不能因此让每拍(50ms)的 pump 反复重试(会刷日志、反复弹同一条气泡)。
-    s_app.turn_announced = true;
-    ESP_LOGI(TAG, "按住 %ums:开始本轮", (unsigned)OC_PTT_ANNOUNCE_MS);
 
     // 打断(barge-in):设备正在出声时按下 OK 就是“我要说话”。先把喇叭停掉并等采集
     // 真正交还 codec(flush 是同步的),否则第一个字会被自己的喇叭录进去。
@@ -231,6 +213,9 @@ static void turn_announce(void)
         oc_audio_play_flush();
         s_app.playing = false;   // aborted 事件由应用任务的下一拍补发
     }
+
+    oc_ui_set_state(OC_UI_STATE_RECORDING, NULL);
+    oc_ui_note_activity();
 
     if (!oc_link_ready()) {
         // 链路未就绪:保持红底不闪回,用系统气泡说明原因;松开时由 turn_release 收尾。
@@ -250,18 +235,6 @@ static void turn_announce(void)
     ESP_LOGI(TAG, "本轮开始:等待 App 就绪(turn_ready 或 %ums 兜底)", (unsigned)OC_UI_TURN_READY_TIMEOUT_MS);
 }
 
-// 主任务每拍调一次:按住到门限就开本轮(按下那一刻不开,避免短按也发一轮)。
-static void pump_turn_press(void)
-{
-    if (!s_app.turn_pressed || s_app.turn_active || s_app.turn_announced) {
-        return;
-    }
-    if (esp_timer_get_time() - s_app.turn_press_us < (int64_t)OC_PTT_ANNOUNCE_MS * 1000) {
-        return;
-    }
-    turn_announce();
-}
-
 // 收到 App 的 turn_ready(录音/识别真正就绪)或兜底超时:切绿,明确告诉用户可以说话。
 static void turn_mark_ready(void)
 {
@@ -276,15 +249,18 @@ static void turn_mark_ready(void)
 }
 
 static void turn_end(void);
+static void turn_cancel(void);
 
-// 松开 OK:结束本轮(正常收尾)、或者收掉没能开始的红底。
-// 本轮尚未 announce(短按)→ 什么都不发:既不开采集也不发 turn_start/turn_end。
+// 松开 OK:正常收尾(turn_end)、短按撤销(turn_cancel)、或收掉没能开始的红底。
 static void turn_release(void)
 {
-    const bool announced = s_app.turn_announced;   // 先记下来:下面要清标志
+    const int64_t held_us = esp_timer_get_time() - s_app.turn_press_us;
     s_app.turn_pressed = false;
-    s_app.turn_announced = false;
     if (s_app.turn_active) {
+        if (held_us < (int64_t)OC_PTT_TAP_MS * 1000) {
+            turn_cancel();
+            return;
+        }
         turn_end();
         return;
     }
@@ -296,10 +272,27 @@ static void turn_release(void)
                                         : (oc_link_connected() ? OC_UI_STATE_CONNECTING
                                                                : OC_UI_STATE_IDLE),
                         NULL);
-        if (!announced) {
-            ESP_LOGI(TAG, "短按:只点亮屏幕,未发起本轮(门限 %ums)", (unsigned)OC_PTT_ANNOUNCE_MS);
-        }
+        ESP_LOGI(TAG, "短按:只点亮屏幕(本轮没起来,门限 %ums)", (unsigned)OC_PTT_TAP_MS);
     }
+}
+
+// 短按松手:撤销本轮 —— 停采集、**发 turn_cancel 而不是 turn_end**,界面直接回就绪。
+// App 收到 turn_cancel 会静默丢弃这一轮的音频与识别结果(不发「无语音」气泡)。
+// 之所以要「先开轮再撤」:按下必须立刻开轮才能保证识别零延迟。
+static void turn_cancel(void)
+{
+    if (!s_app.turn_active) {
+        return;
+    }
+    s_app.turn_active = false;
+    s_app.turn_ready_pending = false;
+    s_app.turn_ready_deadline_us = 0;
+    oc_audio_end_turn();
+    send_event_json("{\"ev\":\"turn_cancel\"}");
+    if (oc_link_ready()) {
+        oc_ui_set_state(OC_UI_STATE_READY, NULL);
+    }
+    ESP_LOGI(TAG, "短按:撤销本轮(发 turn_cancel,不发 turn_end),只点亮屏幕");
 }
 
 static void turn_end(void)
@@ -541,7 +534,7 @@ static void handle_button(bsp_btn_t btn, bsp_btn_ev_t ev)
         return;
     }
     if (btn == BSP_BTN_OK && ev == BSP_BTN_PRESS) {
-        turn_press();   // 按下瞬间就红;真正发本轮要等按住 OC_PTT_ANNOUNCE_MS(见 pump_turn_press)
+        turn_press();   // 按下瞬间:整屏红 + 立刻开轮(识别零延迟);短按在松开时撤销
         return;
     }
     if (btn == BSP_BTN_OK && ev == BSP_BTN_RELEASE) {
@@ -957,7 +950,6 @@ static void app_task(void *arg)
             }
         }
         drain_rx();   // 每拍兜底一次,保证不积压
-        pump_turn_press();   // 按住够久就把本轮真正发出去(短按在 turn_release 里被丢掉)
 
         // 【诊断】每 2 秒(有变化才打)汇总一次“帧到达”情况：
         //   链路活着时 EVT(网关状态)会一直涨；CTRL=0x03 / TTS=0x06 有没有计数，就是
