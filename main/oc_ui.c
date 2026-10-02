@@ -597,18 +597,20 @@ static void oc_ui_append_ex(char role, const char *text, bool upstream_truncated
         s_ui.bubble_used++;
     }
 
-    // 新消息定位到**这条气泡的首行**(用户要求;真机反馈:语音识别返回/回复到达后应停在首行,
-    // 而不是直接看到尾巴)。两处坑都在这里解决:
-    //  1) 刚创建的 label 还没走过布局,直接取坐标拿到的是旧位置 → 先强制刷一次布局;
-    //  2) 滚动范围默认到内容末→最后一条永远只能贴底 → 容器底部留 OC_UI_CONV_TAIL_PAD 的
-    //     余量,最后一条也能真正停到顶部(短消息同样按“首行在顶”显示,下方留空)。
+    // 新消息定位到**这条气泡的首行**(用户要求)。
+    // 做法要点(**别再改回相对位移**):
+    //  1) 先 lv_obj_update_layout():刚创建的 label 还没走布局,坐标是旧的;
+    //  2) 用 lv_obj_get_y(body)(气泡在容器内的布局坐标,与当前滚动位置无关)
+    //     直接 scroll_to_y 到该位置 —— 停止“相对滚多少”的算法:一旦某个气泡高度
+    //     还没最终确定,相对位移会算小甚至反向(真机 bug:跳到最早那条去了);
+    //  3) 容器底部留 OC_UI_CONV_TAIL_PAD 余量,最后一条才能真停到视口顶部。
     lv_obj_update_layout(s_ui.conv);
     {
-        lv_area_t bubble_area;
-        lv_area_t view_area;
-        lv_obj_get_coords(body, &bubble_area);
-        lv_obj_get_coords(s_ui.conv, &view_area);
-        lv_obj_scroll_by_bounded(s_ui.conv, 0, bubble_area.y1 - view_area.y1, LV_ANIM_OFF);
+        lv_coord_t target = lv_obj_get_y(body);
+        lv_obj_scroll_to_y(s_ui.conv, target, LV_ANIM_OFF);
+        ESP_LOGI(TAG, "新消息定位: 气泡y=%d 锚=%d 滚动top=%d 上限=%d",
+                 (int)target, (int)lv_obj_get_y(body),
+                 (int)lv_obj_get_scroll_top(s_ui.conv), (int)lv_obj_get_scroll_bottom(s_ui.conv));
     }
     ESP_LOGI(TAG, "气泡[%u]: 正文 %u/%u 字节%s", idx, (unsigned)keep, (unsigned)len,
                  need_marker ? "(已截断,尾部加省略号)" : "");
