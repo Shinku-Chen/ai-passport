@@ -51,9 +51,6 @@ static const char *TAG = "oc_ui";
 
 // UP/DOWN 一次滚动的行数(用户要求 8 行);实际像素 = 8 × 当前字体行高,不写死。
 #define OC_UI_SCROLL_LINES 8
-// 会话容器底部留的滚动余量:让它比任何单条气泡都高,于是「最后一条」也能停到视口顶部
-// (否则滚动范围到内容末就封顶,最新消息永远只能贴底 —— 真机 bug:新消息只能看到尾巴)。
-#define OC_UI_CONV_TAIL_PAD 240
 #define OC_UI_BG 0x0E1116
 #define OC_UI_BAR_BG 0x161B22
 #define OC_UI_PANEL 0x1B222C
@@ -298,8 +295,6 @@ static void build_conv_area(lv_obj_t *parent)
     lv_obj_set_style_bg_color(s_ui.conv, lv_color_hex(OC_UI_BG), 0);
     lv_obj_set_style_border_width(s_ui.conv, 0, 0);
     lv_obj_set_style_pad_all(s_ui.conv, 6, 0);
-    // 底部额外余量:见 OC_UI_CONV_TAIL_PAD —— 最后一条也能滚到顶部(新消息从首行开始看)。
-    lv_obj_set_style_pad_bottom(s_ui.conv, OC_UI_CONV_TAIL_PAD, 0);
     lv_obj_set_style_pad_row(s_ui.conv, 6, 0);
     lv_obj_set_flex_flow(s_ui.conv, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_scroll_dir(s_ui.conv, LV_DIR_VER);
@@ -601,16 +596,26 @@ static void oc_ui_append_ex(char role, const char *text, bool upstream_truncated
     // 做法要点(**别再改回相对位移**):
     //  1) 先 lv_obj_update_layout():刚创建的 label 还没走布局,坐标是旧的;
     //  2) 用 lv_obj_get_y(body)(气泡在容器内的布局坐标,与当前滚动位置无关)
-    //     直接 scroll_to_y 到该位置 —— 停止“相对滚多少”的算法:一旦某个气泡高度
-    //     还没最终确定,相对位移会算小甚至反向(真机 bug:跳到最早那条去了);
-    //  3) 容器底部留 OC_UI_CONV_TAIL_PAD 余量,最后一条才能真停到视口顶部。
+    //     直接 scroll_to_y 到「气泡首行」位置 —— 不再算「相对滚多少」:一旦某个气泡
+    //     高度还没最终确定,相对位移会算小甚至反向(真机 bug:跳到最早那条去了);
+    //  3) 目标位再用滚动上限钳一下:长消息停在首行、短消息落在末条贴底。
     lv_obj_update_layout(s_ui.conv);
     {
+        // 目标位 = 让这条气泡的**首行**贴视口顶部;但不得超过滚动上限 —— 上限处就是
+        // 「最后一条贴底」的自然位置(两者刚好互斥,不用额外留白):
+        //   长消息(比视口高) → 气泡y < 上限 → 停在首行 ✓
+        //   短消息(比视口矮) → 气泡y > 上限 → 钳到上限 = 末条贴底 ✓
+        // 曾经用「底部 pad 余量」实现短消息也能停首行,副作用是滚到底会多出一屏空白
+        // (真机反馈:滚到最后时末条的最后一行跑到屏幕顶部) —— 已废弃。
+        const lv_coord_t max_scroll =
+            lv_obj_get_scroll_top(s_ui.conv) + lv_obj_get_scroll_bottom(s_ui.conv);
         lv_coord_t target = lv_obj_get_y(body);
+        if (target > max_scroll) {
+            target = max_scroll;
+        }
         lv_obj_scroll_to_y(s_ui.conv, target, LV_ANIM_OFF);
-        ESP_LOGI(TAG, "新消息定位: 气泡y=%d 锚=%d 滚动top=%d 上限=%d",
-                 (int)target, (int)lv_obj_get_y(body),
-                 (int)lv_obj_get_scroll_top(s_ui.conv), (int)lv_obj_get_scroll_bottom(s_ui.conv));
+        ESP_LOGI(TAG, "新消息定位: 气泡y=%d 上限=%d 实际=%d",
+                 (int)lv_obj_get_y(body), (int)max_scroll, (int)target);
     }
     ESP_LOGI(TAG, "气泡[%u]: 正文 %u/%u 字节%s", idx, (unsigned)keep, (unsigned)len,
                  need_marker ? "(已截断,尾部加省略号)" : "");
