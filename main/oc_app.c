@@ -950,9 +950,12 @@ static void app_task(void *arg)
         s_app.heartbeat_ms += OC_APP_TICK_MS;
         if (s_app.heartbeat_ms >= 5000U) {
             s_app.heartbeat_ms = 0;
-            ESP_LOGI(TAG, "心跳 队列空闲=%u 堆=%u 说话=%d 设置页=%d",
+            // 堆同时报「当前空闲」与**历史最低水位**:后者才回答「还有没有富余」——
+            // 只看瞬时值,一次大分配之后就会误以为余量很大。
+            ESP_LOGI(TAG, "心跳 队列空闲=%u 堆空闲=%u 堆最低=%u 说话=%d 设置页=%d",
                      (unsigned)uxQueueSpacesAvailable(s_app.queue),
-                     (unsigned)esp_get_free_heap_size(), (int)s_app.turn_active, (int)s_app.settings_active);
+                     (unsigned)esp_get_free_heap_size(), (unsigned)esp_get_minimum_free_heap_size(),
+                     (int)s_app.turn_active, (int)s_app.settings_active);
             // LVGL 池水位:下行音频的静态内存是从这个池子让出来的,真机上靠这条日志确认余量。
             oc_ui_log_memory();
         }
