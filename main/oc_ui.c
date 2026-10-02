@@ -299,6 +299,14 @@ static void build_conv_area(lv_obj_t *parent)
     lv_obj_set_flex_flow(s_ui.conv, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_scroll_dir(s_ui.conv, LV_DIR_VER);
     lv_obj_set_scrollbar_mode(s_ui.conv, LV_SCROLLBAR_MODE_AUTO);
+    // 滚动条**显式给样式**:AUTO 只保证"可滚时出现",宽度/颜色仍取主题默认,
+    // 真机上细得看不见 —— 于是"下面还有内容"这条最重要的提示等于没有
+    // (用户反馈:长回复停在第一行后,看不到末尾的省略号,也没有任何滚动提示)。
+    // 3px 细杆 + 半透明次文字色,压在右内边距里,不挡正文。
+    lv_obj_set_style_width(s_ui.conv, 3, LV_PART_SCROLLBAR);
+    lv_obj_set_style_bg_color(s_ui.conv, lv_color_hex(OC_UI_INK_DIM), LV_PART_SCROLLBAR);
+    lv_obj_set_style_bg_opa(s_ui.conv, LV_OPA_70, LV_PART_SCROLLBAR);
+    lv_obj_set_style_radius(s_ui.conv, 2, LV_PART_SCROLLBAR);
     // 关掉回弹与惯性:历史只应该从首条滚到末条,到头就停(有回弹/惯性时会“滚过头”)。
     lv_obj_remove_flag(s_ui.conv, LV_OBJ_FLAG_SCROLL_ELASTIC | LV_OBJ_FLAG_SCROLL_MOMENTUM);
 }
