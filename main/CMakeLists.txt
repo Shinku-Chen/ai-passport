@@ -4,6 +4,7 @@ idf_component_register(
          "oc_audio.c"
          "oc_link.c"
          "oc_proto.c"
+        "oc_version.c"
          "oc_settings.c"
          "oc_tts.c"
          "oc_ui.c"

@@ -6,6 +6,7 @@
 //   * 就绪判定来自协议:连接 + 加密 + 订阅三件事都成立后才发 hello 并允许发音频帧。
 //   * 丢帧如实上报:音频帧发不出去只计数,不重传;turn_end 里带 dropped,手机侧可见。
 #include "oc_app.h"
+#include "oc_version.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -657,12 +658,20 @@ static void handle_control(const uint8_t *payload, size_t len)
         // 手机端可选上报 App 版本号(设备信息页展示),并检查固件/App 是否配套:
         // 两者按同一版本号发布,不一致只提示、不阻断(旧 App 仍能对话,但会看到提示)。
         const cJSON *app = cJSON_GetObjectItemCaseSensitive(root, "app");
+        // App 可以额外上报 appFull(完整版本,如 1.11.1):设备信息页优先显示它;
+        // 老 App 不报就用 app 字段,协议向前后兼容。
+        const cJSON *app_full = cJSON_GetObjectItemCaseSensitive(root, "appFull");
         if (cJSON_IsString(app) && app->valuestring != NULL) {
-            snprintf(s_app.app_version, sizeof(s_app.app_version), "%s", app->valuestring);
-            if (strcmp(app->valuestring, OC_APP_VERSION) != 0 && !s_app.version_notice_shown) {
+            const char *shown = (cJSON_IsString(app_full) && app_full->valuestring != NULL)
+                                    ? app_full->valuestring
+                                    : app->valuestring;
+            snprintf(s_app.app_version, sizeof(s_app.app_version), "%s", shown);
+            // 配套判定**只比大版本 X.Y**(见 oc_version.h):App 的小版本升级(1.11 → 1.11.1)
+            // 不是版本不匹配,不该在设备屏弹告警。信息不足时不判不同。
+            if (!oc_version_same_major(app->valuestring, OC_APP_VERSION) && !s_app.version_notice_shown) {
                 s_app.version_notice_shown = true;
                 char msg[112];
-                snprintf(msg, sizeof(msg), "版本提示：手机 App %s 与本机固件 %s 不一致，请更新 APP",
+                snprintf(msg, sizeof(msg), "版本提示：手机 App %s 与本机固件 %s 大版本不一致，请更新 APP",
                          app->valuestring, OC_APP_VERSION);
                 ESP_LOGW(TAG, "%s", msg);
                 oc_ui_append('A', msg);

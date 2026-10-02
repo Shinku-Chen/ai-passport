@@ -33,6 +33,10 @@ run_static_checks() {
         -o "${test_dir}/test_oc_proto"
     "${test_dir}/test_oc_proto"
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
+        tests/test_oc_version.c main/oc_version.c \
+        -o "${test_dir}/test_oc_version"
+    "${test_dir}/test_oc_version"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
         tests/test_oc_tts.c main/oc_tts.c main/oc_proto.c \
         -o "${test_dir}/test_oc_tts"
     "${test_dir}/test_oc_tts"
