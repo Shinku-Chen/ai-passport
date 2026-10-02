@@ -138,6 +138,13 @@ static void audio_task(void *arg)
             codec_awake = true;
             s_aud.pcm_fill = 0;
             s_aud.collecting = true;
+            // 半双工:采集期间压住 D/A,保证「录音时喇叭不出声」;播放开始时解除
+            // (见 oc_audio_play_start)。这只保证不出声,**不治本机底噪** ——
+            // 实测底噪在 codec 断电后依旧存在,属常电功放/电源侧,
+            // 详见 bsp_audio_set_out_mute 的注释。
+            if (bsp_audio_set_out_mute(true) != ESP_OK) {
+                ESP_LOGW(TAG, "采集期间静音输出失败(继续运行)");
+            }
             ESP_LOGI(TAG, "开始采集");
         }
 
@@ -622,6 +629,10 @@ void oc_audio_play_start(void)
     s_play.bad_frame_logged = false;
     s_play.decode_fail_run = 0;
     s_play.ev = OC_AUDIO_PLAY_EV_NONE;
+    // 要出声了:解除采集期间对输出级的静音
+    if (bsp_audio_set_out_mute(false) != ESP_OK) {
+        ESP_LOGW(TAG, "解除输出静音失败(继续运行)");
+    }
     s_play.accepting = true;
     s_play.flush_req = false;
     s_play.start_us = esp_timer_get_time();

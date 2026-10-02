@@ -555,6 +555,19 @@ esp_err_t bsp_audio_wake(void) {
     return ESP_OK;
 }
 
+esp_err_t bsp_audio_set_out_mute(bool mute)
+{
+    if (!s_dev || !s_opened || s_sleeping) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    int e = esp_codec_dev_set_out_mute(s_dev, mute);
+    if (e != ESP_CODEC_DEV_OK) {
+        return ESP_FAIL;
+    }
+    ESP_LOGI(TAG, "输出级%s", mute ? "静音" : "解除静音");
+    return ESP_OK;
+}
+
 esp_err_t bsp_audio_write(const void *pcm, size_t bytes) {
     if (!s_dev || !s_opened || s_sleeping) return ESP_ERR_INVALID_STATE;
     return esp_codec_dev_write(s_dev, (void *)pcm, bytes) == 0 ? ESP_OK : ESP_FAIL;

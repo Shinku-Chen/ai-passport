@@ -2,6 +2,7 @@
 // ES8311 音频 codec:I2C 走控制口(复用 bsp_i2c 的共享总线),I2S 走全双工数据口。
 #pragma once
 
+#include <stdbool.h>
 #include "esp_err.h"
 #include <stddef.h>
 #include <stdint.h>
@@ -44,6 +45,19 @@ esp_err_t bsp_audio_read(void *pcm, size_t bytes);
 
 // 输出音量 0..100(%)。
 void bsp_audio_set_volume(uint8_t percent);
+
+/**
+ * 静音/解除静音**输出级**（ES8311 的 DAC 静音寄存器，不是软件音量）。
+ *
+ * 用途：半双工录音期间把 D/A 这一路压住 —— 采集时不该有任何声音从喇叭出来。
+ * codec 每次 sleep/wake 都会重建，所以唤醒后要重新静音（见 oc_audio 的采集循环）。
+ *
+ * 注意（2026-10-02 真机实测，避免后人误读）：这**消不掉本机扬声器的底噪**。
+ * 空闲（codec 已按低功耗序列断电）、采集、音量=0、麦克风增益降到 20 dB —— 四种情况下
+ * 底噪一模一样 ⇒ 噪声源在 codec **之后**（常电的功放/电源）。本板 `BSP_I2S_PA_CTRL = -1`
+ * 没有可控的功放使能脚，固件无法关掉它；要治需要硬件侧加使能脚。
+ */
+esp_err_t bsp_audio_set_out_mute(bool mute);
 
 // 麦克风输入增益(dB)。对讲/录音场景由 App 下发(默认 30dB,与旧行为一致)。
 // db 超出 ES8311 可用范围(0..32)时钳位而不是报错:取值来自用户/App,越界不应导致录音失败。
