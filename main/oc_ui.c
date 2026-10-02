@@ -526,7 +526,9 @@ void oc_ui_append(char role, const char *text)
     // 截断时必须**先给省略号留出空间**:否则 keep 正好填满缓冲,"…" 一个字节都写不进去,
     // 屏上就是「无声截断」(真机反馈)。保留 3 字节后 strncat 余量必然 ≥3,
     // 也不会把省略号本身截成半个 UTF-8 字符。
-    static const char ELLIPSIS[] = "…";
+    // 注意:中文省略号是**六个点**(两个 U+2026 拼成「……」),单个 … 只有三点,
+    // 在 16 px 字上不够醒目(用户反馈)。预留字节数用 sizeof 算,换写法会自动跟上。
+    static const char ELLIPSIS[] = "……";
     size_t room = (OC_UI_TEXT_MAX > 1U) ? (OC_UI_TEXT_MAX - 1U) : 0U;
     size_t len = strlen(text);
     bool clipped = len > room;
