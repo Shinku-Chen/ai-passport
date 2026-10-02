@@ -39,9 +39,15 @@ static const char *TAG = "oc_ui";
 // → 花屏 / panic 重启(真机实测:池 空闲 从 6152 掉到 1652 后崩)。
 #define OC_UI_BUBBLES 4U
 // 单条消息显示上限(字节,UTF-8)。1024B ≈ 340 个汉字,远超过一屏;对话区可滚动查看。
+// 单条气泡显示上限 2048 B(≈680 汉字;原先 1 KB ≈340 汉字)。上限与协议层的
+// OC_TEXT_PAYLOAD_MAX / OC_TEXT_MERGE_CAP 对齐:一条消息在链路上最多 2048 B,
+// 现在它们能**完整显示**,不再在 1 KB 处截断。
+// 代价是 4 个气泡的静态缓冲从 4 KB 变成 8 KB —— 这 4 KB 来自 BSP 绘图缓冲
+// 40->24 行的让出(见 components/bsp/src/bsp_display_lvgl.c 的注释与真机水位数据)。
+//
 // 关键:**文本放在固件自己的静态缓冲里**(见 s_bubble_text + lv_label_set_text_static),
 // 不再复制进 LVGL 池 —— 所以加大这个上限几乎不花池,只花静态 DRAM(本机还剩 70+KB)。
-#define OC_UI_TEXT_MAX 1024U
+#define OC_UI_TEXT_MAX 2048U
 #define OC_UI_BG 0x0E1116
 #define OC_UI_BAR_BG 0x161B22
 #define OC_UI_PANEL 0x1B222C

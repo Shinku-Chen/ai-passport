@@ -9,7 +9,7 @@
 
 static const char *TAG = "bsp_lvgl";
 
-#define BSP_LVGL_DRAW_BUFFER_LINES 40
+#define BSP_LVGL_DRAW_BUFFER_LINES 24
 
 static lv_display_t *s_disp;
 static bool s_port_initialized;
@@ -79,8 +79,14 @@ lv_display_t *bsp_lvgl_init(void) {
     const lvgl_port_display_cfg_t dc = {
         .panel_handle = bsp_display_panel(),
         .io_handle    = bsp_display_io(),
-        // ⚠ C3 无 PSRAM,DMA 只能用内部 RAM。40 行单缓冲约 19.2KB，
-        // 可减少窗口命令和队列提交次数；仍保留单缓冲，避免双缓冲挤压音频/Wi-Fi。
+        // ⚠ C3 无 PSRAM,DMA 只能用内部 RAM,所以绘图缓冲与音频/协议一起抢同一块 DRAM,
+        // 这里始终**单缓冲**(双缓冲会挤压音频与 BLE)。
+        //
+        // 24 行(240×24×2 B = 11.5 KB)而不是 40 行(19.2 KB):真机实测堆最低水位只有
+        // 928 B(见 oc_app 心跳的「堆最低」),而气泡正文是静态内存,必须先把绘图缓冲让出来。
+        // 让出的 ~7.7 KB 用于把单条气泡显示上限从 1 KB 提到 2 KB(4 个气泡 +4 KB 静态),
+        // 净剩 ~3.7 KB 抬高堆底。界面本身以静态内容为主(状态栏 + 少量气泡),
+        // 行数减少只增加每屏的 flush 次数,肉眼几乎无感。
         .buffer_size   = (uint32_t)BSP_LCD_W * BSP_LVGL_DRAW_BUFFER_LINES,
         .double_buffer = false,
         .hres = BSP_LCD_W, .vres = BSP_LCD_H,
