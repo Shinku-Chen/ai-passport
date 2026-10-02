@@ -275,7 +275,7 @@ sends `turn_ready` degrades to the fallback timeout instead of breaking.
 | Event | Meaning |
 | --- | --- |
 | `{"ev":"hello",...}` | device half of the handshake, sent once per subscription |
-| `{"ev":"turn_start"}` | the user started holding the talk button; audio frames follow |
+| `{"ev":"turn_start"}` | the user started holding the talk button; audio frames follow. A press shorter than ~350 ms is a screen wake-up only: no `turn_start`, no audio, no `turn_end` |
 | `{"ev":"turn_end","frames":<n>,"codec":"opus","dropped":<n>}` | the user released the button; the phone may now finalize recognition |
 | `{"ev":"status","battery":<percent>,"volume":<percent>,"mic_gain_db":<number>,"link":"ready"}` | device status snapshot, also sent on request and after any change |
 | `{"ev":"error","code":"<code>","detail":"<text>"}` | device-side failure worth showing in the app console |
