@@ -523,20 +523,25 @@ void oc_ui_append(char role, const char *text)
     // 正文直接顶格写:气泡边框颜色已经区分说话人(用户蓝 / 助手绿 / 系统提示琥珀),
     // 设备屏只有 320x240,原来首行那句「我/助手/提示」白占一行 —— 用户要求去掉。
     // 整体不超过 OC_UI_TEXT_MAX,且不切在多字节字符中间。
+    // 截断时必须**先给省略号留出空间**:否则 keep 正好填满缓冲,"…" 一个字节都写不进去,
+    // 屏上就是「无声截断」(真机反馈)。保留 3 字节后 strncat 余量必然 ≥3,
+    // 也不会把省略号本身截成半个 UTF-8 字符。
+    static const char ELLIPSIS[] = "…";
     size_t room = (OC_UI_TEXT_MAX > 1U) ? (OC_UI_TEXT_MAX - 1U) : 0U;
     size_t len = strlen(text);
+    bool clipped = len > room;
     size_t keep = len;
-    bool clipped = false;
-    if (keep > room) {
-        keep = oc_utf8_safe_len((const uint8_t *)text, room);
-        clipped = true;
+    if (clipped) {
+        const size_t reserve = sizeof(ELLIPSIS) - 1U;   // 省略号占的字节数(不含结尾 NUL)
+        size_t copy_room = room > reserve ? room - reserve : 0U;
+        keep = oc_utf8_safe_len((const uint8_t *)text, copy_room);
     }
     memcpy(buf, text, keep);
     buf[keep] = '\0';
     if (clipped) {
         // 尾巴只留一个省略号:设备屏很窄,"(全文见 App)" 会把有用内容挤掉。
         // 完整正文在 App 的对话列表里。
-        strncat(buf, "…", OC_UI_TEXT_MAX - keep - 1U);
+        strncat(buf, ELLIPSIS, OC_UI_TEXT_MAX - keep - 1U);
     }
 
     // 一个 label 就是一个气泡:背景/边框/圆角直接加在它身上,省掉"盒子 + 角色标签"两个对象。
@@ -572,7 +577,8 @@ void oc_ui_append(char role, const char *text)
         lv_obj_get_coords(s_ui.conv, &view_area);
         lv_obj_scroll_by_bounded(s_ui.conv, 0, bubble_area.y1 - view_area.y1, LV_ANIM_OFF);
     }
-    ESP_LOGI(TAG, "气泡[%u]: 正文 %u 字节%s", idx, (unsigned)keep, clipped ? "(已截断)" : "");
+    ESP_LOGI(TAG, "气泡[%u]: 正文 %u/%u 字节%s", idx, (unsigned)keep, (unsigned)len,
+                 clipped ? "(已截断,尾部加省略号)" : "");
     ui_mem_dbg("append:after");
     bsp_lvgl_unlock();
 }
