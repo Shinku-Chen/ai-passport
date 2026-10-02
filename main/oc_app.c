@@ -432,10 +432,10 @@ static bool settings_handle_key(bsp_btn_t btn, bsp_btn_ev_t ev)
         } else if (btn == BSP_BTN_DOWN) {
             b = b >= 20 ? b - 10 : 10;
         } else if (btn == BSP_BTN_OK) {
+            // 回到菜单:**不要在这里 return** —— 菜单页正文由函数末尾的 settings_render()
+            // 生成,早退会留下一片空白(真机反馈:调完音量/亮度点 OK 后屏是空的)。
             s_app.set_page = OC_SET_PAGE_MENU;
             oc_ui_settings_open("设置", "", "UP/DOWN 选择，OK 确认，长按 OK 返回");
-            settings_render();
-            return true;
         }
         if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) {
             oc_settings_set_brightness(b);
@@ -449,9 +449,10 @@ static bool settings_handle_key(bsp_btn_t btn, bsp_btn_ev_t ev)
         } else if (btn == BSP_BTN_DOWN) {
             v = v >= 5 ? v - 5 : 0;
         } else if (btn == BSP_BTN_OK) {
+            // 回到菜单:**不要在这里 return** —— 菜单页正文由函数末尾的 settings_render()
+            // 生成,早退会留下一片空白(真机反馈:调完音量/亮度点 OK 后屏是空的)。
             s_app.set_page = OC_SET_PAGE_MENU;
             oc_ui_settings_open("设置", "", "UP/DOWN 选择，OK 确认，长按 OK 返回");
-            return true;
         }
         if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) {
             oc_settings_set_volume(v);
@@ -465,9 +466,10 @@ static bool settings_handle_key(bsp_btn_t btn, bsp_btn_ev_t ev)
         } else if (btn == BSP_BTN_DOWN) {
             m = m >= 4 ? m - 4 : 0;
         } else if (btn == BSP_BTN_OK) {
+            // 回到菜单:**不要在这里 return** —— 菜单页正文由函数末尾的 settings_render()
+            // 生成,早退会留下一片空白(真机反馈:调完音量/亮度点 OK 后屏是空的)。
             s_app.set_page = OC_SET_PAGE_MENU;
             oc_ui_settings_open("设置", "", "UP/DOWN 选择，OK 确认，长按 OK 返回");
-            return true;
         }
         if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) {
             oc_settings_set_mic_gain_db(m);
