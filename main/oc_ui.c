@@ -500,7 +500,20 @@ static char s_bubble_text[OC_UI_BUBBLES][OC_UI_TEXT_MAX];
 // 一条长回复就能吃掉 1KB+ 池空间(真机:6 条气泡把 16KB 池吃光 → 花屏/panic)。
 static char s_bubble_text[OC_UI_BUBBLES][OC_UI_TEXT_MAX];
 
+// 供包装函数调用:上游已截断(协议层合并缓冲满)时也要补省略号。
+static void oc_ui_append_ex(char role, const char *text, bool upstream_truncated);
+
 void oc_ui_append(char role, const char *text)
+{
+    oc_ui_append_ex(role, text, false);
+}
+
+void oc_ui_append_truncated(char role, const char *text)
+{
+    oc_ui_append_ex(role, text, true);
+}
+
+static void oc_ui_append_ex(char role, const char *text, bool upstream_truncated)
 {
     if (text == NULL) {
         text = "";
@@ -539,16 +552,19 @@ void oc_ui_append(char role, const char *text)
     static const char ELLIPSIS[] = "……";
     size_t room = (OC_UI_TEXT_MAX > 1U) ? (OC_UI_TEXT_MAX - 1U) : 0U;
     size_t len = strlen(text);
-    bool clipped = len > room;
+    // 需要补省略号的情形有两种:① 这里放不下(自己截);② 上游(协议层合并缓冲)已经截过。
+    // 只判 ① 会漏 —— 真机上正文恰好 2047 字节时显示层认为“放得下”,屏上就是无声截断。
+    bool need_marker = len > room || upstream_truncated;
     size_t keep = len;
-    if (clipped) {
+    if (need_marker) {
         const size_t reserve = sizeof(ELLIPSIS) - 1U;   // 省略号占的字节数(不含结尾 NUL)
         size_t copy_room = room > reserve ? room - reserve : 0U;
+        // 即使正文本来放得下,也要让出省略号的位置,否则 strncat 只能写半个省略号。
         keep = oc_utf8_safe_len((const uint8_t *)text, copy_room);
     }
     memcpy(buf, text, keep);
     buf[keep] = '\0';
-    if (clipped) {
+    if (need_marker) {
         // 尾巴只留一个省略号:设备屏很窄,"(全文见 App)" 会把有用内容挤掉。
         // 完整正文在 App 的对话列表里。
         strncat(buf, ELLIPSIS, OC_UI_TEXT_MAX - keep - 1U);
@@ -588,7 +604,7 @@ void oc_ui_append(char role, const char *text)
         lv_obj_scroll_by_bounded(s_ui.conv, 0, bubble_area.y1 - view_area.y1, LV_ANIM_OFF);
     }
     ESP_LOGI(TAG, "气泡[%u]: 正文 %u/%u 字节%s", idx, (unsigned)keep, (unsigned)len,
-                 clipped ? "(已截断,尾部加省略号)" : "");
+                 need_marker ? "(已截断,尾部加省略号)" : "");
     ui_mem_dbg("append:after");
     bsp_lvgl_unlock();
 }

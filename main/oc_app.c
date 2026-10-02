@@ -755,7 +755,15 @@ static void on_frame(uint8_t type, uint8_t flags, const uint8_t *payload, size_t
     if (type == OC_FRAME_TEXT) {
         if (oc_text_merge_push(&s_app.merge, flags, payload, len)) {
             oc_ui_set_state(OC_UI_STATE_RECEIVING, NULL);
-            oc_ui_append(s_app.merge.role, s_app.merge.text);
+            if (s_app.merge.overflow) {
+                // 合并缓冲满了:正文可能恰好等于显示上限,必须显式告诉 UI「这条截过」,
+                // 否则屏上不会有省略号(真机 bug,见 oc_ui_append_truncated)。
+                ESP_LOGW(TAG, "文本合并溢出:正文已截断到 %u 字节,交给 UI 补省略号",
+                         (unsigned)strlen(s_app.merge.text));
+                oc_ui_append_truncated(s_app.merge.role, s_app.merge.text);
+            } else {
+                oc_ui_append(s_app.merge.role, s_app.merge.text);
+            }
             if (s_app.merge.overflow) {
                 ESP_LOGW(TAG, "本条文本超出显示上限,已截断");
             }

@@ -57,6 +57,14 @@ void oc_ui_set_time(int64_t epoch_seconds);
 // 角色只用气泡边框颜色区分,文本里不再拼「我/助手」这类首行。
 void oc_ui_append(char role, const char *text);
 
+/**
+ * 同上，但显式告知这条文本**上游已经截断过**（协议层合并缓冲满）。
+ *
+ * 真机 bug：合并层把正文截在 2047 字节，而显示层上限恰好也是 2047，于是显示层判定
+ * “放得下” → 不补省略号，屏上表现为无声截断。所以省略号必须由「自己截 or 上游截」共同决定。
+ */
+void oc_ui_append_truncated(char role, const char *text);
+
 // 清空对话区。
 void oc_ui_clear_conversation(void);
 
