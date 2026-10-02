@@ -34,8 +34,14 @@ LV_FONT_DECLARE(lv_font_intercom_cjk_16);
 
 static const char *TAG = "oc_ui";
 
-#define OC_UI_BUBBLES 6U                 // 对话区保留的气泡数
-#define OC_UI_TEXT_MAX 1024U             // 单条消息显示上限(字节,UTF-8)
+// 对话区保留的气泡数。4 个:屏上高度只放得下约 4 条短消息,而**每个气泡要在 LVGL 池里占
+// 约 700–1300 字节**(对象+两个标签+文本副本),6 个会把 16–20KB 的池吃光 → 绘制分配失败
+// → 花屏 / panic 重启(真机实测:池 空闲 从 6152 掉到 1652 后崩)。
+#define OC_UI_BUBBLES 4U
+// 单条消息显示上限(字节,UTF-8)。1024B ≈ 340 个汉字,远超过一屏;对话区可滚动查看。
+// 关键:**文本放在固件自己的静态缓冲里**(见 s_bubble_text + lv_label_set_text_static),
+// 不再复制进 LVGL 池 —— 所以加大这个上限几乎不花池,只花静态 DRAM(本机还剩 70+KB)。
+#define OC_UI_TEXT_MAX 1024U
 #define OC_UI_BG 0x0E1116
 #define OC_UI_BAR_BG 0x161B22
 #define OC_UI_PANEL 0x1B222C
@@ -67,6 +73,7 @@ static struct {
     lv_obj_t *pair_label;
     uint32_t pair_ms;             // 配对码面板已显示的毫秒数(0=未显示;1s 计时器累加,超时兜底)
     lv_obj_t *bubbles[OC_UI_BUBBLES];
+    /** 每个气泡的文本缓冲(静态 DRAM):配合 lv_label_set_text_static,不占 LVGL 池。 */
     unsigned bubble_next;
     unsigned bubble_used;
     // 设置页另起一屏:进入时整屏切换,退出时切回对讲屏。
@@ -142,6 +149,18 @@ static uint32_t gw_color(oc_ui_gateway_state_t state)
 // 重画状态栏与底部提示(调用时必须已持 LVGL 锁)。
 // 规则:设备与网关都就绪 → 只显示一个「就绪」;否则分别列出设备与网关状态,
 // 并把网关不可用的具体原因顶到底部提示行(那里能换行,看得全)。
+// 【诊断】LVGL 池快照:定位“多轮对话后池被吃光 → 花屏/重启”。
+// 用法:在可疑的分配路径前后各打一条,比较 空闲/块数 就能看出是谁在吃池。
+static void ui_mem_dbg(const char *where)
+{
+    lv_mem_monitor_t m;
+    lv_mem_monitor(&m);
+    ESP_LOGI(TAG, "  [池] %-18s 空闲=%u 最大块=%u 用量=%u%% 块=%u/%u 碎片=%u%%",
+             where, (unsigned)m.free_size, (unsigned)m.free_biggest_size,
+             (unsigned)m.used_pct, (unsigned)m.used_cnt, (unsigned)m.free_cnt,
+             (unsigned)m.frag_pct);
+}
+
 static void refresh_status(void)
 {
     bool gw_ready = (s_ui.gw_state == OC_UI_GATEWAY_READY);
@@ -388,10 +407,12 @@ void oc_ui_set_state(oc_ui_state_t state, const char *detail)
     }
     // 状态一变就重算整屏主题:红→绿(两个都是轮次态)也必须切换,
     // 所以只比较状态本身,不比较“是否处于轮次态”。
+    ui_mem_dbg("set_state:before");
     if (state != prev) {
         apply_turn_theme(state);
     }
     refresh_status();
+    ui_mem_dbg("set_state:after");
     bsp_lvgl_unlock();
 }
 
@@ -446,13 +467,6 @@ static uint32_t role_color(char role)
     return OC_UI_ACCENT_A;
 }
 
-static const char *role_name(char role)
-{
-    if (role == 'U') return "我";
-    if (role == 'R') return "提示";
-    return "助手";
-}
-
 static void bubble_delete_oldest(void)
 {
     if (s_ui.bubbles[s_ui.bubble_next] != NULL) {
@@ -460,6 +474,14 @@ static void bubble_delete_oldest(void)
         s_ui.bubbles[s_ui.bubble_next] = NULL;
     }
 }
+
+// 每个气泡一个静态文本缓冲(与 bubbles[] 同环形下标):文字不进 LVGL 池。
+static char s_bubble_text[OC_UI_BUBBLES][OC_UI_TEXT_MAX];
+
+// 每个气泡一个静态文本缓冲(与 bubbles[] 同环形下标):文字**不进 LVGL 池**。
+// 背景:LVGL 9 没有 set_text_static 之外的省内存手段,而文本一旦复制进池,
+// 一条长回复就能吃掉 1KB+ 池空间(真机:6 条气泡把 16KB 池吃光 → 花屏/panic)。
+static char s_bubble_text[OC_UI_BUBBLES][OC_UI_TEXT_MAX];
 
 void oc_ui_append(char role, const char *text)
 {
@@ -470,54 +492,69 @@ void oc_ui_append(char role, const char *text)
         return;
     }
 
-    bubble_delete_oldest();
-    lv_obj_t *box = lv_obj_create(s_ui.conv);
-    lv_obj_set_width(box, 216);
-    lv_obj_set_height(box, LV_SIZE_CONTENT);
-    lv_obj_set_style_bg_color(box, lv_color_hex(OC_UI_PANEL), 0);
-    lv_obj_set_style_border_width(box, 1, 0);
-    lv_obj_set_style_border_color(box, lv_color_hex(role_color(role)), 0);
-    lv_obj_set_style_radius(box, 6, 0);
-    lv_obj_set_style_pad_all(box, 6, 0);
-    lv_obj_clear_flag(box, LV_OBJ_FLAG_SCROLLABLE);
+    // 兜底:池快见底时先清掉全部气泡再建新的 —— 宁可少几条历史,也不能让 LVGL 分配失败
+    //(失败会直接花屏甚至 panic 重启:真机实测 空闲<1.7KB 之后崩)。
+    {
+        lv_mem_monitor_t mon;
+        lv_mem_monitor(&mon);
+        if (mon.free_size < 4096U) {
+            ESP_LOGW(TAG, "LVGL 池将满(空闲 %u),清空对话区以腾出空间", (unsigned)mon.free_size);
+            oc_ui_clear_conversation();
+        }
+    }
 
-    lv_obj_t *who = lv_label_create(box);
-    lv_obj_set_style_text_font(who, OC_UI_FONT, 0);
-    lv_obj_set_style_text_color(who, lv_color_hex(role_color(role)), 0);
-    lv_label_set_text(who, role_name(role));
-    lv_obj_align(who, LV_ALIGN_TOP_LEFT, 0, 0);
+    // 复用最旧的槽位:先删对象,再用它的静态文本缓冲写新内容。
+    unsigned idx = s_ui.bubble_next;
+    if (s_ui.bubbles[idx] != NULL) {
+        lv_obj_delete(s_ui.bubbles[idx]);
+        s_ui.bubbles[idx] = NULL;
+    }
+    char *buf = s_bubble_text[idx];
 
-    // 长文本按显示上限截断,且不切在多字节 UTF-8 字符中间。
-    char buf[OC_UI_TEXT_MAX + 16];
+    // 正文直接顶格写:气泡边框颜色已经区分说话人(用户蓝 / 助手绿 / 系统提示琥珀),
+    // 设备屏只有 320x240,原来首行那句「我/助手/提示」白占一行 —— 用户要求去掉。
+    // 整体不超过 OC_UI_TEXT_MAX,且不切在多字节字符中间。
+    size_t room = (OC_UI_TEXT_MAX > 1U) ? (OC_UI_TEXT_MAX - 1U) : 0U;
     size_t len = strlen(text);
     size_t keep = len;
     bool clipped = false;
-    if (keep > OC_UI_TEXT_MAX) {
-        keep = oc_utf8_safe_len((const uint8_t *)text, OC_UI_TEXT_MAX);
+    if (keep > room) {
+        keep = oc_utf8_safe_len((const uint8_t *)text, room);
         clipped = true;
     }
     memcpy(buf, text, keep);
     buf[keep] = '\0';
     if (clipped) {
-        strncat(buf, "…(全文见 App)", sizeof(buf) - keep - 1);
+        // 尾巴只留一个省略号:设备屏很窄,"(全文见 App)" 会把有用内容挤掉。
+        // 完整正文在 App 的对话列表里。
+        strncat(buf, "…", OC_UI_TEXT_MAX - keep - 1U);
     }
 
-    lv_obj_t *body = lv_label_create(box);
+    // 一个 label 就是一个气泡:背景/边框/圆角直接加在它身上,省掉"盒子 + 角色标签"两个对象。
+    // 角色靠边框颜色区分(见 role_color),不在文本里再写「我/助手」。
+    lv_obj_t *body = lv_label_create(s_ui.conv);
+    lv_obj_set_width(body, 216);
+    lv_label_set_long_mode(body, LV_LABEL_LONG_MODE_WRAP);
+    lv_obj_set_style_bg_color(body, lv_color_hex(OC_UI_PANEL), 0);
+    lv_obj_set_style_bg_opa(body, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(body, 1, 0);
+    lv_obj_set_style_border_color(body, lv_color_hex(role_color(role)), 0);
+    lv_obj_set_style_radius(body, 6, 0);
+    lv_obj_set_style_pad_all(body, 6, 0);
     lv_obj_set_style_text_font(body, OC_UI_FONT, 0);
     lv_obj_set_style_text_color(body, lv_color_hex(OC_UI_INK), 0);
-    lv_obj_set_width(body, 202);
-    lv_label_set_long_mode(body, LV_LABEL_LONG_WRAP);
-    lv_label_set_text(body, buf);
-    // 角色行占一整行(16 px 字 + 4 px 行距 = 20 px),正文从第二行开始。
-    lv_obj_align(body, LV_ALIGN_TOP_LEFT, 0, 20);
+    // 文本**不复制**进 LVGL 池:缓冲由固件静态持有,随气泡槽位复用。
+    lv_label_set_text_static(body, buf);
 
-    s_ui.bubbles[s_ui.bubble_next] = box;
-    s_ui.bubble_next = (s_ui.bubble_next + 1U) % OC_UI_BUBBLES;
+    s_ui.bubbles[idx] = body;
+    s_ui.bubble_next = (idx + 1U) % OC_UI_BUBBLES;
     if (s_ui.bubble_used < OC_UI_BUBBLES) {
         s_ui.bubble_used++;
     }
 
-    lv_obj_scroll_to_view(box, LV_ANIM_OFF);   // 新消息总是滚到可见
+    lv_obj_scroll_to_view(body, LV_ANIM_OFF);   // 新消息总是滚到可见
+    ESP_LOGI(TAG, "气泡[%u]: 正文 %u 字节%s", idx, (unsigned)keep, clipped ? "(已截断)" : "");
+    ui_mem_dbg("append:after");
     bsp_lvgl_unlock();
 }
 

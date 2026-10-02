@@ -54,6 +54,7 @@ void oc_ui_set_battery(int percent);
 void oc_ui_set_time(int64_t epoch_seconds);
 
 // 追加一条对话(role: 'U' 用户 / 'A' 助手 / 'R' 系统提示)。
+// 角色只用气泡边框颜色区分,文本里不再拼「我/助手」这类首行。
 void oc_ui_append(char role, const char *text);
 
 // 清空对话区。
