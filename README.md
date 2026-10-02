@@ -271,7 +271,7 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 - 手机端 App（另一个仓库）：[`Shinku-Chen/ai-passport-openclaw-android`](https://github.com/Shinku-Chen/ai-passport-openclaw-android) —— Android 8+，在它的 Releases 里下载已签名的 `app-release.apk`
 - 协议文档：[`docs/development/engineering/intercom-wire-protocol.md`](https://github.com/Shinku-Chen/ai-passport/blob/feature/openclaw-intercom/docs/development/engineering/intercom-wire-protocol.md)（中英各一份）
 
-**操作（三键）：** 按住 **OK** 说话 —— 设备屏立刻变红表示正在准备，变绿就**可以说**，松手即发送；**短按 OK** 只点亮屏幕，**长按 UP** 进设置（亮度 / 设备信息），**UP / DOWN** 翻看历史消息。
+**操作（三键）：** 按住 **OK** 说话 —— 设备屏立刻变红表示正在准备，变绿就**可以说**，松手即发送；**短按 OK** 只点亮屏幕，**长按 UP** 进设置（亮度 / 音量 / 麦克风增益 / 设备信息 / 重新配对），**UP / DOWN** 翻看历史消息。
 
 **亮点：**
 

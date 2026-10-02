@@ -37,11 +37,14 @@ static const char *TAG = "oc_app";
 // 不让用户一直对着红屏等(名称按 UI 行为取,见 oc_ui.h 的两个轮次状态)。
 #define OC_UI_TURN_READY_TIMEOUT_MS 800U   // App 就绪(turn_ready)兜底:真机反馈 2500ms 变绿太慢,收到 ack 仍是即时变绿
 
-// 设置页菜单项
+// 设置页菜单项。**枚举顺序就是屏上顺序**：三个可调项在前，然后是只读的「设备信息」，
+// 「重新配对」是不可逆动作，固定放在**倒数第二**（用户要求），最后一项才是「返回」。
 enum {
-    OC_SET_MENU_REPAIR = 0,
+    OC_SET_MENU_BRIGHT = 0,
+    OC_SET_MENU_VOLUME,
+    OC_SET_MENU_MIC,
     OC_SET_MENU_INFO,
-    OC_SET_MENU_BRIGHT,
+    OC_SET_MENU_REPAIR,   // 倒数第二：清配对不可逆，放在离开菜单之前
     OC_SET_MENU_BACK,
     OC_SET_MENU_COUNT,
 };
@@ -50,6 +53,8 @@ typedef enum {
     OC_SET_PAGE_MENU = 0,
     OC_SET_PAGE_INFO,
     OC_SET_PAGE_BRIGHT,
+    OC_SET_PAGE_VOLUME,
+    OC_SET_PAGE_MIC,
     OC_SET_PAGE_REPAIR,
 } oc_set_page_t;
 
@@ -284,6 +289,26 @@ static void turn_end(void)
 }
 
 // ---- 设置页 ----
+/**
+ * 亮度 / 音量 / 麦克风增益共用的调节页：数值 + 十格条 + 操作提示。
+ * 三处只是量纲不同（%/dB）与上限不同（100/32），条形的拼接不必各写一遍。
+ */
+static void settings_render_bar(const char *label, uint8_t value, uint8_t max, const char *unit)
+{
+    char body[96];
+    int bars = max == 0 ? 0 : (int)((unsigned)value * 10U / (unsigned)max);
+    if (bars > 10) {
+        bars = 10;
+    }
+    char bar[12];
+    for (int i = 0; i < 10; i++) {
+        bar[i] = i < bars ? '#' : '-';
+    }
+    bar[10] = '\0';
+    snprintf(body, sizeof(body), "%s %u%s\n[%s]\n\nUP/DOWN 调节,OK 确认", label, (unsigned)value, unit, bar);
+    oc_ui_settings_update(body);
+}
+
 static void settings_render(void)
 {
     if (!s_app.settings_active) {
@@ -292,7 +317,8 @@ static void settings_render(void)
     switch (s_app.set_page) {
     case OC_SET_PAGE_MENU: {
         char body[256];
-        const char *items[OC_SET_MENU_COUNT] = { "重新配对", "设备信息", "亮度", "返回" };
+        // 顺序与 OC_SET_MENU_* 一致：可调项在前，「重新配对」倒数第二，「返回」最后
+        const char *items[OC_SET_MENU_COUNT] = { "亮度", "音量", "麦克风增益", "设备信息", "重新配对", "返回" };
         int off = 0;
         for (int i = 0; i < OC_SET_MENU_COUNT; i++) {
             off += snprintf(body + off, sizeof(body) - (size_t)off, "%s%s\n", i == s_app.set_index ? "> " : "  ",
@@ -325,16 +351,15 @@ static void settings_render(void)
         break;
     }
     case OC_SET_PAGE_BRIGHT: {
-        char body[96];
-        uint8_t b = oc_settings_brightness();
-        int bars = b / 10;
-        char bar[12];
-        for (int i = 0; i < 10; i++) {
-            bar[i] = i < bars ? '#' : '-';
-        }
-        bar[10] = '\0';
-        snprintf(body, sizeof(body), "亮度 %u%%\n[%s]\n\nUP/DOWN 调节,OK 确认", b, bar);
-        oc_ui_settings_update(body);
+        settings_render_bar("亮度", oc_settings_brightness(), 100, "%");
+        break;
+    }
+    case OC_SET_PAGE_VOLUME: {
+        settings_render_bar("音量", oc_settings_volume(), 100, "%");
+        break;
+    }
+    case OC_SET_PAGE_MIC: {
+        settings_render_bar("麦克风增益", oc_settings_mic_gain_db(), 32, "dB");
         break;
     }
     default:
@@ -347,7 +372,8 @@ static void settings_open(void)
     s_app.settings_active = true;
     s_app.set_page = OC_SET_PAGE_MENU;
     s_app.set_index = 0;
-    oc_ui_settings_open("设置", "  设备信息\n  亮度\n  返回", "UP/DOWN 选择，OK 确认，长按 OK 返回");
+    // 正文由 settings_render() 统一绘制（含选中高亮），这里只给标题与提示
+    oc_ui_settings_open("设置", "", "UP/DOWN 选择，OK 确认，长按 OK 返回");
     settings_render();
 }
 
@@ -376,20 +402,23 @@ static bool settings_handle_key(bsp_btn_t btn, bsp_btn_ev_t ev)
         } else if (btn == BSP_BTN_DOWN) {
             s_app.set_index = (s_app.set_index + 1) % OC_SET_MENU_COUNT;
         } else if (btn == BSP_BTN_OK) {
-            if (s_app.set_index == OC_SET_MENU_REPAIR) {
-                // 重新配对:设备侧清掉 bond 并断开,手机侧需自行取消配对(见页面提示)
+            if (s_app.set_index == OC_SET_MENU_BRIGHT) {
+                s_app.set_page = OC_SET_PAGE_BRIGHT;
+                oc_ui_settings_open("亮度", "", "UP/DOWN 调节，OK 确认，长按 OK 退出设置");
+            } else if (s_app.set_index == OC_SET_MENU_VOLUME) {
+                s_app.set_page = OC_SET_PAGE_VOLUME;
+                oc_ui_settings_open("音量", "", "UP/DOWN 调节，OK 确认，长按 OK 退出设置");
+            } else if (s_app.set_index == OC_SET_MENU_MIC) {
+                s_app.set_page = OC_SET_PAGE_MIC;
+                oc_ui_settings_open("麦克风增益", "", "UP/DOWN 调节，OK 确认，长按 OK 退出设置");
+            } else if (s_app.set_index == OC_SET_MENU_INFO) {
+                s_app.set_page = OC_SET_PAGE_INFO;
+                oc_ui_settings_open("设备信息", "", "OK 返回，长按 OK 退出设置");
+            } else if (s_app.set_index == OC_SET_MENU_REPAIR) {
+                // 重新配对：设备侧清掉 bond 并断开，手机侧需自行取消配对（见页面提示）
                 oc_link_forget_peer();
                 s_app.set_page = OC_SET_PAGE_REPAIR;
                 oc_ui_settings_open("重新配对", "", "OK / 长按 OK 返回");
-                settings_render();
-                return true;
-            }
-            if (s_app.set_index == OC_SET_MENU_INFO) {
-                s_app.set_page = OC_SET_PAGE_INFO;
-                oc_ui_settings_open("设备信息", "", "OK 返回，长按 OK 退出设置");
-            } else if (s_app.set_index == OC_SET_MENU_BRIGHT) {
-                s_app.set_page = OC_SET_PAGE_BRIGHT;
-                oc_ui_settings_open("亮度", "", "UP/DOWN 调节，OK 确认，长按 OK 退出设置");
             } else {
                 settings_close();
                 return true;
@@ -410,6 +439,38 @@ static bool settings_handle_key(bsp_btn_t btn, bsp_btn_ev_t ev)
         if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) {
             oc_settings_set_brightness(b);
             oc_ui_apply_brightness();
+            oc_ui_note_activity();
+        }
+    } else if (s_app.set_page == OC_SET_PAGE_VOLUME) {
+        uint8_t v = oc_settings_volume();
+        if (btn == BSP_BTN_UP) {
+            v = v + 5 <= 100 ? v + 5 : 100;
+        } else if (btn == BSP_BTN_DOWN) {
+            v = v >= 5 ? v - 5 : 0;
+        } else if (btn == BSP_BTN_OK) {
+            s_app.set_page = OC_SET_PAGE_MENU;
+            oc_ui_settings_open("设置", "", "UP/DOWN 选择，OK 确认，长按 OK 返回");
+            return true;
+        }
+        if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) {
+            oc_settings_set_volume(v);
+            bsp_audio_set_volume(v);
+            oc_ui_note_activity();
+        }
+    } else if (s_app.set_page == OC_SET_PAGE_MIC) {
+        uint8_t m = oc_settings_mic_gain_db();
+        if (btn == BSP_BTN_UP) {
+            m = m + 4 <= 32 ? m + 4 : 32;
+        } else if (btn == BSP_BTN_DOWN) {
+            m = m >= 4 ? m - 4 : 0;
+        } else if (btn == BSP_BTN_OK) {
+            s_app.set_page = OC_SET_PAGE_MENU;
+            oc_ui_settings_open("设置", "", "UP/DOWN 选择，OK 确认，长按 OK 返回");
+            return true;
+        }
+        if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) {
+            oc_settings_set_mic_gain_db(m);
+            oc_audio_set_mic_gain_db(m);
             oc_ui_note_activity();
         }
     } else if (s_app.set_page == OC_SET_PAGE_INFO) {

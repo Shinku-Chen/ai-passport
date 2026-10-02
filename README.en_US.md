@@ -411,6 +411,8 @@ the AI Passport community.
 
 - Community play: [Pocket Intercom](https://ai-passport.folotoy.cn/plays/799/) (`community-82cbed79`)
 
+- Controls: hold **OK** to talk; a short **OK** press only lights the screen; **long-press UP** opens the
+  settings menu (brightness / volume / mic gain / device info / re-pair); **UP / DOWN** scroll the history.
 - Branch: [`feature/openclaw-intercom`](https://github.com/Shinku-Chen/ai-passport/tree/feature/openclaw-intercom)
 - Release: [`v1.8.0-intercom`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.8.0-intercom) — `FoloToy-AI-Passport-full.bin` (built by CI); for newer builds, pick the latest release whose name contains `intercom` on the [Releases page](https://github.com/Shinku-Chen/ai-passport/releases)
 - Phone app (separate repository): [`Shinku-Chen/ai-passport-openclaw-android`](https://github.com/Shinku-Chen/ai-passport-openclaw-android) — Android 8+, download the signed `app-release.apk` from its Releases
