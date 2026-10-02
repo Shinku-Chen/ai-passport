@@ -51,6 +51,9 @@ static const char *TAG = "oc_ui";
 
 // UP/DOWN 一次滚动的行数(用户要求 8 行);实际像素 = 8 × 当前字体行高,不写死。
 #define OC_UI_SCROLL_LINES 8
+// 会话容器底部留的滚动余量:让它比任何单条气泡都高,于是「最后一条」也能停到视口顶部
+// (否则滚动范围到内容末就封顶,最新消息永远只能贴底 —— 真机 bug:新消息只能看到尾巴)。
+#define OC_UI_CONV_TAIL_PAD 240
 #define OC_UI_BG 0x0E1116
 #define OC_UI_BAR_BG 0x161B22
 #define OC_UI_PANEL 0x1B222C
@@ -295,6 +298,8 @@ static void build_conv_area(lv_obj_t *parent)
     lv_obj_set_style_bg_color(s_ui.conv, lv_color_hex(OC_UI_BG), 0);
     lv_obj_set_style_border_width(s_ui.conv, 0, 0);
     lv_obj_set_style_pad_all(s_ui.conv, 6, 0);
+    // 底部额外余量:见 OC_UI_CONV_TAIL_PAD —— 最后一条也能滚到顶部(新消息从首行开始看)。
+    lv_obj_set_style_pad_bottom(s_ui.conv, OC_UI_CONV_TAIL_PAD, 0);
     lv_obj_set_style_pad_row(s_ui.conv, 6, 0);
     lv_obj_set_flex_flow(s_ui.conv, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_scroll_dir(s_ui.conv, LV_DIR_VER);
@@ -592,10 +597,12 @@ static void oc_ui_append_ex(char role, const char *text, bool upstream_truncated
         s_ui.bubble_used++;
     }
 
-    // 新消息定位到**这条气泡的头部**(用户要求):先看到第一行,而不是直接跳到末尾。
-    // lv_obj_scroll_to_view() 对「比视口还高的对象」会贴到底部,所以这里显式算位移:
-    // 用屏幕坐标求「气泡顶边 → 视口顶边」的差值,再交给 lib 做边界钳制
-    // (短消息在底部时钳制后自然显示末条,长消息则停在它的第一行)。
+    // 新消息定位到**这条气泡的首行**(用户要求;真机反馈:语音识别返回/回复到达后应停在首行,
+    // 而不是直接看到尾巴)。两处坑都在这里解决:
+    //  1) 刚创建的 label 还没走过布局,直接取坐标拿到的是旧位置 → 先强制刷一次布局;
+    //  2) 滚动范围默认到内容末→最后一条永远只能贴底 → 容器底部留 OC_UI_CONV_TAIL_PAD 的
+    //     余量,最后一条也能真正停到顶部(短消息同样按“首行在顶”显示,下方留空)。
+    lv_obj_update_layout(s_ui.conv);
     {
         lv_area_t bubble_area;
         lv_area_t view_area;
