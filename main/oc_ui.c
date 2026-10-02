@@ -48,6 +48,9 @@ static const char *TAG = "oc_ui";
 // 关键:**文本放在固件自己的静态缓冲里**(见 s_bubble_text + lv_label_set_text_static),
 // 不再复制进 LVGL 池 —— 所以加大这个上限几乎不花池,只花静态 DRAM(本机还剩 70+KB)。
 #define OC_UI_TEXT_MAX 2048U
+
+// UP/DOWN 一次滚动的行数(用户要求 8 行);实际像素 = 8 × 当前字体行高,不写死。
+#define OC_UI_SCROLL_LINES 8
 #define OC_UI_BG 0x0E1116
 #define OC_UI_BAR_BG 0x161B22
 #define OC_UI_PANEL 0x1B222C
@@ -558,7 +561,17 @@ void oc_ui_append(char role, const char *text)
         s_ui.bubble_used++;
     }
 
-    lv_obj_scroll_to_view(body, LV_ANIM_OFF);   // 新消息总是滚到可见
+    // 新消息定位到**这条气泡的头部**(用户要求):先看到第一行,而不是直接跳到末尾。
+    // lv_obj_scroll_to_view() 对「比视口还高的对象」会贴到底部,所以这里显式算位移:
+    // 用屏幕坐标求「气泡顶边 → 视口顶边」的差值,再交给 lib 做边界钳制
+    // (短消息在底部时钳制后自然显示末条,长消息则停在它的第一行)。
+    {
+        lv_area_t bubble_area;
+        lv_area_t view_area;
+        lv_obj_get_coords(body, &bubble_area);
+        lv_obj_get_coords(s_ui.conv, &view_area);
+        lv_obj_scroll_by_bounded(s_ui.conv, 0, bubble_area.y1 - view_area.y1, LV_ANIM_OFF);
+    }
     ESP_LOGI(TAG, "气泡[%u]: 正文 %u 字节%s", idx, (unsigned)keep, clipped ? "(已截断)" : "");
     ui_mem_dbg("append:after");
     bsp_lvgl_unlock();
@@ -596,7 +609,9 @@ void oc_ui_scroll(int direction)
         bsp_lvgl_unlock();
         return;
     }
-    lv_obj_scroll_by_bounded(s_ui.conv, 0, direction > 0 ? 80 : -80, LV_ANIM_ON);
+    // 一次滚 OC_UI_SCROLL_LINES 行(用户要求):行高从字体取,换字体/字号不会走样。
+    const int32_t step = (int32_t)lv_font_get_line_height(OC_UI_FONT) * OC_UI_SCROLL_LINES;
+    lv_obj_scroll_by_bounded(s_ui.conv, 0, direction > 0 ? step : -step, LV_ANIM_ON);
     bsp_lvgl_unlock();
 }
 
