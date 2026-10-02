@@ -10,6 +10,17 @@
 > with `CHANGELOG.zh_CN.md`. The entries currently under `Unreleased` are pending
 > review for the next release; they are not a finalized release history.
 
+## Unreleased
+
+## v1.11-intercom — 2026-10-02
+
+- Device-side text-to-speech playback no longer reboots the device. The Opus/SILK decode task ran out of stack inside `silk_decode_core`, so a reply just a few seconds long could panic the firmware; the play task now has a 10 KB stack and long replies play to the end.
+- The conversation area survives long chats. Bubble text is held in a firmware static buffer instead of the LVGL pool (one long reply used to eat 1 KB or more of a 16 KB pool), each bubble is a single label, and the pool is raised to 20 KB. If memory still runs low the oldest history is cleared on purpose, instead of the allocation failing and the screen going blank.
+- A bubble now shows about 340 Chinese characters (1 KB) instead of 288 bytes, and four bubbles stay on screen.
+- Bubbles no longer start with a speaker name: the border color already separates the user (blue), the assistant (green), and system prompts (amber), and the 320x240 screen gives that row back to the message.
+- Pairing a new phone now drops stale BLE bonds, so an old phone that keeps auto-reconnecting can no longer hold the single available connection slot.
+- Link and TTS diagnostics: the device reports frame arrival, drop, half-frame, and underrun counters per type, plus LVGL pool snapshots in the periodic heartbeat, and the underrun counter no longer over-reports after a silence refill.
+
 ## v1.10-intercom — 2026-10-01
 
 - Fixed the settings-menu hint lines: they used a middle dot (`·`) as a separator, which the 16 px device font can leave blank, so the line looked like it had stray spaces. The hints now use a Chinese comma and no surrounding spaces.
