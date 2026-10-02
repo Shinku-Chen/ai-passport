@@ -84,6 +84,10 @@ static struct {
     bool turn_pressed;         // OK 已按下(可能还没真正开始一轮)
     bool turn_ready_pending;   // 本轮已开始,等 App 的 turn_ready 或兜底超时
     bool playing;              // 正在播放手机推来的 TTS 音频(turn_ready 是上行,这个是下行)
+    // 【诊断】帧到达统计:定位“手机推的 TTS 到底有没有到应用层”(见 on_frame / app_task 汇总)。
+    uint32_t rx_frames;            // on_frame 分发计数
+    uint32_t rx_summary_ms;        // 2 秒汇总节拍
+    uint32_t rx_delivered_logged;  // 上次汇总时的重组计数(相同则不打日志)
     bool settings_active;
     oc_set_page_t set_page;
     int set_index;
@@ -675,6 +679,7 @@ static void handle_control(const uint8_t *payload, size_t len)
 static void on_frame(uint8_t type, uint8_t flags, const uint8_t *payload, size_t len, void *ctx)
 {
     (void)ctx;
+    s_app.rx_frames++;
     if (type == OC_FRAME_TEXT) {
         if (oc_text_merge_push(&s_app.merge, flags, payload, len)) {
             oc_ui_set_state(OC_UI_STATE_RECEIVING, NULL);
@@ -832,6 +837,26 @@ static void app_task(void *arg)
             }
         }
         drain_rx();   // 每拍兜底一次,保证不积压
+
+        // 【诊断】每 2 秒(有变化才打)汇总一次“帧到达”情况：
+        //   链路活着时 EVT(网关状态)会一直涨；CTRL=0x03 / TTS=0x06 有没有计数，就是
+        //   “手机的 tts_start 与音频帧到底有没有到设备”的直接证据；废半截>0 则说明重组器在吞帧。
+        s_app.rx_summary_ms += OC_APP_TICK_MS;
+        if (s_app.rx_summary_ms >= 2000U) {
+            s_app.rx_summary_ms = 0;
+            uint32_t delivered = s_app.rx.stat_delivered;
+            if (delivered != s_app.rx_delivered_logged) {
+                s_app.rx_delivered_logged = delivered;
+                ESP_LOGW(TAG, "帧到达: 重组=%u(CTRL=%u TTS=%u EVT=%u TXT=%u 废半截=%u) 分发=%u",
+                         (unsigned)delivered,
+                         (unsigned)s_app.rx.stat_by_type[OC_FRAME_CONTROL & 0x0FU],
+                         (unsigned)s_app.rx.stat_by_type[OC_FRAME_TTS_OPUS & 0x0FU],
+                         (unsigned)s_app.rx.stat_by_type[OC_FRAME_EVENT & 0x0FU],
+                         (unsigned)s_app.rx.stat_by_type[OC_FRAME_TEXT & 0x0FU],
+                         (unsigned)s_app.rx.stat_half_dropped,
+                         (unsigned)s_app.rx_frames);
+            }
+        }
 
         // 下行播放的结果(播完/中止):在这里组帧上报,保证 s_frame_ctrl 只被应用任务写。
         oc_audio_play_ev_t pev = oc_audio_play_take_event();

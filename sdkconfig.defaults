@@ -30,7 +30,7 @@ CONFIG_LV_FONT_MONTSERRAT_20=y
 # 用 CONFIG_LV_MEM_SIZE(字节),不用已废弃的 CONFIG_LV_MEM_SIZE_KILOBYTES:后者在 LVGL 9
 # 里不生效,池子会回到默认的 64KB —— 对讲机的下行音频需要约 40KB 静态内存,正是从这块
 # 池子里让出来的(见 docs/development/engineering/intercom-tts-playback.md)。
-CONFIG_LV_MEM_SIZE=24576
+CONFIG_LV_MEM_SIZE=20480
 
 # --- 系统 ---
 CONFIG_FREERTOS_HZ=1000

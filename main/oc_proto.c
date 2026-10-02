@@ -235,6 +235,7 @@ void oc_reassembler_push(oc_reassembler_t *rx, const uint8_t *bytes, size_t n)
         size_t cut = find_inserted_header(rx->buf, rx->len, rx->buf[2]);
         if (cut > 0) {
             // 半截帧作废,把插入帧头搬到缓冲开头重新解析
+            rx->stat_half_dropped++;
             memmove(rx->buf, rx->buf + cut, rx->len - cut);
             rx->len -= cut;
             rx->need = 0;
@@ -244,6 +245,8 @@ void oc_reassembler_push(oc_reassembler_t *rx, const uint8_t *bytes, size_t n)
         }
 
         if (rx->need == 0) {
+            rx->stat_delivered++;
+            rx->stat_by_type[rx->buf[2] & 0x0FU]++;
             if (rx->cb != NULL) {
                 rx->cb(rx->buf[2], rx->buf[3], rx->buf + OC_HEADER_SIZE,
                        rx->frame_len - OC_HEADER_SIZE, rx->ctx);

@@ -96,6 +96,38 @@ static const ble_uuid128_t s_nus_service_uuid = BLE_UUID128_INIT(OC_NUS_SERVICE_
 static const ble_uuid128_t s_nus_rx_uuid = BLE_UUID128_INIT(OC_NUS_RX_UUID_BYTES);
 static const ble_uuid128_t s_nus_tx_uuid = BLE_UUID128_INIT(OC_NUS_TX_UUID_BYTES);
 
+/**
+ * 只保留最近这台手机:新手机配对成功后删掉其它旧 bond。
+ *
+ * 真机现象:旧手机 A 上还装着 App(而且开了自启动/无限制),设备一重启 A 就抢先连上;而设备
+ * 同时只允许 1 条连接(CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1),新手机 B 因此一直连不上 ——
+ * 只有把 A 的蓝牙关掉才能恢复。“一台设备配一台手机”是这个产品的语义,所以把决定权交给
+ * **最后配对成功的那台**。
+ *
+ * 只删别的 peer,不动当前这条(连接/加密都建立在它上面)。列出/删除都走 NimBLE 的 store util API
+ * (CONFIG_BT_NIMBLE_UTIL_API=y);失败只记日志,不影响本次连接。
+ */
+static void oc_forget_other_bonds(const ble_addr_t *keep)
+{
+    ble_addr_t peers[MYNEWT_VAL(BLE_STORE_MAX_BONDS)];
+    int num = 0;
+    int rc = ble_store_util_bonded_peers(peers, &num, MYNEWT_VAL(BLE_STORE_MAX_BONDS));
+    if (rc != 0) {
+        ESP_LOGW(TAG, "列出已绑定设备失败 rc=%d(忽略)", rc);
+        return;
+    }
+    for (int i = 0; i < num; i++) {
+        if (ble_addr_cmp(&peers[i], keep) == 0) {
+            continue;
+        }
+        if (ble_store_util_delete_peer(&peers[i]) == 0) {
+            ESP_LOGI(TAG, "换机:已删除旧手机绑定(type=%u)", (unsigned)peers[i].type);
+        } else {
+            ESP_LOGW(TAG, "换机:删除旧绑定失败(type=%u)", (unsigned)peers[i].type);
+        }
+    }
+}
+
 static int oc_gap_event(struct ble_gap_event *event, void *arg);
 static int oc_gatt_access(uint16_t conn_handle, uint16_t attr_handle,
                           struct ble_gatt_access_ctxt *ctxt, void *arg);
@@ -355,6 +387,11 @@ static int oc_gap_event(struct ble_gap_event *event, void *arg)
         if (publish) {
             ESP_LOGI(TAG, "加密完成 enc=%d auth=%d bonded=%d key=%u", desc.sec_state.encrypted,
                      desc.sec_state.authenticated, desc.sec_state.bonded, desc.sec_state.key_size);
+            if (s_link.secure) {
+                // 只保留这一台手机:旧手机即使删了绑定,只要它的 App 还在跑(常开着自启动/无限制),
+                // 它下次照样能连上并重新配对 —— 而设备同时只允许 1 条连接,新手机就会被永远顶着。
+                oc_forget_other_bonds(&desc.peer_id_addr);
+            }
             oc_emit(&ev);
         } else {
             ESP_LOGW(TAG, "加密未完成 status=%d", event->enc_change.status);

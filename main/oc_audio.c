@@ -177,7 +177,15 @@ static void audio_task(void *arg)
 //      codec 的休眠/唤醒有唯一的主人,不能用两个任务同时碰。
 //   3. 不许卡住。任何结束路径(tts_stop 播空、tts_abort、用户打断、解码连续失败、长时间没声音、
 //      断连、模块关停)都要把状态机送回“采集可用”,并如实上报 tts_playback_aborted。
-#define OC_PLAY_TASK_STACK 4096U
+// 播放任务栈:4096 太小——下行音频解码走的是 SILK(esp-opus 的 silk_decode_core/decode_frame,
+// 内部有大块局部数组),真机实测一推 TTS 就 “Stack protection fault” panic 重启:
+//   Guru Meditation … Stack protection fault. Detected in task "oc_play"
+//   Stack pointer: 0x3fca2c40 / Stack bounds: 0x3fca3500-0x3fca44f0   (SP 已跑到栈下界以下)
+//   反解地址: silk_decode_core (decode_core.c:66) ← silk_decode_frame (decode_frame.c:105)
+// 取 10KB:实测峰值占用 7232B(栈余量日志 5056/12288),10KB 仍留 ~3KB 余量;
+// 同时别把堆吃光 —— 堆只剩几 KB 时 NimBLE 连广播都起不来(真机踩过)。
+// 栈余量(uxTaskGetStackHighWaterMark)实测确认还有余量。
+#define OC_PLAY_TASK_STACK 10240U
 #define OC_PLAY_TASK_PRIO 3U            // 低于采集(OC_AUDIO_TASK_PRIO=4):宁可晚几毫秒出声,不能丢上行
 // 解码器状态区:opus_decoder_get_size(1) = silk_decoder(8560)+celt(9388)+OpusDecoder(≤100)
 // ≤ 18148 字节;给 18KB 留余量,并在初始化时用 opus_decoder_get_size() 实测校验。
@@ -437,8 +445,11 @@ static void play_stream(void)
         }
         if (played && idle_ms >= OC_AUDIO_FRAME_MS) {
             // 欠载:补一块静音,别让 I2S 饿着发出“咔”声;连续补太久由上面的超时兜底。
+            // 注意要刷新 last_audio_us:否则静音写完后 idle_ms 仍 ≥60ms,下一圈立刻又计一次欠载,
+            // 一段连续饿死会被按 60ms 反复计数(真机曾出现 欠载=57 而实际只有一段静音)。
             play_note_underrun();
             play_write_silence();
+            last_audio_us = esp_timer_get_time();
         } else {
             vTaskDelay(pdMS_TO_TICKS(OC_PLAY_POLL_MS));
         }
@@ -458,6 +469,10 @@ static void play_task(void *arg)
             continue;
         }
         play_stream();
+        // 每轮播完报一次栈余量:定位“是不是快撞到栈底”靠这个数(单位字节,IDF 下 StackType_t=1B)。
+        ESP_LOGI(TAG, "播放任务栈余量: %u 字节(总 %u)",
+                 (unsigned)(uxTaskGetStackHighWaterMark(NULL) * sizeof(StackType_t)),
+                 (unsigned)OC_PLAY_TASK_STACK);
     }
     if (s_play.codec_open) {
         bsp_audio_sleep();

@@ -92,6 +92,10 @@ typedef struct {
     bool    in_frame;           // 已确认帧头,正在收 payload
     oc_frame_cb_t cb;
     void   *ctx;
+    // 诊断计数(定位“手机推来的帧到底有没有到应用层”):只增不减,真机日志可直接引用。
+    uint32_t stat_delivered;      // 成功回调给应用的帧数
+    uint32_t stat_by_type[16];    // 按 type 的帧计数(0..15)
+    uint32_t stat_half_dropped;   // 半截帧作废次数(命中 find_inserted_header)
 } oc_reassembler_t;
 
 void oc_reassembler_init(oc_reassembler_t *rx, oc_frame_cb_t cb, void *ctx);
