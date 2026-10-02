@@ -12,6 +12,16 @@
 
 ## Unreleased
 
+## v1.12-intercom — 2026-10-02
+
+- The settings menu (long-press UP) gained **volume** and **microphone gain**: 5 % and 4 dB steps, applied immediately and stored in NVS. The order is brightness / volume / mic gain / device info / re-pair / back, with the irreversible re-pair entry kept second-to-last.
+- Long replies: a bubble now shows up to **2 KB (about 680 Chinese characters)** instead of 1 KB, matching what the wire carries, so a message is no longer cut silently in the middle; a truncated message ends with the six-dot Chinese ellipsis. New messages are parked at their **first line** so a long reply is read from the top, UP/DOWN scroll **8 lines** per press, and an overflowing conversation shows a **scrollbar**.
+- Firmware and app are compared by **major version only** (`X.Y`): an app minor release (1.11.1 against firmware 1.11) is no longer reported as a mismatch and the device screen no longer raises a false alarm. The app may also report `appFull`, which the device-information page shows when present.
+- Memory: the single LVGL draw buffer shrank from 40 to 24 lines (19.2 to 11.5 KB) to pay for the larger bubbles, and the lowest free-heap watermark rose from 928 B to 4416 B. The heartbeat now prints that watermark.
+- Half-duplex guard: the codec output is muted while the microphone captures and unmuted when playback starts.
+
+Note: the speaker hiss reported on this board sits downstream of the codec - it is unchanged with the codec powered down by its idle sequence, with the volume at 0, and with a lower mic gain - and the board has no controllable PA enable, so this release does not change it.
+
 ## v1.11-intercom — 2026-10-02
 
 - Device-side text-to-speech playback no longer reboots the device. The Opus/SILK decode task ran out of stack inside `silk_decode_core`, so a reply just a few seconds long could panic the firmware; the play task now has a 10 KB stack and long replies play to the end.
