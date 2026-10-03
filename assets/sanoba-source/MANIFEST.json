@@ -1,7 +1,23 @@
 {
  "repo": "hrk666666/Sanoba-Witch-MiBand-10",
  "ref": "main",
+ "ref_note": "2026-09-27 从上游 main 抓取,当时 main 还是本作品;此后上游重写历史。重建资源包时请直接用本目录,不要重新抓取。",
  "requested_ref": "main",
+ "resolved_commit": "",
+ "archive_only": [
+  "src/common/game.txt",
+  "src/common/images/",
+  "src/common/logo.png"
+ ],
+ "captured_at": "2026-09-27",
+ "verified_against": {
+  "ref": "band9-10-sync",
+  "commit": "f4f6347a7a1baf133f331210c968a361d6863bed",
+  "checked_at": "2026-10-03",
+  "identical_files": 506,
+  "note": "band9-10-sync 的 bg/、sd/、scn/ 与本归档逐字节相同;该分支没有 game.txt、images/、logo.png"
+ },
+ "upstream_status": "2026-09-26 上游重写历史:main 变为另一部作品(千恋＊万花)的工程,本作品的素材不再存在于 main;band9-10-sync 是上游仅存的同名素材分支。因此本目录为权威副本,重建资源包无需联网。",
  "files": {
   "LICENSE": {
    "path": "LICENSE",

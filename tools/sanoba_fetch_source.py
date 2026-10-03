@@ -14,6 +14,19 @@ data API and the payloads from the jsDelivr CDN, with raw.githack.com as a
 fallback, because a direct github.com clone is not reachable from every build
 host.
 
+UPSTREAM STATUS (checked 2026-10-03).  The repository's history was rewritten on
+2026-09-26: `main` is now another port (Senren * Banka, with its own `ch/` and
+`ev/` art) and the Sanoba Witch material no longer exists on it.  What is left
+upstream is the `band9-10-sync` branch, a v1.2.1 sync point from 2026-09-18 that
+serves `bg/`, `sd/`, `scn/` and `title_bg.jpg` byte-for-byte identically to this
+archive, but has no `game.txt`, no `images/` and no `logo.png` (it also lacks
+nothing that is not matched here).  Therefore:
+
+  - `assets/sanoba-source/` is the authoritative copy.  A plain checkout rebuilds
+    both packs offline; this tool is only needed to follow upstream, and the
+    default ref is pinned to `band9-10-sync` instead of the repurposed `main`.
+  - Files this ref cannot serve are taken from the archive, not re-fetched.
+
 The port uses only the game's own material, never its quick-app code:
 
   <dest>/bg/*.jpg       107 背景(336x480 JPEG)
@@ -48,7 +61,8 @@ Existing files with the expected size are skipped, so re-running is cheap.
 
 本分支已把素材入库到 assets/sanoba-source/(来源与许可见 assets/README.md),
 所以重建资源包不需要联网,直接 --source assets/sanoba-source 即可。只有要跟上游
-最新版本时才需要跑本工具。
+最新版本时才需要跑本工具;注意上游 main 已被换成另一个移植(千恋＊万花),
+Sanoba 素材只在 band9-10-sync 分支上,默认 ref 已改指该分支。
 """
 
 from __future__ import annotations
@@ -67,6 +81,9 @@ from typing import Iterable
 from urllib.parse import quote
 
 REPO = "hrk666666/Sanoba-Witch-MiBand-10"
+# 上游 main 在 2026-09-26 被重写成另一个移植(千恋＊万花),Sanoba 素材只剩这条分支
+DEFAULT_REF = "band9-10-sync"
+ARCHIVE_ONLY = ("src/common/game.txt", "src/common/images/", "src/common/logo.png")
 DATA_API = "https://data.jsdelivr.com/v1/packages/gh/{repo}@{ref}?structure=flat"
 MIRRORS = (
     "https://cdn.jsdelivr.net/gh/{repo}@{ref}/{path}",
@@ -171,6 +188,17 @@ def fetch(remote: RemoteFile, dest: Path, ref: str) -> tuple[RemoteFile, bool, s
     return remote, True, hashlib.sha256(data).hexdigest()
 
 
+def resolve_commit(ref: str) -> str | None:
+    """把分支解析成提交 sha,便于把快照钉在不可变版本上;失败不影响下载。"""
+    url = f"https://api.github.com/repos/{REPO}/commits/{ref}"
+    try:
+        payload = json.loads(retry(lambda: http_get(url, timeout=30.0), f"解析 {ref}", attempts=3, delay=2.0))
+        return str(payload.get("sha", "")) or None
+    except Exception as exc:  # noqa: BLE001 - 拿不到 sha 不该让整个抓取失败
+        log(f"  无法解析 {ref} 的提交 sha({exc}),MANIFEST 里留空")
+        return None
+
+
 def human(count: int) -> str:
     if count >= 1048576:
         return f"{count / 1048576:.2f} MB"
@@ -179,6 +207,9 @@ def human(count: int) -> str:
 
 def run(args: argparse.Namespace) -> int:
     ref = args.ref
+    if ref in ("main", "master"):
+        log(f"警告: {REPO}@{ref} 自 2026-09-26 起是另一个移植的工程,不含 Sanoba 素材;"
+            f"默认请用 {DEFAULT_REF}(或直接不指定 --ref)。")
     log(f"列出 {REPO}@{ref} 的文件…")
     version, files = list_files(ref)
     assets = [f for f in files if f.kind == "asset"]
@@ -215,12 +246,21 @@ def run(args: argparse.Namespace) -> int:
         except (json.JSONDecodeError, OSError):
             previous = {}
     merged = {**previous, **entries}
+    missing_archive_only = [
+        path for path in ARCHIVE_ONLY
+        if not any(str(item["path"]).startswith(path) for item in merged.values())
+    ]
+    if missing_archive_only:
+        log("提示: 该 ref 不提供以下文件,使用 assets/sanoba-source/ 里的归档副本:"
+            f" {', '.join(missing_archive_only)}")
     manifest.write_text(
         json.dumps(
             {
                 "repo": REPO,
-                "ref": version,
+                "ref": ref if ref != version else version,
                 "requested_ref": ref,
+                "resolved_commit": resolve_commit(ref) or "",
+                "archive_only": list(ARCHIVE_ONLY),
                 "files": dict(sorted(merged.items())),
             },
             ensure_ascii=False,
@@ -237,7 +277,7 @@ def run(args: argparse.Namespace) -> int:
 def main(argv: Iterable[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dest", default="build/sanoba-source", help="落地目录(默认 build/sanoba-source)")
-    parser.add_argument("--ref", default="main", help="上游分支/标签/commit(默认 main)")
+    parser.add_argument("--ref", default=DEFAULT_REF, help=f"上游分支/标签/commit(默认 {DEFAULT_REF})")
     parser.add_argument("--chunks", action="store_true", help="同时拉 101 个剧本文件(打包剧本时需要)")
     parser.add_argument("--jobs", type=int, default=12, help="并发数(默认 12)")
     parser.add_argument("--limit-images", type=int, default=0, help="只拉前 N 张图,冒烟测试用")

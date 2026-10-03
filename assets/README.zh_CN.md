@@ -52,6 +52,13 @@
 
 - **快应用代码不入库**:`src/**/*.ux`、`src/**/*.js`、`src/engine/`、`tests/`、`tools/`
   等上游代码不在这里,只镜像游戏自身的素材。
+- **上游状态(2026-10-03 核对)**:上游仓库在 2026-09-26 被**重写了历史** —— 现在
+  它的 `main` 是另一个移植(《千恋＊万花》,带自己的 `ch/` 立绘与 `ev/` 事件图),
+  魔女的夜宴的素材在上面**已经不存在**;上游只剩 `band9-10-sync` 分支(v1.2.1,
+  2026-09-18),它的背景/SD/剧本与本目录**逐字节相同**,但没有 `game.txt`、没有
+  `images/`、也没有 `logo.png`。所以**本目录就是权威副本**:clone 下来即可离线重建两个包;
+  `tools/sanoba_fetch_source.py` 的默认 ref 已改指那条分支,这三样输入以归档为准。
+  现在 `main` 上那 141 张立绘与 570 张事件图是那位作品的素材,不是魔女的夜宴。
 - 来源、哈希与上游 commit 见 `MANIFEST.json`;要刷新这份拷贝用
   `python tools/sanoba_fetch_source.py --dest assets/sanoba-source --chunks`。
 - 直接从这里重建资源包:

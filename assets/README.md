@@ -55,6 +55,16 @@ offline and still describe what they were built from:
 
 - The upstream quick-app code (`src/**/*.ux`, `src/**/*.js`, `src/engine/`, `tests/`,
   `tools/`) is deliberately **not** mirrored here — only the game's own material is.
+- **Upstream status (checked 2026-10-03).** The upstream repository's history was
+  rewritten on 2026-09-26: its `main` now hosts another port (Senren \* Banka, with its
+  own `ch/` and `ev/` art) and the Sanoba Witch material is gone from it. What remains
+  upstream is the `band9-10-sync` branch (v1.2.1, 2026-09-18), whose backgrounds, SD
+  images and scripts are byte-for-byte identical to this archive but which has no
+  `game.txt`, no `images/` and no `logo.png`. This directory is therefore the
+  authoritative copy: a plain checkout rebuilds both packs, and
+  `tools/sanoba_fetch_source.py` defaults to that branch and leaves those three inputs
+  to the archive. The 141 standing images and 570 event CGs now on `main` belong to that
+  other title, not to Sanoba Witch.
 - Provenance, hashes, and the upstream commit come from `MANIFEST.json`; refresh the copy
   with `python tools/sanoba_fetch_source.py --dest assets/sanoba-source --chunks`.
 - Rebuild the packs straight from here:
