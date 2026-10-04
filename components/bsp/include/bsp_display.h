@@ -24,6 +24,14 @@ esp_lcd_panel_io_handle_t bsp_display_io(void);
 // 背光亮度 0..100(%)。LEDC PWM,0=全灭。
 void bsp_display_backlight(uint8_t percent);
 
+// 面板控制器省电(可逆):只发 DISPOFF / DISPON。
+//
+// 为什么单独有它:背光调到 0 只是"看不见",面板仍在持续刷新 GRAM(几 mA)。DISPOFF 会
+// 停掉刷新但**保留 GRAM**,所以唤醒后画面立刻恢复、无需整屏重绘。
+// SLEEP IN 不在这里 —— 它留给 bsp_display_prepare_deep_sleep()(那条路不可逆,连背光
+// PWM 都停,只用于真正入睡)。
+esp_err_t bsp_display_sleep(bool on);
+
 // deep sleep 专用：关闭显示、让 ST7789 进入 Sleep In，停止背光 PWM，
 // 将 CS/SCLK/MOSI/DC/背光设为安全电平并在 deep sleep 中保持。调用时必须
 // 已阻止 LVGL 刷屏，调用后必须立即进入 deep sleep 或重启。

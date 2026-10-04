@@ -240,6 +240,20 @@ void bsp_display_backlight(uint8_t percent) {
     ledc_update_duty(BSP_BL_LEDC_MODE, BSP_BL_LEDC_CHANNEL);
 }
 
+esp_err_t bsp_display_sleep(bool on) {
+    if (!s_panel) return ESP_ERR_INVALID_STATE;
+    // 只发 DISPOFF/DISPON:停刷新但保留 GRAM,唤醒后无需整屏重绘。
+    // (SLEEP IN 只在 bsp_display_prepare_deep_sleep() 里用 —— 那条路不可逆。)
+    esp_err_t e = esp_lcd_panel_disp_on_off(s_panel, !on);
+    if (e != ESP_OK) {
+        ESP_LOGE(TAG, "ST7789 显示%s失败: %s", on ? "关闭" : "打开", esp_err_to_name(e));
+    } else {
+        // 成功也留一行:省电链路要能从串口对账(与音频挂起同款约定)。
+        ESP_LOGI(TAG, "面板显示 %s (DISPOFF/DISPON, GRAM 保留): ESP_OK", on ? "关闭" : "打开");
+    }
+    return e;
+}
+
 esp_err_t bsp_display_prepare_deep_sleep(void) {
     esp_err_t first_error = ESP_OK;
     if (!s_ready || !s_panel) {

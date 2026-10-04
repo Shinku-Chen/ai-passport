@@ -234,6 +234,8 @@ static void apply_turn_theme(oc_ui_state_t state)
 static void apply_backlight(void)
 {
     uint8_t bright = oc_settings_brightness();
+    // 先让面板控制器醒过来再点背光:反过来会先看到一帧未就绪的画面。
+    bsp_display_sleep(false);
     bsp_display_backlight(bright);
     s_ui.backlight_on = bright > 0;
 }
@@ -247,7 +249,9 @@ static void ui_timer(lv_timer_t *timer)
     uint16_t timeout_s = oc_settings_backlight_timeout_s();
     if (s_ui.backlight_on && s_ui.idle_ms >= (uint32_t)timeout_s * 1000U) {
         // 背光熄灭不影响 BLE 连接与录音:链路常连,按键会把屏幕点亮。
+        // 面板控制器一并关掉(DISPOFF):背光为 0 只是看不见,面板仍在刷新 GRAM(几 mA)。
         bsp_display_backlight(0);
+        bsp_display_sleep(true);
         s_ui.backlight_on = false;
     }
 
