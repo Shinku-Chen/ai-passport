@@ -548,6 +548,15 @@ size_t oc_link_read(uint8_t *out, size_t cap)
     if (out == NULL || cap == 0) {
         return 0;
     }
+    // 初始化前不得碰互斥量与环形缓冲:xSemaphoreTake(NULL) 会直接 assert 复位。
+    //
+    // 真机(2026-10-04):app 任务比 oc_link_init() 先跑起来(它有静态栈、故意早建),它每拍都会
+    // drain_rx() → 到这里 —— 而互斥量要到 oc_link_init() 才创建。平时二者的时间差小、侥幸没事;
+    // 开机时若 ON 被按住,按键事件抢掉 CPU 把初始化拖慢，就变成必崩 → 复位 → 再崩（白屏闪烁）。
+    // 发送侧 oc_link_send() 一直有 initialized 守卫，读取侧之前漏了。
+    if (!s_link.initialized || s_link.mutex == NULL) {
+        return 0;
+    }
     size_t n = 0;
     xSemaphoreTake(s_link.mutex, portMAX_DELAY);
     size_t avail = (s_link.rx_head + OC_LINK_RX_RING - s_link.rx_tail) % OC_LINK_RX_RING;

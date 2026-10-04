@@ -127,6 +127,15 @@ static struct {
     /** 按下时刻(esp_timer 单调时钟):到 OC_PTT_ANNOUNCE_MS 才真的发本轮,之前松手算短按。 */
     int64_t turn_press_us;
     bool turn_ready_pending;   // 本轮已开始,等 App 的 turn_ready 或兜底超时
+
+    // 应用初始化完成(事件队列/音频/链路/UI 都建好了),按键才允许被处理。
+    //
+    // 为什么必须有它(2026-10-04 真机:重启时按住 OK → 白屏闪烁):按键驱动在 bsp_button_init()
+    // 里就绪得很早;开机时若 OK 一直被按住,iot_button 会立刻报 PRESS → turn_press() 就去碰 UI
+    // 对象与音频队列，而那时 oc_app_start() 还没走到 oc_ui_init()/oc_audio_start()（崩溃日志正
+    // 停在「面板显示 打开」之后、音频那几行之前，xQueueSemaphoreTake 拿到 NULL 句柄）。
+    // 后果：panic → 复位 → OK 仍被按着 → 再 panic，屏幕就一直白屏闪烁。
+    bool ready;
     bool playing;              // 正在播放手机推来的 TTS 音频(turn_ready 是上行,这个是下行)
     // 【诊断】帧到达统计:定位“手机推的 TTS 到底有没有到应用层”(见 on_frame / app_task 汇总)。
     uint32_t rx_frames;            // on_frame 分发计数
@@ -463,6 +472,7 @@ static bool settings_handle_key(bsp_btn_t btn, bsp_btn_ev_t ev)
     if (!s_app.settings_active) {
         return false;
     }
+
     if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG) {
         settings_close();
         return true;
@@ -568,6 +578,17 @@ static bool settings_handle_key(bsp_btn_t btn, bsp_btn_ev_t ev)
 // ---- 按键 ----
 static void handle_button(bsp_btn_t btn, bsp_btn_ev_t ev)
 {
+    // 初始化没走完时，按键一律不处理：UI 对象、音频队列可能还没建好，碰它们会 panic。
+    //
+    // 真机现象(2026-10-04):重启时按住 OK → 白屏闪烁。按键驱动在 bsp_button_init() 里就绪得
+    // 很早，OK 一直被按着就会在 oc_app_start() 走到 oc_ui_init()/oc_audio_start() 之前发出
+    // PRESS → turn_press() 去碰 UI 与音频队列 → xQueueSemaphoreTake 拿到 NULL 句柄 → panic
+    // → 复位 → OK 仍按着 → 再 panic，循环几十次。
+    //
+    // 放开后不补处理这个按下：用户松手再按一次即可(开机本来就是一次主动操作)。
+    if (!s_app.ready) {
+        return;
+    }
     oc_ui_note_activity();   // 任意按键都点亮背光(背光超时后的第一次按键也会走到这)
 
     if (settings_handle_key(btn, ev)) {
@@ -984,6 +1005,15 @@ static void app_task(void *arg)
 {
     (void)arg;
     for (;;) {
+        // 初始化未完成前什么都不做:本任务建得比 oc_audio_init()/oc_link_init() 早(静态栈、故意早建),
+        // 而下面的链路读取与上报都会碰它们的内部句柄 —— 初始化没完就碰 = 拿到 NULL → assert 复位。
+        // 真机(2026-10-04 白屏闪烁)就是这条竞态:开机时按住 OK 拖慢初始化,app 任务先跑起来就崩。
+        // 真正的根修在 oc_link_read()(补 initialized 守卫);这里是第二道门,防将来再漏。
+        if (!s_app.ready) {
+            vTaskDelay(pdMS_TO_TICKS(20));
+            continue;
+        }
+
         oc_msg_t msg;
         if (xQueueReceive(s_app.queue, &msg, pdMS_TO_TICKS(OC_APP_TICK_MS)) == pdTRUE) {
             if (msg.type == OC_MSG_LINK) {
@@ -1206,6 +1236,8 @@ esp_err_t oc_app_start(void)
         return e;
     }
     oc_ui_set_state(OC_UI_STATE_IDLE, NULL);
+    // 到这里按键需要的都在了(事件队列/音频/链路/UI)—— 放开按键门，之前那一下按住被丢弃。
+    s_app.ready = true;
     ESP_LOGI(TAG, "界面后堆: 空闲=%u 最大块=%u", (unsigned)esp_get_free_heap_size(),
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
 
