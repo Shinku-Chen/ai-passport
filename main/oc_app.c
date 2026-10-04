@@ -41,8 +41,8 @@ static const char *TAG = "oc_app";
 // Idle power saving (author 2026-10; mirrors the official xiaozhi power_save_timer: 60s -> power
 // save mode, 300s -> deep sleep). App side already downgrades the BLE connection parameters while
 // idle, which is a precondition for the radio to actually sleep.
-#define OC_POWER_LOW_AFTER_US   (60LL * 1000000LL)     // 60s idle -> light sleep + DFS(min 40MHz)
-#define OC_POWER_DEEP_AFTER_US  (300LL * 1000000LL)
+#define OC_POWER_LOW_AFTER_US  (60LL * 1000000LL)   // 60s 空闲 -> DFS 降频 + 音频挂起
+#define OC_POWER_DEEP_AFTER_US (300LL * 1000000LL)  // 300s(仅当 OC_POWER_ALLOW_DEEP_SLEEP=1 时生效)
 
 // 深睡总开关(作者 2026-10:先关)。
 // 真机实测:开了之后设备**每 5 分钟自己复位一次**(App 侧每 5 分钟一条 status=8,2 秒后自动重连)。
@@ -50,7 +50,13 @@ static const char *TAG = "oc_app";
 // 引脚电平被判成"按键按下",于是一睡就醒(等于每 5 分钟重启一次)。要重新启用,先解决唤醒脚:
 // 睡前对 BSP_BTN_GPIO 显式配内部上拉(rtc_gpio_pullup_en 之类的 RTC 域配置),并在真机上反复验证
 // "睡下去能稳定待住、按键能可靠唤醒"之后再打开。
-#define OC_POWER_ALLOW_DEEP_SLEEP 1    // 300s idle -> deep sleep (any key wakes)
+// 深睡总开关:这块板子**进不去**(见下),故关闭。
+// 实测(短计时 45s):设备尝试入睡时读出的 GPIO0 是**低**,深睡会立刻被唤醒 —— App 侧表现为
+// 每 45 秒一条 status=8 + 自动重连(等于每 45 秒重启一次)。原因:三键共用一根 ADC 节点,
+// 该节点在深睡时(GPIO 矩阵断电)靠板上 10k 上拉也拉不稳,被误判成"按键按下"。
+// 要重启这条能力,得换唤醒源(例如给 OK 键单独引一根 GPIO)再验;在那之前
+// **不睡但省电**才是正确取舍:DFS 降频 + 音频挂起 + 状态帧降频 + App 侧空闲降连接参数。
+#define OC_POWER_ALLOW_DEEP_SLEEP 0
 #define OC_POWER_TICK_MS        OC_APP_TICK_MS
 #define OC_POWER_STATUS_DIV     10                     // idle: send the 1Hz status every N ticks
 
@@ -1065,9 +1071,12 @@ static void oc_note_activity(void)
     s_app.active_us = esp_timer_get_time();
     if (s_app.low_power) {
         s_app.low_power = false;
+        // 从空闲档回来:先把 codec 唤醒(与 bsp_audio_sleep 对应的官方恢复序列)。
+        esp_err_t we = bsp_audio_wake();
+        ESP_LOGI(TAG, "power: activity audio wake -> %s", esp_err_to_name(we));
         esp_pm_config_t pm = { .max_freq_mhz = 160, .min_freq_mhz = 160, .light_sleep_enable = false };
         esp_pm_configure(&pm);
-        ESP_LOGI(TAG, "power: activity -> high performance (no light sleep)");
+        ESP_LOGI(TAG, "power: activity -> full speed (160MHz)");
     }
 }
 
@@ -1089,7 +1098,12 @@ static void oc_power_check(void)
         // 降频已经能省下空闲功耗的大头,而且完全不碰链路。
         esp_pm_config_t pm = { .max_freq_mhz = 160, .min_freq_mhz = 40, .light_sleep_enable = false };
         esp_err_t e = esp_pm_configure(&pm);
-        ESP_LOGI(TAG, "power: idle %llds -> light sleep + DFS (%s)",
+        // 顺带把音频 codec 按 BSP 的官方低功耗序列挂起(ES8311 完整 suspend + 回读校验):
+        // 空闲时它和功放是仅次于背光的耗电项。有活动时在 oc_note_activity 里 wake 回来。
+        // 只在"确定没有在说话/播放"时做(oc_power_check 已保证 busy 为假才走到这里)。
+        esp_err_t ae = bsp_audio_sleep();
+        ESP_LOGI(TAG, "power: idle audio suspend -> %s", esp_err_to_name(ae));
+        ESP_LOGI(TAG, "power: idle %llds -> DFS only (no light sleep, BLE-safe) (%s)",
                  (long long)(idle_us / 1000000), esp_err_to_name(e));
     }
     if (OC_POWER_ALLOW_DEEP_SLEEP && !s_app.deep_sleep_done && idle_us >= OC_POWER_DEEP_AFTER_US) {
@@ -1104,6 +1118,14 @@ static void oc_power_check(void)
         // 正确姿势是 gpio_sleep_set_*:它们配的就是"睡眠期间的引脚方向/上拉",深睡时依然有效。
         gpio_sleep_set_direction(BSP_BTN_GPIO, GPIO_MODE_INPUT);
         gpio_sleep_set_pull_mode(BSP_BTN_GPIO, GPIO_PULLUP_ONLY);
+        // 只在唤醒脚**当前确实为高**时才睡:真机实测,若入睡那一刻读到低(按键按着/电平不稳),
+        // 深睡会立刻被唤醒 —— 变成"睡一秒又醒、每 45 秒重启一次"的循环(App 侧表现为每 45 秒
+        // 一条 status=8)。宁可先不睡(设备保持可用),并如实记一条日志;5 秒后自然还会再试。
+        if (gpio_get_level(BSP_BTN_GPIO) == 0) {
+            ESP_LOGW(TAG, "power: 唤醒脚电平为低,本轮先不进深睡(避免睡一秒又被唤醒)");
+            s_app.active_us = esp_timer_get_time() - OC_POWER_DEEP_AFTER_US + (5LL * 1000000LL);
+            return;
+        }
         esp_deep_sleep_enable_gpio_wakeup(1ULL << BSP_BTN_GPIO, ESP_GPIO_WAKEUP_GPIO_LOW);
         esp_deep_sleep_start();
     }
