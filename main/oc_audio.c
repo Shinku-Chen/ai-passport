@@ -445,7 +445,10 @@ static void play_stream(void)
             break;   // tts_stop 之后播空 → 正常结束
         }
         int64_t idle_ms = (esp_timer_get_time() - last_audio_us) / 1000;
-        if (idle_ms >= OC_PLAY_IDLE_TIMEOUT_MS) {
+        // 只在**队列真的空了**、而且静默够久时才结束本轮:真机证据(作者首句/第二句"丢一段")
+        // —— 结束时队列里还剩 23 帧(≈1.4s)没播,而它们正好是这一句的尾巴/开头,
+        // 于是听起来"读到一半断一下"或"前几个字没了"。有帧在队里就绝不收尾。
+        if (idle_ms >= OC_PLAY_IDLE_TIMEOUT_MS && s_play.q.count == 0) {
             ESP_LOGW(TAG, "TTS 连续 %lldms 无音频(已出声=%d),结束本轮", (long long)idle_ms, (int)played);
             aborted = true;
             break;
