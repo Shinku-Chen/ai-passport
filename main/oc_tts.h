@@ -78,6 +78,9 @@ typedef struct {
     uint32_t         underruns;
     uint32_t         decode_us_max;
     uint32_t         overflow;  // dropped 中"因队列满丢最旧"的部分(仅用于日志区分)
+    // 消费者是否已经开始取包:未开始播时满队列要**保住开头**(丢最新),开始播之后才丢最旧。
+    // 真机"首句前几帧丢失"就是这里在还没开播时丢了最旧的包(那几包正是这句话的开头)。
+    bool draining;              // 消费者第一次成功取包时置位(见 oc_tts_queue_pop)
 } oc_tts_queue_t;
 
 void oc_tts_queue_init(oc_tts_queue_t *q);

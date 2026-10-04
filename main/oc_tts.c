@@ -58,6 +58,7 @@ void oc_tts_queue_reset(oc_tts_queue_t *q)
     q->underruns = 0;
     q->decode_us_max = 0;
     q->overflow = 0;
+    q->draining = false;
 }
 
 bool oc_tts_queue_push(oc_tts_queue_t *q, uint8_t seq, uint8_t rate_khz,
@@ -73,11 +74,18 @@ bool oc_tts_queue_push(oc_tts_queue_t *q, uint8_t seq, uint8_t rate_khz,
     q->dropped += oc_seq_lost(&q->seq) - lost_before;
 
     if (q->count >= OC_TTS_QUEUE_DEPTH) {
-        // 满:丢最旧,给刚合成出来的新音频让位(用户等的是最新那句)。
+        q->overflow++;
+        if (!q->draining) {
+            // 还没开始播(设备刚进播放态、采集任务还在交 codec):这一段突发要**保住开头** ——
+            // 真机"首句前几个字丢失"就是这里丢了最旧的包(那几包正好是这句话的开头)。
+            // 反正队列马上会被消费,丢掉这一包不影响后文(后面按实时节奏到,队列不会一直满)。
+            q->dropped++;
+            return true;
+        }
+        // 已经在播:满则丢最旧,给刚合成出来的新音频让位(用户等的是最新那句)。
         q->tail = (q->tail + 1u) % OC_TTS_QUEUE_DEPTH;
         q->count--;
         q->dropped++;
-        q->overflow++;
     }
     oc_tts_slot_t *slot = &q->slots[q->head];
     slot->len = (uint16_t)len;
@@ -98,6 +106,8 @@ bool oc_tts_queue_pop(oc_tts_queue_t *q, uint8_t *dst, size_t cap,
     if (q == NULL || q->count == 0) {
         return false;
     }
+    // 消费者开始取包了:之后队列满就按"丢最旧"处理(保持追最新)。
+    q->draining = true;
     oc_tts_slot_t *slot = &q->slots[q->tail];
     size_t len = slot->len;
     uint8_t rate_khz = slot->rate_khz;
