@@ -69,6 +69,12 @@ EXPECTED_LINE_HEIGHT = 20   # main/oc_ui.c 按 20px 行高排版(状态栏 30px 
 GB2312_FIRST_ROW = 0xA1
 GB2312_LAST_ROW = 0xF7
 GB2312_FIRST_CELL = 0xA1
+
+# 作者 2026-10 要求补的字符(GB2312 里没有,但界面/回复里很常见,以前只能显示方块):
+#   破折号 —— 与分隔符点 ·
+# 一并带上它们的近亲(同一类排版字符,代价极小):
+#   – U+2013 短破折号 / · U+00B7 间隔点 / • U+2022 项目符号 / ‧ U+2027 连字点 / ✓ U+2713 对勾
+EXTRA_CHARS = "—–·•‧✓"
 GB2312_LAST_CELL = 0xFE
 # ASCII 可打印区间,含空格(状态行里必须能画出空格宽度)。
 ASCII_FIRST = 0x20
@@ -129,7 +135,7 @@ def build_inventory() -> dict[str, object]:
     """构造请求字符集与分类计数。"""
     hanzi, symbols = gb2312_characters()
     ascii_chars = [chr(cp) for cp in range(ASCII_FIRST, ASCII_LAST + 1)]
-    requested = sorted(set(hanzi) | set(symbols) | set(ascii_chars))
+    requested = sorted(set(hanzi) | set(symbols) | set(ascii_chars) | set(EXTRA_CHARS))
     return {
         "requested": requested,
         "hanzi": set(hanzi),
