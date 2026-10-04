@@ -12,11 +12,14 @@
 #include <string.h>
 
 #include "bsp_audio.h"
+#include "bsp_pins.h"
 #include "bsp_battery.h"
 #include "bsp_button.h"
 #include "cJSON.h"
 #include "esp_log.h"
 #include "esp_heap_caps.h"
+#include "esp_pm.h"
+#include "esp_sleep.h"
 #include "esp_system.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -33,6 +36,17 @@ static const char *TAG = "oc_app";
 #define OC_APP_TASK_STACK 8192U
 #define OC_APP_QUEUE_DEPTH 32U
 #define OC_APP_TICK_MS 50U
+
+// Idle power saving (author 2026-10; mirrors the official xiaozhi power_save_timer: 60s -> power
+// save mode, 300s -> deep sleep). App side already downgrades the BLE connection parameters while
+// idle, which is a precondition for the radio to actually sleep.
+#define OC_POWER_LOW_AFTER_US   (60LL * 1000000LL)     // 60s idle -> light sleep + DFS(min 40MHz)
+#define OC_POWER_DEEP_AFTER_US  (300LL * 1000000LL)    // 300s idle -> deep sleep (any key wakes)
+#define OC_POWER_TICK_MS        OC_APP_TICK_MS
+#define OC_POWER_STATUS_DIV     10                     // idle: send the 1Hz status every N ticks
+
+static void oc_note_activity(void);
+static void oc_power_check(void);
 #define OC_APP_BATTERY_POLL_MS 10000U
 // 按下后等 App 的 turn_ready(录音/识别真正就绪)的兜底上限:到点仍未收到也切绿,
 // 不让用户一直对着红屏等(名称按 UI 行为取,见 oc_ui.h 的两个轮次状态)。
@@ -118,6 +132,11 @@ static struct {
     int battery;
     uint32_t tx_drop_seen;
     char last_gw_reason[96];   // 网关原因系统消息去重
+    // ---- idle power saving ----
+    int64_t active_us;         // last real activity (key / frame / turn / playback)
+    bool low_power;            // light sleep + DFS engaged
+    bool deep_sleep_done;      // deep sleep entered once (never returns)
+    uint32_t status_div;       // idle status frame divider counter
 } s_app;
 
 // ---- 发送 ----
@@ -169,6 +188,12 @@ static bool on_audio_frame(uint8_t seq, const uint8_t *opus, size_t len, void *c
 
 static void send_status(void)
 {
+    // Idle power saving: while in low power mode send the 1Hz status only every OC_POWER_STATUS_DIV-th
+    // call. The 1Hz status frame is one of the things that keeps the device (and the phone) awake, and
+    // with the App-side idle BLE downgrade it is the main periodic traffic left while nothing happens.
+    if (s_app.low_power && (++s_app.status_div % OC_POWER_STATUS_DIV) != 0) {
+        return;
+    }
     oc_audio_stats_t st = {0};
     oc_audio_get_stats(&st);
     char json[256];
@@ -783,6 +808,7 @@ static void handle_control(const uint8_t *payload, size_t len)
 
 static void on_frame(uint8_t type, uint8_t flags, const uint8_t *payload, size_t len, void *ctx)
 {
+    oc_note_activity();
     (void)ctx;
     s_app.rx_frames++;
     if (type == OC_FRAME_TEXT) {
@@ -1001,6 +1027,8 @@ static void app_task(void *arg)
             oc_ui_log_memory();
         }
 
+        oc_power_check();
+
         s_app.battery_poll_ms += OC_APP_TICK_MS;
         if (s_app.battery_poll_ms >= OC_APP_BATTERY_POLL_MS) {
             s_app.battery_poll_ms = 0;
@@ -1013,11 +1041,55 @@ static void app_task(void *arg)
     vTaskDelete(NULL);
 }
 
+/**
+ * Note real activity: resets the idle timer and leaves low power mode.
+ * Called on key events, any received frame and turn/playback transitions.
+ */
+static void oc_note_activity(void)
+{
+    s_app.active_us = esp_timer_get_time();
+    if (s_app.low_power) {
+        s_app.low_power = false;
+        esp_pm_config_t pm = { .max_freq_mhz = 160, .min_freq_mhz = 160, .light_sleep_enable = false };
+        esp_pm_configure(&pm);
+        ESP_LOGI(TAG, "power: activity -> high performance (no light sleep)");
+    }
+}
+
+/** Idle power check, called from the app task tick. */
+static void oc_power_check(void)
+{
+    const bool busy = s_app.turn_active || s_app.turn_pressed || s_app.turn_ready_pending ||
+                      s_app.playing || s_app.settings_active;
+    if (busy) {
+        oc_note_activity();
+        return;
+    }
+    const int64_t idle_us = esp_timer_get_time() - s_app.active_us;
+    if (!s_app.low_power && idle_us >= OC_POWER_LOW_AFTER_US) {
+        s_app.low_power = true;
+        // min_freq 40MHz + automatic light sleep: CPU sleeps whenever idle, the BT controller keeps
+        // the BLE link alive (modem sleep), so a key press still starts a turn immediately.
+        esp_pm_config_t pm = { .max_freq_mhz = 160, .min_freq_mhz = 40, .light_sleep_enable = true };
+        esp_err_t e = esp_pm_configure(&pm);
+        ESP_LOGI(TAG, "power: idle %llds -> light sleep + DFS (%s)",
+                 (long long)(idle_us / 1000000), esp_err_to_name(e));
+    }
+    if (!s_app.deep_sleep_done && idle_us >= OC_POWER_DEEP_AFTER_US) {
+        s_app.deep_sleep_done = true;
+        ESP_LOGW(TAG, "power: idle %llds -> deep sleep (press any key to wake)",
+                 (long long)(idle_us / 1000000));
+        esp_deep_sleep_enable_gpio_wakeup(1ULL << BSP_BTN_GPIO, ESP_GPIO_WAKEUP_GPIO_LOW);
+        esp_deep_sleep_start();
+    }
+}
+
 esp_err_t oc_app_start(void)
 {
     memset(&s_app, 0, sizeof(s_app));
     s_app.battery = -1;
     s_app.running = true;
+    s_app.active_us = esp_timer_get_time();
 
     if (oc_settings_load() != ESP_OK) {
         ESP_LOGW(TAG, "设置读取异常,使用默认值继续");
@@ -1096,6 +1168,7 @@ esp_err_t oc_app_start(void)
 
 void oc_app_key(int btn, int ev)
 {
+    oc_note_activity();
     if (s_app.queue == NULL) {
         return;
     }

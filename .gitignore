@@ -11,3 +11,5 @@ managed_components/
 /.agents/skills/passport-build
 /.agents/skills/passport-device-test
 /.agents/skills/passport-debug
+# ESP-IDF 构建目录(含带后缀的:build113/113b/114b…)
+build1*/
