@@ -1074,9 +1074,11 @@ static void oc_power_check(void)
     const int64_t idle_us = esp_timer_get_time() - s_app.active_us;
     if (!s_app.low_power && idle_us >= OC_POWER_LOW_AFTER_US) {
         s_app.low_power = true;
-        // min_freq 40MHz + automatic light sleep: CPU sleeps whenever idle, the BT controller keeps
-        // the BLE link alive (modem sleep), so a key press still starts a turn immediately.
-        esp_pm_config_t pm = { .max_freq_mhz = 160, .min_freq_mhz = 40, .light_sleep_enable = true };
+        // Only DFS (frequency scaling): idle at 40MHz, full speed on activity.
+        // NOT light_sleep_enable: 真机实测开它之后 BLE 链路会被判超时(status=8 GATT_CONN_TIMEOUT,
+        // 5 秒监督超时)—— 设备没按连接间隔醒来,App 侧表现为"设备反复自动断开/重连"。
+        // 降频已经能省下空闲功耗的大头,而且完全不碰链路。
+        esp_pm_config_t pm = { .max_freq_mhz = 160, .min_freq_mhz = 40, .light_sleep_enable = false };
         esp_err_t e = esp_pm_configure(&pm);
         ESP_LOGI(TAG, "power: idle %llds -> light sleep + DFS (%s)",
                  (long long)(idle_us / 1000000), esp_err_to_name(e));
