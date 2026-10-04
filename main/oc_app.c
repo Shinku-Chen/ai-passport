@@ -41,7 +41,15 @@ static const char *TAG = "oc_app";
 // save mode, 300s -> deep sleep). App side already downgrades the BLE connection parameters while
 // idle, which is a precondition for the radio to actually sleep.
 #define OC_POWER_LOW_AFTER_US   (60LL * 1000000LL)     // 60s idle -> light sleep + DFS(min 40MHz)
-#define OC_POWER_DEEP_AFTER_US  (300LL * 1000000LL)    // 300s idle -> deep sleep (any key wakes)
+#define OC_POWER_DEEP_AFTER_US  (300LL * 1000000LL)
+
+// 深睡总开关(作者 2026-10:先关)。
+// 真机实测:开了之后设备**每 5 分钟自己复位一次**(App 侧每 5 分钟一条 status=8,2 秒后自动重连)。
+// 原因:深度睡眠的唤醒源(GPIO0 低电平)没配稳 —— C3 深睡时 GPIO 矩阵断电,仅靠外部 10k 上拉,
+// 引脚电平被判成"按键按下",于是一睡就醒(等于每 5 分钟重启一次)。要重新启用,先解决唤醒脚:
+// 睡前对 BSP_BTN_GPIO 显式配内部上拉(rtc_gpio_pullup_en 之类的 RTC 域配置),并在真机上反复验证
+// "睡下去能稳定待住、按键能可靠唤醒"之后再打开。
+#define OC_POWER_ALLOW_DEEP_SLEEP 0    // 300s idle -> deep sleep (any key wakes)
 #define OC_POWER_TICK_MS        OC_APP_TICK_MS
 #define OC_POWER_STATUS_DIV     10                     // idle: send the 1Hz status every N ticks
 
@@ -1083,7 +1091,7 @@ static void oc_power_check(void)
         ESP_LOGI(TAG, "power: idle %llds -> light sleep + DFS (%s)",
                  (long long)(idle_us / 1000000), esp_err_to_name(e));
     }
-    if (!s_app.deep_sleep_done && idle_us >= OC_POWER_DEEP_AFTER_US) {
+    if (OC_POWER_ALLOW_DEEP_SLEEP && !s_app.deep_sleep_done && idle_us >= OC_POWER_DEEP_AFTER_US) {
         s_app.deep_sleep_done = true;
         ESP_LOGW(TAG, "power: idle %llds -> deep sleep (press any key to wake)",
                  (long long)(idle_us / 1000000));
