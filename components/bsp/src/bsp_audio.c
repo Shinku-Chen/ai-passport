@@ -557,6 +557,16 @@ esp_err_t bsp_audio_wake(void) {
 
 esp_err_t bsp_audio_set_out_mute(bool mute)
 {
+    // 要出声时先把 codec 唤回来:省电挂起会 delete codec(s_opened=false、s_sleeping=true),
+    // 而调用方(如“开始播放”那一瞬)总是希望先解除静音、后等待唤醒 —— 顺序反过来会让
+    // 解除静音拿到 ESP_ERR_INVALID_STATE 而静默失败,设备就一直是静音的。
+    //
+    // 真机(2026-10-05):小米 14 Pro 对话时“有文字、无声音”就是这个原因:
+    //   oc_audio 先 set_out_mute(false)】(此时 codec 还在挂起 → 失败并只打一行 W),之后
+    //   才唤醒并重开 codec —— 没有人补一次解除静音,于是输出级一直静音。
+    if (!mute && (s_sleeping || !s_opened)) {
+        (void)bsp_audio_wake();
+    }
     if (!s_dev || !s_opened || s_sleeping) {
         return ESP_ERR_INVALID_STATE;
     }

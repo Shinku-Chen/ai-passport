@@ -632,9 +632,18 @@ void oc_audio_play_start(void)
     s_play.bad_frame_logged = false;
     s_play.decode_fail_run = 0;
     s_play.ev = OC_AUDIO_PLAY_EV_NONE;
-    // 要出声了:解除采集期间对输出级的静音
+    // 要出声了:解除采集期间对输出级的静音。
+    //
+    // 补一次重试:[bsp_audio_set_out_mute] 现在会先把挂起的 codec 唤回来(修顺序),但挂起/唤醒
+    // 与播放启动可能交错,单次失败就会让设备**一直静音**(真机 2026-10-05 小米上“有文字无声音”
+    // 就是这个)。重试一次兼底。
     if (bsp_audio_set_out_mute(false) != ESP_OK) {
-        ESP_LOGW(TAG, "解除输出静音失败(继续运行)");
+        vTaskDelay(pdMS_TO_TICKS(30));
+        if (bsp_audio_set_out_mute(false) != ESP_OK) {
+            ESP_LOGW(TAG, "解除输出静音失败(已重试一次,继续运行)");
+        } else {
+            ESP_LOGI(TAG, "解除输出静音:重试成功");
+        }
     }
     s_play.accepting = true;
     s_play.flush_req = false;
