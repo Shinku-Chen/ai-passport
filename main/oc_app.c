@@ -808,7 +808,13 @@ static void handle_control(const uint8_t *payload, size_t len)
 
 static void on_frame(uint8_t type, uint8_t flags, const uint8_t *payload, size_t len, void *ctx)
 {
-    oc_note_activity();
+    // Only audio/text frames count as real activity. The App sends a periodic CONTROL frame
+    // (status/time/keep-alive) about once per second; counting those would keep the device
+    // "busy" forever and it would never reach the idle power-saving thresholds
+    // (measured on hardware: no low-power log for 20 minutes with an idle device).
+    if (type == OC_FRAME_TTS_OPUS || type == OC_FRAME_TEXT) {
+        oc_note_activity();
+    }
     (void)ctx;
     s_app.rx_frames++;
     if (type == OC_FRAME_TEXT) {
