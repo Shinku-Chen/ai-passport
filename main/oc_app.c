@@ -42,7 +42,7 @@ static const char *TAG = "oc_app";
 // save mode, 300s -> deep sleep). App side already downgrades the BLE connection parameters while
 // idle, which is a precondition for the radio to actually sleep.
 #define OC_POWER_LOW_AFTER_US  (60LL * 1000000LL)   // 60s 空闲 -> DFS 降频 + 音频挂起
-#define OC_POWER_DEEP_AFTER_US (300LL * 1000000LL)  // 300s(仅当 OC_POWER_ALLOW_DEEP_SLEEP=1 时生效)
+#define OC_POWER_DEEP_AFTER_US (300LL * 1000000LL)  // 300s 空闲 -> 深睡(按键唤醒)
 
 // 深睡总开关(作者 2026-10:先关)。
 // 真机实测:开了之后设备**每 5 分钟自己复位一次**(App 侧每 5 分钟一条 status=8,2 秒后自动重连)。
@@ -56,7 +56,7 @@ static const char *TAG = "oc_app";
 // 该节点在深睡时(GPIO 矩阵断电)靠板上 10k 上拉也拉不稳,被误判成"按键按下"。
 // 要重启这条能力,得换唤醒源(例如给 OK 键单独引一根 GPIO)再验;在那之前
 // **不睡但省电**才是正确取舍:DFS 降频 + 音频挂起 + 状态帧降频 + App 侧空闲降连接参数。
-#define OC_POWER_ALLOW_DEEP_SLEEP 0
+#define OC_POWER_ALLOW_DEEP_SLEEP 1
 #define OC_POWER_TICK_MS        OC_APP_TICK_MS
 #define OC_POWER_STATUS_DIV     10                     // idle: send the 1Hz status every N ticks
 
@@ -1107,25 +1107,31 @@ static void oc_power_check(void)
                  (long long)(idle_us / 1000000), esp_err_to_name(e));
     }
     if (OC_POWER_ALLOW_DEEP_SLEEP && !s_app.deep_sleep_done && idle_us >= OC_POWER_DEEP_AFTER_US) {
-        s_app.deep_sleep_done = true;
-        ESP_LOGW(TAG, "power: idle %llds -> deep sleep (press any key to wake)",
-                 (long long)(idle_us / 1000000));
-        // 唤醒脚必须在 **RTC 域**先配好内部上拉:深睡时 GPIO 矩阵断电,只靠板上 10k 外部上拉,
-        // 引脚电平会被判成"按键按下",结果一睡就醒(上一版就是每 5 分钟自己复位一次)。
-        // 内部上拉(~45k)与外部 10k 一起把节点拉高,电平才稳;三键共用这一根 ADC 节点,
-        // 所以 OK / UP / DOWN **任意一个**都能唤醒。
-        // C3 上没有 rtc_gpio_* 那套(C3 的 RTC IO 只支持输入的一个子集,相关声明被条件编译掉了),
-        // 正确姿势是 gpio_sleep_set_*:它们配的就是"睡眠期间的引脚方向/上拉",深睡时依然有效。
-        gpio_sleep_set_direction(BSP_BTN_GPIO, GPIO_MODE_INPUT);
-        gpio_sleep_set_pull_mode(BSP_BTN_GPIO, GPIO_PULLUP_ONLY);
-        // 只在唤醒脚**当前确实为高**时才睡:真机实测,若入睡那一刻读到低(按键按着/电平不稳),
-        // 深睡会立刻被唤醒 —— 变成"睡一秒又醒、每 45 秒重启一次"的循环(App 侧表现为每 45 秒
-        // 一条 status=8)。宁可先不睡(设备保持可用),并如实记一条日志;5 秒后自然还会再试。
-        if (gpio_get_level(BSP_BTN_GPIO) == 0) {
-            ESP_LOGW(TAG, "power: 唤醒脚电平为低,本轮先不进深睡(避免睡一秒又被唤醒)");
+        // 入睡前先用 ADC 判"有没有人按着键"(此时按键还活着):
+        // 按着的话低电平唤醒条件在入睡瞬间就成立,设备会立刻醒回来。
+        int mv = bsp_button_read_mv();
+        if (mv >= 0 && mv < BSP_BTN_MV_RELEASED_MIN) {
+            ESP_LOGW(TAG, "power: 检测到按键被按住(%dmV),本轮先不进深睡", mv);
             s_app.active_us = esp_timer_get_time() - OC_POWER_DEEP_AFTER_US + (5LL * 1000000LL);
             return;
         }
+        s_app.deep_sleep_done = true;
+        ESP_LOGW(TAG, "power: idle %llds -> deep sleep (press any key to wake)",
+                 (long long)(idle_us / 1000000));
+        // ★ 关键一步(上游 feat/key-wake-deep-sleep-support 验过的做法):
+        //   ADC 接管后该脚的**数字**电平读回是 0,而深睡的低电平唤醒比的正是这个值 ——
+        //   必须先把三个按键设备停掉、释放共享 ADC unit,再把按键脚交回普通数字输入+上拉,
+        //   否则唤醒条件在入睡瞬间就成立,设备会立刻醒回来(今晚我们踩的就是这个坑)。
+        int level = 0;
+        esp_err_t pe = bsp_button_prepare_deep_sleep(&level);
+        if (pe != ESP_OK || level == 0) {
+            ESP_LOGW(TAG, "power: 按键脚未就绪(prepare=%s level=%d),本轮先不进深睡",
+                     esp_err_to_name(pe), level);
+            s_app.deep_sleep_done = false;
+            s_app.active_us = esp_timer_get_time() - OC_POWER_DEEP_AFTER_US + (5LL * 1000000LL);
+            return;
+        }
+        // 三键共用这一根脚,任一键按下都拉低 → 低电平唤醒。
         esp_deep_sleep_enable_gpio_wakeup(1ULL << BSP_BTN_GPIO, ESP_GPIO_WAKEUP_GPIO_LOW);
         esp_deep_sleep_start();
     }
