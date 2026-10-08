@@ -128,12 +128,17 @@ def _measure_volume(ffmpeg: str, src: Path) -> tuple[float, float]:
     return -999.0, -999.0
 
 
-def encode_opus(ffmpeg: str, src: Path, out: Path, bitrate_kbps: int) -> int:
+def encode_opus(ffmpeg: str, src: Path, out: Path, bitrate_kbps: int,
+                application: str = "voip") -> int:
     """把 src 编码为裸 Opus 包流到 out, 返回字节数。
 
     编码前做响度归一化(统一感知响度): 取 min(TARGET_MEAN-mean, TARGET_PEAK-max) 为增益,
     把每段的平均响度统一到 TARGET_MEAN_DB, 同时峰值不超过 TARGET_PEAK_DB(防削顶)。
     偏小声的素材(如吉伊卡哇 -29dB)被大幅提升, 过响的适度压到统一, 使所有素材听感一致。
+
+    application: libopus 编码模式。语音素材用默认 voip(低码率下更清晰);
+    音乐素材用 audio —— voip 模式强制 SILK 语音通路, 同样码率下音乐失真明显
+    (实测 32kbps/16kHz 单声道: voip 与原曲信噪比不到 1dB, audio 约 17dB)。
     """
     import tempfile
     mean, maxdb = _measure_volume(ffmpeg, src)
@@ -149,7 +154,7 @@ def encode_opus(ffmpeg: str, src: Path, out: Path, bitrate_kbps: int) -> int:
             cmd += ["-af", f"volume={gain_db:.1f}dB"]   # 增益(负=压小声, 正=提升)
         cmd += ["-c:a", "libopus", "-b:a", f"{bitrate_kbps}k",
                 "-ar", str(SAMPLE_RATE), "-ac", str(CHANNELS),
-                "-application", "voip", str(ogg_path)]
+                "-application", application, str(ogg_path)]
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode != 0 or not ogg_path.exists():
             raise RuntimeError(f"opus 编码失败 {src}: {res.stderr[-500:]}")

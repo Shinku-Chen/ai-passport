@@ -6710,5 +6710,84 @@
         "compressed_bytes": 4152
       }
     ]
+  },
+  {
+    "dir": "重生之我是主角",
+    "dir_id": 24,
+    "dir_ascii": "dir24",
+    "files": [
+      {
+        "name": "Amazon",
+        "src": "Amazon.wav",
+        "path": "dir24/clip00.opus",
+        "samples": 131520,
+        "duration": 8.22,
+        "compressed_bytes": 35150
+      },
+      {
+        "name": "ILLusion（Original Mix）",
+        "src": "ILLusion（Original Mix）.wav",
+        "path": "dir24/clip01.opus",
+        "samples": 73440,
+        "duration": 4.59,
+        "compressed_bytes": 17991
+      },
+      {
+        "name": "《SALESMAN  FUNK》",
+        "src": "《SALESMAN  FUNK》.wav",
+        "path": "dir24/clip02.opus",
+        "samples": 101120,
+        "duration": 6.32,
+        "compressed_bytes": 28432
+      },
+      {
+        "name": "《樱花草》",
+        "src": "《樱花草》.wav",
+        "path": "dir24/clip03.opus",
+        "samples": 96320,
+        "duration": 6.02,
+        "compressed_bytes": 24091
+      },
+      {
+        "name": "反派骚气救场",
+        "src": "反派骚气救场.wav",
+        "path": "dir24/clip04.opus",
+        "samples": 130080,
+        "duration": 8.13,
+        "compressed_bytes": 38972
+      },
+      {
+        "name": "囚笼",
+        "src": "囚笼.wav",
+        "path": "dir24/clip05.opus",
+        "samples": 116320,
+        "duration": 7.27,
+        "compressed_bytes": 33713
+      },
+      {
+        "name": "幻昼4.0",
+        "src": "幻昼4.0.wav",
+        "path": "dir24/clip06.opus",
+        "samples": 114080,
+        "duration": 7.13,
+        "compressed_bytes": 31541
+      },
+      {
+        "name": "海屿你",
+        "src": "海屿你.wav",
+        "path": "dir24/clip07.opus",
+        "samples": 89600,
+        "duration": 5.6,
+        "compressed_bytes": 23675
+      },
+      {
+        "name": "背对背拥抱",
+        "src": "背对背拥抱.wav",
+        "path": "dir24/clip08.opus",
+        "samples": 86880,
+        "duration": 5.43,
+        "compressed_bytes": 22170
+      }
+    ]
   }
 ]

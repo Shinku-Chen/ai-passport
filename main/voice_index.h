@@ -28,9 +28,10 @@ static const char *const VOICE_DIR_NAMES[] = {
     "\xe9\x87\x91\xe5\x9d\xb7\xe5\x9e\x83",
     "\xe9\xab\x98\xe6\x9d\xbe\xe7\x81\xaf",
     "\xe9\xb8\xa1\xe4\xb9\x90",
+    "\xe9\x87\x8d\xe7\x94\x9f\xe4\xb9\x8b\xe6\x88\x91\xe6\x98\xaf\xe4\xb8\xbb\xe8\xa7\x92",
 };
 
-#define VOICE_DIR_COUNT 24
+#define VOICE_DIR_COUNT 25
 
 typedef struct { const char *path; const char *name; uint32_t opus_bytes; uint32_t samples; } voice_file_t;
 
@@ -997,6 +998,21 @@ static const voice_file_t VOICE_DIR_23_FILES[] = {
 static const voice_file_t *const VOICE_DIR_23 = VOICE_DIR_23_FILES;
 #define VOICE_DIR_23_COUNT (sizeof(VOICE_DIR_23_FILES)/sizeof(VOICE_DIR_23_FILES[0]))
 
+// --- dir24: 重生之我是主角 ---
+static const voice_file_t VOICE_DIR_24_FILES[] = {
+    { "\x64ir\x32\x34/\x63lip\x30\x30.opus", "\x41m\x61zon", 35150u, 131520u },
+    { "\x64ir\x32\x34/\x63lip\x30\x31.opus", "ILLusion\xef\xbc\x88Origin\x61l Mix\xef\xbc\x89", 17991u, 73440u },
+    { "\x64ir\x32\x34/\x63lip\x30\x32.opus", "\xe3\x80\x8aS\x41L\x45SM\x41N  \x46UNK\xe3\x80\x8b", 28432u, 101120u },
+    { "\x64ir\x32\x34/\x63lip\x30\x33.opus", "\xe3\x80\x8a\xe6\xa8\xb1\xe8\x8a\xb1\xe8\x8d\x89\xe3\x80\x8b", 24091u, 96320u },
+    { "\x64ir\x32\x34/\x63lip\x30\x34.opus", "\xe5\x8f\x8d\xe6\xb4\xbe\xe9\xaa\x9a\xe6\xb0\x94\xe6\x95\x91\xe5\x9c\xba", 38972u, 130080u },
+    { "\x64ir\x32\x34/\x63lip\x30\x35.opus", "\xe5\x9b\x9a\xe7\xac\xbc", 33713u, 116320u },
+    { "\x64ir\x32\x34/\x63lip\x30\x36.opus", "\xe5\xb9\xbb\xe6\x98\xbc\x34.\x30", 31541u, 114080u },
+    { "\x64ir\x32\x34/\x63lip\x30\x37.opus", "\xe6\xb5\xb7\xe5\xb1\xbf\xe4\xbd\xa0", 23675u, 89600u },
+    { "\x64ir\x32\x34/\x63lip\x30\x38.opus", "\xe8\x83\x8c\xe5\xaf\xb9\xe8\x83\x8c\xe6\x8b\xa5\xe6\x8a\xb1", 22170u, 86880u },
+};
+static const voice_file_t *const VOICE_DIR_24 = VOICE_DIR_24_FILES;
+#define VOICE_DIR_24_COUNT (sizeof(VOICE_DIR_24_FILES)/sizeof(VOICE_DIR_24_FILES[0]))
+
 typedef struct { const voice_file_t *files; uint32_t count; const char *name; } voice_dir_t;
 static const voice_dir_t VOICE_DIRS[] = {
     { VOICE_DIR_00, VOICE_DIR_00_COUNT, "\xe9\xbb\x84\xe8\x89\xb2\xe8\xa2\x8b\xe9\xbc\xa0" },
@@ -1023,5 +1039,6 @@ static const voice_dir_t VOICE_DIRS[] = {
     { VOICE_DIR_21, VOICE_DIR_21_COUNT, "\xe9\x87\x91\xe5\x9d\xb7\xe5\x9e\x83" },
     { VOICE_DIR_22, VOICE_DIR_22_COUNT, "\xe9\xab\x98\xe6\x9d\xbe\xe7\x81\xaf" },
     { VOICE_DIR_23, VOICE_DIR_23_COUNT, "\xe9\xb8\xa1\xe4\xb9\x90" },
+    { VOICE_DIR_24, VOICE_DIR_24_COUNT, "\xe9\x87\x8d\xe7\x94\x9f\xe4\xb9\x8b\xe6\x88\x91\xe6\x98\xaf\xe4\xb8\xbb\xe8\xa7\x92" },
 };
 #define VOICE_DIR_TOTAL (sizeof(VOICE_DIRS)/sizeof(VOICE_DIRS[0]))

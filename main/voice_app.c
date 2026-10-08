@@ -489,11 +489,30 @@ static void refresh_batt_periodic(lv_timer_t *t) {
 // ---------------------------------------------------------------------------
 // 目录页
 // ---------------------------------------------------------------------------
+// 置顶显示: 名为「重生之我是主角」的包固定显示在目录列表第一位(dirNN 编号不变, 不重编号)。
+// 显示位 -> VOICE_DIRS 下标: 置顶包换到第 0 位, 其余保持索引原顺序。
+#define VOICE_DIR_PINNED_NAME "重生之我是主角"
+static unsigned s_dir_pinned;    // 置顶包在 VOICE_DIRS 中的下标(0 = 未找到, 顺序照旧)
+static unsigned dir_view_to_index(unsigned pos) {
+    if (s_dir_pinned == 0u) return pos;
+    if (pos == 0u) return s_dir_pinned;
+    return (pos <= s_dir_pinned) ? pos - 1u : pos;
+}
+static void dir_pin_resolve(void) {
+    s_dir_pinned = 0;
+    for (unsigned i = 0; i < VOICE_DIR_TOTAL; i++) {
+        if (strcmp(VOICE_DIRS[i].name, VOICE_DIR_PINNED_NAME) == 0) {
+            s_dir_pinned = i;
+            break;
+        }
+    }
+}
 // 目录页: 建 `window` 个可见行(滚动窗口), 每次刷新用 lv_label_set_text 更新文本与选中
 static void dir_build(void) {
     // 进入新页前删除旧屏, 避免 LVGL 对象/RAM 跨屏累积
     if (s_list_scr) { lv_obj_delete(s_list_scr); s_list_scr = NULL; }
     if (s_set_scr) { lv_obj_delete(s_set_scr); s_set_scr = NULL; }
+    dir_pin_resolve();
     s_dir_scr = make_screen("音效钥匙扣", "上下选择 OK进入 长按设置");
     // 顶栏右侧电量百分比(仅首页显示): 右对齐垂直居中, 右缘留8px
     s_dir_batt = lv_label_create(s_dir_scr);
@@ -508,7 +527,8 @@ static void dir_build(void) {
     s_dir_top = 0;
     s_dir_window = s_dir_count < MAX_ROWS ? s_dir_count : MAX_ROWS;
     for (unsigned i = 0; i < s_dir_window; i++) {
-        s_dir_rows[i] = make_row(s_dir_scr, (int)i, VOICE_DIRS[i].name,
+        s_dir_rows[i] = make_row(s_dir_scr, (int)i,
+                                 VOICE_DIRS[dir_view_to_index(i)].name,
                                  ((int)i == s_dir_sel) ? ROW_SEL : ROW_UNSEL, &s_dir_txts[i]);
     }
     // 诊断: 打印实际列表几何(起点/行高/行数/最后行底 vs 屏高), 定位底部空白
@@ -527,7 +547,7 @@ static void refresh_dir_selection(void) {
     for (unsigned i = 0; i < s_dir_window; i++) {
         int idx = s_dir_top + (int)i;
         if (idx >= 0 && idx < (int)s_dir_count) {
-            lv_label_set_text(s_dir_txts[i], VOICE_DIRS[idx].name);
+            lv_label_set_text(s_dir_txts[i], VOICE_DIRS[dir_view_to_index((unsigned)idx)].name);
             bool sel = (idx == s_dir_sel);
             // SCROLL_CIRCULAR: 纯水平循环滚动(绝不垂直滚), 消除"单行文字上下滚动"。
             // 防抖: 仅当 long_mode 变化才 set_long_mode, 避免长按翻页重复重置滚动偏移。
@@ -662,7 +682,7 @@ void voice_app_on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user) {
             if (s_dir_sel < (int)VOICE_DIR_TOTAL - 1) { s_dir_sel++; refresh_dir_selection(); }
         } else if (btn == BSP_BTN_OK && ev == BSP_BTN_CLICK) {
             s_list_sel = 0;
-            list_build(s_dir_sel);
+            list_build((int)dir_view_to_index((unsigned)s_dir_sel));
             s_view = VIEW_LIST;
         } else if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG) {
             settings_build();
