@@ -29,9 +29,7 @@
 #define GAL_TEXT_LINES_LARGE 4
 #define GAL_LIST_MAX_ROWS 16
 #define GAL_TEXT_CAPACITY 1024
-#define GAL_CG_TILES 9
-// 鉴赏室最后一个格子是“章节 / 路线”入口(其余是 CG 缩略图)。
-#define GAL_GALLERY_CHAPTER_TILE (GAL_CG_TILES - 1)
+#define GAL_CG_TILES 8
 #define GAL_PAGE_MODAL GAL_PAGE_COUNT   // 弹窗层:不在页面枚举里
 
 // 全部逻辑屏(与原型 docs/design/galgame-ui-wireframes/prototype.html 对应)。
@@ -45,8 +43,9 @@ typedef enum {
     GAL_PAGE_LOAD,          // 读档页
     GAL_PAGE_SETTINGS,      // 设置页
     GAL_PAGE_HISTORY,       // 历史文本
-    GAL_PAGE_GALLERY,       // 鉴赏室
-    GAL_PAGE_CHAPTER,       // 章节 / 路线
+    GAL_PAGE_GALLERY,       // 鉴赏室(分类入口)
+    GAL_PAGE_CG_LIST,       // CG 鉴赏(缩略图)
+    GAL_PAGE_CHAPTER,       // 剧情鉴赏(章节 / 路线)
     GAL_PAGE_TRANSITION,    // 章节过场
     GAL_PAGE_ENDING,        // 结局
     GAL_PAGE_ABOUT,         // 关于
@@ -71,6 +70,7 @@ typedef enum {
     GAL_LIST_LOAD,        // 读档槽位
     GAL_LIST_SETTINGS,    // 设置项
     GAL_LIST_HISTORY,     // 历史文本
+    GAL_LIST_GALLERY,     // 鉴赏室分类
     GAL_LIST_CHAPTER,     // 章节 / 路线
     GAL_LIST_ENDING,      // 结局后续入口
     GAL_LIST_MODAL,       // 弹窗按钮

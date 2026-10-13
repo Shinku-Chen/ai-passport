@@ -107,6 +107,15 @@ extern const int gal_content_title_menu_count;
 extern const char *const gal_content_quick_menu[];
 extern const int gal_content_quick_menu_count;
 
+// 鉴赏室分类入口。
+extern const char *const gal_content_gallery_menu[];
+extern const int gal_content_gallery_menu_count;
+
+enum {
+    GAL_GALLERY_CG = 0,
+    GAL_GALLERY_STORY,
+};
+
 // 标题页菜单项下标(供状态机使用)。
 enum {
     GAL_TITLE_MENU_NEW = 0,

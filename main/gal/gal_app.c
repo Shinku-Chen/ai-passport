@@ -406,7 +406,7 @@ static void fill_about(gal_app_t *app)
 
 static void fill_cg(gal_app_t *app)
 {
-    const gal_cg_t *cg = &gal_content_cgs[app->gallery_sel];
+    const gal_cg_t *cg = &gal_content_cgs[app->cg_sel];
     char index_text[24];
     snprintf(index_text, sizeof(index_text), "%s / %02d", cg->label, gal_content_cg_count);
     gal_ui_set_cg(&app->ui, index_text, cg->caption, "占位画面 · 骨架不携带美术资源");
@@ -468,9 +468,16 @@ static void render_page(gal_app_t *app)
     case GAL_PAGE_HISTORY:
         fill_history(app);
         return;
-    case GAL_PAGE_GALLERY:
-        gal_ui_set_gallery(&app->ui, gal_content_cgs, gal_content_cg_count, app->gallery_sel);
-        gal_ui_set_footer(&app->ui, GAL_PAGE_GALLERY, "共 8 张 · 前 6 张已解锁");
+    case GAL_PAGE_GALLERY: {
+        // 鉴赏室:CG 鉴赏 / 剧情鉴赏两个分类入口。
+        static const char *const VALUES[2] = { "8 张", "3 章" };
+        gal_ui_set_rows(&app->ui, GAL_LIST_GALLERY, gal_content_gallery_menu, VALUES,
+                        gal_content_gallery_menu_count, app->gallery_sel);
+        return;
+    }
+    case GAL_PAGE_CG_LIST:
+        gal_ui_set_gallery(&app->ui, gal_content_cgs, gal_content_cg_count, app->cg_sel);
+        gal_ui_set_footer(&app->ui, GAL_PAGE_CG_LIST, "共 8 张 · 前 6 张已解锁");
         return;
     case GAL_PAGE_CHAPTER:
         fill_chapters(app);
@@ -799,25 +806,42 @@ static void handle_history(gal_app_t *app, const gal_key_t *key)
 
 static void handle_gallery(gal_app_t *app, const gal_key_t *key)
 {
-    const int total = gal_content_cg_count + 1;   // 8 张 CG + 章节入口
     if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
         goto_page(app, GAL_PAGE_TITLE);
         return;
     }
     if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        move_selection(&app->gallery_sel, total, key->btn == BSP_BTN_UP ? -1 : 1);
-        gal_ui_set_gallery(&app->ui, gal_content_cgs, gal_content_cg_count, app->gallery_sel);
+        move_selection(&app->gallery_sel, gal_content_gallery_menu_count,
+                       key->btn == BSP_BTN_UP ? -1 : 1);
+        gal_ui_select_row(&app->ui, GAL_LIST_GALLERY, app->gallery_sel);
+        return;
+    }
+    if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
+
+    if (app->gallery_sel == GAL_GALLERY_STORY) {
+        // 剧情鉴赏:章节 / 路线选择。
+        app->chapter_sel = 0;
+        app->return_page = GAL_PAGE_GALLERY;
+        goto_page(app, GAL_PAGE_CHAPTER);
+        return;
+    }
+    app->cg_sel = 0;
+    goto_page(app, GAL_PAGE_CG_LIST);
+}
+
+static void handle_cg_list(gal_app_t *app, const gal_key_t *key)
+{
+    if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
+        goto_page(app, GAL_PAGE_GALLERY);
+        return;
+    }
+    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
+        move_selection(&app->cg_sel, gal_content_cg_count, key->btn == BSP_BTN_UP ? -1 : 1);
+        gal_ui_set_gallery(&app->ui, gal_content_cgs, gal_content_cg_count, app->cg_sel);
         return;
     }
     if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
-        if (app->gallery_sel == GAL_GALLERY_CHAPTER_TILE) {
-            // 章节 / 路线入口。
-            app->chapter_sel = 0;
-            app->return_page = GAL_PAGE_GALLERY;
-            goto_page(app, GAL_PAGE_CHAPTER);
-            return;
-        }
-        if (!gal_content_cgs[app->gallery_sel].unlocked) {
+        if (!gal_content_cgs[app->cg_sel].unlocked) {
             show_notice(app, "尚未解锁");
             return;
         }
@@ -879,8 +903,7 @@ static void handle_ending(gal_app_t *app, const gal_key_t *key)
     case 2:   // 鉴赏室
         app->gallery_sel = 0;
         goto_page(app, GAL_PAGE_GALLERY);
-        break;
-    default:  // 返回标题
+        break;    default:  // 返回标题
         app->title_sel = 0;
         goto_page(app, GAL_PAGE_TITLE);
         break;
@@ -903,13 +926,12 @@ static void handle_about(gal_app_t *app, const gal_key_t *key)
 static void handle_cg(gal_app_t *app, const gal_key_t *key)
 {
     if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        move_selection(&app->gallery_sel, gal_content_cg_count,
-                       key->btn == BSP_BTN_UP ? -1 : 1);
+        move_selection(&app->cg_sel, gal_content_cg_count, key->btn == BSP_BTN_UP ? -1 : 1);
         fill_cg(app);
         return;
     }
     if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
-        goto_page(app, GAL_PAGE_GALLERY);
+        goto_page(app, GAL_PAGE_CG_LIST);
     }
 }
 
@@ -1001,6 +1023,7 @@ void gal_app_key(gal_app_t *app, const gal_key_t *key)
     case GAL_PAGE_SETTINGS: handle_settings(app, key); break;
     case GAL_PAGE_HISTORY: handle_history(app, key); break;
     case GAL_PAGE_GALLERY: handle_gallery(app, key); break;
+    case GAL_PAGE_CG_LIST: handle_cg_list(app, key); break;
     case GAL_PAGE_CHAPTER: handle_chapter(app, key); break;
     case GAL_PAGE_TRANSITION: handle_transition(app, key); break;
     case GAL_PAGE_ENDING: handle_ending(app, key); break;

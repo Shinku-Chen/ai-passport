@@ -44,7 +44,8 @@ typedef struct {
     int save_sel;
     int load_sel;
     int history_sel;
-    int gallery_sel;
+    int gallery_sel;                // 鉴赏室分类光标
+    int cg_sel;                     // CG 鉴赏网格光标
     int chapter_sel;
     int ending_sel;
     int choice_sel;

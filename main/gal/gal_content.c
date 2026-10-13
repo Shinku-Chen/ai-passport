@@ -120,3 +120,11 @@ const char *const gal_content_quick_menu[] = {
 
 const int gal_content_quick_menu_count =
     (int)(sizeof(gal_content_quick_menu) / sizeof(gal_content_quick_menu[0]));
+
+// ---------------------------------------------------------------- 鉴赏室分类
+const char *const gal_content_gallery_menu[] = {
+    "CG 鉴赏", "剧情鉴赏",
+};
+
+const int gal_content_gallery_menu_count =
+    (int)(sizeof(gal_content_gallery_menu) / sizeof(gal_content_gallery_menu[0]));

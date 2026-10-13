@@ -466,8 +466,16 @@ static void build_gallery(gal_ui_t *ui)
 {
     lv_obj_t *root = mk_page(ui, GAL_PAGE_GALLERY, COL_PAGE_BG, true);
     mk_page_title(ui, GAL_PAGE_GALLERY, "鉴赏室");
+    // 分类入口:CG 鉴赏 / 剧情鉴赏(右侧的数量在渲染时填)。
+    list_create(ui, GAL_LIST_GALLERY, root, NULL, "", 44, 100, 20, GAL_UI_W, false);
+}
 
-    // 3 列 x 3 行缩略图(与原型一致:6 张已解锁 + 2 张锁定)。
+static void build_cg_list(gal_ui_t *ui)
+{
+    lv_obj_t *root = mk_page(ui, GAL_PAGE_CG_LIST, COL_PAGE_BG, true);
+    mk_page_title(ui, GAL_PAGE_CG_LIST, "CG 鉴赏");
+
+    // 3 列 x 3 行缩略图(前 6 张已解锁 + 2 张锁定,末格留空)。
     const int gap = 6;
     const int left = 9;
     const int top = 45;
@@ -499,18 +507,8 @@ static void build_gallery(gal_ui_t *ui)
         ui->cg_tiles_label[i] = label;
     }
 
-    // 最后一个格子是“章节 / 路线”入口,一直可选。
-    lv_obj_set_style_bg_color(ui->cg_tiles[GAL_GALLERY_CHAPTER_TILE],
-                               lv_color_hex(COL_BOX), LV_PART_MAIN);
-    lv_obj_set_style_bg_grad_color(ui->cg_tiles[GAL_GALLERY_CHAPTER_TILE],
-                                   lv_color_hex(COL_BOX), LV_PART_MAIN);
-    lv_obj_set_style_text_color(ui->cg_tiles_label[GAL_GALLERY_CHAPTER_TILE],
-                                lv_color_hex(COL_ACCENT), LV_PART_MAIN);
-    lv_label_set_text(ui->cg_tiles_label[GAL_GALLERY_CHAPTER_TILE], "章节");
-    lv_obj_align(ui->cg_tiles_label[GAL_GALLERY_CHAPTER_TILE], LV_ALIGN_CENTER, 0, 0);
-
-    ui->footers[GAL_PAGE_GALLERY] = mk_label(root, ui->font_small, COL_DIM);
-    lv_obj_align(ui->footers[GAL_PAGE_GALLERY], LV_ALIGN_BOTTOM_MID, 0, -8);
+    ui->footers[GAL_PAGE_CG_LIST] = mk_label(root, ui->font_small, COL_DIM);
+    lv_obj_align(ui->footers[GAL_PAGE_CG_LIST], LV_ALIGN_BOTTOM_MID, 0, -8);
 }
 
 static void build_chapter(gal_ui_t *ui)
@@ -739,6 +737,7 @@ bool gal_ui_create(gal_ui_t *ui, const lv_font_t *font_small, const lv_font_t *f
     build_settings(ui);
     build_history(ui);
     build_gallery(ui);
+    build_cg_list(ui);
     build_chapter(ui);
     build_transition(ui);
     build_ending(ui);
@@ -909,7 +908,7 @@ void gal_ui_set_action_hint(gal_ui_t *ui, const char *text)
 void gal_ui_set_gallery(gal_ui_t *ui, const gal_cg_t *items, int count, int selected)
 {
     if (!ui) return;
-    for (int i = 0; i < GAL_GALLERY_CHAPTER_TILE; ++i) {
+    for (int i = 0; i < GAL_CG_TILES; ++i) {
         const bool filled = items && i < count;
         const bool unlocked = filled && items[i].unlocked;
         lv_label_set_text(ui->cg_tiles_label[i], filled ? items[i].label : "");
@@ -929,11 +928,6 @@ void gal_ui_set_gallery(gal_ui_t *ui, const gal_cg_t *items, int count, int sele
         lv_obj_set_style_border_color(ui->cg_tiles[i], lv_color_hex(COL_ACCENT), LV_PART_MAIN);
         lv_obj_set_style_border_width(ui->cg_tiles[i], on ? 2 : 1, LV_PART_MAIN);
     }
-    // 章节入口的高亮跟着光标走。
-    lv_obj_set_style_border_color(ui->cg_tiles[GAL_GALLERY_CHAPTER_TILE],
-                                  lv_color_hex(COL_ACCENT), LV_PART_MAIN);
-    lv_obj_set_style_border_width(ui->cg_tiles[GAL_GALLERY_CHAPTER_TILE],
-                                  selected == GAL_GALLERY_CHAPTER_TILE ? 2 : 1, LV_PART_MAIN);
 }
 
 void gal_ui_set_cg(gal_ui_t *ui, const char *index_text, const char *name, const char *caption)
