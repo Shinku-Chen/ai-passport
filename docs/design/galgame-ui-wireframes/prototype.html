@@ -164,6 +164,9 @@
     .screen-titlebar { position: absolute; z-index: 2; top: 8px; right: 9px; left: 9px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
     .screen-titlebar .button { min-width: 25px; min-height: 22px; padding: 1px 7px; }
     .title-layout { position: absolute; z-index: 1; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 40px 11px 13px; }
+    /* 开机首屏：只有“开始游戏”一个入口，点它才进标题页。 */
+    .start-layout { position: absolute; z-index: 1; inset: 0; display: grid; place-items: center; padding: 24px; }
+    .start-layout .button { min-width: 168px; min-height: 40px; }
     .title-brand { width: 100%; margin-top: 8px; text-align: center; text-shadow: 0 2px 8px #0b1020; }
     .title-brand h4 { margin: 0; font-size: 21px; line-height: 1.1; }
     .title-brand p { margin: 6px 0 0; color: var(--gold); }
@@ -330,7 +333,7 @@
     <div>
       <p class="eyebrow">AI Passport · GalGame Framework</p>
       <h1>页面原型与屏幕布局</h1>
-      <p class="intro-copy">17 个页面/状态 · 每页提供 240×320 竖屏与 320×240 横屏示意</p>
+      <p class="intro-copy">18 个页面/状态 · 每页提供 240×320 竖屏与 320×240 横屏示意</p>
     </div>
     <p class="build-note"><b>方向在编写时配置</b><br>修改源码中的 <code>PREVIEW_ORIENTATION</code> 为 <code>"portrait"</code>、<code>"landscape"</code> 或 <code>"both"</code>。页面内没有方向切换选项。<br><b>分辨率基准</b>：每张屏按设备物理分辨率 1:1 绘制（竖屏 240 × 320、横屏 320 × 240；1 CSS 像素 = 1 设备像素；ST7789P3 / RGB565）。原型字号即设备字形档位：对白 16/20px 两档（竖屏排版取 Asunabi、横屏取沙耶参考版）、辅助与提示 10px、标题 20px 起，真机上不建议使用低于 10px 的字形。素材按各方向整屏尺寸产出，不做运行时缩放。原型中点击选项可查看对应状态；设备用 ↑、↓、OK 三个实体键操作，聚焦对话页或存档页后可用键盘模拟。</p>
   </header>
@@ -340,6 +343,7 @@
     const PREVIEW_ORIENTATION = "both"; // "portrait" | "landscape" | "both"
 
     const pages = [
+      { id: "start", title: "启动画面", subtitle: "开机首屏，只有开始游戏", note: "开机第一屏，只有一个「开始游戏」入口；短按 OK 进入标题页，之后不再回到这一屏。" },
       { id: "title", title: "标题页", subtitle: "主入口、续玩与作品信息", note: "↑/↓移动菜单焦点，短按 OK 确认；继续游戏在没有存档时置灰。" },
       { id: "dialogue", title: "对话页", subtitle: "全屏背景与贴底对话底纹", note: "短按 OK 推进对白；长按 ↑ 快进、松开停止；长按 ↓ 开启自动、松开保持，之后按任意键停止；长按 OK 打开设置。排版按两个参考实现校准：竖屏 240×320 取主流做法（面板 110px 固定、16px 档每行 13 字 / 5 行，20px 档每行 10 字 / 4 行）；横屏 320×240 用沙耶参考版参数（面板 90px、每行 19/15 字、每页 4/3 行）。底纹默认 30% 透明、10%–55% 可调。聚焦画面后可用 ↑/↓/Enter 模拟按键。" },
       { id: "choice", title: "选项分支", subtitle: "剧情选择节点", note: "↑/↓选择分支，短按 OK 确认；选项面板居中显示，分支前的最后一句台词留在底部对话框里。" },
@@ -374,6 +378,9 @@
       const demoKind = inputMode === "dialogue" ? "dialogue" : (inputMode ? "slots" : "");
       const focusAttrs = inputMode ? " tabindex=\"0\" data-input-demo=\"" + demoKind + "\" data-input-mode=\"" + inputMode + "\"" : "";
       return "<div class=\"screen screen--" + orientation + " " + (extra || "") + "\" data-orientation=\"" + orientation + "\"" + focusAttrs + ">" + content + "</div>";
+    }
+    function startScreen(o) {
+      return frame(o, scene(true) + "<div class=\"start-layout\">" + button("开始游戏", "title", "primary") + "</div>");
     }
     function titleScreen(o) {
       const continueDisabled = "<button type=\"button\" class=\"button disabled\" disabled>继续游戏</button>";
@@ -459,6 +466,7 @@
       return frame(o, "<div class=\"screen-titlebar\"><strong>关于</strong>" + button("‹", "back") + "</div><div class=\"about-content\"><div class=\"about-logo\"><b>未定作品</b><small>GALGAME FRAMEWORK</small></div>" + rows + "</div>");
     }
     const renderers = {
+      start: startScreen,
       title: titleScreen,
       dialogue: dialogueScreen,
       choice: choiceScreen,
