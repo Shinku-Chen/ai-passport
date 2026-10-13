@@ -134,8 +134,6 @@ void saya_ui_set_text(saya_ui_t *ui, const char *speaker, const char *page_text,
 void saya_ui_show_full_text(saya_ui_t *ui);
 bool saya_ui_typing(const saya_ui_t *ui);
 void saya_ui_set_chapter(saya_ui_t *ui, const char *text);
-// 上/下短按滚动正文(内容不超出面板时无可滚动范围,LVGL 会自行夹紧)。
-void saya_ui_scroll_text(saya_ui_t *ui, int dy);
 
 // 对话框透明度(百分比 10–55,默认 30)。
 void saya_ui_set_panel_transparency(saya_ui_t *ui, uint8_t percent);

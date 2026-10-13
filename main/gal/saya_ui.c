@@ -238,13 +238,6 @@ void saya_ui_set_chapter(saya_ui_t *ui, const char *text)
     lv_label_set_text(ui->chapter, text ? text : "");
 }
 
-void saya_ui_scroll_text(saya_ui_t *ui, int dy)
-{
-    if (!ui || !ui->text_view || dy == 0) return;
-    // 同 about:界面层 dy > 0 表示往下看,LVGL 要负值。
-    lv_obj_scroll_by(ui->text_view, 0, -dy, LV_ANIM_OFF);
-}
-
 void saya_ui_set_panel_transparency(saya_ui_t *ui, uint8_t percent)
 {
     if (!ui) return;

@@ -15,8 +15,6 @@ static const char *TAG = "saya";
 #define SAYA_FAST_FORWARD_MS 180u
 // "下"长按进入的自动模式:每 900ms 推进一步;任意键退出,且该模式下不调暗/熄屏/休眠。
 #define SAYA_AUTO_ADVANCE_MS 900u
-// “上/下”短按滚动正文的像素数：一行正文的行高。
-#define SAYA_TEXT_SCROLL_STEP 19
 // 关于页每次滚动的像素数:一行正文的行高(见 SAYA_LINE_H);长按翻 4 行。
 #define SAYA_ABOUT_SCROLL_STEP 19
 // 开机警告页每次滚动的像素数(字号大一样够用);长按与没读完时按确定按整屏翻。
@@ -484,10 +482,10 @@ static void handle_game(saya_app_t *app, const saya_key_t *key)
         return;
     }
 
-    // 上/下短按:滚动正文(分页保证一页装得下,这里是安全阀)。
+    // 上/下短按与确定短按一致:推进一句(打字中先全显)。
     if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        const int dir = key->btn == BSP_BTN_UP ? -1 : 1;
-        saya_ui_scroll_text(&app->ui, dir * SAYA_TEXT_SCROLL_STEP);
+        app->fast_forward = false;
+        advance_reading(app, false);
         return;
     }
 }
