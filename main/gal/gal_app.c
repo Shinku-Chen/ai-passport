@@ -230,13 +230,15 @@ static void do_load(gal_app_t *app, int slot)
     show_notice(app, "已读取");
 }
 
+// 开始新游戏:直接从第一句开始(章节选择在鉴赏室里)。
 static void start_new_game(gal_app_t *app)
 {
     app->history_count = 0;
     app->shown_line = -1;
     app->choice_sel = 0;
-    app->chapter_sel = 0;
-    goto_page(app, GAL_PAGE_CHAPTER);
+    app->event_index = 0;
+    app->page_index = 0;
+    enter_event(app);
 }
 
 // ---------------------------------------------------------------- 弹窗
@@ -798,17 +800,24 @@ static void handle_history(gal_app_t *app, const gal_key_t *key)
 
 static void handle_gallery(gal_app_t *app, const gal_key_t *key)
 {
+    const int total = gal_content_cg_count + 1;   // 8 张 CG + 章节入口
     if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
         goto_page(app, GAL_PAGE_TITLE);
         return;
     }
     if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        move_selection(&app->gallery_sel, gal_content_cg_count,
-                       key->btn == BSP_BTN_UP ? -1 : 1);
+        move_selection(&app->gallery_sel, total, key->btn == BSP_BTN_UP ? -1 : 1);
         gal_ui_set_gallery(&app->ui, gal_content_cgs, gal_content_cg_count, app->gallery_sel);
         return;
     }
     if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
+        if (app->gallery_sel == GAL_GALLERY_CHAPTER_TILE) {
+            // 章节 / 路线入口。
+            app->chapter_sel = 0;
+            app->return_page = GAL_PAGE_GALLERY;
+            goto_page(app, GAL_PAGE_CHAPTER);
+            return;
+        }
         if (!gal_content_cgs[app->gallery_sel].unlocked) {
             show_notice(app, "尚未解锁");
             return;
@@ -820,7 +829,7 @@ static void handle_gallery(gal_app_t *app, const gal_key_t *key)
 static void handle_chapter(gal_app_t *app, const gal_key_t *key)
 {
     if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
-        goto_page(app, GAL_PAGE_TITLE);
+        goto_page(app, app->return_page);   // 从鉴赏室进来的,就回鉴赏室
         return;
     }
     if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {

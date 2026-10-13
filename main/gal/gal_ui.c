@@ -142,6 +142,7 @@ static void list_ensure_row(gal_ui_t *ui, gal_list_t id, int index)
     lv_obj_remove_flag(row, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_obj_t *label = lv_label_create(row);
+    lv_label_set_text(label, "");
     lv_obj_set_style_text_color(label, lv_color_hex(COL_TEXT), LV_PART_MAIN);
     if (list->wrap) {
         lv_obj_set_width(label, width - 16);
@@ -152,6 +153,7 @@ static void list_ensure_row(gal_ui_t *ui, gal_list_t id, int index)
     }
 
     lv_obj_t *value = lv_label_create(row);
+    lv_label_set_text(value, "");
     lv_obj_set_style_text_color(value, lv_color_hex(COL_ACCENT), LV_PART_MAIN);
     lv_obj_align(value, LV_ALIGN_RIGHT_MID, -10, 0);
 
@@ -260,6 +262,8 @@ static lv_obj_t *mk_label(lv_obj_t *parent, const lv_font_t *font, uint32_t colo
     lv_obj_t *label = lv_label_create(parent);
     lv_obj_set_style_text_font(label, font, LV_PART_MAIN);
     lv_obj_set_style_text_color(label, lv_color_hex(color), LV_PART_MAIN);
+    // LVGL 新建标签的默认文本是 “Text”:先清空,避免尚未赋值时露出占位文本。
+    lv_label_set_text(label, "");
     return label;
 }
 
@@ -494,6 +498,16 @@ static void build_gallery(gal_ui_t *ui)
         lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, -6);
         ui->cg_tiles_label[i] = label;
     }
+
+    // 最后一个格子是“章节 / 路线”入口,一直可选。
+    lv_obj_set_style_bg_color(ui->cg_tiles[GAL_GALLERY_CHAPTER_TILE],
+                               lv_color_hex(COL_BOX), LV_PART_MAIN);
+    lv_obj_set_style_bg_grad_color(ui->cg_tiles[GAL_GALLERY_CHAPTER_TILE],
+                                   lv_color_hex(COL_BOX), LV_PART_MAIN);
+    lv_obj_set_style_text_color(ui->cg_tiles_label[GAL_GALLERY_CHAPTER_TILE],
+                                lv_color_hex(COL_ACCENT), LV_PART_MAIN);
+    lv_label_set_text(ui->cg_tiles_label[GAL_GALLERY_CHAPTER_TILE], "章节");
+    lv_obj_align(ui->cg_tiles_label[GAL_GALLERY_CHAPTER_TILE], LV_ALIGN_CENTER, 0, 0);
 
     ui->footers[GAL_PAGE_GALLERY] = mk_label(root, ui->font_small, COL_DIM);
     lv_obj_align(ui->footers[GAL_PAGE_GALLERY], LV_ALIGN_BOTTOM_MID, 0, -8);
@@ -895,7 +909,7 @@ void gal_ui_set_action_hint(gal_ui_t *ui, const char *text)
 void gal_ui_set_gallery(gal_ui_t *ui, const gal_cg_t *items, int count, int selected)
 {
     if (!ui) return;
-    for (int i = 0; i < GAL_CG_TILES; ++i) {
+    for (int i = 0; i < GAL_GALLERY_CHAPTER_TILE; ++i) {
         const bool filled = items && i < count;
         const bool unlocked = filled && items[i].unlocked;
         lv_label_set_text(ui->cg_tiles_label[i], filled ? items[i].label : "");
@@ -915,6 +929,11 @@ void gal_ui_set_gallery(gal_ui_t *ui, const gal_cg_t *items, int count, int sele
         lv_obj_set_style_border_color(ui->cg_tiles[i], lv_color_hex(COL_ACCENT), LV_PART_MAIN);
         lv_obj_set_style_border_width(ui->cg_tiles[i], on ? 2 : 1, LV_PART_MAIN);
     }
+    // 章节入口的高亮跟着光标走。
+    lv_obj_set_style_border_color(ui->cg_tiles[GAL_GALLERY_CHAPTER_TILE],
+                                  lv_color_hex(COL_ACCENT), LV_PART_MAIN);
+    lv_obj_set_style_border_width(ui->cg_tiles[GAL_GALLERY_CHAPTER_TILE],
+                                  selected == GAL_GALLERY_CHAPTER_TILE ? 2 : 1, LV_PART_MAIN);
 }
 
 void gal_ui_set_cg(gal_ui_t *ui, const char *index_text, const char *name, const char *caption)

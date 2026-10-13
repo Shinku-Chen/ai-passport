@@ -29,7 +29,9 @@
 #define GAL_TEXT_LINES_LARGE 4
 #define GAL_LIST_MAX_ROWS 16
 #define GAL_TEXT_CAPACITY 1024
-#define GAL_CG_TILES 8
+#define GAL_CG_TILES 9
+// 鉴赏室最后一个格子是“章节 / 路线”入口(其余是 CG 缩略图)。
+#define GAL_GALLERY_CHAPTER_TILE (GAL_CG_TILES - 1)
 #define GAL_PAGE_MODAL GAL_PAGE_COUNT   // 弹窗层:不在页面枚举里
 
 // 全部逻辑屏(与原型 docs/design/galgame-ui-wireframes/prototype.html 对应)。
