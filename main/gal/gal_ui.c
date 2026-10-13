@@ -915,22 +915,26 @@ void gal_ui_set_gallery(gal_ui_t *ui, const gal_cg_t *items, int count, int sele
     for (int i = 0; i < GAL_CG_TILES; ++i) {
         const bool filled = items && i < count;
         const bool unlocked = filled && items[i].unlocked;
-        lv_label_set_text(ui->cg_tiles_label[i], filled ? items[i].label : "");
-        if (!unlocked) {
-            lv_obj_set_style_bg_color(ui->cg_tiles[i], lv_color_hex(COL_ROW), LV_PART_MAIN);
-            lv_obj_set_style_bg_grad_color(ui->cg_tiles[i], lv_color_hex(COL_ROW), LV_PART_MAIN);
-            lv_obj_set_style_text_color(ui->cg_tiles_label[i], lv_color_hex(COL_DIM),
-                                        LV_PART_MAIN);
+        lv_obj_t *tile = ui->cg_tiles[i];
+        lv_obj_t *label = ui->cg_tiles_label[i];
+
+        if (unlocked) {
+            lv_label_set_text(label, items[i].label);
+            lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, -6);
+            lv_obj_set_style_text_color(label, lv_color_hex(COL_TEXT), LV_PART_MAIN);
+            lv_obj_set_style_bg_color(tile, lv_color_hex(COL_TILE_A), LV_PART_MAIN);
+            lv_obj_set_style_bg_grad_color(tile, lv_color_hex(COL_TILE_C), LV_PART_MAIN);
         } else {
-            lv_obj_set_style_bg_color(ui->cg_tiles[i], lv_color_hex(COL_TILE_A), LV_PART_MAIN);
-            lv_obj_set_style_bg_grad_color(ui->cg_tiles[i], lv_color_hex(COL_TILE_C),
-                                           LV_PART_MAIN);
-            lv_obj_set_style_text_color(ui->cg_tiles_label[i], lv_color_hex(COL_TEXT),
-                                        LV_PART_MAIN);
+            // 未解锁:只摆一个问号,不透露是哪一张 CG。
+            lv_label_set_text(label, filled ? "?" : "");
+            lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+            lv_obj_set_style_text_color(label, lv_color_hex(COL_DIM), LV_PART_MAIN);
+            lv_obj_set_style_bg_color(tile, lv_color_hex(COL_ROW), LV_PART_MAIN);
+            lv_obj_set_style_bg_grad_color(tile, lv_color_hex(COL_ROW), LV_PART_MAIN);
         }
         const bool on = filled && i == selected;
-        lv_obj_set_style_border_color(ui->cg_tiles[i], lv_color_hex(COL_ACCENT), LV_PART_MAIN);
-        lv_obj_set_style_border_width(ui->cg_tiles[i], on ? 2 : 1, LV_PART_MAIN);
+        lv_obj_set_style_border_color(tile, lv_color_hex(COL_ACCENT), LV_PART_MAIN);
+        lv_obj_set_style_border_width(tile, on ? 2 : 1, LV_PART_MAIN);
     }
 }
 

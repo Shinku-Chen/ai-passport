@@ -485,18 +485,22 @@ static void fill_cg(gal_app_t *app)
     gal_ui_set_cg(&app->ui, index_text, cg->caption, "占位画面 · 骨架不携带美术资源");
 }
 
-// 鉴赏室缩略图:解锁状态由剧情锁的观看记录换算。
+// 鉴赏室缩略图:解锁状态由剧情锁的观看记录换算;未解锁只显示问号。
 static void fill_gallery(gal_app_t *app)
 {
     static gal_cg_t items[GAL_CG_TILES];
+    static char footer[32];
     int count = gal_content_cg_count;
     if (count > GAL_CG_TILES) count = GAL_CG_TILES;
+    int unlocked = 0;
     for (int i = 0; i < count; ++i) {
         items[i] = gal_content_cgs[i];
         items[i].unlocked = cg_unlocked(app, i);
+        if (items[i].unlocked) unlocked++;
     }
     gal_ui_set_gallery(&app->ui, items, count, app->cg_sel);
-    gal_ui_set_footer(&app->ui, GAL_PAGE_CG_LIST, "共 8 张 · 随剧情解锁");
+    snprintf(footer, sizeof(footer), "已解锁 %d / %d", unlocked, count);
+    gal_ui_set_footer(&app->ui, GAL_PAGE_CG_LIST, footer);
 }
 
 static void render_page(gal_app_t *app)
