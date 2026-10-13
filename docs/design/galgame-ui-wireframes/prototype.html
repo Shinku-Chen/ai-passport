@@ -175,12 +175,15 @@
     .screen--landscape .title-menu { width: 42%; gap: 4px; padding: 7px; }
     .screen--landscape .title-menu .button { min-height: 22px; }
     .dialogue-panel { position: absolute; z-index: 3; right: 0; bottom: 0; left: 0; height: var(--dialogue-panel-height); padding: 4px 10px 2px; border: 0; border-radius: 0; background: rgb(11 16 32 / var(--dialogue-alpha, .70)); box-shadow: inset 0 2px 0 var(--line); }
+    /* 横屏按沙耶参考版校准：文本框 90px（不随字号变）、左右 7px（文字区 304px 恰好容纳 19 字）。 */
+    .screen--landscape { --dialogue-panel-height: 90px; }
+    .screen--landscape .dialogue-panel { padding: 7px; }
     .speaker { position: absolute; bottom: 100%; left: 8px; display: inline-flex; min-width: 66px; height: 24px; align-items: center; justify-content: center; padding: 0 6px; border-radius: 6px; color: var(--accent); background: rgb(0 0 0 / 50%); font-size: 16px; font-weight: 700; }
-    .dialogue-panel p { max-width: 100%; margin: 0; font-size: var(--dialogue-font); line-height: var(--dialogue-line); letter-spacing: .01em; }
+    .dialogue-panel p { max-width: 100%; margin: 0; font-size: var(--dialogue-font); line-height: var(--dialogue-line); }
     .dialogue-input:focus { outline: 2px solid var(--accent); outline-offset: 3px; }
     .slot-input:focus { outline: 2px solid var(--accent); outline-offset: 3px; }
     .key-hint { color: var(--gold); font-size: 10px; cursor: pointer; }
-    .choice-line { margin: 0; font-size: var(--dialogue-font); line-height: var(--dialogue-line); letter-spacing: .01em; }
+    .choice-line { margin: 0; font-size: var(--dialogue-font); line-height: var(--dialogue-line); }
     .choice-panel { position: absolute; z-index: 3; right: 8px; left: 8px; top: calc((100% - var(--dialogue-panel-height)) / 2); display: grid; gap: 6px; padding: 10px; border: 1px solid var(--accent); border-radius: 9px; background: rgb(15 22 37 / 95%); transform: translateY(-50%); }
     .choice-panel h4 { margin: 0 0 1px; color: var(--gold); font-size: 12px; text-align: center; }
     .choice-panel .button { min-height: 28px; }
@@ -320,7 +323,7 @@
       <h1>页面原型与屏幕布局</h1>
       <p class="intro-copy">17 个页面/状态 · 每页提供 240×320 竖屏与 320×240 横屏示意</p>
     </div>
-    <p class="build-note"><b>方向在编写时配置</b><br>修改源码中的 <code>PREVIEW_ORIENTATION</code> 为 <code>"portrait"</code>、<code>"landscape"</code> 或 <code>"both"</code>。页面内没有方向切换选项。<br><b>分辨率基准</b>：每张屏按设备物理分辨率 1:1 绘制（竖屏 240 × 320、横屏 320 × 240；1 CSS 像素 = 1 设备像素；ST7789P3 / RGB565）。原型字号即设备字形档位：对白 16/20px 两档、辅助与提示 10px、标题 20px 起，真机上不建议使用低于 10px 的字形。素材按各方向整屏尺寸产出，不做运行时缩放。原型中点击选项可查看对应状态；设备用 ↑、↓、OK 三个实体键操作，聚焦对话页或存档页后可用键盘模拟。</p>
+    <p class="build-note"><b>方向在编写时配置</b><br>修改源码中的 <code>PREVIEW_ORIENTATION</code> 为 <code>"portrait"</code>、<code>"landscape"</code> 或 <code>"both"</code>。页面内没有方向切换选项。<br><b>分辨率基准</b>：每张屏按设备物理分辨率 1:1 绘制（竖屏 240 × 320、横屏 320 × 240；1 CSS 像素 = 1 设备像素；ST7789P3 / RGB565）。原型字号即设备字形档位：对白 16/20px 两档（竖屏排版取 Asunabi、横屏取沙耶参考版）、辅助与提示 10px、标题 20px 起，真机上不建议使用低于 10px 的字形。素材按各方向整屏尺寸产出，不做运行时缩放。原型中点击选项可查看对应状态；设备用 ↑、↓、OK 三个实体键操作，聚焦对话页或存档页后可用键盘模拟。</p>
   </header>
   <main id="boards"></main>
   <script>
@@ -329,7 +332,7 @@
 
     const pages = [
       { id: "title", title: "标题页", subtitle: "主入口、续玩与作品信息", note: "↑/↓移动菜单焦点，短按 OK 确认；继续游戏在没有存档时置灰。" },
-      { id: "dialogue", title: "对话页", subtitle: "全屏背景与贴底对话底纹", note: "短按 OK 推进对白；长按 ↑ 快进、松开停止；长按 ↓ 开启自动、松开保持，之后按任意键停止；长按 OK 打开设置。对白按固件排版：16px 档每行 13 字、20px 档每行 11 字，每页 4 行（面板 82/98px 贴底）；底纹默认 30% 透明、10%–55% 可调。聚焦画面后可用 ↑/↓/Enter 模拟按键。" },
+      { id: "dialogue", title: "对话页", subtitle: "全屏背景与贴底对话底纹", note: "短按 OK 推进对白；长按 ↑ 快进、松开停止；长按 ↓ 开启自动、松开保持，之后按任意键停止；长按 OK 打开设置。排版按两个参考实现校准：竖屏 240×320 用 Asunabi 参数（面板 82/98px、16px 档每行 13 字、20px 档每行 10 字、每页 4 行）；横屏 320×240 用沙耶参考版参数（面板 90px、每行 19/15 字、每页 4/3 行）。底纹默认 30% 透明、10%–55% 可调。聚焦画面后可用 ↑/↓/Enter 模拟按键。" },
       { id: "choice", title: "选项分支", subtitle: "剧情选择节点", note: "↑/↓选择分支，短按 OK 确认；选项面板居中显示，分支前的最后一句台词留在底部对话框里。" },
       { id: "menu", title: "游戏内菜单", subtitle: "剧情中的快捷入口", note: "↑/↓选择菜单项，短按 OK 执行；返回剧情本身就是一项菜单操作。" },
       { id: "save", title: "存档页", subtitle: "选择槽位并保存进度", note: "聚焦页面后 ↑/↓选槽，短按 OK 直接保存；槽位自身就是操作入口，不另放“保存/读取”按钮。覆盖已有进度时再确认。" },
@@ -526,10 +529,10 @@
         "车门打开时，冷风灌进站台。<br>她收起车票，望向空月台。<br>“你真的要在这里下车吗？”<br>我点点头，没有回头。",
         "“要一起走吗？”她轻声问。<br>远处的钟声，刚好响了三下。"
       ],
-      /* 20px 档：每行 11 字，同样的段落换行更早。 */
+      /* 20px 档：每行 15 字，横屏每页 3 行（沙耶参考版）。 */
       large: [
         "列车驶入夜色。<br>窗外灯火如星。<br>“就要到了。”",
-        "车门打开，冷风灌进。<br>她收起车票。<br>“要下车吗？”<br>我点了点头。",
+        "车门打开，冷风灌进。<br>她收起车票。<br>“要下车吗？”",
         "“要一起走吗？”<br>钟声响了三下。"
       ]
     };
