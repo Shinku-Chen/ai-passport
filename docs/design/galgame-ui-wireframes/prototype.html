@@ -220,9 +220,10 @@
     .screen--landscape .save-preview .thumb { flex-basis: auto; width: 100%; height: 50px; }
     .settings-window { position: absolute; z-index: 4; inset: 8px; overflow: hidden; border: 1px solid var(--accent); border-radius: 9px; background: rgb(15 22 37 / 97%); box-shadow: 0 12px 34px rgb(0 0 0 / 48%); }
     .settings-tabs { position: absolute; top: 39px; right: 8px; left: 8px; display: flex; gap: 5px; }
-    .settings-tabs .chip { flex: 1; min-width: 0; }
+    .settings-tabs .chip { flex: 1; min-width: 0; padding: 2px 3px; }
     .settings-list { position: absolute; top: 69px; right: 8px; bottom: 9px; left: 8px; display: grid; align-content: start; gap: 4px; padding: 9px; border: 1px solid var(--line); border-radius: 7px; background: #192235; }
     .setting-row { display: grid; gap: 4px; }
+    .setting-row label span { white-space: nowrap; }
     .setting-row label { display: flex; align-items: center; justify-content: space-between; gap: 5px; color: var(--ink); }
     .setting-row output { color: var(--gold); }
     .dialogue-size-control { display: flex; gap: 5px; }
@@ -240,8 +241,16 @@
     .settings-bottom .button { min-height: 22px; }
     .screen--landscape .settings-tabs { top: 43px; right: auto; bottom: 10px; left: 8px; width: 66px; flex-direction: column; }
     .screen--landscape .settings-tabs .chip { flex: 0 0 29px; }
-    .screen--landscape .settings-list { top: 43px; left: 82px; grid-template-columns: 1fr 1fr; align-content: center; gap: 8px 10px; padding: 7px; }
-    .screen--landscape .setting-row { gap: 4px; }
+    /* 横屏设置：单列一行式（标签 / 控件 / 值）；两列窄栏会把中文标签挤成竖排。 */
+    .screen--landscape .settings-list { top: 43px; left: 82px; grid-template-columns: 1fr; align-content: start; gap: 6px; padding: 8px; }
+    .screen--landscape .setting-row { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 6px; row-gap: 0; }
+    .screen--landscape .setting-row label { display: contents; }
+    .screen--landscape .setting-row label span { order: 1; }
+    .screen--landscape .setting-row .dialogue-opacity-control { order: 2; }
+    .screen--landscape .setting-row .slider { order: 2; }
+    .screen--landscape .setting-row output { order: 3; }
+    .screen--landscape .setting-row .dialogue-size-control { order: 2; grid-column: 2 / 4; }
+    .screen--landscape .dialogue-size-value { display: none; }
     .screen--landscape .settings-bottom { grid-column: 1 / -1; }
     .history-list { position: absolute; top: 39px; right: 8px; bottom: 8px; left: 8px; display: grid; align-content: start; gap: 5px; overflow: hidden; }
     .history-entry { padding: 6px 7px; border: 1px solid var(--line); border-radius: 6px; background: #192235; }
@@ -300,13 +309,13 @@
     .about-logo b { display: block; font-size: var(--dialogue-font); }
     .about-logo small { color: var(--gold); letter-spacing: .1em; }
     .about-list { display: grid; gap: 5px; padding: 9px; border: 1px solid var(--line); border-radius: 7px; background: #192235; }
-    .about-list p { display: flex; justify-content: space-between; gap: 8px; margin: 0; color: var(--muted); }
+    .about-list p { display: grid; gap: 2px; margin: 0; color: var(--muted); }
     .about-list b { color: var(--ink); font-weight: 500; }
     .cg-image { position: absolute; inset: 0; background: linear-gradient(145deg, #253857 0%, #76617e 49%, #d09a88 100%); }
     .cg-image::before { position: absolute; right: -15%; bottom: -12%; left: -15%; height: 47%; border-radius: 50% 50% 0 0; background: rgb(19 28 43 / 72%); content: ""; }
     .cg-image::after { position: absolute; top: 33%; left: 50%; width: 34px; height: 88px; border-radius: 18px 18px 9px 9px; background: #3d374f; box-shadow: 0 -18px 0 -4px #e0b7ac; content: ""; transform: translateX(-50%); }
     .cg-toolbar { position: absolute; z-index: 2; top: 8px; right: 8px; left: 8px; display: flex; align-items: center; justify-content: space-between; }
-    .cg-bottom { position: absolute; z-index: 2; right: 8px; bottom: 8px; left: 8px; display: flex; align-items: center; justify-content: space-between; gap: 5px; padding: 6px; border: 1px solid var(--line); border-radius: 7px; background: rgb(11 16 32 / 86%); }
+    .cg-bottom { position: absolute; z-index: 2; right: 8px; bottom: 8px; left: 8px; display: grid; gap: 4px; padding: 6px; border: 1px solid var(--line); border-radius: 7px; background: rgb(11 16 32 / 86%); }
     @media (max-width: 760px) {
       .intro { display: block; padding: 25px 16px 20px; }
       .build-note { margin-top: 18px; }
@@ -409,7 +418,7 @@
       const sliders = [["文字速度", "66%"], ["自动播放间隔", "45%"]];
       const opacityId = "dialogue-opacity-" + o;
       const opacity = "<div class=\"setting-row\"><label for=\"" + opacityId + "\"><span>对话透明度</span><output class=\"dialogue-opacity-value\" for=\"" + opacityId + "\">30%</output></label><input id=\"" + opacityId + "\" class=\"dialogue-opacity-control\" type=\"range\" min=\"10\" max=\"55\" step=\"1\" value=\"30\"></div>";
-      const size = "<div class=\"setting-row\"><label><span>文字大小</span><output class=\"dialogue-size-value\">小 16px</output></label><div class=\"dialogue-size-control\"><button type=\"button\" class=\"chip dialogue-size-chip selected\" data-size=\"small\">小 16px</button><button type=\"button\" class=\"chip dialogue-size-chip\" data-size=\"large\">大 20px</button></div></div>";
+      const size = "<div class=\"setting-row\"><label><span>文字大小</span><output class=\"dialogue-size-value\">小 16px</output></label><div class=\"dialogue-size-control\"><button type=\"button\" class=\"chip dialogue-size-chip selected\" data-size=\"small\">16px</button><button type=\"button\" class=\"chip dialogue-size-chip\" data-size=\"large\">20px</button></div></div>";
       const rows = opacity + size + sliders.map(function (item) { return "<div class=\"setting-row\"><label>" + item[0] + "</label><span class=\"slider\" style=\"--level:" + item[1] + "\"></span></div>"; }).join("");
       const tabs = chip("文字", false) + chip("音频", false) + chip("操作", false) + chip("显示", true);
       const foot = "<div class=\"settings-bottom\">" + button("游戏菜单", "menu") + button("恢复默认", "settings") + "</div>";
@@ -427,7 +436,7 @@
         const locked = i > 6;
         tiles += "<button type=\"button\" class=\"gallery-tile " + (locked ? "locked" : "") + "\"" + (locked ? "" : " data-target=\"cg-viewer\"") + ">" + (locked ? "🔒" : "CG 0" + i) + "</button>";
       }
-      return frame(o, "<div class=\"screen-titlebar\"><strong>鉴赏室</strong>" + button("‹", "back") + "</div><div class=\"gallery-grid\">" + tiles + "</div><div class=\"gallery-footer\"><span>CG 01–06 已解锁</span><span>1 / 2 · ↑/↓翻页</span></div>");
+      return frame(o, "<div class=\"screen-titlebar\"><strong>鉴赏室</strong>" + button("‹", "back") + "</div><div class=\"gallery-grid\">" + tiles + "</div><div class=\"gallery-footer\"><span>CG 01–06 已解锁</span><span>1 / 2 ↑/↓</span></div>");
     }
     function cgViewerScreen(o) {
       return frame(o, "<div class=\"cg-image\" data-target=\"gallery\"></div><div class=\"cg-toolbar\"><span class=\"chip\">CG 01 / 08</span><span class=\"key-hint\">↑/↓ 切换</span></div><div class=\"cg-bottom\"><span>夜行列车 · 初遇</span><span>点击画面返回</span></div>");
@@ -449,7 +458,7 @@
     }
     function endingScreen(o) {
       const actions = button("返回标题", "title", "primary") + button("重看结局", "transition") + button("鉴赏室", "gallery");
-      return frame(o, scene(true) + "<div class=\"ending-content\"><p class=\"eyebrow\">ENDING 01 · TRUE END</p><div class=\"ending-lockup\"><h4>星光抵达的地方</h4><p>故事暂告一段落。<br>感谢你陪他们走到这里。</p></div><div class=\"ending-actions\">" + actions + "</div></div>");
+      return frame(o, scene(true) + "<div class=\"ending-content\"><p class=\"eyebrow\">TRUE END</p><div class=\"ending-lockup\"><h4>星光抵达的地方</h4><p>故事暂告一段落。<br>感谢你陪他们走到这里。</p></div><div class=\"ending-actions\">" + actions + "</div></div>");
     }
     function aboutScreen(o) {
       const rows = "<div class=\"about-list\"><p><span>版本</span><b>v0.1.0</b></p><p><span>作者</span><b>作者名待填写</b></p><p><span>美术 / 音乐</span><b>素材信息待填写</b></p><p><span>授权说明</span><b>按作品配置填写</b></p></div>";
