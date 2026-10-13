@@ -50,7 +50,7 @@ static bool cg_unlocked(const gal_app_t *app, int index)
 {
     if (index < 0 || index >= gal_content_cg_count) return false;
     const gal_cg_t *cg = &gal_content_cgs[index];
-    if (cg->unlock_event == GAL_UNLOCK_NONE) return true;
+    if (cg->unlock_event == GAL_EVENT_NONE) return true;
     return gal_unlock_has_cg(&app->unlock, (uint8_t)index);
 }
 
@@ -58,7 +58,7 @@ static bool chapter_unlocked(const gal_app_t *app, int index)
 {
     if (index < 0 || index >= gal_content_chapter_count) return false;
     const gal_chapter_t *c = &gal_content_chapters[index];
-    if (c->unlock_event != GAL_UNLOCK_NONE &&
+    if (c->unlock_event != GAL_EVENT_NONE &&
         !gal_unlock_has_chapter(&app->unlock, (uint8_t)index)) {
         return false;
     }

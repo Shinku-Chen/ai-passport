@@ -105,7 +105,7 @@ const int gal_content_cg_count = (int)(sizeof(gal_content_cgs) / sizeof(gal_cont
 // ---------------------------------------------------------------- 章节 / 路线
 const gal_chapter_t gal_content_chapters[] = {
     { "序章 · 夜行列车", "从站台上的相遇开始,寻找时刻表中缺失的那一站。", "完成度　1 / 3",
-      GAL_UNLOCK_NONE, GAL_UNLOCK_NONE, false },
+      GAL_EVENT_NONE, GAL_UNLOCK_NONE, false },
     { "林线 · 雨停之前", "雨停之前,站台长椅上还有一段没有被说完的话。", "完成度　1 / 3",
       11, GAL_UNLOCK_NONE, false },
     { "隐藏线 · 星轨", "走完一次结局后解锁。", "完成度　0 / 3",

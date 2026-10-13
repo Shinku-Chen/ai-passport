@@ -27,7 +27,7 @@
 #define GAL_LINE_H_LARGE 24
 #define GAL_TEXT_LINES_SMALL 5
 #define GAL_TEXT_LINES_LARGE 4
-#define GAL_LIST_MAX_ROWS 16
+#define GAL_LIST_MAX_ROWS 32   // 大作品(章节 / 回想列表)需要更长
 #define GAL_TEXT_CAPACITY 1024
 #define GAL_CG_TILES 8
 #define GAL_PAGE_MODAL GAL_PAGE_COUNT   // 弹窗层:不在页面枚举里

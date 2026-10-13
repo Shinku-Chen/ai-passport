@@ -56,7 +56,7 @@ typedef enum {
 
 typedef struct {
     unsigned char kind;
-    unsigned char index;
+    unsigned short index;     // 对白 / 选项 / 过场 / 结局的下标(uint16)
     unsigned char flag_set;   // 到达该事件时写入的标记;GAL_UNLOCK_NONE = 不写
 } gal_event_t;
 
@@ -77,7 +77,7 @@ typedef struct {
 typedef struct {
     const char *label;      // CG 01
     const char *caption;    // 夜行列车 · 初遇
-    uint8_t unlock_event;   // 到达该事件解锁;GAL_UNLOCK_NONE = 初始解锁
+    unsigned short unlock_event;   // 到达该事件解锁;GAL_EVENT_NONE = 初始解锁
     bool unlocked;          // 运行时填充:界面用(由 gal_unlock 状态换算)
 } gal_cg_t;
 
@@ -85,7 +85,7 @@ typedef struct {
     const char *name;
     const char *summary;
     const char *progress;
-    uint8_t unlock_event;   // 到达该事件解锁;GAL_UNLOCK_NONE = 不依赖事件
+    unsigned short unlock_event;   // 到达该事件解锁;GAL_EVENT_NONE = 不依赖事件
     uint8_t require_flag;   // 额外需要的标记;GAL_UNLOCK_NONE = 不需要
     bool unlocked;          // 运行时填充:界面用
 } gal_chapter_t;
@@ -101,7 +101,7 @@ typedef struct {
     const char *title;        // 场景名
     const char *chapter;      // 所在章节(列表右侧显示)
     uint8_t cg_index;         // 需要该 CG 已解锁
-    uint8_t event_index;      // 从该事件开始重看
+    unsigned short event_index;   // 从该事件开始重看
 } gal_recall_t;
 
 // 音乐:骨架不带音频资源,用方波按 notes 合成一段短旋律循环播放。

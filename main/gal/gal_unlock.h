@@ -11,8 +11,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// 不绑定任何解锁事件 / 不需要任何标记。
+// 字段缺省值:
+//   flag 相关字段是 uint8(最多 32 个标记) -> GAL_UNLOCK_NONE
+//   事件 / 行 / 场景下标是 uint16(最多 65535) -> GAL_EVENT_NONE
 #define GAL_UNLOCK_NONE 0xFF
+#define GAL_EVENT_NONE 0xFFFF
 
 typedef struct {
     uint32_t cg;
