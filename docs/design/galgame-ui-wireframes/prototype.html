@@ -303,7 +303,7 @@
     <div>
       <p class="eyebrow">AI Passport · GalGame Framework</p>
       <h1>页面原型与屏幕布局</h1>
-      <p class="intro-copy">20 个页面/状态 · 每页提供 240×320 竖屏与 320×240 横屏示意</p>
+      <p class="intro-copy">19 个页面/状态 · 每页提供 240×320 竖屏与 320×240 横屏示意</p>
     </div>
     <p class="build-note"><b>方向在编写时配置</b><br>修改源码中的 <code>PREVIEW_ORIENTATION</code> 为 <code>"portrait"</code>、<code>"landscape"</code> 或 <code>"both"</code>。页面内没有方向切换选项。<br><b>分辨率基准</b>：每张屏按设备物理分辨率 1:1 绘制（竖屏 240 × 320、横屏 320 × 240；1 CSS 像素 = 1 设备像素；ST7789P3 / RGB565）。原型字号即设备字形档位：屏内所有文字统一用对话字号两档（16px / 20px，不设小字），切换档位后所有页面立即重排；竖屏排版取 Asunabi、横屏取沙耶参考版。素材按各方向整屏尺寸产出，不做运行时缩放。<br><b>剧情锁</b>：CG 与章节按观看记录解锁（未解锁 CG 只显示问号、锁定章节显示「锁定」），选项可带条件置灰。设备用 ↑、↓、OK 三个实体键操作；原型中点击选项可查看对应状态，聚焦对话页或存档页后可用键盘模拟，设置页可直接点「文字大小」「对话透明度」行切换值。</p>
   </header>
@@ -319,7 +319,7 @@
       { id: "choice", title: "选项分支", subtitle: "剧情选择节点", note: "↑/↓选择分支，短按 OK 确认；条件不满足的选项置灰（剧情锁），按确定提示「条件不足」。选项面板居中显示，分支前的最后一句台词留在底部对话框里。" },
       { id: "menu", title: "游戏内菜单", subtitle: "剧情中的快捷入口", note: "对话中长按 OK 打开（不再先经设置页）；↑/↓选择菜单项，短按 OK 执行；返回剧情本身就是一项菜单操作，长按 OK 也直接返回剧情。" },
       { id: "save", title: "存档页", subtitle: "选择槽位并保存进度", note: "聚焦页面后 ↑/↓选槽，短按 OK 直接保存；槽位自身就是操作入口，不另放“保存”按钮。覆盖已有进度时弹出确认弹窗；槽位与预览都是文字，骨架不携带美术资源。" },
-      { id: "load", title: "读档页", subtitle: "选择已有进度", note: "聚焦页面后 ↑/↓选槽，短按 OK 直接读取；空槽位会弹出「暂无存档」弹窗，不另放“读取”按钮。" },
+      { id: "load", title: "读档页", subtitle: "选择已有进度", note: "聚焦页面后 ↑/↓选槽，短按 OK 直接读取；空槽位置灰不可选（按确定只提示「空槽位」），不再弹空状态弹窗，不另放“读取”按钮。" },
       { id: "settings", title: "设置页", subtitle: "文字、显示与阅读操作", note: "↑/↓选择设置项，短按 OK 切换值；设置页由标题页进入共 6 项，在剧情中经游戏内菜单进入共 7 项（多一个「返回标题」）。对话透明度 10%–55%、默认 30%；文字大小 16/20px 切换后所有页面立即重排。（原型里点「文字大小」「对话透明度」行可直接演示）" },
       { id: "history", title: "历史文本", subtitle: "回看已经显示的对白", note: "↑/↓滚动历史；旁白条目以「旁白」标记，其余显示说话人名；只保留最近 16 条，页头的返回项回到进入历史前的剧情位置。" },
       { id: "gallery", title: "鉴赏室", subtitle: "CG、回想、剧情与音乐的入口", note: "四个分类入口：CG 鉴赏、CG 回想、剧情鉴赏（章节 / 路线）、音乐鉴赏，右侧显示各自数量；其中 CG 回想与音乐鉴赏是占位，固件尚未实现。" },
@@ -328,7 +328,6 @@
       { id: "music", title: "音乐鉴赏", subtitle: "已听过的曲目（占位）", note: "固件尚未实现，这里先留占位：列表显示曲名与时长，短按 OK 播放/停止；骨架没有音频通路，接入时再接 I2S 与编解码器。" },
       { id: "chapter", title: "剧情鉴赏（章节 / 路线）", subtitle: "多章节或多路线作品使用", note: "从鉴赏室「剧情鉴赏」进入；↑/↓选择章节，短按 OK 在选中章节上开始；未解锁章节显示「锁定」（剧情锁：到达前置剧情或满足通关条件后才可选），长按 OK 回到鉴赏室。" },
       { id: "confirm", title: "确认弹窗", subtitle: "覆盖、删除或退出前确认", note: "作为弹窗叠加在存档页上（背景压暗）；统一复用弹窗布局与确认/取消焦点样式。" },
-      { id: "empty", title: "空状态", subtitle: "无存档时的弹窗提示", note: "作为弹窗叠加在读档页上（背景压暗）；无存档时提示开始游戏。" },
       { id: "transition", title: "章节过场", subtitle: "章节标题与剧情分隔", note: "没有多余的“继续”按钮；短按 OK 进入下一段剧情。自动阅读开启时过场会自己走过去（停留约 1.6 秒），自动模式与「自动」指示都不中断。" },
       { id: "ending", title: "结局", subtitle: "结局标题与正文", note: "结局页只放结局标题与正文，整体居中；没有后续入口按钮，短按或长按 OK 回到标题页。" },
       { id: "about", title: "关于", subtitle: "版本、作者与素材说明", note: "页头提供唯一返回入口（长按 OK）；作品信息与授权说明由内容层配置。" },
@@ -472,9 +471,6 @@
     function confirmScreen(o) {
       return frame(o, savePageContent("save") + "<div class=\"dim\"></div><div class=\"confirm-dialog\"><h4>覆盖该存档？</h4><p>原有进度将被新存档替换。<br>此操作无法撤销。</p><div class=\"confirm-actions\">" + button("取消", "back") + button("确认覆盖", "dialogue", "primary") + "</div></div>");
     }
-    function emptyScreen(o) {
-      return frame(o, savePageContent("load") + "<div class=\"dim\"></div><div class=\"empty-dialog\"><span class=\"empty-mark\">···</span><h4>暂无存档</h4><p>开始一段故事后，存档会显示在这里。</p>" + button("开始游戏", "dialogue", "primary") + "</div>");
-    }
     function transitionScreen(o) {
       return frame(o, scene(false) + "<div class=\"transition-content\" data-target=\"dialogue\"><p class=\"eyebrow\">CHAPTER 02</p><h4>雨停之后</h4><p>第二章　·　雨停之前</p></div>");
     }
@@ -502,7 +498,6 @@
       music: musicScreen,
       chapter: chapterScreen,
       confirm: confirmScreen,
-      empty: emptyScreen,
       transition: transitionScreen,
       ending: endingScreen,
       about: aboutScreen,
