@@ -270,33 +270,24 @@
     .dim { position: absolute; z-index: 3; inset: 0; background: rgb(4 8 16 / 67%); }
     /* 20px 大档下，列表类容器按固件的窗口行为滚动；滚动条隐藏，与固件一致。 */
     .title-menu, .quick-menu, .settings-list, .history-list, .chapter-list, .chapter-info,
-    .warning-content, .about-content, .slot-list, .save-preview {
+    .about-content, .slot-list, .save-preview {
       overflow-y: auto;
       scrollbar-width: none;
     }
     .title-menu::-webkit-scrollbar, .quick-menu::-webkit-scrollbar, .settings-list::-webkit-scrollbar,
     .history-list::-webkit-scrollbar, .chapter-list::-webkit-scrollbar, .chapter-info::-webkit-scrollbar,
-    .warning-content::-webkit-scrollbar, .about-content::-webkit-scrollbar, .slot-list::-webkit-scrollbar,
+    .about-content::-webkit-scrollbar, .slot-list::-webkit-scrollbar,
     .save-preview::-webkit-scrollbar { display: none; }
     .confirm-dialog { position: absolute; z-index: 4; top: 50%; left: 50%; width: 86%; padding: 15px 13px 12px; border: 1px solid var(--accent); border-radius: 9px; background: #121a2a; box-shadow: 0 14px 36px rgb(0 0 0 / 40%); text-align: center; transform: translate(-50%, -50%); }
     .confirm-dialog h4 { margin: 0 0 8px; }
     .confirm-dialog p { margin: 0 0 12px; color: var(--muted); }
     .confirm-actions { display: flex; justify-content: center; gap: 7px; }
     .confirm-actions .button { flex: 1; }
-    .empty-state { position: absolute; top: 49%; right: 15px; left: 15px; display: grid; justify-items: center; gap: 9px; text-align: center; transform: translateY(-50%); }
-    .empty-mark { display: grid; width: 56px; height: 56px; place-items: center; border-radius: 50%; color: var(--gold); background: #263047; font-size: 20px; letter-spacing: .12em; }
-    .empty-state h4 { margin: 0; }
-    .empty-state p { max-width: 180px; margin: 0; color: var(--muted); }
-    .empty-state .button { margin-top: 3px; }
-    .warning-content { position: absolute; top: 48px; right: 12px; bottom: 12px; left: 12px; display: flex; flex-direction: column; justify-content: center; gap: 4px; text-align: center; }
-    .warning-mark { color: var(--gold); font-size: 27px; line-height: 1; }
-    .warning-content h4 { margin: 0; }
-    .warning-content p { margin: 0; color: var(--muted); }
-    .warning-tags { display: flex; justify-content: center; flex-wrap: wrap; gap: 5px; }
-    .warning-tags span { padding: 4px 7px; border: 1px solid #485874; border-radius: 99px; color: var(--muted); }
-    .warning-actions { display: grid; gap: 6px; margin-top: 3px; }
-    .screen--landscape .warning-content { top: 38px; bottom: 8px; gap: 4px; }
-    .screen--landscape .warning-content p { font-size: var(--dialogue-font); }
+    .empty-dialog { position: absolute; z-index: 4; top: 50%; left: 50%; width: 86%; padding: 15px 13px 12px; border: 1px solid var(--accent); border-radius: 9px; background: #121a2a; box-shadow: 0 14px 36px rgb(0 0 0 / 40%); text-align: center; transform: translate(-50%, -50%); }
+    .empty-dialog .empty-mark { display: grid; width: 56px; height: 56px; margin: 0 auto 8px; place-items: center; border-radius: 50%; color: var(--gold); background: #263047; font-size: 20px; letter-spacing: .12em; }
+    .empty-dialog h4 { margin: 0 0 6px; }
+    .empty-dialog p { margin: 0 0 10px; color: var(--muted); }
+    .empty-dialog .button { min-width: 140px; }
     .transition-content, .ending-content { position: absolute; z-index: 1; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 20px; text-align: center; text-shadow: 0 2px 8px #0b1020; }
     .transition-content .eyebrow, .ending-content .eyebrow { margin: 0; font-size: var(--dialogue-font); }
     .transition-content h4, .ending-content h4 { margin: 0; font-size: 22px; }
@@ -335,7 +326,7 @@
     <div>
       <p class="eyebrow">AI Passport · GalGame Framework</p>
       <h1>页面原型与屏幕布局</h1>
-      <p class="intro-copy">18 个页面/状态 · 每页提供 240×320 竖屏与 320×240 横屏示意</p>
+      <p class="intro-copy">17 个页面/状态 · 每页提供 240×320 竖屏与 320×240 横屏示意</p>
     </div>
     <p class="build-note"><b>方向在编写时配置</b><br>修改源码中的 <code>PREVIEW_ORIENTATION</code> 为 <code>"portrait"</code>、<code>"landscape"</code> 或 <code>"both"</code>。页面内没有方向切换选项。<br><b>分辨率基准</b>：每张屏按设备物理分辨率 1:1 绘制（竖屏 240 × 320、横屏 320 × 240；1 CSS 像素 = 1 设备像素；ST7789P3 / RGB565）。原型字号即设备字形档位：对白 16/20px 两档（竖屏排版取 Asunabi、横屏取沙耶参考版）、辅助与提示 10px、标题 20px 起，真机上不建议使用低于 10px 的字形。素材按各方向整屏尺寸产出，不做运行时缩放。原型中点击选项可查看对应状态；设备用 ↑、↓、OK 三个实体键操作，聚焦对话页或存档页后可用键盘模拟。</p>
   </header>
@@ -356,9 +347,8 @@
       { id: "history", title: "历史文本", subtitle: "回看已经显示的对白", note: "↑/↓滚动历史；页头的返回项回到进入历史前的剧情位置，不再重复放置页底返回按钮。" },
       { id: "gallery", title: "鉴赏室", subtitle: "已解锁 CG、回想与音乐入口", note: "↑/↓选择缩略图，短按 OK 打开；锁定内容不可选。" },
       { id: "chapter", title: "章节 / 路线选择", subtitle: "多章节或多路线作品使用", note: "↑/↓选择章节，短按 OK 在选中章节上开始；单章节作品可以省略。" },
-      { id: "confirm", title: "确认弹窗", subtitle: "覆盖、删除或退出前确认", note: "统一复用弹窗布局与确认/取消焦点样式。" },
-      { id: "empty", title: "空状态", subtitle: "无存档、无历史或内容未解锁", note: "↑/↓在可执行入口间移动，短按 OK 确认；没有可执行项时仅显示说明。" },
-      { id: "warning", title: "内容警告", subtitle: "开始作品前的内容提示", note: "↑/↓在继续和返回之间选择，短按 OK 确认。" },
+      { id: "confirm", title: "确认弹窗", subtitle: "覆盖、删除或退出前确认", note: "作为弹窗叠加在存档页上（背景压暗）；统一复用弹窗布局与确认/取消焦点样式。" },
+      { id: "empty", title: "空状态", subtitle: "无存档时的弹窗提示", note: "作为弹窗叠加在读档页上（背景压暗）；无存档时提示开始游戏。" },
       { id: "transition", title: "章节过场", subtitle: "章节标题与剧情分隔", note: "没有多余的“继续”按钮；短按 OK 进入下一段剧情。" },
       { id: "ending", title: "结局", subtitle: "结局标题与后续入口", note: "↑/↓选择后续入口，短按 OK 确认。" },
       { id: "about", title: "关于", subtitle: "版本、作者与素材说明", note: "页头提供唯一返回入口；作品信息由配置替换。" },
@@ -386,7 +376,7 @@
     }
     function titleScreen(o) {
       const continueDisabled = "<button type=\"button\" class=\"button disabled\" disabled>继续游戏</button>";
-      const menu = button("开始新游戏", "warning", "primary") + continueDisabled + button("读取存档", "load") + button("设置", "settings") + button("鉴赏室", "gallery") + button("关于", "about");
+      const menu = button("开始新游戏", "dialogue", "primary") + continueDisabled + button("读取存档", "load") + button("设置", "settings") + button("鉴赏室", "gallery") + button("关于", "about");
       return frame(o, scene(true) + "<div class=\"title-layout\"><div class=\"title-brand\"><h4>未定作品</h4><p>一段尚未写完的旅程</p></div><nav class=\"title-menu\" aria-label=\"标题菜单\">" + menu + "</nav></div>");
     }
     function dialogueScreen(o) {
@@ -402,7 +392,8 @@
       const items = button("返回剧情", "dialogue", "primary") + button("保存进度", "save") + button("读取进度", "load") + button("历史文本", "history") + button("设置", "settings") + button("返回标题", "title");
       return frame(o, scene(true) + "<div class=\"quick-menu\"><h4>快捷菜单</h4><div class=\"stack\">" + items + "</div></div>");
     }
-    function saveScreen(o, mode) {
+    /* 存档/读档页的主体；确认弹窗与空状态都叠在它上面。 */
+    function savePageContent(mode) {
       const saving = mode === "save";
       const title = saving ? "保存进度" : "读取存档";
       const occupiedTarget = saving ? "confirm" : "dialogue";
@@ -410,7 +401,10 @@
       const slots = "<div class=\"slot-list\"><div class=\"slot selected\" role=\"button\" tabindex=\"0\" data-target=\"" + occupiedTarget + "\"><span class=\"thumb\"></span><span class=\"slot-copy\"><b>槽位 01</b><small>第 1 章 · 夜行列车</small></span></div><div class=\"slot empty\" role=\"button\" tabindex=\"0\"" + emptyAttrs + "><span class=\"thumb\"></span><span class=\"slot-copy\"><b>槽位 02</b><small>空槽位</small></span></div><div class=\"slot empty\" role=\"button\" tabindex=\"0\"" + emptyAttrs + "><span class=\"thumb\"></span><span class=\"slot-copy\"><b>槽位 03</b><small>空槽位</small></span></div></div>";
       const preview = "<div class=\"save-preview\"><span class=\"thumb\"></span><p>第 1 章 · 夜行列车<br>进度 02:15<br>日期 2026/10/12</p></div>";
       const pager = "<div class=\"pager\">第 1 / 3 页 · ↑/↓ 浏览槽位</div>";
-      return frame(o, "<div class=\"screen-titlebar\"><strong>" + title + "</strong>" + button("‹", "back") + "</div><div class=\"save-layout\">" + slots + preview + "</div>" + pager, "slot-input", saving ? "save" : "load");
+      return "<div class=\"screen-titlebar\"><strong>" + title + "</strong>" + button("‹", "back") + "</div><div class=\"save-layout\">" + slots + preview + "</div>" + pager;
+    }
+    function saveScreen(o, mode) {
+      return frame(o, savePageContent(mode), "slot-input", mode);
     }
     function settingsScreen(o) {
       const sliders = [["文字速度", "66%"], ["自动播放间隔", "45%"]];
@@ -446,15 +440,10 @@
       return frame(o, "<div class=\"screen-titlebar\"><strong>章节 / 路线</strong>" + button("‹", "title") + "</div><div class=\"chapter-layout\">" + list + info + action + "</div>");
     }
     function confirmScreen(o) {
-      return frame(o, scene(false) + "<div class=\"dim\"></div><div class=\"confirm-dialog\"><h4>覆盖该存档？</h4><p>原有进度将被新存档替换。<br>此操作无法撤销。</p><div class=\"confirm-actions\">" + button("取消", "back") + button("确认覆盖", "dialogue", "primary") + "</div></div>");
+      return frame(o, savePageContent("save") + "<div class=\"dim\"></div><div class=\"confirm-dialog\"><h4>覆盖该存档？</h4><p>原有进度将被新存档替换。<br>此操作无法撤销。</p><div class=\"confirm-actions\">" + button("取消", "back") + button("确认覆盖", "dialogue", "primary") + "</div></div>");
     }
     function emptyScreen(o) {
-      return frame(o, "<div class=\"screen-titlebar\"><strong>读取存档</strong>" + button("‹", "title") + "</div><div class=\"empty-state\"><span class=\"empty-mark\">···</span><h4>暂无存档</h4><p>开始一段故事后，存档会显示在这里。</p>" + button("开始游戏", "warning", "primary") + "</div>");
-    }
-    function warningScreen(o) {
-      const tags = "<div class=\"warning-tags\"><span>轻度惊悚</span><span>情感冲突</span><span>离别主题</span></div>";
-      const actions = "<div class=\"warning-actions\">" + button("我已了解，开始游戏", "dialogue", "primary") + button("返回标题", "title") + "</div>";
-      return frame(o, scene(false) + "<div class=\"screen-titlebar\"><strong>开始前请留意</strong></div><div class=\"warning-content\"><span class=\"warning-mark\">◇</span><h4>内容提示</h4><p>本作品可能包含以下题材。请根据自己的接受程度选择是否继续。</p>" + tags + actions + "</div>");
+      return frame(o, savePageContent("load") + "<div class=\"dim\"></div><div class=\"empty-dialog\"><span class=\"empty-mark\">···</span><h4>暂无存档</h4><p>开始一段故事后，存档会显示在这里。</p>" + button("开始游戏", "dialogue", "primary") + "</div>");
     }
     function transitionScreen(o) {
       return frame(o, scene(false) + "<div class=\"transition-content\" data-target=\"dialogue\"><p class=\"eyebrow\">CHAPTER 02</p><h4>雨停之后</h4><p>第二章　·　雨停之前</p></div>");
@@ -481,7 +470,6 @@
       chapter: chapterScreen,
       confirm: confirmScreen,
       empty: emptyScreen,
-      warning: warningScreen,
       transition: transitionScreen,
       ending: endingScreen,
       about: aboutScreen,
