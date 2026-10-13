@@ -303,7 +303,7 @@
     <div>
       <p class="eyebrow">AI Passport · GalGame Framework</p>
       <h1>页面原型与屏幕布局</h1>
-      <p class="intro-copy">18 个页面/状态 · 每页提供 240×320 竖屏与 320×240 横屏示意</p>
+      <p class="intro-copy">20 个页面/状态 · 每页提供 240×320 竖屏与 320×240 横屏示意</p>
     </div>
     <p class="build-note"><b>方向在编写时配置</b><br>修改源码中的 <code>PREVIEW_ORIENTATION</code> 为 <code>"portrait"</code>、<code>"landscape"</code> 或 <code>"both"</code>。页面内没有方向切换选项。<br><b>分辨率基准</b>：每张屏按设备物理分辨率 1:1 绘制（竖屏 240 × 320、横屏 320 × 240；1 CSS 像素 = 1 设备像素；ST7789P3 / RGB565）。原型字号即设备字形档位：屏内所有文字统一用对话字号两档（16px / 20px，不设小字），切换档位后所有页面立即重排；竖屏排版取 Asunabi、横屏取沙耶参考版。素材按各方向整屏尺寸产出，不做运行时缩放。<br><b>剧情锁</b>：CG 与章节按观看记录解锁（未解锁 CG 只显示问号、锁定章节显示「锁定」），选项可带条件置灰。设备用 ↑、↓、OK 三个实体键操作；原型中点击选项可查看对应状态，聚焦对话页或存档页后可用键盘模拟，设置页可直接点「文字大小」「对话透明度」行切换值。</p>
   </header>
@@ -322,8 +322,10 @@
       { id: "load", title: "读档页", subtitle: "选择已有进度", note: "聚焦页面后 ↑/↓选槽，短按 OK 直接读取；空槽位会弹出「暂无存档」弹窗，不另放“读取”按钮。" },
       { id: "settings", title: "设置页", subtitle: "文字、显示与阅读操作", note: "↑/↓选择设置项，短按 OK 切换值；设置页由标题页进入共 6 项，在剧情中经游戏内菜单进入共 7 项（多一个「返回标题」）。对话透明度 10%–55%、默认 30%；文字大小 16/20px 切换后所有页面立即重排。（原型里点「文字大小」「对话透明度」行可直接演示）" },
       { id: "history", title: "历史文本", subtitle: "回看已经显示的对白", note: "↑/↓滚动历史；旁白条目以「旁白」标记，其余显示说话人名；只保留最近 16 条，页头的返回项回到进入历史前的剧情位置。" },
-      { id: "gallery", title: "鉴赏室", subtitle: "CG 与剧情的分类入口", note: "两个分类入口：CG 鉴赏与剧情鉴赏（章节 / 路线），右侧显示各自数量；从结局或标题页进入的鉴赏室都是这一层。" },
+      { id: "gallery", title: "鉴赏室", subtitle: "CG、回想、剧情与音乐的入口", note: "四个分类入口：CG 鉴赏、CG 回想、剧情鉴赏（章节 / 路线）、音乐鉴赏，右侧显示各自数量；其中 CG 回想与音乐鉴赏是占位，固件尚未实现。" },
       { id: "cg-list", title: "CG 鉴赏", subtitle: "已解锁的 CG 缩略图", note: "↑/↓选择缩略图，短按 OK 全屏浏览；未解锁的只显示问号（剧情锁），不透露编号与名称；页脚显示「已解锁 N / 8」，随剧情推进变化；长按 OK 回鉴赏室。" },
+      { id: "cg-recall", title: "CG 回想", subtitle: "重看已看过的 CG 场景（占位）", note: "固件尚未实现，这里先留占位：按顺序列出已看过的场景（场景名 + 所在章节），短按 OK 重看那一段；未解锁的场景不出现。接入固件时用剧情锁的观看记录过滤，重看走对话事件流而不是静态图。" },
+      { id: "music", title: "音乐鉴赏", subtitle: "已听过的曲目（占位）", note: "固件尚未实现，这里先留占位：列表显示曲名与时长，短按 OK 播放/停止；骨架没有音频通路，接入时再接 I2S 与编解码器。" },
       { id: "chapter", title: "剧情鉴赏（章节 / 路线）", subtitle: "多章节或多路线作品使用", note: "从鉴赏室「剧情鉴赏」进入；↑/↓选择章节，短按 OK 在选中章节上开始；未解锁章节显示「锁定」（剧情锁：到达前置剧情或满足通关条件后才可选），长按 OK 回到鉴赏室。" },
       { id: "confirm", title: "确认弹窗", subtitle: "覆盖、删除或退出前确认", note: "作为弹窗叠加在存档页上（背景压暗）；统一复用弹窗布局与确认/取消焦点样式。" },
       { id: "empty", title: "空状态", subtitle: "无存档时的弹窗提示", note: "作为弹窗叠加在读档页上（背景压暗）；无存档时提示开始游戏。" },
@@ -412,11 +414,41 @@
       const rows = entries.map(function (entry) { return "<article class=\"history-entry\"><b>" + entry[0] + "</b><p>" + entry[1] + "</p>" + (entry[2] ? "<small>" + entry[2] + "</small>" : "") + "</article>"; }).join("");
       return frame(o, "<div class=\"screen-titlebar\"><strong>历史文本</strong>" + button("‹", "back") + "</div><div class=\"history-list\">" + rows + "</div>");
     }
-    /* 鉴赏室：CG 鉴赏 / 剧情鉴赏两个分类入口。 */
+    /* 鉴赏室：CG 鉴赏 / CG 回想 / 剧情鉴赏 / 音乐鉴赏四个分类入口（后两个是占位）。 */
     function galleryScreen(o) {
       const rows = "<div class=\"setting-row\" role=\"button\" data-target=\"cg-list\"><span>CG 鉴赏</span><output>8 张</output></div>" +
-        "<div class=\"setting-row\" role=\"button\" data-target=\"chapter\"><span>剧情鉴赏</span><output>3 章</output></div>";
+        "<div class=\"setting-row\" role=\"button\" data-target=\"cg-recall\"><span>CG 回想</span><output>4 段</output></div>" +
+        "<div class=\"setting-row\" role=\"button\" data-target=\"chapter\"><span>剧情鉴赏</span><output>3 章</output></div>" +
+        "<div class=\"setting-row\" role=\"button\" data-target=\"music\"><span>音乐鉴赏</span><output>6 曲</output></div>";
       return frame(o, "<div class=\"screen-titlebar\"><strong>鉴赏室</strong>" + button("‹", "back") + "</div><div class=\"settings-list\">" + rows + "</div>");
+    }
+    /* CG 回想（占位）：列出已看过的场景，条目样式与历史文本一致。 */
+    function cgRecallScreen(o) {
+      const entries = [
+        ["月台初遇", "序章 · 夜行列车", "回想 ▶"],
+        ["窗边的对话", "序章 · 夜行列车", ""],
+        ["雨中的站牌", "第二章 · 雨停之前", ""],
+        ["轨道与星空", "第二章 · 雨停之前", ""]
+      ];
+      const rows = entries.map(function (e) {
+        return "<article class=\"history-entry\"><b>" + e[0] + "</b><p>" + e[1] + "</p>" + (e[2] ? "<small>" + e[2] + "</small>" : "") + "</article>";
+      }).join("") + "<article class=\"history-entry\"><b>占位页面</b><p>固件尚未实现，接入后按场景重放。</p></article>";
+      return frame(o, "<div class=\"screen-titlebar\"><strong>CG 回想</strong>" + button("‹", "gallery") + "</div><div class=\"history-list\">" + rows + "</div>");
+    }
+    /* 音乐鉴赏（占位）：曲名与时长；骨架没有音频通路。 */
+    function musicScreen(o) {
+      const tracks = [
+        ["夜行列车", "03:12", "播放中 ▶"],
+        ["站台的风", "02:48", ""],
+        ["雨停之前", "04:05", ""],
+        ["星轨", "03:36", ""],
+        ["时刻表上没有的站", "02:57", ""],
+        ["星光抵达的地方", "05:20", ""]
+      ];
+      const rows = tracks.map(function (t) {
+        return "<div class=\"setting-row\"><span>" + t[0] + "</span><output>" + t[1] + (t[2] ? " · " + t[2] : "") + "</output></div>";
+      }).join("") + "<div class=\"setting-row disabled\"><span>占位页面 · 固件尚未实现</span><output></output></div>";
+      return frame(o, "<div class=\"screen-titlebar\"><strong>音乐鉴赏</strong>" + button("‹", "gallery") + "</div><div class=\"settings-list\">" + rows + "</div>");
     }
     /* CG 鉴赏：未解锁只显示问号（剧情锁），页脚显示已解锁数量。 */
     function cgListScreen(o) {
@@ -466,6 +498,8 @@
       history: historyScreen,
       gallery: galleryScreen,
       "cg-list": cgListScreen,
+      "cg-recall": cgRecallScreen,
+      music: musicScreen,
       chapter: chapterScreen,
       confirm: confirmScreen,
       empty: emptyScreen,
