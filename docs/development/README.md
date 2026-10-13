@@ -21,6 +21,7 @@ This directory contains AI Passport engineering rules and reusable workflows, gr
 - [lvgl-chinese-fonts.md](engineering/lvgl-chinese-fonts.md): step-by-step CJK configuration, font generation/linking, fallback examples, glyph checks, and troubleshooting.
 - [wifi-provisioning.md](engineering/wifi-provisioning.md): Bluetooth-based Wi-Fi setup using the BLUFI reference branch, the companion mini program, and integration checks.
 - [galgame-framework.md](engineering/galgame-framework.md): generic GalGame framework guide — pages and key semantics, typography rules, story locks, persistence, and how to bring in a new title.
+- [galgame-content-authoring.md](engineering/galgame-content-authoring.md): brief authoring guide — fill in one file and the framework plays your title; includes a copy-paste content template, story-lock recipes, and a delivery checklist.
 
 ## CI
 
