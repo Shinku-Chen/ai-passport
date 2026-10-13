@@ -92,6 +92,8 @@ static void enter_sleep(void)
     set_backlight(BACKLIGHT_FULL);
     vTaskDelay(pdMS_TO_TICKS(500));
 
+    // 睡前把自动进度落盘(平时是 2 秒节流写)。
+    gal_app_flush(&s_app);
     // 正在放的音乐先停掉,等播放任务停写 I2S 再让 codec 休眠。
     gal_music_stop();
     vTaskDelay(pdMS_TO_TICKS(200));

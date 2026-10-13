@@ -8,6 +8,7 @@ idf_component_register(
          "gal/gal_settings.c"
          "gal/gal_save.c"
          "gal/gal_unlock.c"
+         "gal/gal_progress.c"
          "gal/gal_tone.c"
          "gal/gal_music.c"
          "gal/gal_ui.c"

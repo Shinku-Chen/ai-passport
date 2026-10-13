@@ -10,6 +10,7 @@
 //   关于页     上/下 滚动正文,长按确定 返回
 #pragma once
 
+#include "gal_progress.h"
 #include "gal_save.h"
 #include "gal_settings.h"
 #include "gal_ui.h"
@@ -30,6 +31,9 @@ typedef struct {
     gal_settings_t settings;
     gal_save_t save;
     gal_unlock_t unlock;            // 剧情锁:观看记录与剧情标记
+    gal_progress_t progress;        // 自动进度(继续游戏用它接上)
+    bool progress_dirty;            // 有尚未落盘的进度
+    uint32_t progress_accum_ms;
 
     gal_page_t page;
     gal_page_t return_page;         // 子页面返回的目标
@@ -86,6 +90,9 @@ void gal_app_tick(gal_app_t *app, uint32_t elapsed_ms);
 
 // 空闲时长(毫秒),供 main 决定变暗/深睡。
 uint32_t gal_app_idle_ms(const gal_app_t *app);
+
+// 把待写的自动进度立刻落盘(深睡前调用)。
+void gal_app_flush(gal_app_t *app);
 
 // 深睡前在屏幕上显示提示(唤醒后设备会重启)。
 void gal_app_show_sleeping(gal_app_t *app);

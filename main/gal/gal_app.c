@@ -24,6 +24,8 @@ static const char *TAG = "gal";
 #define GAL_FAST_FORWARD_MS 180u
 #define GAL_AUTO_ADVANCE_MS 900u
 #define GAL_AUTO_TRANSITION_MS 1600u
+// 自动进度最多每 2 秒落盘一次:NVS 擦写寿命有限,而且不需要更实时。
+#define GAL_PROGRESS_SAVE_MS 2000u
 
 LV_FONT_DECLARE(gal_cjk_16);
 LV_FONT_DECLARE(gal_cjk_20);
@@ -182,6 +184,12 @@ static void enter_event(gal_app_t *app)
         app->event_index = gal_content_event_count - 1;
     }
     unlock_visit(app);   // 到这里就算看过:解锁 CG / 章节并写入事件标记
+    // 自动进度:记下当前事件与页,继续游戏就从这里接上。
+    app->progress.valid = 1;
+    app->progress.event_index = (uint16_t)app->event_index;
+    app->progress.page_index = (uint16_t)app->page_index;
+    app->progress_dirty = true;
+    app->progress_accum_ms = 0;
     app->page = event_page(&gal_content_events[app->event_index]);
     // 快进碰到选项、过场或结局就停下,把操作交回给玩家(render_page 会同步指示);
     // 自动阅读不解除,过场自己会走过去,所以计时从头开始。
@@ -247,6 +255,11 @@ static void show_line(gal_app_t *app, int line_index)
     gal_ui_set_chapter(&app->ui, chapter_name_at(app->event_index));
     app->shown_line = line_index;
     app->shown_page = app->page_index;
+    // 翻页也算进度(恢复时回到同一页)。
+    app->progress.valid = 1;
+    app->progress.event_index = (uint16_t)app->event_index;
+    app->progress.page_index = (uint16_t)app->page_index;
+    app->progress_dirty = true;
 
     if (app->page_index == 0) history_add(app, line);
 }
@@ -321,6 +334,7 @@ static void start_new_game(gal_app_t *app)
     app->choice_sel = 0;
     app->event_index = 0;
     app->page_index = 0;
+    gal_progress_clear(&app->progress);   // 新游戏不沿用上次进度
     enter_event(app);
 }
 
@@ -594,8 +608,11 @@ static void render_page(gal_app_t *app)
     case GAL_PAGE_TITLE: {
         gal_ui_set_rows(&app->ui, GAL_LIST_TITLE, gal_content_title_menu, NULL,
                         gal_content_title_menu_count, app->title_sel);
-        const bool any = gal_save_any(&app->save);
-        gal_ui_set_row_enabled(&app->ui, GAL_LIST_TITLE, GAL_TITLE_MENU_CONTINUE, any);
+        // 继续游戏看自动进度;读取存档看手动槽位。
+        const bool any_save = gal_save_any(&app->save);
+        gal_ui_set_row_enabled(&app->ui, GAL_LIST_TITLE, GAL_TITLE_MENU_CONTINUE,
+                               app->progress.valid);
+        gal_ui_set_row_enabled(&app->ui, GAL_LIST_TITLE, GAL_TITLE_MENU_LOAD, any_save);
         return;
     }
     case GAL_PAGE_GAME: {
@@ -737,12 +754,15 @@ static void handle_title(gal_app_t *app, const gal_key_t *key)
         start_new_game(app);
         break;
     case GAL_TITLE_MENU_CONTINUE: {
-        const int slot = gal_save_latest(&app->save);
-        if (slot < 0) {
-            show_notice(app, "没有存档");
+        // 继续游戏:直接从自动进度接上。
+        if (!app->progress.valid) {
+            show_notice(app, "没有进度");
             return;
         }
-        do_load(app, slot);
+        app->event_index = app->progress.event_index;
+        app->page_index = app->progress.page_index;
+        app->shown_line = -1;
+        enter_event(app);
         break;
     }
     case GAL_TITLE_MENU_LOAD:
@@ -1321,6 +1341,15 @@ void gal_app_tick(gal_app_t *app, uint32_t elapsed_ms)
         }
     }
 
+    // 自动进度节流落盘。
+    if (app->progress_dirty) {
+        app->progress_accum_ms += elapsed_ms;
+        if (app->progress_accum_ms >= GAL_PROGRESS_SAVE_MS) {
+            app->progress_accum_ms = 0;
+            if (gal_progress_store(&app->progress)) app->progress_dirty = false;
+        }
+    }
+
     app->battery_accum_ms += elapsed_ms;
     if (app->battery_accum_ms < 10000) return;
     app->battery_accum_ms = 0;
@@ -1335,6 +1364,12 @@ void gal_app_tick(gal_app_t *app, uint32_t elapsed_ms)
 uint32_t gal_app_idle_ms(const gal_app_t *app)
 {
     return app ? app->idle_ms : 0;
+}
+
+void gal_app_flush(gal_app_t *app)
+{
+    if (!app || !app->progress_dirty) return;
+    if (gal_progress_store(&app->progress)) app->progress_dirty = false;
 }
 
 void gal_app_show_sleeping(gal_app_t *app)
@@ -1370,6 +1405,18 @@ bool gal_app_init(gal_app_t *app)
         ESP_LOGW(TAG, "解锁记录不可用,本次运行内有效");
     } else {
         (void)gal_unlock_load(&app->unlock);
+    }
+
+    gal_progress_clear(&app->progress);
+    if (!gal_progress_init()) {
+        ESP_LOGW(TAG, "进度存储不可用,本次运行内有效");
+    } else {
+        (void)gal_progress_load(&app->progress);
+        if (app->progress.valid) {
+            ESP_LOGI(TAG, "找到上次进度:事件 %u 第 %u 页",
+                     (unsigned)app->progress.event_index,
+                     (unsigned)app->progress.page_index + 1);
+        }
     }
 
     if (!gal_music_init()) ESP_LOGW(TAG, "音乐播放任务创建失败,音乐鉴赏不可用");
