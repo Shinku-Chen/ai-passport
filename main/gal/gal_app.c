@@ -416,8 +416,7 @@ static void fill_cg(gal_app_t *app)
 static void render_page(gal_app_t *app)
 {
     gal_ui_show_page(&app->ui, app->page);
-    gal_ui_set_mode(&app->ui, app->fast_forward && app->page == GAL_PAGE_GAME,
-                    app->auto_mode && app->page == GAL_PAGE_GAME);
+    gal_ui_set_mode(&app->ui, app->auto_mode && app->page == GAL_PAGE_GAME);
 
     switch (app->page) {
     case GAL_PAGE_START: {
@@ -578,7 +577,6 @@ static void handle_game(gal_app_t *app, const gal_key_t *key)
     if (key->ev == BSP_BTN_CLICK &&
         (key->btn == BSP_BTN_OK || key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
         app->fast_forward = false;
-        gal_ui_set_mode(&app->ui, false, app->auto_mode);
         advance_reading(app, false);
         return;
     }
@@ -589,18 +587,16 @@ static void handle_game(gal_app_t *app, const gal_key_t *key)
         goto_page(app, GAL_PAGE_MENU);
         return;
     }
-    // 长按上:快进,松开停。
+    // 长按上:快进,松开停(快进不显示文字提示)。
     if (key->btn == BSP_BTN_UP) {
         if (key->ev == BSP_BTN_LONG) {
             app->fast_forward = true;
             app->ff_accum_ms = 0;
             gal_ui_show_full_text(&app->ui);
-            gal_ui_set_mode(&app->ui, true, app->auto_mode);
             return;
         }
         if (key->ev == BSP_BTN_RELEASE) {
             app->fast_forward = false;
-            gal_ui_set_mode(&app->ui, false, app->auto_mode);
             return;
         }
     }
@@ -612,7 +608,7 @@ static void handle_game(gal_app_t *app, const gal_key_t *key)
         app->auto_accum_ms = 0;
         app->fast_forward = false;
         if (app->auto_mode) gal_ui_show_full_text(&app->ui);
-        gal_ui_set_mode(&app->ui, false, app->auto_mode);
+        gal_ui_set_mode(&app->ui, app->auto_mode);
         return;
     }
 }
@@ -1002,7 +998,7 @@ void gal_app_key(gal_app_t *app, const gal_key_t *key)
         app->auto_accum_ms = 0;
         app->settings.auto_play = 0;
         gal_settings_store(&app->settings);
-        gal_ui_set_mode(&app->ui, false, false);
+        gal_ui_set_mode(&app->ui, false);
         bsp_lvgl_unlock();
         return;
     }

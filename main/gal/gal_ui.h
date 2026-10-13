@@ -112,9 +112,8 @@ typedef struct {
     lv_obj_t *text;           // 正文
     lv_obj_t *chapter;        // 左上角章节
     lv_obj_t *battery;        // 右上角电量
-    lv_obj_t *notice;         // 顶部提示(快进/自动阅读 开-关)
-    lv_obj_t *mode_fast;      // “快进”指示
-    lv_obj_t *mode_auto;      // “自动”指示
+    lv_obj_t *notice;         // 顶部提示(存读档等)
+    lv_obj_t *mode_auto;      // “自动”指示(快进不另显示文字)
 
     lv_obj_t *titles[GAL_PAGE_COUNT];   // 各页页头标题
     lv_obj_t *choice_box;               // 选项框
@@ -180,8 +179,8 @@ bool gal_ui_typing(const gal_ui_t *ui);
 void gal_ui_set_choice(gal_ui_t *ui, const char *prompt, const char *const *options,
                        int count, int selected);
 
-// 快进 / 自动阅读指示。
-void gal_ui_set_mode(gal_ui_t *ui, bool fast_forward, bool auto_play);
+// 自动阅读指示(快进只在视觉上变化,不显示文字)。
+void gal_ui_set_mode(gal_ui_t *ui, bool auto_play);
 
 // 状态栏与提示。
 void gal_ui_set_chapter(gal_ui_t *ui, const char *text);

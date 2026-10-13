@@ -715,11 +715,7 @@ bool gal_ui_create(gal_ui_t *ui, const lv_font_t *font_small, const lv_font_t *f
     lv_label_set_text(ui->battery, "--%");
     lv_obj_align(ui->battery, LV_ALIGN_TOP_RIGHT, -9, 4);
 
-    // 快进 / 自动阅读指示:只有文字,贴在对话框上沿外侧(位置在对话框建好后算)。
-    ui->mode_fast = mk_label(root, font_small, COL_ACCENT);
-    lv_label_set_text(ui->mode_fast, "快进");
-    lv_obj_add_flag(ui->mode_fast, LV_OBJ_FLAG_HIDDEN);
-
+    // 自动阅读指示:只有文字,贴在对话框上沿外侧的右上角(位置在对话框建好后算)。
     ui->mode_auto = mk_label(root, font_small, COL_ACCENT);
     lv_label_set_text(ui->mode_auto, "自动");
     lv_obj_add_flag(ui->mode_auto, LV_OBJ_FLAG_HIDDEN);
@@ -749,15 +745,13 @@ bool gal_ui_create(gal_ui_t *ui, const lv_font_t *font_small, const lv_font_t *f
     mk_page(ui, GAL_PAGE_GAME, 0, false);
     build_dialogue(ui, GAL_PAGE_GAME);
 
-    // 快进 / 自动阅读指示贴在对话框上沿外侧的右上角。
+    // 快进不显示文字;自动阅读指示贴在对话框上沿外侧的右上角。
     lv_obj_align_to(ui->mode_auto, ui->panel, LV_ALIGN_OUT_TOP_RIGHT, -8, -2);
-    lv_obj_align_to(ui->mode_fast, ui->mode_auto, LV_ALIGN_OUT_LEFT_MID, -8, 0);
 
     // 对话页是最后创建的,会盖住先建的对象;叠加层与顶部文字再提到最前:
-    // 弹窗 → 游戏内菜单 → 快进/自动指示 → 提示。
+    // 弹窗 → 游戏内菜单 → 自动指示 → 提示。
     lv_obj_move_foreground(ui->pages[GAL_PAGE_MENU]);
     lv_obj_move_foreground(ui->pages[GAL_PAGE_MODAL]);
-    lv_obj_move_foreground(ui->mode_fast);
     lv_obj_move_foreground(ui->mode_auto);
     lv_obj_move_foreground(ui->notice);
 
@@ -816,11 +810,8 @@ void gal_ui_show_page(gal_ui_t *ui, gal_page_t page)
     if (hud) lv_obj_remove_flag(ui->notice, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(ui->notice, LV_OBJ_FLAG_HIDDEN);
 
-    // 模式指示跟随页面;真正的开关由 gal_ui_set_mode 决定。
-    if (base != GAL_PAGE_GAME) {
-        lv_obj_add_flag(ui->mode_fast, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(ui->mode_auto, LV_OBJ_FLAG_HIDDEN);
-    }
+    // 自动阅读指示跟随页面;开关由 gal_ui_set_mode 决定。
+    if (base != GAL_PAGE_GAME) lv_obj_add_flag(ui->mode_auto, LV_OBJ_FLAG_HIDDEN);
 
     if (base != GAL_PAGE_GAME) typing_stop(ui);
 }
@@ -841,11 +832,9 @@ void gal_ui_set_choice(gal_ui_t *ui, const char *prompt, const char *const *opti
     gal_ui_set_rows(ui, GAL_LIST_CHOICE, options, NULL, count, selected);
 }
 
-void gal_ui_set_mode(gal_ui_t *ui, bool fast_forward, bool auto_play)
+void gal_ui_set_mode(gal_ui_t *ui, bool auto_play)
 {
     if (!ui) return;
-    if (fast_forward) lv_obj_remove_flag(ui->mode_fast, LV_OBJ_FLAG_HIDDEN);
-    else lv_obj_add_flag(ui->mode_fast, LV_OBJ_FLAG_HIDDEN);
     if (auto_play) lv_obj_remove_flag(ui->mode_auto, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(ui->mode_auto, LV_OBJ_FLAG_HIDDEN);
 }
