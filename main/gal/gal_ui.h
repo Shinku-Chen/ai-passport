@@ -111,6 +111,12 @@ typedef struct {
     lv_obj_t *brand_title;    // 启动页/标题页上的作品名
     lv_obj_t *brand_sub;      // 副标题
 
+    lv_obj_t *scene_img;      // 对话页背景图(可为空)
+    lv_obj_t *body_img;       // 立绘(可为空)
+    lv_obj_t *title_img;      // 标题封面(可为空)
+    lv_obj_t *cg_image;       // CG 全屏图
+    lv_obj_t *tile_img[GAL_CG_TILES];   // 鉴赏室缩略图
+
     lv_obj_t *panel;          // 对话框面板
     lv_obj_t *name;           // 说话人名牌(面板上沿外侧)
     lv_obj_t *text;           // 正文
@@ -177,7 +183,7 @@ void gal_ui_set_brand(gal_ui_t *ui, const char *title, const char *subtitle);
 
 // 正文页与选项页。
 void gal_ui_set_text(gal_ui_t *ui, const char *speaker, const char *page_text,
-                     uint32_t ms_per_char);
+                     uint32_t ms_per_char, const void *image, const void *body);
 void gal_ui_show_full_text(gal_ui_t *ui);
 bool gal_ui_typing(const gal_ui_t *ui);
 void gal_ui_set_choice(gal_ui_t *ui, const char *prompt, const gal_option_t *options,
@@ -211,7 +217,11 @@ void gal_ui_set_action_hint(gal_ui_t *ui, const char *text);
 
 // 鉴赏室与 CG 浏览。
 void gal_ui_set_gallery(gal_ui_t *ui, const gal_cg_t *items, int count, int selected);
-void gal_ui_set_cg(gal_ui_t *ui, const char *index_text, const char *name, const char *caption);
+void gal_ui_set_cg(gal_ui_t *ui, const char *index_text, const char *name,
+                   const char *caption, const void *image);
+
+// 标题页封面(NULL = 只显示程序绘制的渐变)。
+void gal_ui_set_title_image(gal_ui_t *ui, const void *image);
 
 // 章节过场与结局。
 void gal_ui_set_transition(gal_ui_t *ui, const char *eyebrow, const char *title,

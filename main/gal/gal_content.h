@@ -30,6 +30,8 @@ typedef struct {
     const char *speaker;   // NULL 或空串 = 旁白
     const char *text;      // UTF-8 正文(一段 = 一屏,内部按行/页自动切分)
     uint8_t require_flag;  // 需要该标记才出现;GAL_UNLOCK_NONE = 总是出现
+    const void *image;     // 该句的背景图(lv_image_dsc_t*);NULL = 程序绘制的渐变
+    const void *body;      // 该句的立绘(同上);NULL = 不显示立绘
 } gal_line_t;
 
 // ---------------------------------------------------------------- 选项
@@ -78,6 +80,7 @@ typedef struct {
     const char *label;      // CG 01
     const char *caption;    // 夜行列车 · 初遇
     unsigned short unlock_event;   // 到达该事件解锁;GAL_EVENT_NONE = 初始解锁
+    const void *image;      // CG 图(lv_image_dsc_t*);NULL = 程序绘制的占位块
     bool unlocked;          // 运行时填充:界面用(由 gal_unlock 状态换算)
 } gal_cg_t;
 
@@ -121,6 +124,9 @@ typedef struct {
 #define GAL_CONTENT_SUBTITLE "一段尚未写完的旅程"
 #define GAL_CONTENT_LOGO_SUB "GALGAME FRAMEWORK"
 #define GAL_CONTENT_VERSION  "v0.1.0"
+
+// 标题页封面(可为 NULL)。
+extern const void *gal_content_title_image;
 
 extern const gal_line_t gal_content_lines[];
 extern const int gal_content_line_count;

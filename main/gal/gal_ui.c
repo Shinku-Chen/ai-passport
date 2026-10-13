@@ -39,6 +39,19 @@ static const char *TAG = "gal_ui";
 #define ROW_H 34         // 列表行高(含 4px 间距)
 #define ROW_INSET 12     // 列表左右留白
 
+// ---------------------------------------------------------------- 图片
+// 有图就显示,没有就隐藏,露出程序绘制的渐变。
+static void apply_image(lv_obj_t *img, const void *dsc)
+{
+    if (!img) return;
+    if (dsc) {
+        lv_image_set_src(img, dsc);
+        lv_obj_remove_flag(img, LV_OBJ_FLAG_HIDDEN);
+    } else {
+        lv_obj_add_flag(img, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
 // ---------------------------------------------------------------- 打字机
 static void typing_stop(gal_ui_t *ui)
 {
@@ -83,9 +96,11 @@ bool gal_ui_typing(const gal_ui_t *ui)
 }
 
 void gal_ui_set_text(gal_ui_t *ui, const char *speaker, const char *page_text,
-                     uint32_t ms_per_char)
+                     uint32_t ms_per_char, const void *image, const void *body)
 {
     if (!ui) return;
+    apply_image(ui->scene_img, image);
+    apply_image(ui->body_img, body);
     lv_label_set_text(ui->name, speaker ? speaker : "");
     // 旁白不显示名牌,避免一个空胶囊浮在对话框上方。
     if (speaker && speaker[0] != '\0') {
@@ -307,6 +322,16 @@ static void build_dialogue(gal_ui_t *ui, gal_page_t page)
 {
     lv_obj_t *root = ui->pages[page];
 
+    // 背景图与立绘:默认隐藏,由 gal_ui_set_text 按句切换。
+    if (page == GAL_PAGE_GAME) {
+        ui->scene_img = lv_image_create(root);
+        lv_obj_align(ui->scene_img, LV_ALIGN_TOP_MID, 0, 0);
+        lv_obj_add_flag(ui->scene_img, LV_OBJ_FLAG_HIDDEN);
+        ui->body_img = lv_image_create(root);
+        lv_obj_align(ui->body_img, LV_ALIGN_BOTTOM_MID, 0, -(GAL_PANEL_H + 6));
+        lv_obj_add_flag(ui->body_img, LV_OBJ_FLAG_HIDDEN);
+    }
+
     ui->panel = lv_obj_create(root);
     lv_obj_remove_style_all(ui->panel);
     lv_obj_set_size(ui->panel, GAL_UI_W, GAL_PANEL_H);
@@ -367,6 +392,14 @@ static void build_start(gal_ui_t *ui)
 static void build_title(gal_ui_t *ui)
 {
     lv_obj_t *page = mk_page(ui, GAL_PAGE_TITLE, 0, false);
+
+    // 标题封面(默认隐藏;由 gal_ui_set_title_image 设置)。
+    ui->title_img = lv_image_create(page);
+    lv_obj_align(ui->title_img, LV_ALIGN_TOP_MID, 0, 0);
+    lv_obj_add_flag(ui->title_img, LV_OBJ_FLAG_HIDDEN);
+    // 作品名要压在封面之上。
+    lv_obj_move_foreground(ui->brand_title);
+    lv_obj_move_foreground(ui->brand_sub);
 
     // 标题菜单框(原型:宽度占满、深色半透明、圆角)。
     lv_obj_t *box = lv_obj_create(page);
@@ -513,6 +546,13 @@ static void build_cg_list(gal_ui_t *ui)
         lv_obj_remove_flag(tile, LV_OBJ_FLAG_SCROLLABLE);
         ui->cg_tiles[i] = tile;
 
+        // 缩略图:用同一张 CG 图缩到格子大小(scale 以 1/256 为单位)。
+        lv_obj_t *thumb = lv_image_create(tile);
+        lv_obj_align(thumb, LV_ALIGN_TOP_MID, 0, 2);
+        lv_image_set_scale(thumb, 70);
+        lv_obj_add_flag(thumb, LV_OBJ_FLAG_HIDDEN);
+        ui->tile_img[i] = thumb;
+
         lv_obj_t *label = mk_label(tile, ui->font_small, COL_TEXT);
         lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, -6);
         ui->cg_tiles_label[i] = label;
@@ -619,6 +659,11 @@ static void build_cg(gal_ui_t *ui)
     lv_obj_set_style_bg_grad_dir(image, LV_GRAD_DIR_VER, LV_PART_MAIN);
     lv_obj_set_style_bg_opa(image, LV_OPA_COVER, LV_PART_MAIN);
     lv_obj_remove_flag(image, LV_OBJ_FLAG_SCROLLABLE);
+
+    // CG 图:居中显示,无图时露出渐变占位。
+    ui->cg_image = lv_image_create(root);
+    lv_obj_align(ui->cg_image, LV_ALIGN_TOP_MID, 0, 40);
+    lv_obj_add_flag(ui->cg_image, LV_OBJ_FLAG_HIDDEN);
 
     ui->cg_index = mk_label(root, ui->font_small, COL_TEXT);
     lv_obj_set_style_bg_color(ui->cg_index, lv_color_black(), LV_PART_MAIN);
@@ -842,7 +887,7 @@ void gal_ui_set_choice(gal_ui_t *ui, const char *prompt, const gal_option_t *opt
 {
     if (!ui) return;
     // 选项页把分支前的最后一句台词留在底部对话框里。
-    gal_ui_set_text(ui, NULL, prompt, 0);
+    gal_ui_set_text(ui, NULL, prompt, 0, NULL, NULL);
     if (count > GAL_LIST_MAX_ROWS) count = GAL_LIST_MAX_ROWS;
     static const char *labels[GAL_LIST_MAX_ROWS];
     for (int i = 0; i < count; ++i) {
@@ -945,18 +990,28 @@ void gal_ui_set_gallery(gal_ui_t *ui, const gal_cg_t *items, int count, int sele
             lv_obj_set_style_bg_color(tile, lv_color_hex(COL_ROW), LV_PART_MAIN);
             lv_obj_set_style_bg_grad_color(tile, lv_color_hex(COL_ROW), LV_PART_MAIN);
         }
+        // 缩略图:解锁且有图才显示。
+        apply_image(ui->tile_img[i], (unlocked && items[i].image) ? items[i].image : NULL);
         const bool on = filled && i == selected;
         lv_obj_set_style_border_color(tile, lv_color_hex(COL_ACCENT), LV_PART_MAIN);
         lv_obj_set_style_border_width(tile, on ? 2 : 1, LV_PART_MAIN);
     }
 }
 
-void gal_ui_set_cg(gal_ui_t *ui, const char *index_text, const char *name, const char *caption)
+void gal_ui_set_cg(gal_ui_t *ui, const char *index_text, const char *name,
+                   const char *caption, const void *image)
 {
     if (!ui) return;
     lv_label_set_text(ui->cg_index, index_text ? index_text : "");
     lv_label_set_text(ui->cg_name, name ? name : "");
     lv_label_set_text(ui->cg_caption, caption ? caption : "");
+    apply_image(ui->cg_image, image);
+}
+
+void gal_ui_set_title_image(gal_ui_t *ui, const void *image)
+{
+    if (!ui) return;
+    apply_image(ui->title_img, image);
 }
 
 void gal_ui_set_transition(gal_ui_t *ui, const char *eyebrow, const char *title,

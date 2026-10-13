@@ -1,25 +1,28 @@
 // main/gal/gal_content.c —— 骨架固件的占位内容(对白、事件流、菜单与列表数据)。
 #include "gal_content.h"
 
+// 标题页封面:骨架没有图片资源。
+const void *gal_content_title_image = 0;
+
 // ---------------------------------------------------------------- 对白
 // 覆盖:打字机、说话人与旁白、超长文本自动分页,以及按剧情标记出现的条件台词。
 const gal_line_t gal_content_lines[] = {
-    { "", "这是一台占位的框架固件。", GAL_UNLOCK_NONE },
-    { "", "屏幕上的文字来自 main/gal/gal_content.c。", GAL_UNLOCK_NONE },
-    { "角色 A", "接入真实作品时,替换内容层即可,界面与交互保持不变。", GAL_UNLOCK_NONE },
-    { "角色 B", "启动页、标题页、阅读器与设置面板都已经就位。", GAL_UNLOCK_NONE },
+    { "", "这是一台占位的框架固件。", GAL_UNLOCK_NONE, 0, 0 },
+    { "", "屏幕上的文字来自 main/gal/gal_content.c。", GAL_UNLOCK_NONE, 0, 0 },
+    { "角色 A", "接入真实作品时,替换内容层即可,界面与交互保持不变。", GAL_UNLOCK_NONE, 0, 0 },
+    { "角色 B", "启动页、标题页、阅读器与设置面板都已经就位。", GAL_UNLOCK_NONE, 0, 0 },
     { "", "夜色像潮水一样漫过站台,远处的灯一盏一盏亮起来,列车还没有进站,"
           "风里带着铁轨和一点点海水的味道。故事从这里开始,也会在这里结束。",
-      GAL_UNLOCK_NONE },
-    { "角色 A", "排版按框架规范:对话框贴底、每页固定行数、字号两档。", GAL_UNLOCK_NONE },
-    { "角色 B", "长按确定打开设置,试试对话框透明度。", GAL_UNLOCK_NONE },
-    { "", "占位内容走完了第一章。", GAL_UNLOCK_NONE },
+      GAL_UNLOCK_NONE, 0, 0 },
+    { "角色 A", "排版按框架规范:对话框贴底、每页固定行数、字号两档。", GAL_UNLOCK_NONE, 0, 0 },
+    { "角色 B", "长按确定打开设置,试试对话框透明度。", GAL_UNLOCK_NONE, 0, 0 },
+    { "", "占位内容走完了第一章。", GAL_UNLOCK_NONE, 0, 0 },
     // 下面两句是同一位置的两个分支:按前面选了什么,只会出现其中一句。
-    { "角色 A", "追上去的那一步,让后面的路跟着变了。", GAL_FLAG_CHOICE_A },
-    { "角色 B", "留在原地也不算坏,故事照样往前走。", GAL_FLAG_CHOICE_B },
-    { "", "第二章:轨道伸向看不见的地方,风把云推过站台顶棚。", GAL_UNLOCK_NONE },
-    { "角色 A", "分支在这里汇合,后面的路是同一段。", GAL_UNLOCK_NONE },
-    { "角色 B", "那就继续走吧。", GAL_UNLOCK_NONE },
+    { "角色 A", "追上去的那一步,让后面的路跟着变了。", GAL_FLAG_CHOICE_A, 0, 0 },
+    { "角色 B", "留在原地也不算坏,故事照样往前走。", GAL_FLAG_CHOICE_B, 0, 0 },
+    { "", "第二章:轨道伸向看不见的地方,风把云推过站台顶棚。", GAL_UNLOCK_NONE, 0, 0 },
+    { "角色 A", "分支在这里汇合,后面的路是同一段。", GAL_UNLOCK_NONE, 0, 0 },
+    { "角色 B", "那就继续走吧。", GAL_UNLOCK_NONE, 0, 0 },
 };
 
 const int gal_content_line_count =
@@ -90,14 +93,14 @@ const int gal_content_ending_count =
 // ---------------------------------------------------------------- 鉴赏室
 // unlock_event = 到达该事件下标时解锁(运行时由 gal_unlock 记录)。
 const gal_cg_t gal_content_cgs[] = {
-    { "CG 01", "夜行列车 · 初遇", 0, false },
-    { "CG 02", "月台尽头", 3, false },
-    { "CG 03", "雨中的站牌", 6, false },
-    { "CG 04", "窗边的对话", 9, false },
-    { "CG 05", "雨停之后", 11, false },
-    { "CG 06", "轨道与星空", 13, false },
-    { "CG 07", "未解锁", 16, false },
-    { "CG 08", "未解锁", 16, false },
+    { "CG 01", "夜行列车 · 初遇", 0, 0, false },
+    { "CG 02", "月台尽头", 3, 0, false },
+    { "CG 03", "雨中的站牌", 6, 0, false },
+    { "CG 04", "窗边的对话", 9, 0, false },
+    { "CG 05", "雨停之后", 11, 0, false },
+    { "CG 06", "轨道与星空", 13, 0, false },
+    { "CG 07", "未解锁", 16, 0, false },
+    { "CG 08", "未解锁", 16, 0, false },
 };
 
 const int gal_content_cg_count = (int)(sizeof(gal_content_cgs) / sizeof(gal_content_cgs[0]));

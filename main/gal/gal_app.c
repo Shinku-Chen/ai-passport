@@ -251,7 +251,8 @@ static void show_line(gal_app_t *app, int line_index)
 
     // 快进时直接整页显示,不再走打字机。
     gal_ui_set_text(&app->ui, line->speaker, page_text,
-                    app->fast_forward ? 0 : speed_ms(app));
+                    app->fast_forward ? 0 : speed_ms(app),
+                    line->image, line->body);
     gal_ui_set_chapter(&app->ui, chapter_name_at(app->event_index));
     app->shown_line = line_index;
     app->shown_page = app->page_index;
@@ -571,7 +572,7 @@ static void fill_cg(gal_app_t *app)
     const gal_cg_t *cg = &gal_content_cgs[app->cg_sel];
     char index_text[24];
     snprintf(index_text, sizeof(index_text), "%s / %02d", cg->label, gal_content_cg_count);
-    gal_ui_set_cg(&app->ui, index_text, cg->caption, "占位画面 · 骨架不携带美术资源");
+    gal_ui_set_cg(&app->ui, index_text, cg->caption, "", cg->image);
 }
 
 // 鉴赏室缩略图:解锁状态由剧情锁的观看记录换算;未解锁只显示问号。
@@ -1428,6 +1429,7 @@ bool gal_app_init(gal_app_t *app)
     const bool ui_ok = gal_ui_create(&app->ui, &gal_cjk_16, &gal_cjk_20);
     if (ui_ok) {
         gal_ui_set_brand(&app->ui, GAL_CONTENT_TITLE, GAL_CONTENT_SUBTITLE);
+        gal_ui_set_title_image(&app->ui, gal_content_title_image);
         gal_ui_set_battery(&app->ui, app->battery_percent);
         gal_ui_set_font_size(&app->ui, app->settings.font_large != 0);
         gal_ui_set_panel_transparency(&app->ui, app->settings.panel_transparency);
