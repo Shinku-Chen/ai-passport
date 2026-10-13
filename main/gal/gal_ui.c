@@ -824,13 +824,19 @@ void gal_ui_set_brand(gal_ui_t *ui, const char *title, const char *subtitle)
     lv_label_set_text(ui->brand_sub, subtitle ? subtitle : "");
 }
 
-void gal_ui_set_choice(gal_ui_t *ui, const char *prompt, const char *const *options,
+void gal_ui_set_choice(gal_ui_t *ui, const char *prompt, const gal_option_t *options,
                        int count, int selected)
 {
     if (!ui) return;
     // 选项页把分支前的最后一句台词留在底部对话框里。
     gal_ui_set_text(ui, NULL, prompt, 0);
-    gal_ui_set_rows(ui, GAL_LIST_CHOICE, options, NULL, count, selected);
+    if (count > GAL_LIST_MAX_ROWS) count = GAL_LIST_MAX_ROWS;
+    static const char *labels[GAL_LIST_MAX_ROWS];
+    for (int i = 0; i < count; ++i) {
+        labels[i] = (options && options[i].label) ? options[i].label : "";
+    }
+    // 可用性(剧情锁)由 gal_app 判定后用 gal_ui_set_row_enabled 设置。
+    gal_ui_set_rows(ui, GAL_LIST_CHOICE, labels, NULL, count, selected);
 }
 
 void gal_ui_set_mode(gal_ui_t *ui, bool auto_play)

@@ -176,7 +176,7 @@ void gal_ui_set_text(gal_ui_t *ui, const char *speaker, const char *page_text,
                      uint32_t ms_per_char);
 void gal_ui_show_full_text(gal_ui_t *ui);
 bool gal_ui_typing(const gal_ui_t *ui);
-void gal_ui_set_choice(gal_ui_t *ui, const char *prompt, const char *const *options,
+void gal_ui_set_choice(gal_ui_t *ui, const char *prompt, const gal_option_t *options,
                        int count, int selected);
 
 // 自动阅读指示(快进只在视觉上变化,不显示文字)。

@@ -32,6 +32,68 @@ static void render_page(gal_app_t *app);
 static void goto_page(gal_app_t *app, gal_page_t page);
 static bool settings_from_reader(const gal_app_t *app);
 
+// ---------------------------------------------------------------- 剧情锁
+// 事件的可见性:条件台词只有满足标记才出现。
+static bool event_visible(const gal_app_t *app, int event_index)
+{
+    if (event_index < 0 || event_index >= gal_content_event_count) return false;
+    const gal_event_t *ev = &gal_content_events[event_index];
+    if (ev->kind != GAL_EV_LINE) return true;
+    const uint8_t need = gal_content_lines[ev->index].require_flag;
+    return need == GAL_UNLOCK_NONE || gal_unlock_has_flag(&app->unlock, need);
+}
+
+static bool cg_unlocked(const gal_app_t *app, int index)
+{
+    if (index < 0 || index >= gal_content_cg_count) return false;
+    const gal_cg_t *cg = &gal_content_cgs[index];
+    if (cg->unlock_event == GAL_UNLOCK_NONE) return true;
+    return gal_unlock_has_cg(&app->unlock, (uint8_t)index);
+}
+
+static bool chapter_unlocked(const gal_app_t *app, int index)
+{
+    if (index < 0 || index >= gal_content_chapter_count) return false;
+    const gal_chapter_t *c = &gal_content_chapters[index];
+    if (c->unlock_event != GAL_UNLOCK_NONE &&
+        !gal_unlock_has_chapter(&app->unlock, (uint8_t)index)) {
+        return false;
+    }
+    if (c->require_flag != GAL_UNLOCK_NONE &&
+        !gal_unlock_has_flag(&app->unlock, c->require_flag)) {
+        return false;
+    }
+    return true;
+}
+
+// 进入事件时结算解锁:CG / 章节按绑定的事件解锁,事件自带的标记写入剧情锁。
+static void unlock_visit(gal_app_t *app)
+{
+    const int ev = app->event_index;
+    const gal_event_t *event = &gal_content_events[ev];
+    const gal_unlock_t before = app->unlock;
+
+    for (int i = 0; i < gal_content_cg_count; ++i) {
+        if (gal_content_cgs[i].unlock_event == ev) gal_unlock_grant_cg(&app->unlock, (uint8_t)i);
+    }
+    for (int i = 0; i < gal_content_chapter_count; ++i) {
+        if (gal_content_chapters[i].unlock_event == ev) {
+            gal_unlock_grant_chapter(&app->unlock, (uint8_t)i);
+        }
+    }
+    if (event->flag_set != GAL_UNLOCK_NONE) {
+        gal_unlock_set_flag(&app->unlock, event->flag_set);
+    }
+    if (event->kind == GAL_EV_ENDING) {
+        gal_unlock_grant_ending(&app->unlock, event->index);
+    }
+
+    // 只在真的变了时才写 NVS(NVS 擦写寿命有限)。
+    if (memcmp(&before, &app->unlock, sizeof(before)) != 0) {
+        (void)gal_unlock_store(&app->unlock);
+    }
+}
+
 // ---------------------------------------------------------------- 小工具
 static uint32_t speed_ms(const gal_app_t *app)
 {
@@ -118,6 +180,7 @@ static void enter_event(gal_app_t *app)
     if (app->event_index < 0 || app->event_index >= gal_content_event_count) {
         app->event_index = gal_content_event_count - 1;
     }
+    unlock_visit(app);   // 到这里就算看过:解锁 CG / 章节并写入事件标记
     app->page = event_page(&gal_content_events[app->event_index]);
     // 快进碰到选项、过场或结局就停下,把操作交回给玩家(render_page 会同步指示);
     // 自动阅读不解除,过场自己会走过去,所以计时从头开始。
@@ -130,12 +193,15 @@ static void enter_event(gal_app_t *app)
 
 static void advance_event(gal_app_t *app)
 {
-    if (app->event_index + 1 >= gal_content_event_count) {
+    // 跳过条件不满足的台词(分支的另一半)。
+    int next = app->event_index + 1;
+    while (next < gal_content_event_count && !event_visible(app, next)) next++;
+    if (next >= gal_content_event_count) {
         goto_page(app, GAL_PAGE_TITLE);
         show_notice(app, "已经到最后了");
         return;
     }
-    app->event_index++;
+    app->event_index = next;
     app->page_index = 0;
     app->shown_line = -1;
     // 注意:这里不清快进。按住“上”时快进要一直推到最后一句。
@@ -382,7 +448,7 @@ static void fill_chapters(gal_app_t *app)
     for (int i = 0; i < count; ++i) {
         snprintf(labels[i], sizeof(labels[i]), "%s", gal_content_chapters[i].name);
         label_ptrs[i] = labels[i];
-        value_ptrs[i] = gal_content_chapters[i].unlocked ? "可选" : "锁定";
+        value_ptrs[i] = chapter_unlocked(app, i) ? "可选" : "锁定";
     }
     gal_ui_set_rows(&app->ui, GAL_LIST_CHAPTER, label_ptrs, value_ptrs, count,
                     app->chapter_sel);
@@ -417,6 +483,20 @@ static void fill_cg(gal_app_t *app)
     char index_text[24];
     snprintf(index_text, sizeof(index_text), "%s / %02d", cg->label, gal_content_cg_count);
     gal_ui_set_cg(&app->ui, index_text, cg->caption, "占位画面 · 骨架不携带美术资源");
+}
+
+// 鉴赏室缩略图:解锁状态由剧情锁的观看记录换算。
+static void fill_gallery(gal_app_t *app)
+{
+    static gal_cg_t items[GAL_CG_TILES];
+    int count = gal_content_cg_count;
+    if (count > GAL_CG_TILES) count = GAL_CG_TILES;
+    for (int i = 0; i < count; ++i) {
+        items[i] = gal_content_cgs[i];
+        items[i].unlocked = cg_unlocked(app, i);
+    }
+    gal_ui_set_gallery(&app->ui, items, count, app->cg_sel);
+    gal_ui_set_footer(&app->ui, GAL_PAGE_CG_LIST, "共 8 张 · 随剧情解锁");
 }
 
 static void render_page(gal_app_t *app)
@@ -458,6 +538,12 @@ static void render_page(gal_app_t *app)
         const gal_choice_t *choice = &gal_content_choices[ev->index];
         gal_ui_set_choice(&app->ui, choice->prompt, choice->options, choice->count,
                           app->choice_sel);
+        // 条件不满足的选项置灰(剧情锁)。
+        for (int i = 0; i < choice->count && i < GAL_LIST_MAX_ROWS; ++i) {
+            const uint8_t need = choice->options[i].require_flag;
+            const bool ok = need == GAL_UNLOCK_NONE || gal_unlock_has_flag(&app->unlock, need);
+            gal_ui_set_row_enabled(&app->ui, GAL_LIST_CHOICE, i, ok);
+        }
         return;
     }
     case GAL_PAGE_MENU:
@@ -484,8 +570,7 @@ static void render_page(gal_app_t *app)
         return;
     }
     case GAL_PAGE_CG_LIST:
-        gal_ui_set_gallery(&app->ui, gal_content_cgs, gal_content_cg_count, app->cg_sel);
-        gal_ui_set_footer(&app->ui, GAL_PAGE_CG_LIST, "共 8 张 · 前 6 张已解锁");
+        fill_gallery(app);
         return;
     case GAL_PAGE_CHAPTER:
         fill_chapters(app);
@@ -636,7 +721,18 @@ static void handle_choice(gal_app_t *app, const gal_key_t *key)
         return;
     }
     if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
-        // 骨架不做分支:选完直接继续,不另弹提示。
+        const gal_option_t *opt = &choice->options[app->choice_sel];
+        // 剧情锁:条件不满足的选项不能选。
+        if (opt->require_flag != GAL_UNLOCK_NONE &&
+            !gal_unlock_has_flag(&app->unlock, opt->require_flag)) {
+            show_notice(app, "条件不足");
+            return;
+        }
+        // 选中的分支会写剧情标记,后面的台词与解锁都看它。
+        if (opt->flag_set != GAL_UNLOCK_NONE) {
+            gal_unlock_set_flag(&app->unlock, opt->flag_set);
+            (void)gal_unlock_store(&app->unlock);
+        }
         app->choice_sel = 0;
         advance_event(app);
     }
@@ -838,7 +934,7 @@ static void handle_cg_list(gal_app_t *app, const gal_key_t *key)
         return;
     }
     if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
-        if (!gal_content_cgs[app->cg_sel].unlocked) {
+        if (!cg_unlocked(app, app->cg_sel)) {
             show_notice(app, "尚未解锁");
             return;
         }
@@ -859,7 +955,7 @@ static void handle_chapter(gal_app_t *app, const gal_key_t *key)
         return;
     }
     if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
-        if (!gal_content_chapters[app->chapter_sel].unlocked) {
+        if (!chapter_unlocked(app, app->chapter_sel)) {
             show_notice(app, "章节未解锁");
             return;
         }
@@ -1109,6 +1205,13 @@ bool gal_app_init(gal_app_t *app)
         ESP_LOGW(TAG, "存档存储不可用,本次运行内有效");
     } else {
         (void)gal_save_load(&app->save);
+    }
+
+    gal_unlock_clear(&app->unlock);
+    if (!gal_unlock_init()) {
+        ESP_LOGW(TAG, "解锁记录不可用,本次运行内有效");
+    } else {
+        (void)gal_unlock_load(&app->unlock);
     }
 
     if (!bsp_lvgl_lock(-1)) {

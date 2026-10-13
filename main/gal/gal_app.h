@@ -13,6 +13,7 @@
 #include "gal_save.h"
 #include "gal_settings.h"
 #include "gal_ui.h"
+#include "gal_unlock.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -28,6 +29,7 @@ typedef struct {
     gal_ui_t ui;
     gal_settings_t settings;
     gal_save_t save;
+    gal_unlock_t unlock;            // 剧情锁:观看记录与剧情标记
 
     gal_page_t page;
     gal_page_t return_page;         // 子页面返回的目标
