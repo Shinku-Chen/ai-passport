@@ -551,17 +551,17 @@ static void build_transition(gal_ui_t *ui)
 
 static void build_ending(gal_ui_t *ui)
 {
+    // 结局页只有结局标题与正文,底部不放后续入口按钮。
     lv_obj_t *root = mk_page(ui, GAL_PAGE_ENDING, 0, false);
     ui->ending_eyebrow = mk_label(root, ui->font_small, COL_GOLD);
-    lv_obj_align(ui->ending_eyebrow, LV_ALIGN_TOP_MID, 0, 24);
+    lv_obj_align(ui->ending_eyebrow, LV_ALIGN_TOP_MID, 0, 110);
     ui->ending_title = mk_label(root, ui->font_large, COL_TEXT);
-    lv_obj_align(ui->ending_title, LV_ALIGN_TOP_MID, 0, 52);
+    lv_obj_align(ui->ending_title, LV_ALIGN_TOP_MID, 0, 142);
     ui->ending_body = mk_label(root, ui->font_small, COL_DIM);
-    lv_obj_align(ui->ending_body, LV_ALIGN_TOP_MID, 0, 92);
+    lv_obj_set_width(ui->ending_body, GAL_UI_W - 40);
+    lv_label_set_long_mode(ui->ending_body, LV_LABEL_LONG_WRAP);
     lv_obj_set_style_text_align(ui->ending_body, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
-
-    // 后续入口贴底(返回标题 / 重看结局 / 鉴赏室)。
-    list_create(ui, GAL_LIST_ENDING, root, NULL, "", 28, 232, 24, GAL_UI_W, false);
+    lv_obj_align(ui->ending_body, LV_ALIGN_TOP_MID, 0, 182);
 }
 
 static void build_about(gal_ui_t *ui)

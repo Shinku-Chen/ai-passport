@@ -502,8 +502,6 @@ static void render_page(gal_app_t *app)
         if (ev->kind != GAL_EV_ENDING) return;
         const gal_ending_t *ending = &gal_content_endings[ev->index];
         gal_ui_set_ending(&app->ui, ending->eyebrow, ending->title, ending->body);
-        gal_ui_set_rows(&app->ui, GAL_LIST_ENDING, ending->actions, NULL,
-                        ending->action_count, app->ending_sel);
         return;
     }
     case GAL_PAGE_ABOUT:
@@ -883,29 +881,10 @@ static void handle_transition(gal_app_t *app, const gal_key_t *key)
 
 static void handle_ending(gal_app_t *app, const gal_key_t *key)
 {
-    const gal_event_t *ev = &gal_content_events[app->event_index];
-    if (ev->kind != GAL_EV_ENDING) return;
-    const gal_ending_t *ending = &gal_content_endings[ev->index];
-
-    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        move_selection(&app->ending_sel, ending->action_count,
-                       key->btn == BSP_BTN_UP ? -1 : 1);
-        gal_ui_select_row(&app->ui, GAL_LIST_ENDING, app->ending_sel);
-        return;
-    }
-    if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
-
-    switch (app->ending_sel) {
-    case 1:   // 重看结局:回到结局事件本身
-        enter_event(app);
-        break;
-    case 2:   // 鉴赏室
-        app->gallery_sel = 0;
-        goto_page(app, GAL_PAGE_GALLERY);
-        break;    default:  // 返回标题
+    // 结局页没有后续入口按钮:短按或长按确定都回到标题页。
+    if ((key->ev == BSP_BTN_CLICK || key->ev == BSP_BTN_LONG) && key->btn == BSP_BTN_OK) {
         app->title_sel = 0;
         goto_page(app, GAL_PAGE_TITLE);
-        break;
     }
 }
 
