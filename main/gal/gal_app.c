@@ -305,6 +305,15 @@ static void do_load(gal_app_t *app, int slot)
 }
 
 // 开始新游戏:直接从第一句开始(章节选择在鉴赏室里)。
+// 进入读档页时把光标放到第一个有存档的槽位。
+static int first_occupied_slot(const gal_app_t *app)
+{
+    for (int i = 0; i < GAL_SAVE_SLOTS; ++i) {
+        if (app->save.slots[i].occupied) return i;
+    }
+    return 0;
+}
+
 static void start_new_game(gal_app_t *app)
 {
     app->history_count = 0;
@@ -319,11 +328,9 @@ static void start_new_game(gal_app_t *app)
 enum {
     MODAL_ACT_NONE = 0,
     MODAL_ACT_SAVE,
-    MODAL_ACT_START_NEW,
 };
 
 static const char *const MODAL_CONFIRM_ACTIONS[] = { "取消", "确认覆盖" };
-static const char *const MODAL_EMPTY_ACTIONS[] = { "开始游戏" };
 
 static void open_confirm_overwrite(gal_app_t *app)
 {
@@ -337,16 +344,6 @@ static void open_confirm_overwrite(gal_app_t *app)
     app->modal_action = MODAL_ACT_SAVE;
     gal_ui_show_modal(&app->ui, GAL_MODAL_CONFIRM, "覆盖该存档?", body,
                       MODAL_CONFIRM_ACTIONS, 2, 0);
-}
-
-static void open_empty_saves(gal_app_t *app)
-{
-    app->modal = GAL_MODAL_EMPTY;
-    app->modal_page = GAL_PAGE_LOAD;
-    app->modal_sel = 0;
-    app->modal_action = MODAL_ACT_START_NEW;
-    gal_ui_show_modal(&app->ui, GAL_MODAL_EMPTY, "暂无存档",
-                      "开始一段故事后,存档会显示在这里。", MODAL_EMPTY_ACTIONS, 1, 0);
 }
 
 static void close_modal(gal_app_t *app)
@@ -376,6 +373,11 @@ static void fill_slots(gal_app_t *app, gal_list_t list, int selected)
         value_ptrs[i] = values[i];
     }
     gal_ui_set_rows(&app->ui, list, label_ptrs, value_ptrs, GAL_SAVE_SLOTS, selected);
+    // 读档页的空槽位不可选(存档页的空槽位是可以写入的)。
+    for (int i = 0; i < GAL_SAVE_SLOTS; ++i) {
+        const bool usable = list == GAL_LIST_SAVE || app->save.slots[i].occupied;
+        gal_ui_set_row_enabled(&app->ui, list, i, usable);
+    }
 
     // 槽位预览 + 页脚。
     const gal_slot_t *sel = &app->save.slots[selected];
@@ -385,7 +387,8 @@ static void fill_slots(gal_app_t *app, gal_list_t list, int selected)
         gal_ui_set_save_preview(&app->ui, "空槽位\n选择一个槽位后再操作");
     }
     gal_ui_set_footer(&app->ui, GAL_PAGE_SAVE, "共 3 个槽位");
-    gal_ui_set_footer(&app->ui, GAL_PAGE_LOAD, "共 3 个槽位");
+    gal_ui_set_footer(&app->ui, GAL_PAGE_LOAD,
+                      gal_save_any(&app->save) ? "共 3 个槽位" : "暂无存档");
 }
 
 static void fill_settings(gal_app_t *app)
@@ -743,10 +746,9 @@ static void handle_title(gal_app_t *app, const gal_key_t *key)
         break;
     }
     case GAL_TITLE_MENU_LOAD:
-        app->load_sel = 0;
+        app->load_sel = first_occupied_slot(app);
         app->return_page = GAL_PAGE_TITLE;
         goto_page(app, GAL_PAGE_LOAD);
-        if (!gal_save_any(&app->save)) open_empty_saves(app);
         break;
     case GAL_TITLE_MENU_SETTINGS:
         app->return_page = GAL_PAGE_TITLE;
@@ -863,10 +865,9 @@ static void handle_menu(gal_app_t *app, const gal_key_t *key)
         goto_page(app, GAL_PAGE_SAVE);
         break;
     case GAL_MENU_LOAD:
-        app->load_sel = 0;
+        app->load_sel = first_occupied_slot(app);
         app->return_page = GAL_PAGE_MENU;
         goto_page(app, GAL_PAGE_LOAD);
-        if (!gal_save_any(&app->save)) open_empty_saves(app);
         break;
     case GAL_MENU_HISTORY:
         app->history_sel = app->history_count > 0 ? app->history_count - 1 : 0;
@@ -910,7 +911,8 @@ static void handle_save_load(gal_app_t *app, const gal_key_t *key)
         return;
     }
     if (!app->save.slots[*sel].occupied) {
-        open_empty_saves(app);
+        // 空槽位没有可读的进度:空槽位本身也是不可选的。
+        show_notice(app, "空槽位");
         return;
     }
     do_load(app, *sel);
@@ -1172,15 +1174,10 @@ static void handle_music(gal_app_t *app, const gal_key_t *key)
 
 static void handle_modal(gal_app_t *app, const gal_key_t *key)
 {
-    const int count = app->modal == GAL_MODAL_EMPTY ? 1 : 2;
+    const int count = 2;
     // 弹窗里长按确定 = 取消。
     if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
-        if (app->modal == GAL_MODAL_EMPTY) {
-            close_modal(app);
-            goto_page(app, app->return_page);
-        } else {
-            close_modal(app);
-        }
+        close_modal(app);
         return;
     }
     if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
@@ -1197,11 +1194,6 @@ static void handle_modal(gal_app_t *app, const gal_key_t *key)
     if (action == MODAL_ACT_SAVE) {
         close_modal(app);
         if (sel == 1) do_save(app, app->save_sel);
-        return;
-    }
-    if (action == MODAL_ACT_START_NEW) {
-        close_modal(app);
-        start_new_game(app);
         return;
     }
     close_modal(app);
