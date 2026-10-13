@@ -18,9 +18,11 @@
 
 static const char *TAG = "gal";
 
-// 快进:按住“上”期间每 180ms 推进一步。自动阅读:每句打完后再等 900ms。
+// 快进:按住“上”期间每 180ms 推进一步。自动阅读:每句打完后再等 900ms;
+// 章节过场自动停留 1600ms 后继续,不打断自动。
 #define GAL_FAST_FORWARD_MS 180u
 #define GAL_AUTO_ADVANCE_MS 900u
+#define GAL_AUTO_TRANSITION_MS 1600u
 
 LV_FONT_DECLARE(gal_cjk_16);
 LV_FONT_DECLARE(gal_cjk_20);
@@ -117,8 +119,12 @@ static void enter_event(gal_app_t *app)
         app->event_index = gal_content_event_count - 1;
     }
     app->page = event_page(&gal_content_events[app->event_index]);
-    // 快进碰到选项、过场或结局就停下,把操作交回给玩家(render_page 会同步指示)。
-    if (app->page != GAL_PAGE_GAME) app->fast_forward = false;
+    // 快进碰到选项、过场或结局就停下,把操作交回给玩家(render_page 会同步指示);
+    // 自动阅读不解除,过场自己会走过去,所以计时从头开始。
+    if (app->page != GAL_PAGE_GAME) {
+        app->fast_forward = false;
+        app->auto_accum_ms = 0;
+    }
     render_page(app);
 }
 
@@ -416,7 +422,9 @@ static void fill_cg(gal_app_t *app)
 static void render_page(gal_app_t *app)
 {
     gal_ui_show_page(&app->ui, app->page);
-    gal_ui_set_mode(&app->ui, app->auto_mode && app->page == GAL_PAGE_GAME);
+    // 自动阅读在对话页与章节过场都保持(过场会自动过去)。
+    const bool auto_page = app->page == GAL_PAGE_GAME || app->page == GAL_PAGE_TRANSITION;
+    gal_ui_set_mode(&app->ui, app->auto_mode && auto_page);
 
     switch (app->page) {
     case GAL_PAGE_START: {
@@ -1041,7 +1049,8 @@ void gal_app_tick(gal_app_t *app, uint32_t elapsed_ms)
         }
     }
 
-    // 自动阅读:当前页打完之后才开始计时,每 900ms 推进一步。
+    // 自动阅读:当前页打完之后才开始计时,每 900ms 推进一步;
+    // 章节过场停留固定时长后自动继续(自动模式不解除)。
     if (app->auto_mode && app->page == GAL_PAGE_GAME) {
         if (gal_ui_typing(&app->ui)) {
             app->auto_accum_ms = 0;
@@ -1056,6 +1065,16 @@ void gal_app_tick(gal_app_t *app, uint32_t elapsed_ms)
             }
         }
         // 自动阅读期间不算空闲:不调暗、不息屏、不进 deep sleep。
+        app->idle_ms = 0;
+    } else if (app->auto_mode && app->page == GAL_PAGE_TRANSITION) {
+        app->auto_accum_ms += elapsed_ms;
+        if (app->auto_accum_ms >= GAL_AUTO_TRANSITION_MS) {
+            app->auto_accum_ms = 0;
+            if (bsp_lvgl_lock(100)) {
+                advance_event(app);
+                bsp_lvgl_unlock();
+            }
+        }
         app->idle_ms = 0;
     } else {
         app->auto_accum_ms = 0;

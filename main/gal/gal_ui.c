@@ -810,8 +810,9 @@ void gal_ui_show_page(gal_ui_t *ui, gal_page_t page)
     if (hud) lv_obj_remove_flag(ui->notice, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(ui->notice, LV_OBJ_FLAG_HIDDEN);
 
-    // 自动阅读指示跟随页面;开关由 gal_ui_set_mode 决定。
-    if (base != GAL_PAGE_GAME) lv_obj_add_flag(ui->mode_auto, LV_OBJ_FLAG_HIDDEN);
+    // 自动阅读指示跟随页面;章节过场也保持(避免看起来像被关掉)。
+    const bool auto_hud = base == GAL_PAGE_GAME || base == GAL_PAGE_TRANSITION;
+    if (!auto_hud) lv_obj_add_flag(ui->mode_auto, LV_OBJ_FLAG_HIDDEN);
 
     if (base != GAL_PAGE_GAME) typing_stop(ui);
 }
