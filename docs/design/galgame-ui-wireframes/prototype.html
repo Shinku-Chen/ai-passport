@@ -164,9 +164,11 @@
     .screen-titlebar { position: absolute; z-index: 2; top: 8px; right: 9px; left: 9px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
     .screen-titlebar .button { min-width: 25px; min-height: 22px; padding: 1px 7px; }
     .title-layout { position: absolute; z-index: 1; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 40px 11px 13px; }
-    /* 开机首屏：只有“开始游戏”一个入口，点它才进标题页。 */
-    .start-layout { position: absolute; z-index: 1; inset: 0; display: grid; place-items: center; padding: 24px; }
+    /* 开机首屏：只有“开始游戏”一个入口，点它才进标题页；按钮贴底，不遮挡画面主体。 */
+    .start-layout { position: absolute; z-index: 1; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 0 24px 32px; }
     .start-layout .button { min-width: 168px; min-height: 40px; }
+    /* 横屏画面矮，按钮再压低一点，避开人物底色。 */
+    .screen--landscape .start-layout { padding-bottom: 16px; }
     .title-brand { width: 100%; margin-top: 8px; text-align: center; text-shadow: 0 2px 8px #0b1020; }
     .title-brand h4 { margin: 0; font-size: 21px; line-height: 1.1; }
     .title-brand p { margin: 6px 0 0; color: var(--gold); }
