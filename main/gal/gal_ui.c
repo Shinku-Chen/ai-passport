@@ -753,6 +753,14 @@ bool gal_ui_create(gal_ui_t *ui, const lv_font_t *font_small, const lv_font_t *f
     lv_obj_align_to(ui->mode_auto, ui->panel, LV_ALIGN_OUT_TOP_RIGHT, -8, -2);
     lv_obj_align_to(ui->mode_fast, ui->mode_auto, LV_ALIGN_OUT_LEFT_MID, -8, 0);
 
+    // 对话页是最后创建的,会盖住先建的对象;叠加层与顶部文字再提到最前:
+    // 弹窗 → 游戏内菜单 → 快进/自动指示 → 提示。
+    lv_obj_move_foreground(ui->pages[GAL_PAGE_MENU]);
+    lv_obj_move_foreground(ui->pages[GAL_PAGE_MODAL]);
+    lv_obj_move_foreground(ui->mode_fast);
+    lv_obj_move_foreground(ui->mode_auto);
+    lv_obj_move_foreground(ui->notice);
+
     ui->typewriter_timer = lv_timer_create(typing_cb, 40, ui);
     if (!ui->typewriter_timer) {
         ESP_LOGE(TAG, "打字机定时器创建失败");
