@@ -627,8 +627,7 @@ static void handle_choice(gal_app_t *app, const gal_key_t *key)
         return;
     }
     if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
-        // 骨架不做分支:选择只记一次提示,剧情继续。
-        show_notice(app, "已选择");
+        // 骨架不做分支:选完直接继续,不另弹提示。
         app->choice_sel = 0;
         advance_event(app);
     }
