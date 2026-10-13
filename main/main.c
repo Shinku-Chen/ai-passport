@@ -3,7 +3,7 @@
 // 按键语义(框架规范):
 //   启动页    短按确定进入标题页
 //   标题/列表 上、下移动光标(到顶/到底停住),确定进入,长按确定返回
-//   正文页    短按(确定/上/下)=下一句(打字中先全显);长按确定=设置面板;
+//   正文页    短按(确定/上/下)=下一句(打字中先全显);长按确定=游戏内菜单;
 //             长按上=快进,松手停;长按下=自动阅读开关(任意键停)
 //   设置页    上、下移动,确定切换/执行,长按确定返回
 //
@@ -215,7 +215,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "空闲堆 %u 字节,最大连续块 %u 字节", (unsigned)esp_get_free_heap_size(),
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
-    ESP_LOGI(TAG, "就绪:框架骨架;短按任意键=下一句,长按确定=设置,"
+    ESP_LOGI(TAG, "就绪:框架骨架;短按任意键=下一句,长按确定=游戏内菜单,"
                   "长按上=快进,长按下=自动阅读;空闲 %us 调暗,%us 熄屏,%us 休眠",
              (unsigned)(GAL_DIM_MS / 1000), (unsigned)(GAL_SCREEN_OFF_MS / 1000),
              (unsigned)(GAL_SLEEP_MS / 1000));

@@ -28,6 +28,7 @@ LV_FONT_DECLARE(gal_cjk_20);
 static void enter_event(gal_app_t *app);
 static void render_page(gal_app_t *app);
 static void goto_page(gal_app_t *app, gal_page_t page);
+static bool settings_from_reader(const gal_app_t *app);
 
 // ---------------------------------------------------------------- 小工具
 static uint32_t speed_ms(const gal_app_t *app)
@@ -316,21 +317,21 @@ static void fill_slots(gal_app_t *app, gal_list_t list, int selected)
 
 static void fill_settings(gal_app_t *app)
 {
-    static const char *const LABELS_READER[8] = { "文字速度", "文字大小", "自动阅读",
-                                                  "对话透明度", "游戏菜单", "恢复默认",
+    static const char *const LABELS_READER[7] = { "文字速度", "文字大小", "自动阅读",
+                                                  "对话透明度", "恢复默认",
                                                   "返回标题", "返回" };
     static const char *const LABELS_TITLE[6] = { "文字速度", "文字大小", "自动阅读",
                                                  "对话透明度", "恢复默认", "返回" };
-    const bool reader = app->return_page == GAL_PAGE_GAME || app->return_page == GAL_PAGE_MENU;
+    const bool reader = settings_from_reader(app);
     static char transparency[8];
     snprintf(transparency, sizeof(transparency), "%u%%",
              (unsigned)app->settings.panel_transparency);
-    const char *values_reader[8] = {
+    const char *values_reader[7] = {
         speed_label(app),
         app->settings.font_large ? "大" : "小",
         app->settings.auto_play ? "开" : "关",
         transparency,
-        "", "", "", "",
+        "", "", "",
     };
     const char *values_title[6] = {
         speed_label(app),
@@ -340,7 +341,7 @@ static void fill_settings(gal_app_t *app)
         "", "",
     };
     if (reader) {
-        gal_ui_set_rows(&app->ui, GAL_LIST_SETTINGS, LABELS_READER, values_reader, 8,
+        gal_ui_set_rows(&app->ui, GAL_LIST_SETTINGS, LABELS_READER, values_reader, 7,
                         app->settings_sel);
     } else {
         gal_ui_set_rows(&app->ui, GAL_LIST_SETTINGS, LABELS_TITLE, values_title, 6,
@@ -581,12 +582,11 @@ static void handle_game(gal_app_t *app, const gal_key_t *key)
         advance_reading(app, false);
         return;
     }
-    // 长按确定:设置面板。
+    // 长按确定:游戏内快捷菜单(返回剧情、存读档、历史、设置、返回标题)。
     if (key->btn == BSP_BTN_OK && key->ev == BSP_BTN_LONG) {
         app->fast_forward = false;
-        app->return_page = GAL_PAGE_GAME;
-        app->settings_sel = 0;
-        goto_page(app, GAL_PAGE_SETTINGS);
+        app->menu_sel = 0;
+        goto_page(app, GAL_PAGE_MENU);
         return;
     }
     // 长按上:快进,松开停。
@@ -722,7 +722,6 @@ enum {
     SACT_SIZE,
     SACT_AUTO,
     SACT_TRANSPARENCY,
-    SACT_MENU,
     SACT_RESET,
     SACT_TITLE,
     SACT_BACK,
@@ -743,7 +742,7 @@ static int settings_action(const gal_app_t *app, int index)
 
 static void handle_settings(gal_app_t *app, const gal_key_t *key)
 {
-    const int count = settings_from_reader(app) ? 8 : 6;
+    const int count = settings_from_reader(app) ? 7 : 6;
     if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
         goto_page(app, app->return_page);
         return;
@@ -771,10 +770,6 @@ static void handle_settings(gal_app_t *app, const gal_key_t *key)
             gal_transparency_next(app->settings.panel_transparency);
         gal_ui_set_panel_transparency(&app->ui, app->settings.panel_transparency);
         break;
-    case SACT_MENU:
-        app->menu_sel = 0;
-        goto_page(app, GAL_PAGE_MENU);
-        return;
     case SACT_RESET:
         gal_settings_reset(&app->settings);
         gal_ui_set_font_size(&app->ui, app->settings.font_large != 0);
