@@ -29,6 +29,7 @@
 - [coding-conventions.zh_CN.md](engineering/coding-conventions.zh_CN.md)：代码约定（语言风格、复用、注释、测试同步、资源约束等），包含中文字体接入、空白/方框排查与显示验收。
 - [lvgl-chinese-fonts.zh_CN.md](engineering/lvgl-chinese-fonts.zh_CN.md)：CJK 配置、字体生成/链接、fallback 示例、缺字检查和故障排查的分步指南。
 - [wifi-provisioning.zh_CN.md](engineering/wifi-provisioning.zh_CN.md)：参考 BLUFI 分支实现蓝牙 Wi-Fi 配网，包含配套小程序名称及接入检查。
+- [galgame-framework.zh_CN.md](engineering/galgame-framework.zh_CN.md)：通用 GalGame 框架手册（页面与按键、排版规范、剧情锁、持久化，以及如何接入新作品）。
 
 ## CI（ci）
 
