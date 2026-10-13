@@ -16,6 +16,7 @@
 #include "bsp_i2c.h"
 #include "bsp_pins.h"
 #include "gal_app.h"
+#include "gal_music.h"
 #include "key_guard.h"
 
 #include "esp_heap_caps.h"
@@ -90,6 +91,10 @@ static void enter_sleep(void)
 
     set_backlight(BACKLIGHT_FULL);
     vTaskDelay(pdMS_TO_TICKS(500));
+
+    // 正在放的音乐先停掉,等播放任务停写 I2S 再让 codec 休眠。
+    gal_music_stop();
+    vTaskDelay(pdMS_TO_TICKS(200));
 
     // CW2017 与 ES8311 共用 I2C:先让电量计收尾,再停 codec 与 I2S。
     (void)bsp_battery_sleep();

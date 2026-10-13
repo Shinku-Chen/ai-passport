@@ -126,6 +126,39 @@ const gal_about_row_t gal_content_about_rows[] = {
 const int gal_content_about_row_count =
     (int)(sizeof(gal_content_about_rows) / sizeof(gal_content_about_rows[0]));
 
+// ---------------------------------------------------------------- CG 回想
+// 每条需要对应 CG 已解锁(=看过那一段),从这里的事件重新开始演。
+const gal_recall_t gal_content_recalls[] = {
+    { "月台初遇", "序章", 0, 0 },
+    { "雨中的站牌", "第二章", 2, 6 },
+    { "窗边的对话", "第二章", 3, 9 },
+    { "轨道与星空", "第二章", 5, 13 },
+};
+
+const int gal_content_recall_count =
+    (int)(sizeof(gal_content_recalls) / sizeof(gal_content_recalls[0]));
+
+// ---------------------------------------------------------------- 音乐鉴赏
+// 骨架不携带音频资源:按音高表合成一段短旋律循环播放(notes 为音高表下标)。
+static const uint8_t track0_notes[] = { 0, 4, 7, 12, 7, 4, 0, GAL_NOTE_REST };
+static const uint8_t track1_notes[] = { 5, 7, 9, 7, 5, 2, 0, GAL_NOTE_REST };
+static const uint8_t track2_notes[] = { 2, 4, 5, 7, 9, 7, 5, 4, GAL_NOTE_REST, GAL_NOTE_REST };
+static const uint8_t track3_notes[] = { 7, 9, 11, 12, 11, 9, 7, GAL_NOTE_REST };
+static const uint8_t track4_notes[] = { 0, 2, 4, 2, 0, GAL_NOTE_REST, 4, 5 };
+static const uint8_t track5_notes[] = { 12, 11, 9, 7, 5, 4, 2, 0 };
+
+const gal_track_t gal_content_tracks[] = {
+    { "夜行列车", "03:12", 0, track0_notes, (uint8_t)sizeof(track0_notes) },
+    { "站台的风", "02:48", 1, track1_notes, (uint8_t)sizeof(track1_notes) },
+    { "雨停之前", "04:05", 2, track2_notes, (uint8_t)sizeof(track2_notes) },
+    { "星轨", "03:36", 3, track3_notes, (uint8_t)sizeof(track3_notes) },
+    { "时刻表上没有的站", "02:57", 5, track4_notes, (uint8_t)sizeof(track4_notes) },
+    { "星光抵达的地方", "05:20", 6, track5_notes, (uint8_t)sizeof(track5_notes) },
+};
+
+const int gal_content_track_count =
+    (int)(sizeof(gal_content_tracks) / sizeof(gal_content_tracks[0]));
+
 // ---------------------------------------------------------------- 菜单
 const char *const gal_content_title_menu[] = {
     "开始新游戏", "继续游戏", "读取存档", "设置", "鉴赏室", "关于",
@@ -143,7 +176,7 @@ const int gal_content_quick_menu_count =
 
 // ---------------------------------------------------------------- 鉴赏室分类
 const char *const gal_content_gallery_menu[] = {
-    "CG 鉴赏", "剧情鉴赏",
+    "CG 鉴赏", "CG 回想", "剧情鉴赏", "音乐鉴赏",
 };
 
 const int gal_content_gallery_menu_count =

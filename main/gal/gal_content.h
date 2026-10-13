@@ -95,6 +95,27 @@ typedef struct {
     const char *value;
 } gal_about_row_t;
 
+// ---------------------------------------------------------------- CG 回想与音乐鉴赏
+// 回想:需要对应 CG 已解锁(等于“看过那一段”),从 event_index 重新开始演。
+typedef struct {
+    const char *title;        // 场景名
+    const char *chapter;      // 所在章节(列表右侧显示)
+    uint8_t cg_index;         // 需要该 CG 已解锁
+    uint8_t event_index;      // 从该事件开始重看
+} gal_recall_t;
+
+// 音乐:骨架不带音频资源,用方波按 notes 合成一段短旋律循环播放。
+// notes 是音高表下标(见 gal_music.c),GAL_NOTE_REST = 休止。
+#define GAL_NOTE_REST 0xFF
+
+typedef struct {
+    const char *title;
+    const char *duration;     // 显示用时长(占位文本)
+    uint8_t cg_index;         // 需要该 CG 已解锁(听过那一段)
+    const uint8_t *notes;
+    uint8_t note_count;
+} gal_track_t;
+
 // 作品信息(由作品配置替换)。
 #define GAL_CONTENT_TITLE    "未定作品"
 #define GAL_CONTENT_SUBTITLE "一段尚未写完的旅程"
@@ -125,6 +146,12 @@ extern const int gal_content_chapter_count;
 extern const gal_about_row_t gal_content_about_rows[];
 extern const int gal_content_about_row_count;
 
+extern const gal_recall_t gal_content_recalls[];
+extern const int gal_content_recall_count;
+
+extern const gal_track_t gal_content_tracks[];
+extern const int gal_content_track_count;
+
 // 标题页菜单与游戏内快捷菜单(名称固定,可用状态由存档决定)。
 extern const char *const gal_content_title_menu[];
 extern const int gal_content_title_menu_count;
@@ -137,7 +164,9 @@ extern const int gal_content_gallery_menu_count;
 
 enum {
     GAL_GALLERY_CG = 0,
+    GAL_GALLERY_RECALL,
     GAL_GALLERY_STORY,
+    GAL_GALLERY_MUSIC,
 };
 
 // 标题页菜单项下标(供状态机使用)。

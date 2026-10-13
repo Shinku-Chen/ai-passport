@@ -45,6 +45,8 @@ typedef enum {
     GAL_PAGE_HISTORY,       // 历史文本
     GAL_PAGE_GALLERY,       // 鉴赏室(分类入口)
     GAL_PAGE_CG_LIST,       // CG 鉴赏(缩略图)
+    GAL_PAGE_RECALL,        // CG 回想(重看已看过的场景)
+    GAL_PAGE_MUSIC,         // 音乐鉴赏
     GAL_PAGE_CHAPTER,       // 剧情鉴赏(章节 / 路线)
     GAL_PAGE_TRANSITION,    // 章节过场
     GAL_PAGE_ENDING,        // 结局
@@ -71,6 +73,8 @@ typedef enum {
     GAL_LIST_SETTINGS,    // 设置项
     GAL_LIST_HISTORY,     // 历史文本
     GAL_LIST_GALLERY,     // 鉴赏室分类
+    GAL_LIST_RECALL,      // CG 回想
+    GAL_LIST_MUSIC,       // 音乐鉴赏
     GAL_LIST_CHAPTER,     // 章节 / 路线
     GAL_LIST_ENDING,      // 结局后续入口
     GAL_LIST_MODAL,       // 弹窗按钮

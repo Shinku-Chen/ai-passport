@@ -8,6 +8,7 @@
 #include "bsp_button.h"
 #include "bsp_display.h"
 #include "gal_content.h"
+#include "gal_music.h"
 #include "gal_text.h"
 
 #include "esp_log.h"
@@ -477,6 +478,77 @@ static void fill_about(gal_app_t *app)
     gal_ui_set_about(&app->ui, GAL_CONTENT_TITLE, GAL_CONTENT_LOGO_SUB, text);
 }
 
+// CG 回想:只列出已经看过的场景(剧情锁),右侧显示所在章节。
+static int s_recall_map[GAL_LIST_MAX_ROWS];
+static int s_recall_shown;
+
+static void fill_recalls(gal_app_t *app)
+{
+    static char labels[GAL_LIST_MAX_ROWS][48];
+    static char footer[48];
+    const char *label_ptrs[GAL_LIST_MAX_ROWS];
+    const char *value_ptrs[GAL_LIST_MAX_ROWS];
+
+    s_recall_shown = 0;
+    for (int i = 0; i < gal_content_recall_count && s_recall_shown < GAL_LIST_MAX_ROWS; ++i) {
+        const gal_recall_t *recall = &gal_content_recalls[i];
+        if (!cg_unlocked(app, recall->cg_index)) continue;   // 没看过的场景不出现
+        snprintf(labels[s_recall_shown], sizeof(labels[0]), "%s", recall->title);
+        label_ptrs[s_recall_shown] = labels[s_recall_shown];
+        value_ptrs[s_recall_shown] = recall->chapter;
+        s_recall_map[s_recall_shown] = i;
+        s_recall_shown++;
+    }
+    if (app->recall_sel >= s_recall_shown) {
+        app->recall_sel = s_recall_shown > 0 ? s_recall_shown - 1 : 0;
+    }
+    gal_ui_set_rows(&app->ui, GAL_LIST_RECALL, label_ptrs, value_ptrs, s_recall_shown,
+                    app->recall_sel);
+    if (s_recall_shown == 0) {
+        gal_ui_set_footer(&app->ui, GAL_PAGE_RECALL, "看过剧情后这里会出现回想");
+    } else {
+        snprintf(footer, sizeof(footer), "共 %d 段回想", s_recall_shown);
+        gal_ui_set_footer(&app->ui, GAL_PAGE_RECALL, footer);
+    }
+}
+
+// 音乐鉴赏:同样按剧情锁只列出听过的曲目;正在播放的显示“播放中”。
+static int s_track_map[GAL_LIST_MAX_ROWS];
+static int s_track_shown;
+
+static void fill_tracks(gal_app_t *app)
+{
+    static char labels[GAL_LIST_MAX_ROWS][32];
+    static char footer[48];
+    const char *label_ptrs[GAL_LIST_MAX_ROWS];
+    const char *value_ptrs[GAL_LIST_MAX_ROWS];
+    const int playing = gal_music_current();
+
+    s_track_shown = 0;
+    for (int i = 0; i < gal_content_track_count && s_track_shown < GAL_LIST_MAX_ROWS; ++i) {
+        const gal_track_t *track = &gal_content_tracks[i];
+        if (!cg_unlocked(app, track->cg_index)) continue;
+        snprintf(labels[s_track_shown], sizeof(labels[0]), "%s", track->title);
+        label_ptrs[s_track_shown] = labels[s_track_shown];
+        value_ptrs[s_track_shown] = (playing == i) ? "播放中" : track->duration;
+        s_track_map[s_track_shown] = i;
+        s_track_shown++;
+    }
+    if (app->music_sel >= s_track_shown) {
+        app->music_sel = s_track_shown > 0 ? s_track_shown - 1 : 0;
+    }
+    gal_ui_set_rows(&app->ui, GAL_LIST_MUSIC, label_ptrs, value_ptrs, s_track_shown,
+                    app->music_sel);
+    if (s_track_shown == 0) {
+        gal_ui_set_footer(&app->ui, GAL_PAGE_MUSIC, "听过剧情后这里会出现曲目");
+    } else if (playing >= 0) {
+        gal_ui_set_footer(&app->ui, GAL_PAGE_MUSIC, "短按确定停止播放");
+    } else {
+        snprintf(footer, sizeof(footer), "共 %d 曲 · 短按确定播放", s_track_shown);
+        gal_ui_set_footer(&app->ui, GAL_PAGE_MUSIC, footer);
+    }
+}
+
 static void fill_cg(gal_app_t *app)
 {
     const gal_cg_t *cg = &gal_content_cgs[app->cg_sel];
@@ -567,14 +639,37 @@ static void render_page(gal_app_t *app)
         fill_history(app);
         return;
     case GAL_PAGE_GALLERY: {
-        // 鉴赏室:CG 鉴赏 / 剧情鉴赏两个分类入口。
-        static const char *const VALUES[2] = { "8 张", "3 章" };
-        gal_ui_set_rows(&app->ui, GAL_LIST_GALLERY, gal_content_gallery_menu, VALUES,
+        // 鉴赏室:四个分类入口,数量按剧情锁实时统计。
+        static char values[4][16];
+        int cg_count = 0;
+        for (int i = 0; i < gal_content_cg_count; ++i) {
+            if (cg_unlocked(app, i)) cg_count++;
+        }
+        int recall_count = 0;
+        for (int i = 0; i < gal_content_recall_count; ++i) {
+            if (cg_unlocked(app, gal_content_recalls[i].cg_index)) recall_count++;
+        }
+        int track_count = 0;
+        for (int i = 0; i < gal_content_track_count; ++i) {
+            if (cg_unlocked(app, gal_content_tracks[i].cg_index)) track_count++;
+        }
+        snprintf(values[0], sizeof(values[0]), "%d/%d 张", cg_count, gal_content_cg_count);
+        snprintf(values[1], sizeof(values[1]), "%d 段", recall_count);
+        snprintf(values[2], sizeof(values[2]), "%d 章", gal_content_chapter_count);
+        snprintf(values[3], sizeof(values[3]), "%d 曲", track_count);
+        const char *value_ptrs[4] = { values[0], values[1], values[2], values[3] };
+        gal_ui_set_rows(&app->ui, GAL_LIST_GALLERY, gal_content_gallery_menu, value_ptrs,
                         gal_content_gallery_menu_count, app->gallery_sel);
         return;
     }
     case GAL_PAGE_CG_LIST:
         fill_gallery(app);
+        return;
+    case GAL_PAGE_RECALL:
+        fill_recalls(app);
+        return;
+    case GAL_PAGE_MUSIC:
+        fill_tracks(app);
         return;
     case GAL_PAGE_CHAPTER:
         fill_chapters(app);
@@ -606,6 +701,8 @@ static void render_page(gal_app_t *app)
 
 static void goto_page(gal_app_t *app, gal_page_t page)
 {
+    // 离开音乐鉴赏就停止播放(回到列表再手动开)。
+    if (page != GAL_PAGE_MUSIC) gal_music_stop();
     app->page = page;
     app->idle_ms = 0;
     app->fast_forward = false;
@@ -915,11 +1012,23 @@ static void handle_gallery(gal_app_t *app, const gal_key_t *key)
     }
     if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
 
+    if (app->gallery_sel == GAL_GALLERY_RECALL) {
+        // CG 回想:重看已看过的场景。
+        app->recall_sel = 0;
+        goto_page(app, GAL_PAGE_RECALL);
+        return;
+    }
     if (app->gallery_sel == GAL_GALLERY_STORY) {
         // 剧情鉴赏:章节 / 路线选择。
         app->chapter_sel = 0;
         app->return_page = GAL_PAGE_GALLERY;
         goto_page(app, GAL_PAGE_CHAPTER);
+        return;
+    }
+    if (app->gallery_sel == GAL_GALLERY_MUSIC) {
+        // 音乐鉴赏。
+        app->music_sel = 0;
+        goto_page(app, GAL_PAGE_MUSIC);
         return;
     }
     app->cg_sel = 0;
@@ -1013,6 +1122,54 @@ static void handle_cg(gal_app_t *app, const gal_key_t *key)
     }
 }
 
+static void handle_recall(gal_app_t *app, const gal_key_t *key)
+{
+    if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
+        goto_page(app, GAL_PAGE_GALLERY);
+        return;
+    }
+    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
+        move_selection(&app->recall_sel, s_recall_shown, key->btn == BSP_BTN_UP ? -1 : 1);
+        gal_ui_select_row(&app->ui, GAL_LIST_RECALL, app->recall_sel);
+        return;
+    }
+    if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
+    if (s_recall_shown <= 0) return;
+
+    // 回想:直接回到那一段的事件,重新演一遍。
+    const int index = s_recall_map[app->recall_sel];
+    app->event_index = gal_content_recalls[index].event_index;
+    app->page_index = 0;
+    app->shown_line = -1;
+    enter_event(app);
+    show_notice(app, "回想");
+}
+
+static void handle_music(gal_app_t *app, const gal_key_t *key)
+{
+    if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
+        gal_music_stop();
+        goto_page(app, GAL_PAGE_GALLERY);
+        return;
+    }
+    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
+        move_selection(&app->music_sel, s_track_shown, key->btn == BSP_BTN_UP ? -1 : 1);
+        gal_ui_select_row(&app->ui, GAL_LIST_MUSIC, app->music_sel);
+        return;
+    }
+    if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
+    if (s_track_shown <= 0) return;
+
+    // 短按确定:播放 / 停止当前曲目。
+    const int index = s_track_map[app->music_sel];
+    if (gal_music_current() == index) {
+        gal_music_stop();
+    } else {
+        gal_music_play(index);
+    }
+    fill_tracks(app);
+}
+
 static void handle_modal(gal_app_t *app, const gal_key_t *key)
 {
     const int count = app->modal == GAL_MODAL_EMPTY ? 1 : 2;
@@ -1102,6 +1259,8 @@ void gal_app_key(gal_app_t *app, const gal_key_t *key)
     case GAL_PAGE_HISTORY: handle_history(app, key); break;
     case GAL_PAGE_GALLERY: handle_gallery(app, key); break;
     case GAL_PAGE_CG_LIST: handle_cg_list(app, key); break;
+    case GAL_PAGE_RECALL: handle_recall(app, key); break;
+    case GAL_PAGE_MUSIC: handle_music(app, key); break;
     case GAL_PAGE_CHAPTER: handle_chapter(app, key); break;
     case GAL_PAGE_TRANSITION: handle_transition(app, key); break;
     case GAL_PAGE_ENDING: handle_ending(app, key); break;
@@ -1158,6 +1317,9 @@ void gal_app_tick(gal_app_t *app, uint32_t elapsed_ms)
     } else {
         app->auto_accum_ms = 0;
     }
+
+    // 正在放曲子时也不进空闲:别在听音乐时熄屏。
+    if (gal_music_current() >= 0) app->idle_ms = 0;
 
     if (app->notice_ms > 0) {
         app->notice_ms = app->notice_ms > elapsed_ms ? app->notice_ms - elapsed_ms : 0;
@@ -1217,6 +1379,8 @@ bool gal_app_init(gal_app_t *app)
     } else {
         (void)gal_unlock_load(&app->unlock);
     }
+
+    if (!gal_music_init()) ESP_LOGW(TAG, "音乐播放任务创建失败,音乐鉴赏不可用");
 
     if (!bsp_lvgl_lock(-1)) {
         ESP_LOGE(TAG, "LVGL 未就绪");

@@ -62,6 +62,11 @@ run_static_checks() {
         tests/test_gal_text.c main/gal/gal_text.c \
         -o "${test_dir}/test_gal_text"
     "${test_dir}/test_gal_text"
+    # GalGame 框架:方波合成(音乐鉴赏的占位音色)纯逻辑。
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain -Imain/gal \
+        tests/test_gal_tone.c main/gal/gal_tone.c \
+        -o "${test_dir}/test_gal_tone"
+    "${test_dir}/test_gal_tone"
     PYTHONDONTWRITEBYTECODE=1 python3 tools/gal_font.py --check --out-dir assets/fonts
     for demo in audio low_power ble wifi; do
         "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \

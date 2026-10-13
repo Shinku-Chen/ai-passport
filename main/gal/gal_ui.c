@@ -446,6 +446,17 @@ static void build_save_load(gal_ui_t *ui, gal_page_t page, gal_list_t list_id,
     lv_obj_align(ui->footers[page], LV_ALIGN_BOTTOM_MID, 0, -8);
 }
 
+// 全屏列表页(页头标题 + 列表 + 页脚):CG 回想与音乐鉴赏都用它。
+static void build_simple_list(gal_ui_t *ui, gal_page_t page, gal_list_t list,
+                              const char *title, int row_h)
+{
+    lv_obj_t *root = mk_page(ui, page, COL_PAGE_BG, true);
+    mk_page_title(ui, page, title);
+    list_create(ui, list, root, NULL, "", row_h, BODY_TOP, ROW_INSET, GAL_UI_W, false);
+    ui->footers[page] = mk_label(root, ui->font_small, COL_DIM);
+    lv_obj_align(ui->footers[page], LV_ALIGN_BOTTOM_MID, 0, -8);
+}
+
 static void build_settings(gal_ui_t *ui)
 {
     lv_obj_t *root = mk_page(ui, GAL_PAGE_SETTINGS, COL_PAGE_BG, true);
@@ -734,6 +745,8 @@ bool gal_ui_create(gal_ui_t *ui, const lv_font_t *font_small, const lv_font_t *f
     build_history(ui);
     build_gallery(ui);
     build_cg_list(ui);
+    build_simple_list(ui, GAL_PAGE_RECALL, GAL_LIST_RECALL, "CG 回想", ROW_H);
+    build_simple_list(ui, GAL_PAGE_MUSIC, GAL_LIST_MUSIC, "音乐鉴赏", ROW_H);
     build_chapter(ui);
     build_transition(ui);
     build_ending(ui);
