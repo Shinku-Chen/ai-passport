@@ -20,14 +20,14 @@
       --gold: #e3c783;
       --dialogue-alpha: .70;
       --dialogue-font: 16px;
-      --dialogue-line: 19px;
-      --dialogue-panel-height: 82px;
+      --dialogue-line: 20px;
+      --dialogue-panel-height: 110px;
       --card-width: 286px;
       font-family: Inter, "PingFang SC", "Noto Sans CJK SC", sans-serif;
     }
     * { box-sizing: border-box; }
-    /* 对白字号档位对齐固件：16px 小档（每行 13 字、面板 82px）与 20px 大档（每行 11 字、面板 98px）。 */
-    :root.text-large { --dialogue-font: 20px; --dialogue-line: 23px; --dialogue-panel-height: 98px; }
+    /* 对白字号档位：竖屏 16px 档 5 行、20px 档 4 行（ATRI 系/星空列车主流做法），面板固定 110px。 */
+    :root.text-large { --dialogue-font: 20px; --dialogue-line: 24px; }
     html { scroll-behavior: smooth; }
     body {
       margin: 0;
@@ -174,9 +174,10 @@
     .screen--landscape .title-brand { width: 53%; margin: 0; text-align: left; }
     .screen--landscape .title-menu { width: 42%; gap: 4px; padding: 7px; }
     .screen--landscape .title-menu .button { min-height: 22px; }
-    .dialogue-panel { position: absolute; z-index: 3; right: 0; bottom: 0; left: 0; height: var(--dialogue-panel-height); padding: 4px 10px 2px; border: 0; border-radius: 0; background: rgb(11 16 32 / var(--dialogue-alpha, .70)); box-shadow: inset 0 2px 0 var(--line); }
-    /* 横屏按沙耶参考版校准：文本框 90px（不随字号变）、左右 7px（文字区 304px 恰好容纳 19 字）。 */
-    .screen--landscape { --dialogue-panel-height: 90px; }
+    .dialogue-panel { position: absolute; z-index: 3; right: 0; bottom: 0; left: 0; height: var(--dialogue-panel-height); padding: 5px 10px; border: 0; border-radius: 0; background: rgb(11 16 32 / var(--dialogue-alpha, .70)); box-shadow: inset 0 2px 0 var(--line); }
+    /* 横屏按沙耶参考版：文本框 90px 固定、行高 19/23、每页 4/3 行；文字区 304px 恰好容纳 19 字。 */
+    .screen--landscape { --dialogue-line: 19px; --dialogue-panel-height: 90px; }
+    :root.text-large .screen--landscape { --dialogue-line: 23px; }
     .screen--landscape .dialogue-panel { padding: 7px; }
     .speaker { position: absolute; bottom: 100%; left: 8px; display: inline-flex; min-width: 66px; height: 24px; align-items: center; justify-content: center; padding: 0 6px; border-radius: 6px; color: var(--accent); background: rgb(0 0 0 / 50%); font-size: 16px; font-weight: 700; }
     .dialogue-panel p { max-width: 100%; margin: 0; font-size: var(--dialogue-font); line-height: var(--dialogue-line); }
@@ -332,7 +333,7 @@
 
     const pages = [
       { id: "title", title: "标题页", subtitle: "主入口、续玩与作品信息", note: "↑/↓移动菜单焦点，短按 OK 确认；继续游戏在没有存档时置灰。" },
-      { id: "dialogue", title: "对话页", subtitle: "全屏背景与贴底对话底纹", note: "短按 OK 推进对白；长按 ↑ 快进、松开停止；长按 ↓ 开启自动、松开保持，之后按任意键停止；长按 OK 打开设置。排版按两个参考实现校准：竖屏 240×320 用 Asunabi 参数（面板 82/98px、16px 档每行 13 字、20px 档每行 10 字、每页 4 行）；横屏 320×240 用沙耶参考版参数（面板 90px、每行 19/15 字、每页 4/3 行）。底纹默认 30% 透明、10%–55% 可调。聚焦画面后可用 ↑/↓/Enter 模拟按键。" },
+      { id: "dialogue", title: "对话页", subtitle: "全屏背景与贴底对话底纹", note: "短按 OK 推进对白；长按 ↑ 快进、松开停止；长按 ↓ 开启自动、松开保持，之后按任意键停止；长按 OK 打开设置。排版按两个参考实现校准：竖屏 240×320 取主流做法（面板 110px 固定、16px 档每行 13 字 / 5 行，20px 档每行 10 字 / 4 行）；横屏 320×240 用沙耶参考版参数（面板 90px、每行 19/15 字、每页 4/3 行）。底纹默认 30% 透明、10%–55% 可调。聚焦画面后可用 ↑/↓/Enter 模拟按键。" },
       { id: "choice", title: "选项分支", subtitle: "剧情选择节点", note: "↑/↓选择分支，短按 OK 确认；选项面板居中显示，分支前的最后一句台词留在底部对话框里。" },
       { id: "menu", title: "游戏内菜单", subtitle: "剧情中的快捷入口", note: "↑/↓选择菜单项，短按 OK 执行；返回剧情本身就是一项菜单操作。" },
       { id: "save", title: "存档页", subtitle: "选择槽位并保存进度", note: "聚焦页面后 ↑/↓选槽，短按 OK 直接保存；槽位自身就是操作入口，不另放“保存/读取”按钮。覆盖已有进度时再确认。" },
@@ -523,13 +524,13 @@
     const fastForwardTimers = new WeakMap();
     const autoPlayTimers = new WeakMap();
     const dialogueLinesBySize = {
-      /* 16px 档：每行 13 字，第二段是满 4 行的一页。 */
+      /* 16px 档：每行 13 字，第二段是满 5 行的一页（竖屏）。 */
       small: [
         "列车缓缓驶入夜色。<br>窗外的灯火，像远方的星。<br>“下一站，就要到了。”",
-        "车门打开时，冷风灌进站台。<br>她收起车票，望向空月台。<br>“你真的要在这里下车吗？”<br>我点点头，没有回头。",
-        "“要一起走吗？”她轻声问。<br>远处的钟声，刚好响了三下。"
+        "车门打开时，冷风灌进站台。<br>她收起车票，望向空月台。<br>“你真的要在这里下车吗？”<br>我点点头，没有回头。<br>远处的钟声，刚好响了三下。",
+        "“要一起走吗？”她轻声问。<br>雨点敲在车窗上。"
       ],
-      /* 20px 档：每行 15 字，横屏每页 3 行（沙耶参考版）。 */
+      /* 20px 档：每行 10 字，竖屏 4 行、横屏 3 行。 */
       large: [
         "列车驶入夜色。<br>窗外灯火如星。<br>“就要到了。”",
         "车门打开，冷风灌进。<br>她收起车票。<br>“要下车吗？”",
