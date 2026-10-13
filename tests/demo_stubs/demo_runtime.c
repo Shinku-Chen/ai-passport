@@ -31,9 +31,66 @@ void lv_label_set_text(lv_obj_t *object, const char *text) {
     snprintf(test_status, sizeof(test_status), "%s", text);
 }
 void bsp_display_backlight(uint8_t percent) { (void)percent; }
+
+// Baseline-demo UI helpers (main/ui_pixel.c) and the LVGL calls they issue:
+// host tests never render, so these are link-only no-ops returning a shared
+// stub object. Upstream stubs lagged the demo's move onto ui_pixel_*; added
+// here so tests/demo_stubs keeps the demo runtime tests linkable.
+static lv_obj_t s_stub_obj;
+lv_obj_t *ui_pixel_screen_create(const char *title) { (void)title; return &s_stub_obj; }
+lv_obj_t *ui_pixel_panel_create(lv_obj_t *parent, int x, int y, int w, int h,
+                                uint32_t color) {
+    (void)parent; (void)x; (void)y; (void)w; (void)h; (void)color;
+    return &s_stub_obj;
+}
+lv_obj_t *ui_pixel_label(lv_obj_t *parent, const char *text,
+                         const lv_font_t *font, uint32_t color) {
+    (void)parent; (void)text; (void)font; (void)color; return &s_stub_obj;
+}
+lv_obj_t *ui_pixel_mascot_create(lv_obj_t *parent, int x, int y) {
+    (void)parent; (void)x; (void)y; return &s_stub_obj;
+}
 void ui_pixel_mascot_jump(lv_obj_t *mascot) { (void)mascot; }
 void ui_pixel_set_selected(lv_obj_t *panel, bool selected, bool enabled) {
     (void)panel; (void)selected; (void)enabled;
+}
+uint32_t lv_color_hex(uint32_t color) { return color; }
+lv_obj_t *lv_obj_create(lv_obj_t *parent) { (void)parent; return &s_stub_obj; }
+lv_obj_t *lv_label_create(lv_obj_t *parent) { (void)parent; return &s_stub_obj; }
+void lv_obj_set_size(lv_obj_t *o, int w, int h) { (void)o; (void)w; (void)h; }
+void lv_obj_set_width(lv_obj_t *o, int w) { (void)o; (void)w; }
+void lv_obj_set_style_radius(lv_obj_t *o, int r, int s) { (void)o; (void)r; (void)s; }
+void lv_obj_set_style_bg_color(lv_obj_t *o, uint32_t c, int s) { (void)o; (void)c; (void)s; }
+void lv_obj_set_style_border_width(lv_obj_t *o, int w, int s) { (void)o; (void)w; (void)s; }
+void lv_obj_set_style_text_color(lv_obj_t *o, uint32_t c, int s) { (void)o; (void)c; (void)s; }
+void lv_obj_set_style_text_align(lv_obj_t *o, int a, int s) { (void)o; (void)a; (void)s; }
+void lv_obj_center(lv_obj_t *o) { (void)o; }
+void lv_obj_align(lv_obj_t *o, int a, int x, int y) { (void)o; (void)a; (void)x; (void)y; }
+void lv_obj_delete(lv_obj_t *o) { (void)o; }
+void lv_label_set_long_mode(lv_obj_t *o, int m) { (void)o; (void)m; }
+void lv_screen_load(lv_obj_t *o) { (void)o; }
+void lv_label_set_text_fmt(lv_obj_t *o, const char *fmt, ...) { (void)o; (void)fmt; }
+void lv_obj_set_style_text_font(lv_obj_t *o, const lv_font_t *f, int s) {
+    (void)o; (void)f; (void)s;
+}
+int esp_sleep_get_wakeup_cause(void) { return 0; }   // 0 = unknown cause
+static lv_timer_t s_stub_timer;
+lv_timer_t *lv_timer_create(void (*cb)(lv_timer_t *), unsigned period, void *data) {
+    (void)cb; (void)period; (void)data; return &s_stub_timer;
+}
+void lv_timer_delete(lv_timer_t *t) { (void)t; }
+
+// WiFi scan result getters: report one deterministic fake network so the
+// demo's result screen renders identically on every host run.
+static const wifi_ap_record_t s_stub_ap = { .rssi = -48,
+    .ssid = {'A', 'I', '-', 'P', 'a', 's', 's', 'p', 'o', 'r', 't'},
+    .primary = 6 };
+esp_err_t esp_wifi_scan_get_ap_num(uint16_t *count) { *count = 1; return ESP_OK; }
+esp_err_t esp_wifi_scan_get_ap_records(uint16_t *count, wifi_ap_record_t *records) {
+    if (*count < 1) { *count = 0; return ESP_OK; }
+    *count = 1;
+    records[0] = s_stub_ap;
+    return ESP_OK;
 }
 esp_err_t esp_sleep_disable_wakeup_source(int source) { (void)source; return ESP_OK; }
 esp_err_t esp_sleep_enable_timer_wakeup(uint64_t us) { (void)us; return ESP_OK; }
