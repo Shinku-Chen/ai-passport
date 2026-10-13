@@ -57,6 +57,12 @@ run_static_checks() {
         tests/test_bsp_audio_recovery.c components/bsp/src/bsp_es8311_sleep_check.c \
         -o "${test_dir}/test_bsp_audio_recovery"
     "${test_dir}/test_bsp_audio_recovery"
+    # GalGame 框架:排版分页纯逻辑 + 中文字体覆盖自检。
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain -Imain/gal \
+        tests/test_gal_text.c main/gal/gal_text.c \
+        -o "${test_dir}/test_gal_text"
+    "${test_dir}/test_gal_text"
+    PYTHONDONTWRITEBYTECODE=1 python3 tools/gal_font.py --check --out-dir assets/fonts
     for demo in audio low_power ble wifi; do
         "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
             -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \

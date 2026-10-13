@@ -1,0 +1,125 @@
+// main/gal/gal_ui.h —— 框架骨架的 LVGL 界面层（竖屏 240x320）。
+//
+// 版面(框架规范):
+//   画面区      y 0..209  :程序绘制的渐变背景
+//   名牌        面板上沿左侧(半透明黑底)
+//   对话框面板  y 210..319:正文(贴底、可调透明度)
+// 全屏页面(设置、关于)盖住整屏;启动页与标题页只用画面区 + 下沿菜单。
+//
+// 本模块只负责“把给定的内容画出来”,页面切换与按键语义在 gal_app.c。
+#pragma once
+
+#include "lvgl.h"
+
+#include <stdbool.h>
+#include <stdint.h>
+
+#define GAL_UI_W 240
+#define GAL_UI_H 320
+
+// 对话框面板:贴底 110px(框架竖屏规范:16px 档 5 行 / 20px 档 4 行)。
+#define GAL_PANEL_H 110
+#define GAL_PANEL_Y (GAL_UI_H - GAL_PANEL_H)
+#define GAL_TEXT_X 10
+#define GAL_TEXT_W (GAL_UI_W - 2 * GAL_TEXT_X)
+#define GAL_LINE_H_SMALL 20
+#define GAL_LINE_H_LARGE 24
+#define GAL_TEXT_LINES_SMALL 5
+#define GAL_TEXT_LINES_LARGE 4
+#define GAL_LIST_MAX_ROWS 10
+#define GAL_TEXT_CAPACITY 1024
+
+typedef enum {
+    GAL_PAGE_START = 0,
+    GAL_PAGE_TITLE,
+    GAL_PAGE_GAME,
+    GAL_PAGE_SETTINGS,
+    GAL_PAGE_ABOUT,
+} gal_page_t;
+
+typedef enum {
+    GAL_LIST_START = 0,
+    GAL_LIST_TITLE,
+    GAL_LIST_SETTINGS,
+    GAL_LIST_ABOUT,
+    GAL_LIST_COUNT,
+} gal_list_t;
+
+typedef struct {
+    lv_obj_t *page;
+    lv_obj_t *title;
+    lv_obj_t *rows[GAL_LIST_MAX_ROWS];
+    lv_obj_t *values[GAL_LIST_MAX_ROWS];
+    int count;
+    int selected;
+    int row_h;
+    int top;
+    const lv_font_t *font;
+} gal_list_ui_t;
+
+typedef struct {
+    lv_obj_t *bg;             // 全屏渐变背景(画面区)
+    lv_obj_t *brand_title;    // 启动页/标题页上的作品名
+    lv_obj_t *brand_sub;      // 副标题
+
+    lv_obj_t *panel;          // 对话框面板
+    lv_obj_t *name;           // 说话人名牌
+    lv_obj_t *text;           // 正文
+    lv_obj_t *chapter;        // 左上角标题
+    lv_obj_t *battery;        // 右上角电量
+    lv_obj_t *notice;         // 顶部提示(快进/自动阅读 开-关)
+
+    lv_obj_t *page_start;
+    lv_obj_t *page_title;
+    lv_obj_t *page_game;
+    lv_obj_t *page_settings;
+    lv_obj_t *page_about;
+    lv_obj_t *about_view;     // 关于正文的滚动容器
+    lv_obj_t *about_text;
+
+    gal_list_ui_t lists[GAL_LIST_COUNT];
+
+    const lv_font_t *font_small;   // 16px 子集
+    const lv_font_t *font_large;   // 20px 子集
+
+    lv_timer_t *typewriter_timer;
+    char typing_target[GAL_TEXT_CAPACITY];
+    char typing_shown[GAL_TEXT_CAPACITY];
+    uint32_t typing_index;
+    uint32_t typing_total;
+    uint32_t typing_step_ms;
+    bool typing_active;
+} gal_ui_t;
+
+// 建界面(需持有 LVGL 锁)。
+bool gal_ui_create(gal_ui_t *ui, const lv_font_t *font_small, const lv_font_t *font_large);
+
+void gal_ui_show_page(gal_ui_t *ui, gal_page_t page);
+
+// 启动页/标题页上的作品名与副标题。
+void gal_ui_set_brand(gal_ui_t *ui, const char *title, const char *subtitle);
+
+// 正文页
+void gal_ui_set_text(gal_ui_t *ui, const char *speaker, const char *page_text,
+                     uint32_t ms_per_char);
+void gal_ui_show_full_text(gal_ui_t *ui);
+bool gal_ui_typing(const gal_ui_t *ui);
+
+// 状态栏与提示
+void gal_ui_set_chapter(gal_ui_t *ui, const char *text);
+void gal_ui_set_battery(gal_ui_t *ui, int percent);
+void gal_ui_set_notice(gal_ui_t *ui, const char *text);   // NULL/空串 = 清除
+
+// 文字大小与对话框透明度
+void gal_ui_set_font_size(gal_ui_t *ui, bool large);
+void gal_ui_set_panel_transparency(gal_ui_t *ui, uint8_t percent);
+
+// 列表
+void gal_ui_set_rows(gal_ui_t *ui, gal_list_t list, const char *const *labels,
+                     const char *const *values, int count, int selected);
+void gal_ui_set_row_value(gal_ui_t *ui, gal_list_t list, int row, const char *value);
+void gal_ui_select_row(gal_ui_t *ui, gal_list_t list, int selected);
+
+// 关于页
+void gal_ui_set_about_text(gal_ui_t *ui, const char *text);
+void gal_ui_about_scroll(gal_ui_t *ui, int dy);
