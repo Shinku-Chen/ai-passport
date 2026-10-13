@@ -190,7 +190,6 @@
     .key-hint { color: var(--gold); cursor: pointer; }
     .choice-line { margin: 0; font-size: var(--dialogue-font); line-height: var(--dialogue-line); }
     .choice-panel { position: absolute; z-index: 3; right: 8px; left: 8px; top: calc((100% - var(--dialogue-panel-height)) / 2); display: grid; gap: 4px; padding: 8px; border: 1px solid var(--accent); border-radius: 9px; background: rgb(15 22 37 / 95%); transform: translateY(-50%); }
-    .choice-panel h4 { margin: 0 0 1px; color: var(--gold); text-align: center; }
     .choice-panel .button { min-height: 28px; }
     .screen--landscape .choice-panel { right: 13%; left: 13%; }
     .quick-menu { position: absolute; z-index: 4; top: 50%; left: 50%; width: 82%; max-height: calc(100% - 12px); padding: 12px; border: 1px solid var(--accent); border-radius: 10px; background: rgb(15 22 37 / 96%); box-shadow: 0 12px 34px rgb(0 0 0 / 42%); transform: translate(-50%, -50%); }
@@ -386,7 +385,7 @@
     }
     function choiceScreen(o) {
       const options = button("追上去", "transition", "primary") + button("留在原地", "dialogue") + button("询问站务员", "dialogue");
-      return frame(o, scene(true) + "<div class=\"dialogue-panel\"><p class=\"choice-line\">她停下脚步，回头看我。</p></div><div class=\"choice-panel\"><h4>请选择</h4>" + options + "</div>");
+      return frame(o, scene(true) + "<div class=\"dialogue-panel\"><p class=\"choice-line\">她停下脚步，回头看我。</p></div><div class=\"choice-panel\">" + options + "</div>");
     }
     function menuScreen(o) {
       const items = button("返回剧情", "dialogue", "primary") + button("保存进度", "save") + button("读取进度", "load") + button("历史文本", "history") + button("设置", "settings") + button("返回标题", "title");
