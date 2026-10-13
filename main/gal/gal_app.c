@@ -116,6 +116,8 @@ static void enter_event(gal_app_t *app)
         app->event_index = gal_content_event_count - 1;
     }
     app->page = event_page(&gal_content_events[app->event_index]);
+    // 快进碰到选项、过场或结局就停下,把操作交回给玩家(render_page 会同步指示)。
+    if (app->page != GAL_PAGE_GAME) app->fast_forward = false;
     render_page(app);
 }
 
@@ -129,7 +131,7 @@ static void advance_event(gal_app_t *app)
     app->event_index++;
     app->page_index = 0;
     app->shown_line = -1;
-    app->fast_forward = false;
+    // 注意:这里不清快进。按住“上”时快进要一直推到最后一句。
     enter_event(app);
 }
 
@@ -165,7 +167,9 @@ static void show_line(gal_app_t *app, int line_index)
     memcpy(page_text, line->text + begin, len);
     page_text[len] = '\0';
 
-    gal_ui_set_text(&app->ui, line->speaker, page_text, speed_ms(app));
+    // 快进时直接整页显示,不再走打字机。
+    gal_ui_set_text(&app->ui, line->speaker, page_text,
+                    app->fast_forward ? 0 : speed_ms(app));
     gal_ui_set_chapter(&app->ui, chapter_name_at(app->event_index));
     app->shown_line = line_index;
     app->shown_page = app->page_index;
@@ -583,17 +587,15 @@ static void handle_game(gal_app_t *app, const gal_key_t *key)
             app->ff_accum_ms = 0;
             gal_ui_show_full_text(&app->ui);
             gal_ui_set_mode(&app->ui, true, app->auto_mode);
-            show_notice(app, "快进");
             return;
         }
         if (key->ev == BSP_BTN_RELEASE) {
             app->fast_forward = false;
             gal_ui_set_mode(&app->ui, false, app->auto_mode);
-            show_notice(app, NULL);
             return;
         }
     }
-    // 长按下:自动阅读开关(任意键停止)。
+    // 长按下:自动阅读开关(任意键停止,不另做提示)。
     if (key->btn == BSP_BTN_DOWN && key->ev == BSP_BTN_LONG) {
         app->settings.auto_play = app->settings.auto_play ? 0 : 1;
         gal_settings_store(&app->settings);
@@ -602,7 +604,6 @@ static void handle_game(gal_app_t *app, const gal_key_t *key)
         app->fast_forward = false;
         if (app->auto_mode) gal_ui_show_full_text(&app->ui);
         gal_ui_set_mode(&app->ui, false, app->auto_mode);
-        show_notice(app, app->auto_mode ? "自动阅读 开" : "自动阅读 关");
         return;
     }
 }
@@ -969,7 +970,7 @@ void gal_app_key(gal_app_t *app, const gal_key_t *key)
         return;
     }
 
-    // 自动阅读中按任意键:退出自动阅读,并吃掉这次按键。
+    // 自动阅读中按任意键:退出自动阅读(右上角的“自动”指示会隐藏),并吃掉这次按键。
     // PRESS/RELEASE 不算“按键”:否则下键长按进入自动后,松手就会把它关掉。
     if (app->auto_mode && key->ev != BSP_BTN_PRESS && key->ev != BSP_BTN_RELEASE) {
         app->auto_mode = false;
@@ -977,7 +978,6 @@ void gal_app_key(gal_app_t *app, const gal_key_t *key)
         app->settings.auto_play = 0;
         gal_settings_store(&app->settings);
         gal_ui_set_mode(&app->ui, false, false);
-        show_notice(app, "已退出自动阅读");
         bsp_lvgl_unlock();
         return;
     }
