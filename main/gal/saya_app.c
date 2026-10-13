@@ -15,6 +15,8 @@ static const char *TAG = "saya";
 #define SAYA_FAST_FORWARD_MS 180u
 // "下"长按进入的自动模式:每 900ms 推进一步;任意键退出,且该模式下不调暗/熄屏/休眠。
 #define SAYA_AUTO_ADVANCE_MS 900u
+// “上/下”短按滚动正文的像素数：一行正文的行高。
+#define SAYA_TEXT_SCROLL_STEP 19
 // 关于页每次滚动的像素数:一行正文的行高(见 SAYA_LINE_H);长按翻 4 行。
 #define SAYA_ABOUT_SCROLL_STEP 19
 // 开机警告页每次滚动的像素数(字号大一样够用);长按与没读完时按确定按整屏翻。
@@ -30,13 +32,13 @@ static const char *const SPEED_LABEL[4] = { "慢", "中", "快", "瞬间" };
 static const char *const ABOUT_TEXT =
     "《沙耶之歌》视觉小说移植\n"
     "原移植:liuyuze61(小米手环 10 版)\n"
-    "本移植:AI Passport 横屏版\n"
+    "本移植:AI Passport 横屏版 · GalGame 框架\n"
     "\n"
     "操作:\n"
-    "  确定     打开菜单(存/读档、跳章节)\n"
-    "  上       短按:下一段;长按:快进,松手停\n"
-    "  下       短按:回看上一页\n"
-    "  上/下    菜单与选项里移动;本页滚动正文\n"
+    "  确定     短按:下一句;长按:打开设置\n"
+    "  上       长按:快进,松手停\n"
+    "  下       长按:自动阅读开关\n"
+    "  上/下    列表与选项里移动;本页滚动正文\n"
     "\n"
     "本作含有大量血腥描写,请谨慎阅读。\n"
     "有能力请支持正版。";
@@ -157,13 +159,22 @@ static void goto_page(saya_app_t *app, saya_page_t page);
 static void render_current_page(saya_app_t *app)
 {
     switch (app->page) {
+    case SAYA_PAGE_START: {
+        // 开机首屏(框架规范):标题图 + 下沿“开始游戏”单行入口。
+        static const char *rows[1] = { "开始游戏" };
+        if (!saya_ui_set_title_art(&app->ui, &app->pack)) {
+            ESP_LOGW(TAG, "标题画面解码失败");
+        }
+        saya_ui_show_page(&app->ui, SAYA_PAGE_START);
+        saya_ui_set_start_rows(&app->ui, rows, 1, app->start_sel);
+        return;
+    }
     case SAYA_PAGE_TITLE: {
-        // 标题菜单最多 4 行(标题图下方是 90px 的菜单区,按 22px 行高正好放得下);
-        // "关于"在设置页里。
-        static const char *rows_continue[4] = { "继续", "从第 1 章开始", "读取存档", "设置" };
-        static const char *rows_default[3] = { "从第 1 章开始", "读取存档", "设置" };
+        // 标题菜单最多 5 行(标题图下方是 90px 的菜单区);“继续”只在有自动存档时出现。
+        static const char *rows_continue[5] = { "继续", "从第 1 章开始", "读取存档", "设置", "关于" };
+        static const char *rows_default[4] = { "从第 1 章开始", "读取存档", "设置", "关于" };
         const char *const *rows = app->have_auto ? rows_continue : rows_default;
-        const int count = app->have_auto ? 4 : 3;
+        const int count = app->have_auto ? 5 : 4;
         if (!saya_ui_set_title_art(&app->ui, &app->pack)) {
             ESP_LOGW(TAG, "标题画面解码失败");
         }
@@ -178,11 +189,32 @@ static void render_current_page(saya_app_t *app)
         return;
     }
     case SAYA_PAGE_SETTINGS: {
-        static const char *labels[4] = { "文字速度", "字号", "关于", "返回" };
-        const char *values[4] = { speed_label(app), app->settings.font_large ? "大" : "小",
-                                  "", "" };
+        // 框架规范：阅读中打开时同时是操作面板（10 项）；标题页打开只有设置项（6 项）。
+        static const char *labels_reader[10] = {
+            "文字速度", "文字大小", "自动阅读", "对话透明度",
+            "保存进度", "读取进度", "跳过本章", "返回标题", "恢复默认", "返回",
+        };
+        static const char *labels_title[6] = {
+            "文字速度", "文字大小", "自动阅读", "对话透明度", "恢复默认", "返回",
+        };
+        static char transparency_buf[8];
+        snprintf(transparency_buf, sizeof(transparency_buf), "%u%%",
+                 (unsigned)app->settings.panel_transparency);
+        const char *values_reader[10] = {
+            speed_label(app), app->settings.font_large ? "大" : "小",
+            app->settings.auto_play ? "开" : "关", transparency_buf,
+            "", "", "", "", "", "",
+        };
+        const char *values_title[6] = {
+            speed_label(app), app->settings.font_large ? "大" : "小",
+            app->settings.auto_play ? "开" : "关", transparency_buf, "", "",
+        };
         saya_ui_show_page(&app->ui, SAYA_PAGE_SETTINGS);
-        saya_ui_set_settings_rows(&app->ui, labels, values, 4, app->settings_sel);
+        if (app->settings_from_reader) {
+            saya_ui_set_settings_rows(&app->ui, labels_reader, values_reader, 10, app->settings_sel);
+        } else {
+            saya_ui_set_settings_rows(&app->ui, labels_title, values_title, 6, app->settings_sel);
+        }
         return;
     }
     case SAYA_PAGE_ABOUT: {
@@ -201,7 +233,7 @@ static void render_current_page(saya_app_t *app)
         saya_pack_name(&app->pack, app->player.end_name, name, sizeof(name));
         if (name[0] == '\0') snprintf(name, sizeof(name), "%s", "End");
         saya_ui_show_page(&app->ui, SAYA_PAGE_ENDING);
-        saya_ui_set_ending(&app->ui, name, "确定返回标题");
+        saya_ui_set_ending(&app->ui, name, "");
         return;
     }
     case SAYA_PAGE_WARNING: {
@@ -244,9 +276,7 @@ static void render_slots(saya_app_t *app)
     values[slot_rows] = "";
 
     saya_ui_show_page(&app->ui, SAYA_PAGE_SLOTS);
-    saya_ui_slots_setup(&app->ui, app->slots_saving ? "保存进度" : "读取进度",
-                        app->slots_saving ? "确定保存 · 长按删除该槽 · 选“返回”离开"
-                                          : "确定读取 · 选“返回”离开",
+    saya_ui_slots_setup(&app->ui, app->slots_saving ? "保存进度" : "读取进度", "",
                         labels, values, slot_rows + 1);
     saya_ui_set_slots_selected(&app->ui, app->slots_sel);
 }
@@ -286,12 +316,21 @@ static void begin_reading(saya_app_t *app, const saya_save_t *save)
 }
 
 // ---------------------------------------------------------------- 事件
+static void handle_start(saya_app_t *app, const saya_key_t *key)
+{
+    // 开机首屏只有一个入口:短按确定进入标题页。
+    if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
+        app->title_sel = 0;
+        goto_page(app, SAYA_PAGE_TITLE);
+    }
+}
+
 static void handle_title(saya_app_t *app, const saya_key_t *key)
 {
-    static const char *rows_continue[4] = { "继续", "从第 1 章开始", "读取存档", "设置" };
-    static const char *rows_default[3] = { "从第 1 章开始", "读取存档", "设置" };
+    static const char *rows_continue[5] = { "继续", "从第 1 章开始", "读取存档", "设置", "关于" };
+    static const char *rows_default[4] = { "从第 1 章开始", "读取存档", "设置", "关于" };
     const char *const *rows = app->have_auto ? rows_continue : rows_default;
-    const int count = app->have_auto ? 4 : 3;
+    const int count = app->have_auto ? 5 : 4;
 
     if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
         const int delta = key->btn == BSP_BTN_UP ? -1 : 1;
@@ -326,9 +365,15 @@ static void handle_title(saya_app_t *app, const saya_key_t *key)
         return;
     }
     if (strcmp(choice, "设置") == 0) {
+        app->settings_from_reader = false;
         app->settings_return = SAYA_PAGE_TITLE;
         app->settings_sel = 0;
         goto_page(app, SAYA_PAGE_SETTINGS);
+        return;
+    }
+    if (strcmp(choice, "关于") == 0) {
+        app->about_return = SAYA_PAGE_TITLE;
+        goto_page(app, SAYA_PAGE_ABOUT);
     }
 }
 
@@ -398,11 +443,19 @@ static void handle_game(saya_app_t *app, const saya_key_t *key)
         return;
     }
 
-    // OK:打开菜单(短按/长按都算)。
-    if (key->btn == BSP_BTN_OK && (key->ev == BSP_BTN_CLICK || key->ev == BSP_BTN_LONG)) {
+    // 确定短按:下一句(打字中先全显)。
+    if (key->btn == BSP_BTN_OK && key->ev == BSP_BTN_CLICK) {
         app->fast_forward = false;
-        app->menu_sel = 0;
-        goto_page(app, SAYA_PAGE_MENU);
+        advance_reading(app, false);
+        return;
+    }
+    // 确定长按:打开设置面板(框架规范;阅读操作并入同一张列表)。
+    if (key->btn == BSP_BTN_OK && key->ev == BSP_BTN_LONG) {
+        app->fast_forward = false;
+        app->settings_from_reader = true;
+        app->settings_sel = 0;
+        app->settings_return = SAYA_PAGE_GAME;
+        goto_page(app, SAYA_PAGE_SETTINGS);
         return;
     }
 
@@ -419,18 +472,22 @@ static void handle_game(saya_app_t *app, const saya_key_t *key)
         }
     }
 
-    // 上/下短按都是"下一段"(打字中先补全);下长按进入自动模式。
-    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        app->fast_forward = false;
-        advance_reading(app, false);
-        return;
-    }
+    // 下长按:切换自动阅读(任意键停止,与设置里的开关同步)。
     if (key->btn == BSP_BTN_DOWN && key->ev == BSP_BTN_LONG) {
-        app->auto_mode = true;
+        app->settings.auto_play = app->settings.auto_play ? 0 : 1;
+        saya_settings_store(&app->settings);
+        app->auto_mode = app->settings.auto_play != 0;
         app->auto_accum_ms = 0;
         app->fast_forward = false;
-        saya_ui_show_full_text(&app->ui);
-        show_notice(app, "自动模式");
+        if (app->auto_mode) saya_ui_show_full_text(&app->ui);
+        show_notice(app, app->auto_mode ? "自动阅读 开" : "自动阅读 关");
+        return;
+    }
+
+    // 上/下短按:滚动正文(分页保证一页装得下,这里是安全阀)。
+    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
+        const int dir = key->btn == BSP_BTN_UP ? -1 : 1;
+        saya_ui_scroll_text(&app->ui, dir * SAYA_TEXT_SCROLL_STEP);
         return;
     }
 }
@@ -486,10 +543,33 @@ static void handle_menu(saya_app_t *app, const saya_key_t *key)
     }
 }
 
+// 设置面板的动作编号（阅读中：列表下标即动作；标题页：映射到设置项 + 恢复默认 + 返回）。
+enum {
+    SACT_SPEED = 0,
+    SACT_SIZE,
+    SACT_AUTO,
+    SACT_TRANSPARENCY,
+    SACT_SAVE,
+    SACT_LOAD,
+    SACT_SKIP,
+    SACT_TITLE,
+    SACT_RESET,
+    SACT_BACK,
+};
+
+static int settings_action(const saya_app_t *app, int index)
+{
+    if (app->settings_from_reader) return index;
+    static const int title_map[6] = { SACT_SPEED, SACT_SIZE,  SACT_AUTO,
+                                      SACT_TRANSPARENCY, SACT_RESET, SACT_BACK };
+    return (index >= 0 && index < 6) ? title_map[index] : SACT_BACK;
+}
+
 static void handle_settings(saya_app_t *app, const saya_key_t *key)
 {
-    const int count = 4;
+    const int count = app->settings_from_reader ? 10 : 6;
     if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
+        app->settings_from_reader = false;
         goto_page(app, app->settings_return);
         return;
     }
@@ -504,25 +584,64 @@ static void handle_settings(saya_app_t *app, const saya_key_t *key)
     }
     if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
 
-    switch (app->settings_sel) {
-    case 0:
+    switch (settings_action(app, app->settings_sel)) {
+    case SACT_SPEED:
         app->settings.text_speed = (uint8_t)((app->settings.text_speed + 1) % 4);
-        saya_ui_set_setting_value(&app->ui, 0, speed_label(app));
         break;
-    case 1:
+    case SACT_SIZE:
         app->settings.font_large = app->settings.font_large ? 0 : 1;
-        saya_ui_set_setting_value(&app->ui, 1, app->settings.font_large ? "大" : "小");
         saya_ui_set_font_size(&app->ui, app->settings.font_large != 0);
         break;
-    case 2:
-        app->about_return = SAYA_PAGE_SETTINGS;
-        goto_page(app, SAYA_PAGE_ABOUT);
+    case SACT_AUTO:
+        app->settings.auto_play = app->settings.auto_play ? 0 : 1;
+        break;
+    case SACT_TRANSPARENCY:
+        app->settings.panel_transparency =
+            saya_transparency_next(app->settings.panel_transparency);
+        saya_ui_set_panel_transparency(&app->ui, app->settings.panel_transparency);
+        break;
+    case SACT_SAVE:
+        app->slots_saving = true;
+        app->slots_sel = 0;
+        app->slots_return = SAYA_PAGE_SETTINGS;
+        goto_page(app, SAYA_PAGE_SLOTS);
         return;
-    default:
+    case SACT_LOAD:
+        app->slots_saving = false;
+        app->slots_sel = 0;
+        app->slots_return = SAYA_PAGE_SETTINGS;
+        goto_page(app, SAYA_PAGE_SLOTS);
+        return;
+    case SACT_SKIP: {
+        saya_layout_t layout;
+        layout_for(app, &layout);
+        // 章节内有未经过的选项时跳到那个选项,让玩家自己决定;否则整章跳过。
+        if (saya_player_skip_chapter(&app->player, &app->pack, &layout)) {
+            autosave(app);
+            app->settings_from_reader = false;
+            goto_page(app, SAYA_PAGE_GAME);
+            return;
+        }
+        ESP_LOGI(TAG, "本章不可跳过(已是结局章或停在选项上)");
+        show_notice(app, "本章不可跳过");
+        break;
+    }
+    case SACT_TITLE:
+        app->settings_from_reader = false;
+        goto_page(app, SAYA_PAGE_TITLE);
+        return;
+    case SACT_RESET:
+        saya_settings_reset_display(&app->settings);
+        saya_ui_set_font_size(&app->ui, app->settings.font_large != 0);
+        saya_ui_set_panel_transparency(&app->ui, app->settings.panel_transparency);
+        break;
+    default:   // SACT_BACK
+        app->settings_from_reader = false;
         goto_page(app, app->settings_return);
         return;
     }
     saya_settings_store(&app->settings);
+    render_current_page(app);   // 列表右侧的值在同一张列表上就地刷新
 }
 
 static void handle_slots(saya_app_t *app, const saya_key_t *key)
@@ -644,6 +763,8 @@ void saya_app_key(saya_app_t *app, const saya_key_t *key)
     if (app->auto_mode && key->ev != BSP_BTN_PRESS && key->ev != BSP_BTN_RELEASE) {
         app->auto_mode = false;
         app->auto_accum_ms = 0;
+        app->settings.auto_play = 0;
+        saya_settings_store(&app->settings);
         show_notice(app, "已退出自动模式");
         bsp_lvgl_unlock();
         return;
@@ -653,6 +774,7 @@ void saya_app_key(saya_app_t *app, const saya_key_t *key)
         return;
     }
     switch (app->page) {
+    case SAYA_PAGE_START: handle_start(app, key); break;
     case SAYA_PAGE_WARNING:
         // 上/下滚动警告正文:短按一行、长按整屏。
         if ((key->ev == BSP_BTN_CLICK || key->ev == BSP_BTN_LONG) &&
@@ -761,7 +883,7 @@ void saya_app_show_sleeping(saya_app_t *app)
 {
     if (!app) return;
     saya_ui_show_page(&app->ui, SAYA_PAGE_WARNING);
-    saya_ui_set_warning(&app->ui, "已休眠\n\n按任意按键继续阅读", "");
+    saya_ui_set_warning(&app->ui, "已休眠", "");
 }
 
 bool saya_app_init(saya_app_t *app, const uint8_t *pack_data, uint32_t pack_size,
@@ -795,7 +917,10 @@ bool saya_app_init(saya_app_t *app, const uint8_t *pack_data, uint32_t pack_size
     if (ui_ok) {
         saya_ui_set_battery(&app->ui, app->battery_percent);
         saya_ui_set_font_size(&app->ui, app->settings.font_large != 0);
-        app->page = app->settings.seen_warning ? SAYA_PAGE_TITLE : SAYA_PAGE_WARNING;
+        saya_ui_set_panel_transparency(&app->ui, app->settings.panel_transparency);
+        // 框架规范:开机进首屏(只有“开始游戏”),不再有内容警告页。
+        app->page = SAYA_PAGE_START;
+        app->auto_mode = app->settings.auto_play != 0;
         render_current_page(app);
     }
     bsp_lvgl_unlock();

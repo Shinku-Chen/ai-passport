@@ -26,14 +26,18 @@
 #define SAYA_BOX_Y (SAYA_UI_H - SAYA_BOX_BOTTOM_MARGIN - SAYA_BOX_H)
 // 说话人名字放在画面区左下角、文本框正上方(不再占用文本框内部空间)。
 #define SAYA_NAME_Y (SAYA_BOX_Y - 24)
-#define SAYA_UI_MAX_ROWS 6
+#define SAYA_UI_MAX_ROWS 10
 // 正文行高/行数:必须与 tools/saya_font.py 的 EXTRA_LEADING(字号+3)和
 // main/saya_app.c 的 layout_for() 一致,否则最后一行会被裁掉或留下大片空白。
 #define SAYA_LINE_H 19
 #define SAYA_TEXT_LINES 4
 
+// 选项面板：底部对话框之上的可用区里垂直居中（面板 90px → (150-90)/2 = 30）。
+#define SAYA_CHOICE_Y ((SAYA_BOX_Y - SAYA_BOX_H) / 2)
+
 typedef enum {
-    SAYA_PAGE_WARNING = 0,
+    SAYA_PAGE_START = 0,   // 开机首屏:只有“开始游戏”一个入口
+    SAYA_PAGE_WARNING,     // 只用于深睡提示屏(启动流程不再经过内容警告)
     SAYA_PAGE_TITLE,
     SAYA_PAGE_GAME,
     SAYA_PAGE_MENU,
@@ -59,7 +63,8 @@ typedef struct {
 typedef struct {
     saya_image_t art;                 // 画面区画布
 
-    struct _lv_obj_t *box;            // 正文文本框
+    struct _lv_obj_t *box;            // 正文文本框(面板)
+    struct _lv_obj_t *text_view;      // 文本框内的可滚动正文容器(上/下短按滚动)
     struct _lv_obj_t *name;
     struct _lv_obj_t *text;
     struct _lv_obj_t *battery;        // 画面区右上角电量
@@ -72,12 +77,14 @@ typedef struct {
     int choice_selected;
 
     saya_list_t title_menu;
+    saya_list_t start_menu;           // 开机首屏的单行菜单
     saya_list_t menu;
     saya_list_t settings_menu;
     saya_list_t slots_menu;
     saya_list_t about_menu;
 
     struct _lv_obj_t *page_warning;
+    struct _lv_obj_t *page_start;
     struct _lv_obj_t *page_title;
     struct _lv_obj_t *page_game;
     struct _lv_obj_t *page_menu;
@@ -127,6 +134,14 @@ void saya_ui_set_text(saya_ui_t *ui, const char *speaker, const char *page_text,
 void saya_ui_show_full_text(saya_ui_t *ui);
 bool saya_ui_typing(const saya_ui_t *ui);
 void saya_ui_set_chapter(saya_ui_t *ui, const char *text);
+// 上/下短按滚动正文(内容不超出面板时无可滚动范围,LVGL 会自行夹紧)。
+void saya_ui_scroll_text(saya_ui_t *ui, int dy);
+
+// 对话框透明度(百分比 10–55,默认 30)。
+void saya_ui_set_panel_transparency(saya_ui_t *ui, uint8_t percent);
+
+// 开机首屏的单行菜单。
+void saya_ui_set_start_rows(saya_ui_t *ui, const char *const *labels, int count, int selected);
 
 // 文字大小:切换正文/名字所用字号,并返回该字号对应的分页参数。
 void saya_ui_set_font_size(saya_ui_t *ui, bool large);

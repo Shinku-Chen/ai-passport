@@ -4,6 +4,8 @@
 #include "esp_log.h"
 #include "lvgl.h"
 
+#include "saya_save.h"   // saya_panel_opa()：透明度百分比换算
+
 #include <stdio.h>
 #include <string.h>
 
@@ -212,6 +214,8 @@ void saya_ui_set_text(saya_ui_t *ui, const char *speaker, const char *page_text,
     ui->typing_shown[0] = '\0';
     ui->typing_step_ms = ms_per_char;
     lv_label_set_text(ui->text, "");
+    // 新一页从顶部开始(上一页滚动过的话)。
+    if (ui->text_view) lv_obj_scroll_to_y(ui->text_view, 0, LV_ANIM_OFF);
 
     if (len == 0 || ms_per_char == 0 || !ui->typewriter_timer) {
         memcpy(ui->typing_shown, ui->typing_target, len);
@@ -232,6 +236,29 @@ void saya_ui_set_chapter(saya_ui_t *ui, const char *text)
 {
     if (!ui) return;
     lv_label_set_text(ui->chapter, text ? text : "");
+}
+
+void saya_ui_scroll_text(saya_ui_t *ui, int dy)
+{
+    if (!ui || !ui->text_view || dy == 0) return;
+    // 同 about:界面层 dy > 0 表示往下看,LVGL 要负值。
+    lv_obj_scroll_by(ui->text_view, 0, -dy, LV_ANIM_OFF);
+}
+
+void saya_ui_set_panel_transparency(saya_ui_t *ui, uint8_t percent)
+{
+    if (!ui) return;
+    const lv_opa_t opa = (lv_opa_t)saya_panel_opa(percent);
+    if (ui->box) lv_obj_set_style_bg_opa(ui->box, opa, LV_PART_MAIN);
+    if (ui->choice_box) lv_obj_set_style_bg_opa(ui->choice_box, opa, LV_PART_MAIN);
+}
+
+void saya_ui_set_start_rows(saya_ui_t *ui, const char *const *labels, int count, int selected)
+{
+    if (!ui) return;
+    list_set_rows(&ui->start_menu, labels, NULL, count);
+    list_select(&ui->start_menu, selected);
+    list_set_values_font(&ui->start_menu, ui->font_small);
 }
 
 void saya_ui_set_battery(saya_ui_t *ui, int percent)
@@ -256,6 +283,7 @@ void saya_ui_set_font_size(saya_ui_t *ui, bool large)
     lv_obj_set_style_text_font(ui->about_text, font, LV_PART_MAIN);
     about_update_hint(ui);   // 字号变了,关于正文可能才刚超出/刚好放得下
     list_apply_font(&ui->title_menu, font);
+    list_apply_font(&ui->start_menu, font);
     list_apply_font(&ui->menu, font);
     list_apply_font(&ui->settings_menu, font);
     list_apply_font(&ui->slots_menu, font);
@@ -278,6 +306,7 @@ void saya_ui_set_font_size(saya_ui_t *ui, bool large)
 // ---------------------------------------------------------------- 页面
 static void page_visibility(saya_ui_t *ui, saya_page_t page)
 {
+    lv_obj_set_flag(ui->page_start, LV_OBJ_FLAG_HIDDEN, true);
     lv_obj_set_flag(ui->page_warning, LV_OBJ_FLAG_HIDDEN, true);
     lv_obj_set_flag(ui->page_title, LV_OBJ_FLAG_HIDDEN, true);
     lv_obj_set_flag(ui->page_game, LV_OBJ_FLAG_HIDDEN, true);
@@ -288,6 +317,7 @@ static void page_visibility(saya_ui_t *ui, saya_page_t page)
     lv_obj_set_flag(ui->page_about, LV_OBJ_FLAG_HIDDEN, true);
 
     switch (page) {
+    case SAYA_PAGE_START: lv_obj_set_flag(ui->page_start, LV_OBJ_FLAG_HIDDEN, false); break;
     case SAYA_PAGE_WARNING: lv_obj_set_flag(ui->page_warning, LV_OBJ_FLAG_HIDDEN, false); break;
     case SAYA_PAGE_TITLE: lv_obj_set_flag(ui->page_title, LV_OBJ_FLAG_HIDDEN, false); break;
     case SAYA_PAGE_GAME: lv_obj_set_flag(ui->page_game, LV_OBJ_FLAG_HIDDEN, false); break;
@@ -320,8 +350,8 @@ void saya_ui_show_choices(saya_ui_t *ui, const char *first, const char *second)
     ui->choice_selected = 0;
     lv_label_set_text(ui->choice_texts[0], first ? first : "");
     lv_label_set_text(ui->choice_texts[1], second ? second : "");
-    lv_label_set_text(ui->name, "");
-    lv_label_set_text(ui->text, "");
+    // 台词留在底部对话框里,选项面板叠在画面中部(框架规范)。
+    lv_obj_move_foreground(ui->choice_box);
     lv_obj_set_flag(ui->choice_box, LV_OBJ_FLAG_HIDDEN, false);
     saya_ui_set_choice_selected(ui, 0);
 }
@@ -435,16 +465,26 @@ bool saya_ui_create(saya_ui_t *ui, uint16_t *art_pixels, uint8_t *sprite_scratch
     lv_obj_set_style_pad_ver(ui->name, 1, LV_PART_MAIN);
     lv_obj_set_style_radius(ui->name, 6, LV_PART_MAIN);
 
-    ui->text = lv_label_create(ui->box);
+    // 正文放进可滚动容器:上/下短按滚动正文(见 saya_ui_scroll_text)。
+    // 分页保证一页正好 4 行,正常情况下没有可滚动范围。
+    ui->text_view = lv_obj_create(ui->box);
+    lv_obj_remove_style_all(ui->text_view);
+    lv_obj_set_pos(ui->text_view, 10, 7);   // 面板 90px 高、正文 76px:上下各留一点
+    lv_obj_set_size(ui->text_view, SAYA_UI_W - 20, SAYA_TEXT_LINES * SAYA_LINE_H);
+    lv_obj_set_style_pad_all(ui->text_view, 0, LV_PART_MAIN);
+    lv_obj_set_scroll_dir(ui->text_view, LV_DIR_VER);
+    lv_obj_set_scrollbar_mode(ui->text_view, LV_SCROLLBAR_MODE_OFF);
+
+    ui->text = lv_label_create(ui->text_view);
     lv_obj_set_style_text_font(ui->text, font_small, LV_PART_MAIN);
     lv_obj_set_style_text_color(ui->text, lv_color_hex(COL_TEXT), LV_PART_MAIN);
-    // 正文区:底部留出约 7px 边距,最后一行不再贴底(行高见 tools/saya_font.py)。
-    lv_obj_set_pos(ui->text, 10, 7);   // 面板 90px 高、正文 76px:上下各留一点
-    lv_obj_set_size(ui->text, SAYA_UI_W - 20, SAYA_TEXT_LINES * SAYA_LINE_H);
+    lv_obj_set_pos(ui->text, 0, 0);
+    lv_obj_set_width(ui->text, SAYA_UI_W - 20);
     lv_label_set_long_mode(ui->text, LV_LABEL_LONG_WRAP);
 
-    // 选项页(同一区域,盖住文本框)
-    ui->choice_box = make_box(ui->page_game);
+    // 选项面板:屏幕中部(底部对话框之上),显示时移到最前。
+    ui->choice_box = make_box(root);
+    lv_obj_set_pos(ui->choice_box, 0, SAYA_CHOICE_Y);
     for (int i = 0; i < 2; ++i) {
         lv_obj_t *row = lv_obj_create(ui->choice_box);
         lv_obj_remove_style_all(row);
@@ -464,6 +504,14 @@ bool saya_ui_create(saya_ui_t *ui, uint16_t *art_pixels, uint8_t *sprite_scratch
         ui->choice_texts[i] = label;
     }
     lv_obj_set_flag(ui->choice_box, LV_OBJ_FLAG_HIDDEN, true);
+
+    // 开机首屏(框架规范):标题图 + 下沿“开始游戏”单行入口。
+    ui->page_start = lv_obj_create(root);
+    lv_obj_remove_style_all(ui->page_start);
+    lv_obj_set_size(ui->page_start, SAYA_UI_W, SAYA_BOX_H);
+    lv_obj_set_pos(ui->page_start, 0, SAYA_BOX_Y);
+    lv_obj_set_flag(ui->page_start, LV_OBJ_FLAG_SCROLLABLE, false);
+    list_create(&ui->start_menu, ui->page_start, "", 36, (SAYA_BOX_H - 36) / 2);
 
     // 标题页(只放菜单,画面区显示标题图)
     ui->page_title = lv_obj_create(root);
@@ -747,12 +795,9 @@ void saya_ui_set_about_text(saya_ui_t *ui, const char *text)
     about_update_hint(ui);
 }
 
-// 只有正文超出容器高度时才显示"上/下 滚动"提示;刚好放得下就隐藏。
+// 屏内不显示按键提示(框架规范):关于页的滚动提示始终隐藏。
 static void about_update_hint(saya_ui_t *ui)
 {
-    if (!ui || !ui->about_view || !ui->about_hint) return;
-    lv_obj_update_layout(ui->about_view);
-    const bool overflow = lv_obj_get_scroll_bottom(ui->about_view) > 0;
-    if (overflow) lv_obj_remove_flag(ui->about_hint, LV_OBJ_FLAG_HIDDEN);
-    else lv_obj_add_flag(ui->about_hint, LV_OBJ_FLAG_HIDDEN);
+    if (!ui || !ui->about_hint) return;
+    lv_obj_add_flag(ui->about_hint, LV_OBJ_FLAG_HIDDEN);
 }

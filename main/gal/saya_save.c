@@ -29,7 +29,9 @@ void saya_settings_default(saya_settings_t *settings)
     if (!settings) return;
     settings->text_speed = 1;   // 中速
     settings->font_large = 0;
+    settings->auto_play = 0;
     settings->seen_warning = 0;
+    settings->panel_transparency = SAYA_TRANSPARENCY_DEFAULT;
 }
 
 bool saya_save_init(void)
@@ -59,14 +61,21 @@ bool saya_settings_load(saya_settings_t *out)
     out->text_speed = blob[2] > 3 ? 1 : blob[2];
     out->font_large = blob[3] ? 1 : 0;
     out->seen_warning = len >= 5 && blob[4] ? 1 : 0;
+    // 后加的两个字段：旧 blob(5 字节)仍然可读，缺失时走默认值。
+    out->auto_play = len >= 6 ? (blob[5] ? 1 : 0) : 0;
+    out->panel_transparency =
+        (len >= 7 && blob[6] >= SAYA_TRANSPARENCY_MIN && blob[6] <= SAYA_TRANSPARENCY_MAX)
+            ? blob[6]
+            : SAYA_TRANSPARENCY_DEFAULT;
     return true;
 }
 
 bool saya_settings_store(const saya_settings_t *settings)
 {
     if (!settings || !s_ready) return false;
-    const uint8_t blob[5] = { CFG_MAGIC, CFG_VERSION, settings->text_speed,
-                              settings->font_large, settings->seen_warning };
+    const uint8_t blob[7] = { CFG_MAGIC, CFG_VERSION, settings->text_speed,
+                              settings->font_large, settings->seen_warning,
+                              settings->auto_play, settings->panel_transparency };
     if (nvs_set_blob(s_handle, KEY_CFG, blob, sizeof(blob)) != ESP_OK) return false;
     return nvs_commit(s_handle) == ESP_OK;
 }
