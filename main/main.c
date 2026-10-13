@@ -1,9 +1,10 @@
-// main/main.c —— 《沙耶之歌》AI Passport 移植:开机直接进阅读器(横屏 320x240)。
+// main/main.c —— 《沙耶之歌》AI Passport 移植（GalGame 框架，横屏 320x240）。
 //
-// 按键语义:
+// 按键语义（框架规范）:
+//   开机首屏    确定进入标题页
 //   标题/列表页 上、下移动光标(到顶/到底停住),确定进入,长按确定返回
-//   正文页      确定打开菜单;上 短按=下一段(打字中先补全)、长按=快进、松手停;
-//               下 短按=回看上一页
+//   正文页      确定 短按=下一句(打字中先补全)、长按=打开设置;
+//               上 长按=快进、松手停;下 长按=自动阅读开关;上/下 短按=滚动正文
 //   选项页      上、下选择,确定确认
 //   关于页      上、下滚动正文,确定返回
 //
@@ -243,8 +244,8 @@ void app_main(void)
 
     ESP_LOGI(TAG, "空闲堆 %u 字节,最大连续块 %u 字节", (unsigned)esp_get_free_heap_size(),
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
-    ESP_LOGI(TAG, "就绪:横屏阅读器;确定开菜单,上 下一段/快进,下 回看/长按自动播放;"
-                  "空闲 %us 调暗,%us 熄屏,%us 休眠",
+    ESP_LOGI(TAG, "就绪:横屏阅读器(框架版);确定 短按=下一句/长按=设置,"
+                  "上 长按=快进,下 长按=自动阅读;空闲 %us 调暗,%us 熄屏,%us 休眠",
              (unsigned)(SAYA_DIM_MS / 1000), (unsigned)(SAYA_SCREEN_OFF_MS / 1000),
              (unsigned)(SAYA_SLEEP_MS / 1000));
 }
