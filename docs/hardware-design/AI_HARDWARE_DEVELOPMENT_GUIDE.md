@@ -193,7 +193,26 @@ IRAM-safe interrupts do not keep a Flash-resident producer running or provide un
 
 ## 9. CW2017 fuel gauge
 
-Initialization reads VERSION and checks the profile update flag plus all 80 profile bytes. When needed, it puts the gauge to sleep, writes and verifies the supplied profile for the specified 500 mAh cell, sets the update flag, restarts the gauge with the required `0x30` to `0x00` sequence, and waits up to five seconds for a valid SOC. Replacing the cell requires a matching vendor-generated profile and renewed charge/discharge validation.
+The configured cell is Wanli New Energy 500 mAh, using profile2 / XIL40X dated
+2026-10-20. The exact [80-byte vendor profile](../../assets/battery/wanli-500mah-profile2-xil40x-20261020.txt)
+and its [source/hash record](../../assets/README.md#battery-profiles) are retained
+with the firmware. It replaces the previous cell profile; equal nominal capacity
+does not make profiles interchangeable. This change does not alter the charging
+circuit, current, voltage limits, pin map, Flash partitions, or NVS format.
+
+Initialization reads VERSION and checks the profile update flag plus all 80 profile bytes. When needed, it puts the gauge to sleep, writes and verifies the configured profile, sets the update flag, restarts the gauge with the required `0x30` to `0x00` sequence, and waits up to five seconds for a valid SOC. A matching profile is reused without rewriting. The ready log reports observed SOC and voltage (`-1` means an unavailable read). Replacing the cell requires a matching vendor-generated profile and renewed charge/discharge validation.
+
+The readiness check accepts SOC in the range 0..100; it does not wait for a
+nonzero voltage measurement. A successful initialization therefore does not
+guarantee that the first SOC/voltage snapshot has settled after a profile update.
+Recheck subsequent readings rather than treating an initial zero as calibration
+evidence.
+
+On an upgrade, check the first boot's profile-write and ready logs, then reboot
+and confirm the matching-profile path and plausible SOC/mV. A successful write,
+readback, or boot does not establish SOC accuracy across charge/discharge cycles,
+temperatures, or loads. Boards retaining another cell need that cell's matching
+profile, not this replacement merely because the capacity is also 500 mAh.
 
 - SOC uses registers `0x04–0x05`; values above 100 are treated as not ready and return `-1`.
 - Voltage uses the 14-bit value at `0x02–0x03`, converted as `raw × 312.5 µV`, and returned in mV.
