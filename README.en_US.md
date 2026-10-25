@@ -14,10 +14,19 @@ This is the application built on this `feature/cheerful-goodall` branch.
 Three keys drive the app (button callbacks run in the button task, so they stay
 non-blocking; the animation loop runs on an LVGL timer):
 
-- **Hold UP** — play the guide animation ("what should we eat for lunch?").
-- **Hold DOWN** — spin through the food-selector animation.
-- **Release** — stop on the current frame (the food you landed on).
-- **OK (hold)** — return to the menu (intercepted by `main.c`).
+- **Press any key (UP / DOWN / OK)** — draw lots: pick this round's type at random,
+  then start spinning from a random frame of that type.
+- **Release** — stop on the last frame shown; the frame already carries the dish or
+  place name, and that is the result.
+- **OK (long press)** — toggle the render path (LVGL partial redraw / direct panel
+  blit); hardware A/B only.
+
+Each of the two types is a frame sequence, chosen with equal probability per press:
+
+| Type | Badge label | Content | Frames / rate |
+| --- | --- | --- | --- |
+| Place roulette | `PLACE` | McDonald's, a glasshouse, stir-fry, sushi… | 20 frames / 10 fps |
+| Dish roulette | `DISH` | Shaxian snacks, Lanzhou noodles, burger, hotpot… | 21 frames / 20 fps |
 
 The "release" is detected by polling `bsp_button_read_mv()` (this BSP has no
 RELEASE event): released ≈ 3300 mV, pressed < 2000 mV.

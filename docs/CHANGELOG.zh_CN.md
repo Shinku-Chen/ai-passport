@@ -6,6 +6,7 @@
 
 ## Unreleased
 
+- 「今天吃啥」交互改为与需求一致：按下任意键即用 `esp_random()` 随机抽签——先等概率选两种类型之一（`PLACE` 去处盘，10 fps；`DISH` 菜品盘，20 fps），再从该类型的随机一帧开始高速滚动（不再固定从第 0 帧起）。松开后停在最后一次显示的帧上（原先会先多跳一帧再停）。渲染路径 A/B 开关从「单击 OK」改为「长按 OK」，使任意键按下都能开始抽签。新增纯逻辑 `ui_eatwhat_pick_type()` / `ui_eatwhat_start_frame()`（`main/ui_eatwhat_math.c`），由 `tests/test_ui_eatwhat_math.c` 覆盖。
 - 新增演示应用「今天吃啥」：按键驱动的轮盘，按住按键循环播放两份 GIF 来源的食物动画，松开即停在当前帧。实现为 `main/demo_eat_what.c`，基于 LVGL I8 索引色二进制素材（`main/eat_what_g1.bin` / `eat_what_g2.bin`，经 `EMBED_FILES` 嵌入），配套纯状态机模块 `main/ui_eatwhat_math.c` 与素材生成脚本 `tools/generate_eat_what_assets.py`。按住上键循环「午餐引导」动画（10 fps），按住下键循环「食物选择器」动画（20 fps），松开停在当前帧。
 - 新增全局自动关机：任意外设/页面 2 分钟无按键活动即关闭背光并进入深睡，由 GPIO0 低电平唤醒（板级外部 10k 上拉维持常态高，按下任意键即拉低）。实现于 `main/autopower.c`，闲置判定为纯逻辑 `main/ui_autopower_math.c`。因 ESP32-C3 无 EXT0/EXT1，改用 RTC GPIO0 结合外部上拉实现低电平唤醒。
 - 固件精简为单应用：开机直接进入「今天吃啥」，不再有主菜单。从 `main/CMakeLists.txt` 移除其他演示页（Display/Button/Audio/Battery/Radio/Wi-Fi/BLE/Low Power）及其构建依赖（`bt`、`esp_netif`、`esp_wifi`），`main/main.c` 与 `main/demo.h` 收窄为单个应用。Wi-Fi/蓝牙协议栈与音频/电量外设不再于开机时初始化。

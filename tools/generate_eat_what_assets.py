@@ -2,8 +2,8 @@
 # tools/generate_eat_what_assets.py —— 把两份 GIF 素材转成 LVGL I8 索引色二进制。
 #
 # 输出(默认写入 main/ 组件目录,供 CMake EMBED_FILES 嵌入 flash):
-#   eat_what_g1.bin   引导 GIF(今天午餐要吃什么呢)- RES 分辨率帧序列
-#   eat_what_g2.bin   食物 GIF(今天吃什么选择器)- 同上
+#   eat_what_g1.bin   去处盘 GIF(今天午餐要吃什么呢)- RES 分辨率帧序列
+#   eat_what_g2.bin   菜品盘 GIF(今天吃什么选择器)- 同上
 #   eat_what_assets.h 帧数/帧间隔/分辨率/符号声明
 #
 # 格式(每帧,LVGL LV_COLOR_FORMAT_I8 布局,与 v9.5 bin decoder 一致):
@@ -77,9 +77,9 @@ def main():
 #define EAT_WHAT_FRAME_BYTES   {FRAME_BYTES}   // 每帧字节 = 调色板 + 像素
 #define EAT_WHAT_PALETTE_BYTES {PALETTE_BYTES}
 
-#define EAT_WHAT_G1_FRAMES     {n1}            // 引导: 今天午餐要吃什么呢?
+#define EAT_WHAT_G1_FRAMES     {n1}            // 去处盘: 今天午餐吃什麼呢?
 #define EAT_WHAT_G1_DELAY_MS   100             // 原速 10 fps
-#define EAT_WHAT_G2_FRAMES     {n2}            // 食物: 今天吃什么选择器
+#define EAT_WHAT_G2_FRAMES     {n2}            // 菜品盘: 今天吃什么选择器
 #define EAT_WHAT_G2_DELAY_MS   50              // 原速 20 fps
 
 // ESP-IDF EMBED_FILES 生成的符号(指向 flash 中的 .rodata)。
@@ -93,8 +93,8 @@ extern const uint8_t _binary_eat_what_g2_bin_end[];
 
     mb = lambda n: n / 1024 / 1024
     print(f"RES={RES}  每帧={FRAME_BYTES}B")
-    print(f"G1(引导) {n1}帧 -> eat_what_g1.bin {mb(g1_size):.2f} MB")
-    print(f"G2(食物) {n2}帧 -> eat_what_g2.bin {mb(g2_size):.2f} MB")
+    print(f"G1(去处盘) {n1}帧 -> eat_what_g1.bin {mb(g1_size):.2f} MB")
+    print(f"G2(菜品盘) {n2}帧 -> eat_what_g2.bin {mb(g2_size):.2f} MB")
     print(f"合计      {n1+n2}帧 -> {mb(total):.2f} MB")
     print(f"已写 {OUT_DIR}/eat_what_g1.bin, eat_what_g2.bin, eat_what_assets.h")
 

@@ -1,13 +1,32 @@
-// tests/test_ui_eatwhat_math.c —— 「今天吃啥」状态机纯逻辑的宿主测试。
+// tests/test_ui_eatwhat_math.c —— 「今天吃啥」抽签/播放纯逻辑的宿主测试。
 #include <assert.h>
+#include <stdint.h>
 #include "ui_eatwhat_math.h"
 
 int main(void)
 {
-    // 按键 -> 素材序列:UP=引导(0), DOWN=食物(1), 其它=无。
-    assert(ui_eatwhat_anim_for_btn(0) == 0);
-    assert(ui_eatwhat_anim_for_btn(1) == 1);
-    assert(ui_eatwhat_anim_for_btn(2) == -1);
+    // 抽类型:两种类型等概率,按 rng 取模。
+    assert(ui_eatwhat_pick_type(0) == 0);
+    assert(ui_eatwhat_pick_type(1) == 1);
+    assert(ui_eatwhat_pick_type(2) == 0);
+    assert(ui_eatwhat_pick_type(3) == 1);
+    assert(ui_eatwhat_pick_type(0xFFFFFFFFu) == 1);
+    // 任意 rng 都必须落在 [0, EATWHAT_TYPE_COUNT) 内(索引 s_anims[] 的合法范围)。
+    for (uint32_t i = 0; i < 1000; i++) {
+        int t = ui_eatwhat_pick_type(i * 2654435761u);
+        assert(t >= 0 && t < EATWHAT_TYPE_COUNT);
+    }
+
+    // 抽起始帧:落在 [0, frames) 内;frames==0 时保护为 0。
+    assert(ui_eatwhat_start_frame(0, 21) == 0);
+    assert(ui_eatwhat_start_frame(5, 21) == 5);
+    assert(ui_eatwhat_start_frame(21, 21) == 0);
+    assert(ui_eatwhat_start_frame(100, 20) == 0);
+    assert(ui_eatwhat_start_frame(12345, 0) == 0);
+    for (uint32_t i = 0; i < 1000; i++) {
+        assert(ui_eatwhat_start_frame(i * 2654435761u, 20) < 20);
+        assert(ui_eatwhat_start_frame(i * 2654435761u, 21) < 21);
+    }
 
     // 帧推进回绕。
     assert(ui_eatwhat_next_frame(0, 5) == 1);

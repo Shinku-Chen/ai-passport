@@ -7,9 +7,9 @@
 #define EAT_WHAT_FRAME_BYTES   41024   // 每帧字节 = 调色板 + 像素
 #define EAT_WHAT_PALETTE_BYTES 1024
 
-#define EAT_WHAT_G1_FRAMES     20            // 引导: 今天午餐要吃什么呢?
+#define EAT_WHAT_G1_FRAMES     20            // 去处盘: 今天午餐吃什麼呢?
 #define EAT_WHAT_G1_DELAY_MS   100             // 原速 10 fps
-#define EAT_WHAT_G2_FRAMES     21            // 食物: 今天吃什么选择器
+#define EAT_WHAT_G2_FRAMES     21            // 菜品盘: 今天吃什么选择器
 #define EAT_WHAT_G2_DELAY_MS   50              // 原速 20 fps
 
 // ESP-IDF EMBED_FILES 生成的符号(指向 flash 中的 .rodata)。
