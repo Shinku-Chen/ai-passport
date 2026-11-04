@@ -1,4 +1,6 @@
 # Name,   Type, SubType, Offset,   Size,     Flags
-nvs,      data, nvs,     0x9000,   0x6000,
-phy_init, data, phy,     0xf000,   0x1000,
-factory,  app,  factory, 0x10000,  0x7f0000,
+# ESP-IDF 要求 app 分区 64KB 对齐。把 app 放到 0x20000，NVS 提到 88KB：
+# 30 个手动档 + 独立自动档 + 周目/鉴赏进度 + 设置都有足够空间。
+nvs,      data, nvs,     0x9000,   0x16000,
+phy_init, data, phy,     0x1F000,  0x1000,
+factory,  app,  factory, 0x20000,  0x7E0000,

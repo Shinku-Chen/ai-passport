@@ -11,3 +11,8 @@ managed_components/
 /.agents/skills/passport-build
 /.agents/skills/passport-device-test
 /.agents/skills/passport-debug
+
+# Local Summer Pockets analysis scratch (font source, probe binaries, pack copies).
+.work/
+__pycache__/
+tools/__pycache__/

@@ -16,6 +16,37 @@ ESP32-C3、240×320 彩屏、三键操作、8 MB Flash、无 PSRAM）的开发�
 
 ## 项目
 
+### Summer Pockets REFLECTION BLUE 阅读器
+
+把 AI Passport 变成 320×240 横屏阅读器，移植 RW5《Summer Pockets REFLECTION
+BLUE》源快照：422 个场景、81,040 句正文、188 组选项、27 个地图阶段、14 条路线/
+252 个章节入口、136 组 CG（712 张差分）与 292 张立绘/表情全部打包；标题、正文、
+选项、菜单、历史、30 个手动档 + 独立自动档、章节/路线、CG 鉴赏与 14 结局进度均可用。
+
+- 分支：[`feature/port-summer-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-summer-landscape)
+- 技术说明：[`docs/development/engineering/galgame-summer.md`](docs/development/engineering/galgame-summer.md)
+- 状态：本地构建/测试/归档完成；**未刷机、未 commit/push、未上架**。
+
+**操作方式（三键）：** 正文 UP 推进、长按 UP 快进（松手停）；DOWN 历史、长按
+DOWN 自动阅读；OK 菜单。选项页 UP/DOWN 选择，OK 短按确认、长按菜单。列表
+UP/DOWN + OK，长按 OK 返回。
+
+**当前构建：** app 7,585,296 B / full 7,716,368 B；16px 完整字库 3,802 码位、
+0 缺字；88 KiB NVS 存档区。地图预览按源只执行到第一次场景变化；日期保存原始
+全角值；版本 2 存档保留全部 256 个地图访问位；2,842 条说话人标签按源
+`names.js` 使用全名。标题 BGM/语音与小游戏按源范围未收录；真机项标注 NOT RUN。
+
+源/C 同状态轨迹已逐行核对 10 组（原九组 + chapter137；scene177 显示
+`8月30日`，不再退 `7月29日`）；观察到结局 4/13/8/9 与特定策略下的 map
+exhaustion，其余结局终点未逐条实测。Host 门禁有源 24/24 PASS（Summer gate
+15/15）；缺少 `SUMMER_SOURCE` 时 23 PASS + 1 PARTIAL（Summer gate 13 PASS/
+2 SKIP），每个 case 的日志与二进制保留在 `build/`。独立源语义复核 r2/r3 的
+F1/F3/F4/F5/F6 目标项已闭环，F2 显示层与 header 越界 guard 本轮修复。最终
+header 复核 **PASS、无阻断**（`build/review-final-header-20261102T061006Z/REPORT.md`），
+软件审核已通过，**设备验收仍待完成**。14 结局元数据完整不等于 14 端点全实走：
+目前实际走通 4/13/8/9，`lf` 与源同样在 `281:1404` MEXHAUST；Device 仍为
+NOT RUN。Git Bash 固件包装为 PARTIAL，原生 PowerShell 构建才是 PASS。
+
 ### 音效钥匙扣（Voice Keychain）
 
 把 AI Passport 变成口袋音频播放器的音效钥匙扣：开机即进入应用，播放来自几十个角色包的

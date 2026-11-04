@@ -17,6 +17,48 @@ attached to this repository's [Releases](https://github.com/Shinku-Chen/ai-passp
 
 ## Projects
 
+### Summer Pockets REFLECTION BLUE Reader
+
+Turns the AI Passport into a 320×240 landscape reader for the RW5 Summer Pockets
+REFLECTION BLUE source snapshot: 422 scenes, 81,040 dialogue/narration ops,
+188 choice groups, 27 map stages, 14 routes / 252 chapter entries, 136 CG groups
+(712 variants) and 292 portraits/expressions are all packed. Title, dialogue,
+choices, menus, history, 30 manual slots + an independent auto slot, chapters/
+routes, CG gallery and progress for all 14 endings are implemented.
+
+- Branch: [`feature/port-summer-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-summer-landscape)
+- Technical notes: [`docs/development/engineering/galgame-summer.md`](docs/development/engineering/galgame-summer.md)
+- Status: local build/test/archive complete; **not flashed, committed, pushed or published**.
+
+**Controls (three keys):** UP advances dialogue; hold UP fast-forwards and stops
+on release. DOWN opens history; hold DOWN toggles auto-read. OK opens the menu.
+On choices UP/DOWN select, short OK confirms, long OK opens the menu. Lists use
+UP/DOWN + OK, long OK returns.
+
+**Current build:** app 7,585,296 B / full 7,716,368 B; 16 px CJK subset with
+3,802 codepoints and 0 missing glyphs; 88 KiB NVS. Map preview stops at the first
+scene change as the source does; dates keep the raw full-width value; the
+version 2 save keeps all 256 map-visited bits; 2,842 speaker labels follow source
+`names.js` `fullName`. Title BGM/voice and minigames remain outside the RW5
+source range; device checks are NOT RUN.
+
+The same-state source/C trace is line-identical for ten tracked cases (the prior
+nine plus chapter 137; scene 177 now shows the inherited 8/30 date instead of
+the old 7/29 fallback);
+observed endpoints are endings 4/13/8/9 plus one strategy-specific map
+exhaustion. The remaining ending endpoints are not path-tested. Host gate:
+24/24 PASS with source (Summer gate 15/15); without `SUMMER_SOURCE` it is
+23 PASS + 1 PARTIAL (Summer gate 13 PASS/2 SKIP), with per-case logs and
+binaries retained under `build/`. Independent source review r2/r3 is closed for
+F1/F3/F4/F5/F6, and F2's display layer plus the header-boundary guard are
+fixed this round. The final header review is **PASS with no blockers**
+(`build/review-final-header-20261102T061006Z/REPORT.md`); software acceptance
+has passed and **device acceptance is still pending**. Complete 14-ending
+metadata is not a claim that all 14 endpoints were walked: only 4/13/8/9 were
+observed, and `lf` matches the source MEXHAUST at `281:1404`. Device tests
+remain NOT RUN. Git Bash firmware packaging is PARTIAL; the native PowerShell
+build is the PASS result.
+
 ### Voice Keychain
 
 A sound-effects keychain that turns the AI Passport into a pocket audio player:
