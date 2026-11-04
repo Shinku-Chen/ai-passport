@@ -1,0 +1,5 @@
+dependencies:
+  idf: ">=5.5.3,<5.6.0"
+  # 背景/立绘/CG 都走 JPEG:需要组件自带的 TJpgDec(非 ROM 旧版),
+  # 才能 RGB565 输出 + 回调逐块合成到 320x180 画布。
+  espressif/esp_jpeg: "^1.3.1"

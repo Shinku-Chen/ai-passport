@@ -86,10 +86,21 @@ void esp_deep_sleep_start(void);
 void esp_restart(void);
 int64_t esp_timer_get_time(void);
 
-typedef struct { int unused; } lv_obj_t;
+typedef struct { int x; int y; } lv_obj_t;
 typedef struct { int unused; } lv_timer_t;
 typedef struct { int unused; } lv_font_t;
 extern const lv_font_t lv_font_montserrat_14;
+// 基线 demo 现在链接真实 main/ui_pixel.c,这里补齐它用到的 LVGL 面。
+extern const lv_font_t lv_font_montserrat_20;
+typedef uint8_t lv_opa_t;
+typedef struct _lv_anim_t { int unused; } lv_anim_t;
+typedef void (*lv_anim_exec_xcb_t)(void *var, int32_t value);
+typedef int32_t (*lv_anim_path_cb_t)(const lv_anim_t *anim);
+#define LV_OBJ_FLAG_SCROLLABLE 0x0001u
+#define LV_OPA_TRANSP 0
+#define LV_OPA_20 51
+#define LV_OPA_COVER 255
+#define LV_ANIM_REPEAT_INFINITE (-1)
 #define LV_RADIUS_CIRCLE 1000
 #define LV_TEXT_ALIGN_CENTER 0
 #define LV_LABEL_LONG_WRAP 0
@@ -101,8 +112,16 @@ lv_obj_t *lv_obj_create(lv_obj_t *parent);
 lv_obj_t *lv_label_create(lv_obj_t *parent);
 void lv_obj_set_size(lv_obj_t *object, int width, int height);
 void lv_obj_set_width(lv_obj_t *object, int width);
+void lv_obj_set_pos(lv_obj_t *object, int x, int y);
+void lv_obj_set_y(lv_obj_t *object, int y);
+int lv_obj_get_y(lv_obj_t *object);
+void lv_obj_remove_flag(lv_obj_t *object, uint32_t flag);
 void lv_obj_set_style_radius(lv_obj_t *object, int radius, int selector);
 void lv_obj_set_style_bg_color(lv_obj_t *object, uint32_t color, int selector);
+void lv_obj_set_style_bg_opa(lv_obj_t *object, lv_opa_t opa, int selector);
+void lv_obj_set_style_opa(lv_obj_t *object, lv_opa_t opa, int selector);
+void lv_obj_set_style_pad_all(lv_obj_t *object, int pad, int selector);
+void lv_obj_set_style_border_color(lv_obj_t *object, uint32_t color, int selector);
 void lv_obj_set_style_border_width(lv_obj_t *object, int width, int selector);
 void lv_obj_set_style_text_color(lv_obj_t *object, uint32_t color, int selector);
 void lv_obj_set_style_text_align(lv_obj_t *object, int align, int selector);
@@ -116,6 +135,20 @@ void lv_label_set_long_mode(lv_obj_t *object, int mode);
 void lv_screen_load(lv_obj_t *screen);
 lv_timer_t *lv_timer_create(void (*callback)(lv_timer_t *), unsigned period, void *data);
 void lv_timer_delete(lv_timer_t *timer);
+
+// 动画面(ui_pixel.c 的小电视眨眼 / 跳跃)。
+void lv_anim_init(lv_anim_t *anim);
+void lv_anim_set_var(lv_anim_t *anim, void *var);
+void lv_anim_set_exec_cb(lv_anim_t *anim, lv_anim_exec_xcb_t exec_cb);
+void lv_anim_set_values(lv_anim_t *anim, int32_t start, int32_t end);
+void lv_anim_set_duration(lv_anim_t *anim, uint32_t duration);
+void lv_anim_set_playback_duration(lv_anim_t *anim, uint32_t duration);
+void lv_anim_set_repeat_delay(lv_anim_t *anim, uint32_t delay);
+void lv_anim_set_repeat_count(lv_anim_t *anim, int32_t count);
+void lv_anim_set_path_cb(lv_anim_t *anim, lv_anim_path_cb_t path_cb);
+void *lv_anim_start(const lv_anim_t *anim);
+void lv_anim_delete(void *var, lv_anim_exec_xcb_t exec_cb);
+int32_t lv_anim_path_step(const lv_anim_t *anim);
 
 typedef struct { int unused; } esp_netif_t;
 typedef struct { int unused; } esp_netif_config_t;

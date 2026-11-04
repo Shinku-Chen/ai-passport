@@ -164,6 +164,9 @@ static void list_ensure_row(gal_ui_t *ui, gal_list_t id, int index)
         lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
         lv_obj_align(label, LV_ALIGN_LEFT_MID, 8, 0);
     } else {
+        // 列表行强制单行：定宽 + CLIP，禁止 WRAP（长选项折行会压到下一行）。
+        lv_obj_set_width(label, width - 16 - 96);
+        lv_label_set_long_mode(label, LV_LABEL_LONG_CLIP);
         lv_obj_align(label, LV_ALIGN_LEFT_MID, 10, 0);
     }
 

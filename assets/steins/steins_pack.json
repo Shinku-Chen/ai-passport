@@ -1,0 +1,120 @@
+{
+  "pack": "D:\\Git-Workspace\\Shinku-Chen\\ai-passport-steins\\assets\\steins\\steins_pack.bin",
+  "pack_bytes": 6900805,
+  "pack_sha256": "5d97102c703cd04bdafc65c3c5791664b923697f538a2e48ff8ccf77f15f8be8",
+  "sections": {
+    "STRT": {
+      "count": 28963,
+      "bytes": 173778
+    },
+    "TXT": {
+      "count": 1115016,
+      "bytes": 1115016
+    },
+    "NODE": {
+      "count": 74,
+      "bytes": 1110
+    },
+    "CHUNKREF": {
+      "count": 2448,
+      "bytes": 4896
+    },
+    "CHUNK": {
+      "count": 625,
+      "bytes": 5000
+    },
+    "FRAME": {
+      "count": 33885,
+      "bytes": 338850
+    },
+    "VIEW": {
+      "count": 4245,
+      "bytes": 16980
+    },
+    "LAYER": {
+      "count": 10693,
+      "bytes": 128316
+    },
+    "ASSET": {
+      "count": 1080,
+      "bytes": 43200
+    },
+    "BLOB": {
+      "count": 5067653,
+      "bytes": 5067653
+    },
+    "CHOICE": {
+      "count": 65,
+      "bytes": 780
+    },
+    "CITEM": {
+      "count": 136,
+      "bytes": 1224
+    },
+    "CHAPTER": {
+      "count": 13,
+      "bytes": 104
+    },
+    "GAL": {
+      "count": 77,
+      "bytes": 616
+    },
+    "GENTRY": {
+      "count": 133,
+      "bytes": 532
+    },
+    "WLINE": {
+      "count": 74,
+      "bytes": 740
+    },
+    "WCHANGE": {
+      "count": 46,
+      "bytes": 368
+    },
+    "BREAK": {
+      "count": 92,
+      "bytes": 368
+    },
+    "UI": {
+      "count": 54,
+      "bytes": 216
+    },
+    "META": {
+      "count": 697,
+      "bytes": 697
+    }
+  },
+  "counts": {
+    "initial": 73,
+    "nodes": 74,
+    "frames": 33885,
+    "chunks": 625,
+    "views": 4245,
+    "layers": 10693,
+    "assets": 1080,
+    "chapters": 13,
+    "gallery_groups": 77,
+    "gallery_variants": 133,
+    "endings": 6,
+    "initial_worldline": "1.130426",
+    "true_worldline": "1.048596",
+    "canvas": "320x180 art area (432x243 source canvas, ratio 0.7407407)",
+    "scene_visible_h": 150,
+    "pack_scale": 0.92,
+    "jpeg_quality_min": 51,
+    "jpeg_quality_max": 92,
+    "jpeg_quality_mean": 53.25
+  },
+  "images": {
+    "assets": 1080,
+    "sprites": 709,
+    "backgrounds": 371,
+    "jpeg_bytes": 4533541,
+    "mask_bytes": 532498,
+    "quality_min": 51,
+    "quality_max": 92,
+    "quality_mean": 53.25
+  },
+  "ui_strings": 54,
+  "worldline_changes": 46
+}

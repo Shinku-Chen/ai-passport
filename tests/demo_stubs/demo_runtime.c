@@ -21,6 +21,7 @@ struct test_ble_hs_cfg ble_hs_cfg;
 int test_nimble_deinit_result, test_nimble_stop_result, test_nimble_name_result;
 unsigned test_nimble_deinits, test_nimble_stops;
 const lv_font_t lv_font_montserrat_14 = { 0 };
+const lv_font_t lv_font_montserrat_20 = { 0 };
 
 void test_log(const char *tag, const char *format, ...) { (void)tag; (void)format; }
 const char *esp_err_to_name(esp_err_t error) { (void)error; return "test error"; }
@@ -30,11 +31,110 @@ void lv_label_set_text(lv_obj_t *object, const char *text) {
     (void)object;
     snprintf(test_status, sizeof(test_status), "%s", text);
 }
-void bsp_display_backlight(uint8_t percent) { (void)percent; }
-void ui_pixel_mascot_jump(lv_obj_t *mascot) { (void)mascot; }
-void ui_pixel_set_selected(lv_obj_t *panel, bool selected, bool enabled) {
-    (void)panel; (void)selected; (void)enabled;
+
+// ---- LVGL host surface ----------------------------------------------------
+// The baseline demo tests link the real main/ui_pixel.c (which paints the demo
+// frame), so every LVGL call that file makes has to resolve here. Widgets are
+// inert: only geometry is tracked so the mascot jump has something to read.
+static lv_obj_t test_lv_pool[512];
+static unsigned test_lv_used;
+static lv_timer_t test_lv_timer;
+
+uint32_t lv_color_hex(uint32_t color) { return color; }
+
+lv_obj_t *lv_obj_create(lv_obj_t *parent) {
+    (void)parent;
+    if (test_lv_used >= sizeof(test_lv_pool) / sizeof(test_lv_pool[0])) return &test_lv_pool[0];
+    lv_obj_t *obj = &test_lv_pool[test_lv_used++];
+    obj->x = 0;
+    obj->y = 0;
+    return obj;
 }
+
+lv_obj_t *lv_label_create(lv_obj_t *parent) { return lv_obj_create(parent); }
+void lv_obj_set_size(lv_obj_t *object, int width, int height) {
+    (void)object; (void)width; (void)height;
+}
+void lv_obj_set_width(lv_obj_t *object, int width) { (void)object; (void)width; }
+void lv_obj_set_pos(lv_obj_t *object, int x, int y) {
+    if (!object) return;
+    object->x = x;
+    object->y = y;
+}
+void lv_obj_set_y(lv_obj_t *object, int y) { if (object) object->y = y; }
+int lv_obj_get_y(lv_obj_t *object) { return object ? object->y : 0; }
+void lv_obj_remove_flag(lv_obj_t *object, uint32_t flag) { (void)object; (void)flag; }
+void lv_obj_set_style_radius(lv_obj_t *object, int radius, int selector) {
+    (void)object; (void)radius; (void)selector;
+}
+void lv_obj_set_style_bg_color(lv_obj_t *object, uint32_t color, int selector) {
+    (void)object; (void)color; (void)selector;
+}
+void lv_obj_set_style_bg_opa(lv_obj_t *object, lv_opa_t opa, int selector) {
+    (void)object; (void)opa; (void)selector;
+}
+void lv_obj_set_style_opa(lv_obj_t *object, lv_opa_t opa, int selector) {
+    (void)object; (void)opa; (void)selector;
+}
+void lv_obj_set_style_pad_all(lv_obj_t *object, int pad, int selector) {
+    (void)object; (void)pad; (void)selector;
+}
+void lv_obj_set_style_border_color(lv_obj_t *object, uint32_t color, int selector) {
+    (void)object; (void)color; (void)selector;
+}
+void lv_obj_set_style_border_width(lv_obj_t *object, int width, int selector) {
+    (void)object; (void)width; (void)selector;
+}
+void lv_obj_set_style_text_color(lv_obj_t *object, uint32_t color, int selector) {
+    (void)object; (void)color; (void)selector;
+}
+void lv_obj_set_style_text_align(lv_obj_t *object, int align, int selector) {
+    (void)object; (void)align; (void)selector;
+}
+void lv_obj_set_style_text_font(lv_obj_t *object, const lv_font_t *font, int selector) {
+    (void)object; (void)font; (void)selector;
+}
+void lv_obj_center(lv_obj_t *object) {
+    (void)object;
+}
+void lv_obj_align(lv_obj_t *object, int align, int x, int y) {
+    (void)align; (void)x; (void)y;
+    lv_obj_set_pos(object, x, y);
+}
+void lv_obj_delete(lv_obj_t *object) { (void)object; }
+void lv_label_set_text_fmt(lv_obj_t *object, const char *format, ...) {
+    (void)object; (void)format;
+}
+void lv_label_set_long_mode(lv_obj_t *object, int mode) { (void)object; (void)mode; }
+void lv_screen_load(lv_obj_t *screen) { (void)screen; }
+lv_timer_t *lv_timer_create(void (*callback)(lv_timer_t *), unsigned period, void *data) {
+    (void)callback; (void)period; (void)data;
+    return &test_lv_timer;
+}
+void lv_timer_delete(lv_timer_t *timer) { (void)timer; }
+
+void lv_anim_init(lv_anim_t *anim) { if (anim) anim->unused = 0; }
+void lv_anim_set_var(lv_anim_t *anim, void *var) { (void)anim; (void)var; }
+void lv_anim_set_exec_cb(lv_anim_t *anim, lv_anim_exec_xcb_t exec_cb) {
+    (void)anim; (void)exec_cb;
+}
+void lv_anim_set_values(lv_anim_t *anim, int32_t start, int32_t end) {
+    (void)anim; (void)start; (void)end;
+}
+void lv_anim_set_duration(lv_anim_t *anim, uint32_t duration) { (void)anim; (void)duration; }
+void lv_anim_set_playback_duration(lv_anim_t *anim, uint32_t duration) {
+    (void)anim; (void)duration;
+}
+void lv_anim_set_repeat_delay(lv_anim_t *anim, uint32_t delay) { (void)anim; (void)delay; }
+void lv_anim_set_repeat_count(lv_anim_t *anim, int32_t count) { (void)anim; (void)count; }
+void lv_anim_set_path_cb(lv_anim_t *anim, lv_anim_path_cb_t path_cb) {
+    (void)anim; (void)path_cb;
+}
+void *lv_anim_start(const lv_anim_t *anim) { (void)anim; return NULL; }
+void lv_anim_delete(void *var, lv_anim_exec_xcb_t exec_cb) { (void)var; (void)exec_cb; }
+int32_t lv_anim_path_step(const lv_anim_t *anim) { (void)anim; return 0; }
+
+void bsp_display_backlight(uint8_t percent) { (void)percent; }
 esp_err_t esp_sleep_disable_wakeup_source(int source) { (void)source; return ESP_OK; }
 esp_err_t esp_sleep_enable_timer_wakeup(uint64_t us) { (void)us; return ESP_OK; }
 esp_err_t esp_light_sleep_start(void) { return ESP_OK; }
@@ -47,6 +147,8 @@ void esp_restart(void) {
     vTaskSuspend(NULL);
 }
 int64_t esp_timer_get_time(void) { return 0; }
+// Cold boot in host tests: no GPIO/TIMER wakeup payload to replay.
+int esp_sleep_get_wakeup_cause(void) { return 0; }
 esp_err_t bsp_audio_sleep(void) { return ESP_OK; }
 esp_err_t bsp_audio_wake(void) { return ESP_OK; }
 esp_err_t bsp_audio_prepare_deep_sleep(void) { return ESP_OK; }

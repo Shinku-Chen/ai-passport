@@ -1,4 +1,7 @@
 # Name,   Type, SubType, Offset,   Size,     Flags
-nvs,      data, nvs,     0x9000,   0x6000,
-phy_init, data, phy,     0xf000,   0x1000,
-factory,  app,  factory, 0x10000,  0x7f0000,
+# 手机/邮件 checkpoint 成功保存硬缓冲 cap=4096 B；31 live 槽 + 30 legacy shadow
+# + unlock/cfg/namespace + 一次 checkpoint/legacy shadow 更新 + 1 GC 页需要 38 页。
+# NVS 152 KiB；phy/app 起点按 IDF 规则对齐；factory 仍以 64 KiB 对齐，未额外缩 app。
+nvs,      data, nvs,     0x9000,   0x26000,
+phy_init, data, phy,     0x2f000,  0x1000,
+factory,  app,  factory, 0x30000,  0x7d0000,
