@@ -9,7 +9,9 @@
 
 static const char *TAG = "bsp_lvgl";
 
-#define BSP_LVGL_DRAW_BUFFER_LINES 40
+// 16 行（原 40）：本作画面缓冲要 148,480 B 才能铺满到面板后面，
+// 40 行缓冲占 19,200 B，降到 16 行释放 11,520 B。
+#define BSP_LVGL_DRAW_BUFFER_LINES 16
 
 static lv_display_t *s_disp;
 static bool s_port_initialized;

@@ -291,3 +291,63 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
   每个 release 都提供合并固件 `FoloToy-AI-Passport-full.bin`，从偏移 `0x0` 写入即可。
   目标板卡：8 MB Flash。
 - 这些发布沉淀的可复用工程经验位于 [`docs/reference/shinku-chen/`](docs/reference/shinku-chen/)。
+### 纸上的魔法使（Paper no Mahou Tsukai）
+
+把《纸上的魔法使》（紙の上の魔法使い / paper-rw5 手表移植）做成 AI Passport 的**横屏 320×240**
+视觉小说阅读器：**47 个场景脚本 / 56,634 条指令 / 44,521 句对白、4 处选项、6 个结局、
+80 组 415 张事件 CG、341 张立绘（163 整块 + 178 个表情差分补丁）**，全程离线。
+状态：**软件审核通过，等待设备验收（Device tests = NOT RUN）**。
+
+- 分支：`feature/port-paper-landscape`
+- 验收构建（冻结）：`FoloToy-AI-Passport.bin` **6,287,328 B**
+  SHA-256 `271f70c029ddd0db5b245e95939b12b9a674657d906955529115aa36e2a7e0b9`；
+  `FoloToy-AI-Passport-full.bin` **6,352,864 B**
+  SHA-256 `ae463339724c49039b90579442027580d68d4ca8ff351e57bcf425e5a24bea39`
+- 同次归档：`build/archive/ae463339…/`（含 full.bin、app.bin、ELF、MAP、bootloader、
+  partition_table、manifest.json）
+- 上游：<https://github.com/xuanyide01/paper-rw5> @ `7dcded10`（KAG 脚本 → JSON ops 的转换由其完成）
+- 资源管线：[`tools/paper_pack.py`](tools/paper_pack.py)（源目录 → `main/paper_data/paper_{img,scn}.bin`）
+  与 [`tools/gal_font.py`](tools/gal_font.py)（16px 中文子集，当前字体检查覆盖 **3,242 个码位、0 缺字**）；
+  完整性校验 [`tools/paper_verify.py`](tools/paper_verify.py)（逐 op/逐图/逐结局可达性 + 字库覆盖）。
+- 资源包：[`main/paper_data/`](main/paper_data)（图片 **3,681,326 B** + 剧本 **1,533,668 B**，
+  编进 app 分区，不占文件系统、不建 assets 分区）。
+  图片共 **845** 张 = **504 JPEG**（场景图，320×150 fit）+ **163 整块立绘** + **178 补丁**。
+
+**操作方式（三键）：** 正文 **UP** 推进（长按快进，松手即停）、**DOWN** 历史文本、**OK** 打开菜单；
+选项页 **短按 OK 确认当前选项、长按 OK 打开菜单**（菜单返回仍停在同一选项）；
+列表页 **UP/DOWN** 移动、**OK** 确认、**长按 OK** 返回来源页。标题页可开始/继续/读档/鉴赏/章节/设置/关于。
+
+**实现要点：**
+
+- **只合成画面区** —— 320×150 RGB565 画布（96,000 B，对话框由 LVGL 不透明面板承担）；
+  背景/事件 CG 用内置 tjpgd 逐 MCU 解码进画布，立绘用「RGB565 调色板 + 逐索引 alpha +
+  8 行一块 zlib」的 BLOCK 载荷逐行合成（不需要立绘解码缓冲），表情差分按
+  「基准图 + 1bpp 掩码 + RGB565 补丁」叠加。
+- **每个资源都来自实际打包** —— 图片包 3,681,326 B、剧本包 1,533,668 B（144 个 16 KB 正文块，zlib）；
+  打包器按“补丁比整张更小才用”逐文件决策，立绘字节从 4.11 MB 降到 1.62 MB。
+- **剧本零丢失，入口与路线按源** —— 场景表/op 流与源 `engine.js` 语义一一对应
+  （`ifFalse`/`jumpScene`/`set`/`choice`），4 处选项的 8 个目标全部保留；新游戏入口取自源
+  `catalog.flowScene = 11`，`progress.js` 的 `sf.*` 周目变量跨周目保留（章节阅读只携带、不回写）。
+  实测：从 scene 11 穷举 16 条选项策略，经过全部 4 处选项，可达 **5 个角色结局**
+  （珂莉莎贝丽尔 8 / 日向彼方 10 / 月社妃 40 / 伏见理央 43 / 游行寺夜子 47）；
+  **特别篇（44）按源设计只在章节入口开放**。
+- **存档** —— 8 个手动槽 + 1 个自动槽（NVS），保存场景 id + op 游标 + 背景/三立绘槽 +
+  164 个剧情变量 + CG/结局解锁位；存档带版本与 CRC，主线/章节模式分别记录，读档校验失败直接拒绝；
+  解锁进度写盘失败会保留 dirty 并退避重试。
+- **字体** —— 本版只提供 **16px** 一档（3,242 码位，覆盖全剧本 + 界面 + 人名）。
+
+**审核与证据：** Lead 侧独立复核日志在 `build/lead-review-r10/`（`paper-gate.log`、
+`probe_choice.log`、`archive-verify.log`）；本作维护 gate 日志在 `build/logs/paper-gate.log`。
+
+**验证状态：** 本作 host gate 通过（C 回归 1,792 + UI 168 项、0 失败；契约/包完整性/文档检查），
+IDF 构建、合并镜像、布局校验、同次归档校验均通过。**整仓 `tools/validate.sh` 仍因基线 demo
+用例缺 stub 而失败，不代表本作失败，也不能据此说全仓全绿；最终整仓 validate 未重跑通过。**
+Device tests = NOT RUN：横屏版面、列表滚动、150 高立绘观感、tjpgd 画质、按键/深睡与真机堆余量均待上机。
+
+**内存账（估算，未上机）：** 峰值动态分配 = 画布 96,000 + LVGL 刷屏 19,200 + 补丁 8,192 +
+输入任务栈 8,192 + LVGL 任务栈 7,168 + esp_timer 3,584 + main 3,584 = **145,920 B**；
+idle 任务栈 1,536 B 属 IDF 静态栈、已计入 MAP，若作保守预留则单列，合计口径 **147,456 B**。
+对照 `_heap_start=0x3fcb2970` 到 IDF `APP_USABLE_DRAM_END=0x3fcdc710` 的 **171,424 B** 可用区，
+余约 24–25 KB；到 SOC 上限 `0x3fce0000` 的 186,000 B 只是乐观上界，两者相差的 14,576 B
+**不算已取得的堆**。系统任务、队列控制块、驱动、NVS 与碎片均未实测，**不视为内存通过**。
+

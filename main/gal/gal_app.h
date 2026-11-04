@@ -1,98 +1,136 @@
-// main/gal/gal_app.h —— 框架骨架的应用状态机。
-//
-// 按键语义(框架规范,三键):
-//   启动页     短按确定进入标题页
-//   标题菜单   上/下 移动光标,确定 进入,长按确定 返回
-//   对话页     短按(确定/上/下)= 下一句(打字中先全显);长按确定=游戏内菜单;
-//              长按上=快进,松手停;长按下=自动阅读开关(任意键停)
-//   选项/菜单  上/下 移动,确定 执行,长按确定 返回
-//   列表页     上/下 移动,确定 执行(存档/读档/鉴赏室/章节/结局),长按确定 返回
-//   关于页     上/下 滚动正文,长按确定 返回
+// main/gal/gal_app.h —— 《纸上的魔法使》横屏阅读器状态与接口。
 #pragma once
 
-#include "gal_progress.h"
-#include "gal_save.h"
-#include "gal_settings.h"
-#include "gal_ui.h"
-#include "gal_unlock.h"
+#include "lvgl.h"
+#include "paper_game.h"
+#include "paper_gfx.h"
 
 #include <stdbool.h>
 #include <stdint.h>
 
-#define GAL_HISTORY_MAX 16
+#define GAL_HISTORY_MAX PAPER_HISTORY_MAX
+#define GAL_TEXT_CAP 2048
+#define GAL_LINE_MAX 6
+#define GAL_ROWS_VISIBLE 5
 
 typedef struct {
-    uint8_t btn;   // bsp_btn_t
-    uint8_t ev;    // bsp_btn_ev_t
+    uint8_t btn;
+    uint8_t ev;
 } gal_key_t;
 
-typedef struct {
-    gal_ui_t ui;
-    gal_settings_t settings;
-    gal_save_t save;
-    gal_unlock_t unlock;            // 剧情锁:观看记录与剧情标记
-    gal_progress_t progress;        // 自动进度(继续游戏用它接上)
-    bool progress_dirty;            // 有尚未落盘的进度
-    uint32_t progress_accum_ms;
+typedef enum {
+    GAL_PAGE_TITLE = 0,
+    GAL_PAGE_READER,
+    GAL_PAGE_CHOICE,
+    GAL_PAGE_MENU,
+    GAL_PAGE_SAVE,
+    GAL_PAGE_LOAD,
+    GAL_PAGE_SETTINGS,
+    GAL_PAGE_HISTORY,
+    GAL_PAGE_GALLERY,
+    GAL_PAGE_CG,
+    GAL_PAGE_CHAPTER,
+    GAL_PAGE_ENDING,
+    GAL_PAGE_ABOUT,
+} gal_page_t;
+
+typedef enum {
+    GAL_SPEED_SLOW = 0,
+    GAL_SPEED_NORMAL,
+    GAL_SPEED_FAST,
+    GAL_SPEED_INSTANT,
+    GAL_SPEED_COUNT
+} gal_speed_t;
+
+typedef struct gal_app_s gal_app_t;
+
+struct gal_app_s {
+    paper_game_t game;
+    paper_pack_t *pack;
 
     gal_page_t page;
-    gal_page_t return_page;         // 子页面返回的目标
-
-    gal_modal_t modal;              // 当前弹窗(叠加在存档 / 读档页)
-    gal_page_t modal_page;          // 弹窗所属页面
-    int modal_sel;
-    int modal_action;               // 确认后执行的动作(见 gal_app.c)
-
-    int start_sel;
-    int title_sel;
+    gal_page_t back_page;      // 最近一次进入子页面时的来源（兼容旧字段）
+    gal_page_t page_stack[6];  // 返回栈：长按逐级回退，不改写更上一级来源
+    int page_depth;
+    gal_page_t menu_origin;    // 打开菜单时的来源页（选项页/正文页）
+    int menu_depth;            // 打开菜单时的返回栈深度
+    uint32_t meta_retry_ms;    // 解锁进度落盘重试退避
+    int sel;
+    int top;
     int menu_sel;
-    int settings_sel;
-    int save_sel;
-    int load_sel;
-    int history_sel;
-    int gallery_sel;                // 鉴赏室分类光标
-    int cg_sel;                     // CG 鉴赏网格光标
-    int recall_sel;                 // CG 回想光标
-    int music_sel;                  // 音乐鉴赏光标
-    int chapter_sel;
-    int ending_sel;
-    int choice_sel;
+    uint16_t auto_scene;       // 自动存档用：上次落盘时的场景，用于换场景触发
 
-    int event_index;                // 当前事件
-    int page_index;                 // 当前事件内的页
-    int page_count;                 // 当前事件的页数
-    int shown_line;                 // 已显示的行(避免从子页面返回时重新打字)
-    int shown_page;
+    // 当前这句
+    uint16_t cur_bg;
+    uint16_t cur_sprites[3];
+    uint8_t speaker;
+    char text[GAL_TEXT_CAP];
+    int page_count;
+    int page_index;
+    int lines;
+    int line_offs[GAL_LINE_MAX + 1];
+    int typed;             // 已显示字节数
+    bool typing;
 
-    bool fast_forward;
-    uint32_t ff_accum_ms;
+    // 选项
+    int choice_index;
+    int choice_count;
+    int choice_sel;        // 选项光标，独立于列表页共用的 sel
+
+    // 鉴赏 / 章节光标
+    int cg_group;
+    int cg_member;
+
+    // 设置
+    gal_speed_t speed;
     bool auto_mode;
     uint32_t auto_accum_ms;
+    bool fast_forward;
+    uint32_t ff_accum_ms;
+    bool suppress_click;   // 长按后忽略随之而来的 CLICK
+    bool draw_error;       // 最近一次画面/立绘绘制是否失败
 
-    const gal_line_t *history[GAL_HISTORY_MAX];   // 只记指针,文本在内容层
-    int history_count;
-
-    int battery_percent;
-    uint32_t battery_accum_ms;
+    // 空闲 / 提示
     uint32_t idle_ms;
-    char notice[24];
+    char notice[32];
     uint32_t notice_ms;
-} gal_app_t;
+    bool sleeping;
 
-// 初始化:读设置与存档、建界面、进入启动页。
+    // LVGL 对象
+    lv_obj_t *root;
+    lv_obj_t *img_art;
+    lv_obj_t *box;
+    lv_obj_t *lbl_name;
+    lv_obj_t *lbl_page;
+    lv_obj_t *lbl_text;
+    lv_obj_t *lbl_hint;
+    lv_obj_t *lbl_notice;   // 非正文页的常驻提示行（notice 以前在这类页上无处显示）
+    lv_obj_t *rows[GAL_ROWS_VISIBLE];
+    lv_obj_t *row_labels[GAL_ROWS_VISIBLE];
+    lv_obj_t *header;
+};
+
 bool gal_app_init(gal_app_t *app);
-
-// 处理一次按键(在输入任务里调用,内部自行加 LVGL 锁)。
 void gal_app_key(gal_app_t *app, const gal_key_t *key);
-
-// 周期性 tick:快进/自动推进、提示超时、电量刷新。
 void gal_app_tick(gal_app_t *app, uint32_t elapsed_ms);
-
-// 空闲时长(毫秒),供 main 决定变暗/深睡。
 uint32_t gal_app_idle_ms(const gal_app_t *app);
-
-// 把待写的自动进度立刻落盘(深睡前调用)。
 void gal_app_flush(gal_app_t *app);
-
-// 深睡前在屏幕上显示提示(唤醒后设备会重启)。
 void gal_app_show_sleeping(gal_app_t *app);
+
+#ifdef PAPER_UI_TEST_HOOKS
+// 测试钩子：当前页的字节长度。
+int gal_app_test_page_len(const gal_app_t *app);
+// 最近一次画进画布的标题图下标（host 回归断言用）。
+extern uint16_t gal_app_test_title_image;
+// 仅供 host 回归：重新载入当前句（打字从头）、直接回标题
+void gal_app_test_reload_line(gal_app_t *app);
+void gal_app_test_goto_title(gal_app_t *app);
+// 画一张指定的背景图（用于注入坏图，验证失败语义）
+bool gal_app_test_draw_frame(gal_app_t *app, uint16_t image_index);
+// 立绘失败注入：指定 1~3 张立绘做一次合成，返回是否全部成功
+bool gal_app_test_draw_sprites(gal_app_t *app, uint16_t a, uint16_t b, uint16_t c);
+// 跳到第一处选项（真实 load_step 路径）
+bool gal_app_test_goto_choice(gal_app_t *app);
+// 走到第 n 处选项（n 从 0 起），沿途用第 0 项推进；返回是否到达
+bool gal_app_test_goto_choice_nth(gal_app_t *app, int nth);
+#endif

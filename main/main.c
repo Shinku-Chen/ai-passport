@@ -32,8 +32,8 @@ static const char *TAG = "main";
 
 // 空闲策略:先调暗,再熄屏,最后 deep sleep(任意键唤醒后回到启动页)。
 #define GAL_DIM_MS 60000u
-#define GAL_SCREEN_OFF_MS 180000u
-#define GAL_SLEEP_MS 420000u
+#define GAL_SCREEN_OFF_MS 300000u
+#define GAL_SLEEP_MS 1800000u
 #define BACKLIGHT_FULL 100
 #define BACKLIGHT_DIM 35
 
@@ -157,7 +157,7 @@ static void input_task(void *arg)
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "AI Passport GalGame 框架骨架启动");
+    ESP_LOGI(TAG, "AI Passport 纸上的魔法使（横屏阅读器）启动");
 
     // deep sleep 唤醒会重启整个应用,把原因打出来便于确认“按键真能唤醒”。
     const esp_sleep_wakeup_cause_t wakeup = esp_sleep_get_wakeup_cause();
@@ -169,13 +169,13 @@ void app_main(void)
         ESP_LOGI(TAG, "从休眠唤醒(原因 %d)", (int)wakeup);
     }
 
+    // 不自动擦除 NVS：擦除会连带清掉其它应用/本应用的历史数据，且用户不可预期。
+    // 打不开就降级为"本次运行不保存"，由应用层提示。
     esp_err_t nvs_err = nvs_flash_init();
-    if (nvs_err == ESP_ERR_NVS_NO_FREE_PAGES || nvs_err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_LOGW(TAG, "NVS 需要重建(%s)", esp_err_to_name(nvs_err));
-        (void)nvs_flash_erase();
-        nvs_err = nvs_flash_init();
+    if (nvs_err != ESP_OK) {
+        ESP_LOGW(TAG, "NVS 不可用(%s)：本次运行不保存进度，原有数据保持不动",
+                 esp_err_to_name(nvs_err));
     }
-    if (nvs_err != ESP_OK) ESP_LOGW(TAG, "NVS 不可用: %s", esp_err_to_name(nvs_err));
 
     // 电量计是软依赖:读不到就显示 "--"。
     if (bsp_i2c_init() != ESP_OK) ESP_LOGW(TAG, "I2C 初始化失败,电量显示 --");
@@ -199,7 +199,7 @@ void app_main(void)
         ESP_LOGE(TAG, "输入队列创建失败");
         return;
     }
-    if (xTaskCreate(input_task, "gal_input", 4096, NULL, 5, &s_input_task) != pdPASS) {
+    if (xTaskCreate(input_task, "gal_input", 8192, NULL, 5, &s_input_task) != pdPASS) {
         ESP_LOGE(TAG, "输入任务创建失败");
         vQueueDelete(s_input_queue);
         s_input_queue = NULL;

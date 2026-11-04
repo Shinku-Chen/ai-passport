@@ -11,3 +11,6 @@ managed_components/
 /.agents/skills/passport-build
 /.agents/skills/passport-device-test
 /.agents/skills/passport-debug
+
+# 纸上的魔法使：第三方源素材与生成本地产物不入库（用 tools/paper_pack.py 重新生成）。
+assets/paper-source/

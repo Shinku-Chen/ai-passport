@@ -67,6 +67,10 @@ run_static_checks() {
         tests/test_gal_tone.c main/gal/gal_tone.c \
         -o "${test_dir}/test_gal_tone"
     "${test_dir}/test_gal_tone"
+    # 《纸上的魔法使》本作 host gate（真实 C 回归 + 契约 + 源审计）
+    if [[ -x tools/paper_gate.sh ]]; then
+        bash tools/paper_gate.sh
+    fi
     PYTHONDONTWRITEBYTECODE=1 python3 tools/gal_font.py --check --out-dir assets/fonts
     for demo in audio low_power ble wifi; do
         "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \

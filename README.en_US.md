@@ -440,3 +440,72 @@ green once you can speak; release to send. A short **OK** press only lights the 
   written from offset `0x0`. Target board: 8 MB Flash.
 - Reusable engineering experience collected from these releases lives under
   [`docs/reference/shinku-chen/`](docs/reference/shinku-chen/).
+### Paper no Mahou Tsukai
+
+A **landscape 320×240** visual-novel reader for AI Passport, ported from the paper-rw5 watch port:
+**47 scene scripts / 56,634 ops / 44,521 lines of dialogue, 4 choices, 6 endings, 80 CG groups with
+415 images, 341 sprites (163 full blocks + 178 expression patches)**, fully offline.
+Status: **software review passed, awaiting device acceptance (Device tests = NOT RUN)**.
+
+- Branch: `feature/port-paper-landscape`
+- Accepted build (frozen): `FoloToy-AI-Passport.bin` **6,287,328 B**
+  SHA-256 `271f70c029ddd0db5b245e95939b12b9a674657d906955529115aa36e2a7e0b9`;
+  `FoloToy-AI-Passport-full.bin` **6,352,864 B**
+  SHA-256 `ae463339724c49039b90579442027580d68d4ca8ff351e57bcf425e5a24bea39`
+- Same-run archive: `build/archive/ae463339…/` (full.bin, app.bin, ELF, MAP, bootloader,
+  partition_table, manifest.json)
+- Upstream: <https://github.com/xuanyide01/paper-rw5> @ `7dcded10` (KAG script → JSON ops conversion)
+- Pipeline: [`tools/paper_pack.py`](tools/paper_pack.py) (source dir → `main/paper_data/paper_{img,scn}.bin`)
+  and [`tools/gal_font.py`](tools/gal_font.py) (16 px CJK subset; the current font check covers
+  **3,242 code points with 0 missing**); integrity check: [`tools/paper_verify.py`](tools/paper_verify.py)
+  (per-op, per-image, ending reachability, font coverage).
+- Packs: [`main/paper_data/`](main/paper_data) (images **3,681,326 B** + script **1,533,668 B**, compiled into
+  the app partition; no filesystem, no separate assets partition).
+  **845** images = **504 JPEG** frames (fit to 320×150) + **163 full sprite blocks** + **178 patches**.
+
+**Controls (three keys):** in the reader **UP** advances (hold to fast-forward, stops on release),
+**DOWN** opens history, **OK** opens the menu; on the choice screen a **short OK confirms the current
+option and a long OK opens the menu** (returning keeps the same option); in lists **UP/DOWN** move,
+**OK** confirms, **long OK** returns to the originating page.
+
+**Implementation notes:**
+
+- **Art-area compositing only** — one 320×150 RGB565 canvas (96,000 B); the dialogue box is an opaque
+  LVGL panel. Backgrounds and event CGs are decoded straight into the canvas with the bundled tjpgd;
+  sprites are composited row by row from palette BLOCK payloads (no sprite decode buffer), and
+  expression variants use base image + 1 bpp mask + RGB565 patches.
+- **Every byte comes from a real pack** — images 3,681,326 B, script 1,533,668 B (144 text blocks of
+  16 KB, zlib); the packer keeps a patch only when it is smaller than the full image
+  (sprite bytes drop from 4.11 MB to 1.62 MB).
+- **No story loss; entry point and routes follow the source** — the op stream mirrors the upstream
+  `engine.js` semantics and all 8 choice targets are kept. A new game starts at the source
+  `catalog.flowScene = 11`; `sf.*` across-playthrough variables from `progress.js` are preserved
+  (chapter reading carries them read-only). Measured by exhausting 16 choice policies from scene 11:
+  all 4 choices are traversed and **5 character endings** are reachable (8 / 10 / 40 / 43 / 47);
+  **the special chapter (44) is chapter-entry only by source design**.
+- **Saves** — 8 manual slots plus 1 auto slot (NVS) storing scene id, op cursor, background, three
+  sprite slots, 164 story variables and CG/ending unlock bits; saves carry a version and CRC, story vs
+  chapter mode is preserved, invalid saves are rejected, and failed unlock writes stay dirty for retry.
+- **Fonts** — this build ships the **16 px** tier only (3,242 code points).
+
+**Review evidence:** the lead's independent re-run logs live in `build/lead-review-r10/`
+(`paper-gate.log`, `probe_choice.log`, `archive-verify.log`); this project's maintained gate log is
+`build/logs/paper-gate.log`.
+
+**Verification status:** this project's host gate passes (1,792 C regression checks + 168 UI checks,
+0 failures; contract, pack integrity and docs checks), and the IDF build, merged image, layout check and
+same-run archive verification pass. **The repository-wide `tools/validate.sh` still fails on baseline
+demo stubs; that is not a failure of this port and must not be reported as an all-green repository.
+A final full-repository validate was not re-run to pass.** Device tests = NOT RUN: landscape layout,
+list scrolling, 150 px sprite look, tjpgd quality, keys/deep sleep and real-device heap headroom all
+remain to be verified on hardware.
+
+**Memory budget (estimate, not measured on device):** peak dynamic allocations = canvas 96,000 +
+LVGL draw buffer 19,200 + patch buffer 8,192 + input task 8,192 + LVGL task 7,168 + esp_timer 3,584 +
+main 3,584 = **145,920 B**; the idle task stack of 1,536 B is an IDF static stack already covered by the
+MAP, so it is listed separately as a conservative reserve for a **147,456 B** total view. Against the
+**171,424 B** usable region from `_heap_start=0x3fcb2970` to IDF `APP_USABLE_DRAM_END=0x3fcdc710`,
+that leaves roughly 24–25 KB; the 186,000 B span to the SOC limit `0x3fce0000` is only an optimistic
+upper bound, and the 14,576 B difference **must not be counted as obtained heap**. System tasks, queue
+control blocks, drivers, NVS and fragmentation are not measured, so **memory is not claimed as passed**.
+
