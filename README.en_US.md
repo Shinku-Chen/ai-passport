@@ -400,6 +400,47 @@ and any key wakes the device at the last automatic save; auto-play keeps the scr
   content warning; *Saya no Uta* is a commercial Nitroplus title, so this is a personal fan
   port whose generated pack must not be republished as an asset.
 
+### NianNiang Love Story
+
+A **landscape** visual-novel reader that brings the Xiaomi Band port of
+NianNiang Love Story to the AI Passport: **13 scenes, 1,248 dialogue lines, two choice
+points, four endings, 16 backgrounds, 15 event CGs and 30 expression sprites**,
+fully offline. Story and art come from
+[`hrk666666/NianNiang-MiBand-10`](https://github.com/hrk666666/NianNiang-MiBand-10)
+(itself built on `hrk666666/Senren-Banka-MiBand-10`). This branch is a dedicated
+reader: its own script interpreter, image pipeline and every screen.
+Status: **built, awaiting device verification**.
+
+- Branch: `feature/port-nianniang-landscape`
+- Notes: [`docs/reference/shinku-chen/nianniang/`](docs/reference/shinku-chen/nianniang/)
+
+**Controls:** while reading, **UP** advances (completes the typewriter, then turns
+the page, then the next line), **hold UP** fast-forwards until released, **DOWN**
+opens history, **hold DOWN** toggles auto-play, **OK** opens the menu (resume,
+save, load, history, settings, back to title). Lists use UP/DOWN, OK and hold-OK
+to go back; on the save page OK saves or loads, and hold-OK is the same "back"
+  gesture (no slot is ever deleted by a key hold). When the device
+is held sideways the physical UP key is on the right edge.
+
+**Highlights:**
+
+- **No crop, no stretch, and no claim of restored framing** — the upstream art is
+  an anisotropic stretch of unknown originals into 336×480. This port fits every
+  image to 168×240 and centres it, crops sprites only to their alpha bounds, and
+  lays a translucent 90 px dialogue panel over the scene. Because the original
+  aspect ratio is not recorded, re-stretching to a guessed 16:9 is deliberately
+  not used.
+- **JPEG decoding straight into the canvas** — TJpgDec's output callback writes
+  each MCU as RGB565 into the 320×240 canvas, and sprites drop transparent pixels
+  through a 1bpp mask. The whole chain owns exactly one 153,600 B buffer and no
+  per-image decode buffer.
+- **Choices reach the right ending** — a scene/label/jump interpreter maps the
+  five options of two choice points onto the four endings, and a host test walks
+  every branch to assert which ending each option reaches.
+- **The whole title fits** — a 622,892 B pack and a 1.80 MB merged image (22 % of
+  the 8 MB flash), a 1,437-glyph Chinese subset covering the UI and the entire
+  script, and two pagination tiers (16 px / 20 px).
+
 ### AI Passport Pocket Intercom
 
 Turn the AI Passport into a pocket AI intercom: **hold OK to speak → the phone app acts as the

@@ -77,6 +77,23 @@ run_static_checks() {
     done
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_deep_sleep_contract.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_key_wake_contract.py
+    # 《男娘恋爱物语》横屏移植：资源包解析 / 剧本全路线 / JPEG 直写画布 / 横屏分页。
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain -Imain/gal tests/test_nn_script.c main/nn_pack.c main/nn_script.c -o "${test_dir}/test_nn_script"
+    "${test_dir}/test_nn_script"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain -Imain/gal -Imain/nn_jpeg tests/test_nn_image.c main/nn_pack.c main/nn_image.c main/nn_jpeg/tjpgd.c -o "${test_dir}/test_nn_image"
+    "${test_dir}/test_nn_image"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain -Imain/gal tests/test_nn_text.c main/nn_pack.c main/gal/gal_text.c -o "${test_dir}/test_nn_text"
+    "${test_dir}/test_nn_text"
+    # 页面/按键状态机回归（真实 nn_app + nn_ui + nn_pack + nn_save，LVGL/NVS 用薄桩）。
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/harness_stubs -Imain -Imain/gal tests/harness_app.c tests/harness_stubs/lvgl.c main/nn_app.c main/nn_ui.c main/nn_pack.c main/nn_script.c main/nn_save.c main/nn_save_codec.c main/gal/gal_text.c -o "${test_dir}/harness_app"
+    "${test_dir}/harness_app"
+    # NVS 失败注入（真实 nn_save.c，可注入 set_blob/commit/init/get 失败）。
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/harness_stubs -Imain -Imain/gal tests/harness_save.c tests/harness_stubs/lvgl.c main/nn_app.c main/nn_ui.c main/nn_pack.c main/nn_script.c main/nn_save.c main/nn_save_codec.c main/gal/gal_text.c -o "${test_dir}/harness_save"
+    "${test_dir}/harness_save"
+    # 资源包 fail-closed 校验（真实包 + 11 类坏包）。
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain tests/test_nn_pack.c main/nn_pack.c -o "${test_dir}/test_nn_pack"
+    "${test_dir}/test_nn_pack"
+    PYTHONDONTWRITEBYTECODE=1 python3 tools/nn_audit.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_check_repo.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_verify_firmware.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_archive_firmware.py

@@ -68,6 +68,7 @@ The engineering rules themselves live under
 - [Starry Sky Railroad and Shiro's Journey](shinku-chen/starry-sky-railroad/README.md) — a portrait visual-novel reader carrying a 39-chapter fan port offline, with per-speaker sprites and an automatic save on every scene.
 - [Senren * Banka](shinku-chen/senren-banka/README.md) — a portrait visual novel reader that carries the whole game — story, backgrounds, sprites and event illustrations — on the device, with auto-read, fast-forward, chapter skipping and save slots.
 - [Sanoba Witch](shinku-chen/sanoba-witch/README.md) — a portrait visual novel reader with 101 chapters, five routes and five endings, packed entirely into Flash.
+- [NianNiang Love Story](shinku-chen/nianniang/README.md) — a landscape visual-novel reader carrying a complete 13-scene port: 1,248 dialogue lines, two choice points that jump straight to one of four endings, 15 event CGs with a paged gallery, all 30 expression sprites, and prompt-free fades replaced by hard cuts.
 - [Pocket Intercom](shinku-chen/intercom/README.md) — a phone-tethered AI intercom: hold OK to talk through a companion Android app, with the answer back on the device screen and in the phone, three buttons, and no network setup on the device itself.
 
 ### PhoenixZHC

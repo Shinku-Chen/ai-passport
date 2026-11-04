@@ -114,10 +114,29 @@ def source_chars(root: str) -> set:
     return chars
 
 
-def required_chars(pack_paths: list, source_root: str, inventory_dir: str = "") -> set:
+def chars_file_chars(path: str) -> set:
+    """从纯文本字符清单取字符（tools/nn_pack.py --charset 的产物）。
+
+    本作的剧本不是 C 字面量，而是一个二进制包；这里允许直接给一份清单，
+    这样字体生成只依赖“包里实际用到的字符”，不依赖包的容器格式。
+    """
+    if not path:
+        return set()
+    chars = set()
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            if line.startswith("#"):
+                continue
+            chars.update(line.strip())   # strip() 已去掉 CR/LF/TAB
+    return chars
+
+
+def required_chars(pack_paths: list, source_root: str, inventory_dir: str = "",
+                   chars_file: str = "") -> set:
     chars = source_chars(source_root)
     for path in pack_paths:
         chars |= pack_chars(path)
+    chars |= chars_file_chars(chars_file)
     chars |= inventory_chars(inventory_dir)
     for start, end in ((0x20, 0x7E),):
         chars |= {chr(c) for c in range(start, end + 1)}
@@ -458,7 +477,7 @@ def check(out_dir: str, codepoints: list) -> int:
 
 # ---------------------------------------------------------------- 主流程
 def generate(args) -> int:
-    chars = required_chars(args.pack, args.source_root, args.out_dir)
+    chars = required_chars(args.pack, args.source_root, args.out_dir, args.chars_file)
     codepoints = sorted(ord(c) for c in chars)
     os.makedirs(args.out_dir, exist_ok=True)
     with open(os.path.join(args.out_dir, INVENTORY_FILE), "w",
@@ -512,13 +531,16 @@ def main() -> int:
     ap.add_argument("--pack", action="append",
                     default=[],
                     help="资源包路径,可给多次(字符集取并集)")
+    ap.add_argument("--chars-file", default="",
+                    help="纯文本字符清单(每行一段,忽略 # 注释);本作用它喂剧本字符")
     ap.add_argument("--source-root", default="main")
     ap.add_argument("--out-dir", default="assets/fonts")
     ap.add_argument("--check", action="store_true", help="只做覆盖/结构自检,不生成")
     args = ap.parse_args()
 
     codepoints = sorted(ord(c) for c in
-                        required_chars(args.pack, args.source_root, args.out_dir))
+                        required_chars(args.pack, args.source_root, args.out_dir,
+                                       args.chars_file))
     if args.check:
         return check(args.out_dir, codepoints)
     if not args.font:

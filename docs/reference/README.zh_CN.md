@@ -61,6 +61,7 @@
 - [星空列车与白的旅行](shinku-chen/starry-sky-railroad/README.zh_CN.md) — 把 39 章的同人移植剧本离线装进机身的竖屏视觉小说阅读器，立绘跟随说话人、每次换场景自动存档。
 - [千恋＊万花](shinku-chen/senren-banka/README.zh_CN.md) — 竖屏视觉小说阅读器，把整部剧情连通背景、立绘与事件插图装进设备，支持自动阅读、快进、跳过章节与多档存档。
 - [魔女的夜宴](shinku-chen/sanoba-witch/README.zh_CN.md) — 101 章、五条线五个结局、全部装进 Flash 的竖屏视觉小说阅读器。
+- [男娘恋爱物语](shinku-chen/nianniang/README.zh_CN.md) — 横屏视觉小说阅读器：13 个场景、1,248 句对白、两处选项直通四个结局、15 张事件 CG 与分页鉴赏室、30 张表情立绘；没有淡入淡出，用硬切替代。
 - [随身 AI 对讲机](shinku-chen/intercom/README.zh_CN.md) — 挂在手机上的 AI 对讲机：按住 OK 说话，配套安卓应用把话交给自己的 AI 助理，回答回到设备屏与手机；设备本身不联网，只有三个键。
 
 ### PhoenixZHC

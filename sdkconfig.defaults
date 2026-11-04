@@ -31,14 +31,11 @@ CONFIG_LV_MEM_SIZE_KILOBYTES=64
 # --- 系统 ---
 CONFIG_FREERTOS_HZ=1000
 
-# --- Bluetooth LE / NimBLE ---
-# ESP32-C3 仅支持 BLE；示例只启用单连接 peripheral 所需的最小 host 配置。
-CONFIG_BT_ENABLED=y
-CONFIG_BT_NIMBLE_ENABLED=y
-CONFIG_BT_NIMBLE_ROLE_CENTRAL=n
-CONFIG_BT_NIMBLE_ROLE_PERIPHERAL=y
-CONFIG_BT_NIMBLE_ROLE_BROADCASTER=y
-CONFIG_BT_NIMBLE_ROLE_OBSERVER=n
-CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
-CONFIG_BT_NIMBLE_HOST_BASED_PRIVACY=n
-CONFIG_BT_NIMBLE_NVS_PERSIST=n
+# --- 射频：本应用完全不用 ---
+# 这是一个纯离线阅读器：不联网、不配网、没有 BLE 配对，也没有音频/网络任务。
+# 上游基线默认把 BLE(NimBLE) 与 Wi-Fi 打开，静态区与运行期堆对无 PSRAM 的 C3
+# 是纯浪费，这里显式关闭（构建后 MAP 的 DRAM 占用会随之变化，见 docs）。
+CONFIG_BT_ENABLED=n
+# 注：Wi-Fi 无法在这里关掉。ESP-IDF 5.5 的 CONFIG_ESP_WIFI_ENABLED 是隐藏符号
+# （bool，无提示，default y if SOC_WIFI_SUPPORTED），sdkconfig 覆盖会被忽略；
+# 本应用从不调用 esp_wifi_init()，运行期不占堆。详见 docs/reference/.../README。
