@@ -430,6 +430,85 @@ green once you can speak; release to send. A short **OK** press only lights the 
 - **No speech synthesis** — this version does not do TTS: answers are text on the device screen and in the app, and the device never reads them aloud.
 
 
+### PARQUET (landscape reader)
+
+A complete offline port of the RW5 watch reader `parquet-rw5` for *PARQUET*
+(YUZUSOFTSOUR / JUNOS / NekoNyan / HIKARI FIELD) to the AI Passport:
+**320x240 landscape**, **107 scenes / 434 script chunks / 11,205 ops /
+11,098 lines / 2 choice nodes (4 options) / 4 ending scenes / 37 gallery
+groups with 367 CG images / 979 portrait ids**, fully offline.
+Status: **software review accepted; production code frozen, awaiting device acceptance (Device tests = NOT RUN)**.
+
+- Branch: `feature/port-parquet-landscape`
+- Build: `FoloToy-AI-Passport.bin` **7,179,360 B**
+  SHA-256 `2b634e0f3c499f2dd61acd3ed6203ce8ab66b7ba9516c3b6a3c7861dc28a7724`;
+  `FoloToy-AI-Passport-full.bin` **7,244,896 B**
+  SHA-256 `c5167b5dc92e77aef4f2b53816e060821ec18f8ef2c801dfbbb72c24c1fdea98`
+- Same-build archive: `build/firmware/c5167b5dc92e77aef4f2b53816e060821ec18f8ef2c801dfbbb72c24c1fdea98/` (full/app/ELF/MAP/bootloader/
+  partition table/flash_args/manifest, verified by `archive_firmware.py verify`)
+- Source snapshot: `parquet-rw5` @ `8ab38afe`; script/chapter/gallery metadata is
+  tracked under [`assets/parquet-source/`](assets/parquet-source); images and the
+  source font are not committed
+- Pipeline: [`tools/parquet_pack.py`](tools/parquet_pack.py) (source tree →
+  `main/parquet_data/parquet_{img,scn}.bin`), [`tools/gal_font.py`](tools/gal_font.py)
+  (16/20 px CJK subsets, 2,589 code points, 0 missing), [`tools/parquet_verify.py`](tools/parquet_verify.py)
+  (per-op/per-image/gallery checks), [`tools/parquet_audit.py`](tools/parquet_audit.py)
+  (independent source audit)
+- Packs: images **5,187,277 B** (402 JPEG + 36 shared bodies + 970 expression
+  layers + 101 cut-ins + logo) and script **535,634 B** (361 32-op text blocks),
+  embedded in the app partition with no filesystem.
+
+**Controls (three keys):** **UP** advances (hold = fast-forward, release stops),
+**DOWN** opens history (hold = auto), **OK** opens the menu. Choices: **UP/DOWN**
+select, **short OK** confirms, **long OK** opens the menu while keeping the
+pending choice and its cursor. Lists: **UP/DOWN** move, **OK** confirm, **long OK**
+back. The title screen offers start/pre-story/after-story/chapters/load/gallery/settings.
+
+**Highlights:**
+
+- **Art area only** — a 320x150 RGB565 canvas (96,000 B; the dialogue band is an
+  opaque LVGL panel). Backgrounds/CG decode with the built-in tjpgd; portraits
+  combine a palette+alpha BLOCK body with an RGB565+alpha expression PATCH;
+  cut-ins use the source's 200/255 opacity.
+- **Nothing dropped, entries follow the source** — all 107 scenes are packed and
+  the whole text stream matches the source SHA-256. START enters the pre-story
+  once and the main story afterwards; AFTER STORY appears only after the main
+  clear; SIDE STORY is replayable; chapter browsing never writes story flags.
+  Source scene 99 is an entryless choice node (kept and covered by a direct test).
+- **Portrait dedup** — 979 portrait ids become 36 shared bodies + 970 expression
+  layers, anchored by the source `faceAnchor` with one 150/262 scale; no per-alias
+  copies and no body×expression pre-composition.
+- **Saves** — 30 manual slots plus a separate auto slot in NVS, storing scene,
+  op, page, mode, pending cursor, variables and a preview, validated by version,
+  length and CRC32. Failed writes keep the old slot; the global unlock record is
+  independent, loaded at boot, merged add-only from older saves and retried with
+  a 2 s backoff. NVS is never erased; if unavailable the app runs read-only.
+- **Fonts** — 16 px and 20 px subsets, both covering the full script and UI,
+  switchable in Settings.
+
+**Bad-pack bounds:** table spans are checked for order/non-overlap/header start, lengths are overflow-checked, and wrapped text-block offsets are rejected at init; the tracked C negative test adds 18 checks while the normal pack and legal boundaries still pass.
+
+**Verification:** the work's gate passes (production C: **109,324** checks; bad-pack
+negative: **18** checks; UI key sequences: **168** checks; independent source audit: 22 checks; all 0 failures;
+1,510 images compared pixel-exact or by JPEG grid error; negative compile gate;
+0 missing glyphs; IDF build, merged image, layout check and same-build archive
+verification). Repository-wide `tools/validate.sh --static` on this Windows host
+reports **PASS 18 / FAIL 2 / SKIP 4**: the 4 SKIPs are the known baseline demo
+linker differences; the 2 FAILs are unmodified baseline self-tests (Windows
+path assertion and directory-symlink privilege, WinError 1314), reported as
+FAIL rather than skipped and unrelated to this work; the work gate inside that
+run is PASS. Each run writes a unique `build/validate-*` directory with per-case
+logs, and a tracked negative harness proves a broken work-C compile/run makes
+the summary FAIL with a non-zero exit. Device tests = NOT RUN.
+
+**Memory account (same MAP):** `_heap_start=0x3fca29e0` → `0x3fcce710` = **179,504 B**;
+dynamic peak = canvas 96,000 + LVGL draw buffer 19,200 + input stack 8,192 + LVGL
+stack 7,168 + main/esp_timer/event 9,472 + NVS ~8,400 + heap metadata ~2,000 =
+**150,432 B**, leaving ~28.4 KiB. The 1,536 B idle stack is a FreeRTOS static stack
+already inside the MAP and is not counted twice. System tasks, NVS and fragmentation
+are not measured; **this is not a memory pass**.
+
+
 ## Notes
 
 - Each application is a separate `feature/*` branch off the upstream baseline.

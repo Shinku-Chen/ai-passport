@@ -1,4 +1,4 @@
-// main/main.c —— GalGame 框架骨架:开机直接进启动页(竖屏 240x320)。
+// main/main.c —— 《PARQUET》横屏阅读器:开机直接进作品标题页(320x240 横屏)。
 //
 // 按键语义(框架规范):
 //   启动页    短按确定进入标题页
@@ -16,7 +16,7 @@
 #include "bsp_i2c.h"
 #include "bsp_pins.h"
 #include "gal_app.h"
-#include "gal_music.h"
+#include "parquet_gfx.h"
 #include "key_guard.h"
 
 #include "esp_heap_caps.h"
@@ -32,8 +32,8 @@ static const char *TAG = "main";
 
 // 空闲策略:先调暗,再熄屏,最后 deep sleep(任意键唤醒后回到启动页)。
 #define GAL_DIM_MS 60000u
-#define GAL_SCREEN_OFF_MS 180000u
-#define GAL_SLEEP_MS 420000u
+#define GAL_SCREEN_OFF_MS 300000u
+#define GAL_SLEEP_MS 1800000u
 #define BACKLIGHT_FULL 100
 #define BACKLIGHT_DIM 35
 
@@ -94,8 +94,6 @@ static void enter_sleep(void)
 
     // 睡前把自动进度落盘(平时是 2 秒节流写)。
     gal_app_flush(&s_app);
-    // 正在放的音乐先停掉,等播放任务停写 I2S 再让 codec 休眠。
-    gal_music_stop();
     vTaskDelay(pdMS_TO_TICKS(200));
 
     // CW2017 与 ES8311 共用 I2C:先让电量计收尾,再停 codec 与 I2S。
@@ -157,7 +155,7 @@ static void input_task(void *arg)
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "AI Passport GalGame 框架骨架启动");
+    ESP_LOGI(TAG, "AI Passport PARQUET（横屏阅读器）启动");
 
     // deep sleep 唤醒会重启整个应用,把原因打出来便于确认“按键真能唤醒”。
     const esp_sleep_wakeup_cause_t wakeup = esp_sleep_get_wakeup_cause();
@@ -169,17 +167,23 @@ void app_main(void)
         ESP_LOGI(TAG, "从休眠唤醒(原因 %d)", (int)wakeup);
     }
 
+    // 不擦除 NVS：擦除会连带清掉存档与其它应用的数据，用户不可预期。
+    // 打不开就降级为"本次运行不保存"，由应用层提示，原有数据保持不动。
     esp_err_t nvs_err = nvs_flash_init();
-    if (nvs_err == ESP_ERR_NVS_NO_FREE_PAGES || nvs_err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_LOGW(TAG, "NVS 需要重建(%s)", esp_err_to_name(nvs_err));
-        (void)nvs_flash_erase();
-        nvs_err = nvs_flash_init();
+    if (nvs_err != ESP_OK) {
+        ESP_LOGW(TAG, "NVS 不可用(%s)：本次运行不保存进度，原有数据保持不动",
+                 esp_err_to_name(nvs_err));
     }
-    if (nvs_err != ESP_OK) ESP_LOGW(TAG, "NVS 不可用: %s", esp_err_to_name(nvs_err));
 
     // 电量计是软依赖:读不到就显示 "--"。
     if (bsp_i2c_init() != ESP_OK) ESP_LOGW(TAG, "I2C 初始化失败,电量显示 --");
     if (bsp_battery_init() != ESP_OK) ESP_LOGW(TAG, "电量计初始化失败,电量显示 --");
+
+    // 画面区画布 96,000 B 是最大的单块分配：先于 LVGL/显示任务申请，
+    // 保证启动早期有足够大的连续内部 RAM 块（失败也不阻断，应用层会再试一次并报错）。
+    if (!pq_gfx_init()) {
+        ESP_LOGE(TAG, "画面区画布申请失败，阅读器将无法显示画面");
+    }
 
     // 显示是硬依赖:没有屏幕就没法阅读。
     if (bsp_display_init() != ESP_OK || !bsp_lvgl_init()) {
@@ -190,7 +194,7 @@ void app_main(void)
     bsp_display_backlight(BACKLIGHT_FULL);
 
     if (!gal_app_init(&s_app)) {
-        ESP_LOGE(TAG, "框架界面初始化失败");
+        ESP_LOGE(TAG, "阅读器界面初始化失败（资源包或 LVGL）");
         return;
     }
 
@@ -199,7 +203,7 @@ void app_main(void)
         ESP_LOGE(TAG, "输入队列创建失败");
         return;
     }
-    if (xTaskCreate(input_task, "gal_input", 4096, NULL, 5, &s_input_task) != pdPASS) {
+    if (xTaskCreate(input_task, "gal_input", 8192, NULL, 5, &s_input_task) != pdPASS) {
         ESP_LOGE(TAG, "输入任务创建失败");
         vQueueDelete(s_input_queue);
         s_input_queue = NULL;
@@ -222,8 +226,8 @@ void app_main(void)
 
     ESP_LOGI(TAG, "空闲堆 %u 字节,最大连续块 %u 字节", (unsigned)esp_get_free_heap_size(),
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
-    ESP_LOGI(TAG, "就绪:框架骨架;短按任意键=下一句,长按确定=游戏内菜单,"
-                  "长按上=快进,长按下=自动阅读;空闲 %us 调暗,%us 熄屏,%us 休眠",
+    ESP_LOGI(TAG, "就绪:标题页;UP 推进/长按快进,DOWN 历史/长按自动,"
+                  "OK 菜单;空闲 %us 调暗,%us 熄屏,%us 休眠",
              (unsigned)(GAL_DIM_MS / 1000), (unsigned)(GAL_SCREEN_OFF_MS / 1000),
              (unsigned)(GAL_SLEEP_MS / 1000));
 }

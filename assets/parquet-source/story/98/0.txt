@@ -1,0 +1,1 @@
+[{"op":"choice","items":[{"text":"叫醒茨木","scene":100,"to":0,"effect":["s015*chapter7_sel1",1]},{"text":"叫醒城门","scene":104,"to":0,"effect":["s015*chapter7_sel1",2]}]}]

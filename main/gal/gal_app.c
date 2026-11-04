@@ -1,1441 +1,2157 @@
-// main/gal/gal_app.c —— 框架骨架的应用状态机实现。
+// main/gal/gal_app.c —— 《PARQUET》横屏 320x240 阅读器界面。
 //
-// 剧情是一串事件(对白 / 选项 / 章节过场 / 结局),状态机负责把事件翻页
-// 演出、维护历史和存档,并按框架规范解释三键操作。
+// 版面：上方 320x150 画面区（背景 + 立绘 + cut-in 合成），下方 90px 不透明对话框。
+// 作品专属 UI：标题=标题背景 + Logo + 底部两列菜单；正文=青色描边对白带；列表页
+// =5 行窗口 + 顶部标题 + 底部按键提示。设置里只列真实可用的选项（16px 字体）。
 #include "gal_app.h"
 
 #include "bsp_battery.h"
 #include "bsp_button.h"
 #include "bsp_display.h"
-#include "gal_content.h"
-#include "gal_music.h"
-#include "gal_text.h"
-
+#include "esp_heap_caps.h"
 #include "esp_log.h"
-#include "lvgl.h"
+#include "esp_timer.h"
 
 #include <stdio.h>
 #include <string.h>
 
-static const char *TAG = "gal";
-
-// 快进:按住“上”期间每 180ms 推进一步。自动阅读:每句打完后再等 900ms;
-// 章节过场自动停留 1600ms 后继续,不打断自动。
-#define GAL_FAST_FORWARD_MS 180u
-#define GAL_AUTO_ADVANCE_MS 900u
-#define GAL_AUTO_TRANSITION_MS 1600u
-// 自动进度最多每 2 秒落盘一次:NVS 擦写寿命有限,而且不需要更实时。
-#define GAL_PROGRESS_SAVE_MS 2000u
-
 LV_FONT_DECLARE(gal_cjk_16);
 LV_FONT_DECLARE(gal_cjk_20);
 
-static void enter_event(gal_app_t *app);
-static void render_page(gal_app_t *app);
-static void goto_page(gal_app_t *app, gal_page_t page);
-static bool settings_from_reader(const gal_app_t *app);
+static const char *TAG = "parquet_ui";
 
-// ---------------------------------------------------------------- 剧情锁
-// 事件的可见性:条件台词只有满足标记才出现。
-static bool event_visible(const gal_app_t *app, int event_index)
-{
-    if (event_index < 0 || event_index >= gal_content_event_count) return false;
-    const gal_event_t *ev = &gal_content_events[event_index];
-    if (ev->kind != GAL_EV_LINE) return true;
-    const uint8_t need = gal_content_lines[ev->index].require_flag;
-    return need == GAL_UNLOCK_NONE || gal_unlock_has_flag(&app->unlock, need);
-}
+#define SCR_W 320
+#define SCR_H 240
+#define ART_H 150
+#define ART_W 320
+#define BOX_Y ART_H
+#define BOX_H (SCR_H - ART_H)
+#define TEXT_X 8
+#define TEXT_W 296
+#define TEXT_LINES 3
+#define TEXT_Y (BOX_Y + 4)    // 正文贴面板顶（不垂直居中）：154 起，3 行 x19 = 154..211
+#define LIST_TOP 27
+#define LIST_ROW_H 34
+#define NOTICE_MS 1800
 
-static bool cg_unlocked(const gal_app_t *app, int index)
-{
-    if (index < 0 || index >= gal_content_cg_count) return false;
-    const gal_cg_t *cg = &gal_content_cgs[index];
-    if (cg->unlock_event == GAL_EVENT_NONE) return true;
-    return gal_unlock_has_cg(&app->unlock, (uint8_t)index);
-}
+#define COLOR_BG 0x04070C
+#define COLOR_PANEL 0x061018
+#define COLOR_ACCENT 0x2B7E8C
+#define COLOR_TEXT 0xEDF7FA
+#define COLOR_DIM 0x9FB9C2
+#define COLOR_CYAN 0x7FE3EA
+#define COLOR_ROW 0x0B1A22
+#define COLOR_ROW_SEL 0x17414F
+#define COLOR_LOCK 0x5C6E75
 
-static bool chapter_unlocked(const gal_app_t *app, int index)
-{
-    if (index < 0 || index >= gal_content_chapter_count) return false;
-    const gal_chapter_t *c = &gal_content_chapters[index];
-    if (c->unlock_event != GAL_EVENT_NONE &&
-        !gal_unlock_has_chapter(&app->unlock, (uint8_t)index)) {
-        return false;
-    }
-    if (c->require_flag != GAL_UNLOCK_NONE &&
-        !gal_unlock_has_flag(&app->unlock, c->require_flag)) {
-        return false;
-    }
-    return true;
-}
+static const char *const s_game_menu[] = {
+    "继续阅读", "保存进度", "读取存档", "历史文本", "CG 鉴赏", "章节选择", "设置", "返回标题",
+};
+static const int s_game_menu_count = (int)(sizeof(s_game_menu) / sizeof(s_game_menu[0]));
 
-// 进入事件时结算解锁:CG / 章节按绑定的事件解锁,事件自带的标记写入剧情锁。
-static void unlock_visit(gal_app_t *app)
-{
-    const int ev = app->event_index;
-    const gal_event_t *event = &gal_content_events[ev];
-    const gal_unlock_t before = app->unlock;
+static const char *const s_settings_names[] = {
+    "文字速度", "自动速度", "字号", "标题背景 · 默认", "标题背景 · 梨乃",
+    "标题背景 · 翼", "返回",
+};
+static const int s_settings_count = (int)(sizeof(s_settings_names) / sizeof(s_settings_names[0]));
 
-    for (int i = 0; i < gal_content_cg_count; ++i) {
-        if (gal_content_cgs[i].unlock_event == ev) gal_unlock_grant_cg(&app->unlock, (uint8_t)i);
-    }
-    for (int i = 0; i < gal_content_chapter_count; ++i) {
-        if (gal_content_chapters[i].unlock_event == ev) {
-            gal_unlock_grant_chapter(&app->unlock, (uint8_t)i);
-        }
-    }
-    if (event->flag_set != GAL_UNLOCK_NONE) {
-        gal_unlock_set_flag(&app->unlock, event->flag_set);
-    }
-    if (event->kind == GAL_EV_ENDING) {
-        gal_unlock_grant_ending(&app->unlock, event->index);
-    }
+static const char *const s_speed_names[] = {"慢", "中", "快", "瞬间"};
+static const char *const s_auto_names[] = {"慢", "标准", "快"};
 
-    // 只在真的变了时才写 NVS(NVS 擦写寿命有限)。
-    if (memcmp(&before, &app->unlock, sizeof(before)) != 0) {
-        (void)gal_unlock_store(&app->unlock);
-    }
-}
+// 源 catalog 的 3 条路线 / 标题菜单顺序
+static const char *const s_title_items[] = {
+    "AFTER STORY", "START", "SIDE STORY", "CHAPTER", "LOAD", "SETTINGS", "GALLERY",
+};
+
+static int s_var_rin = -1;
+static int s_var_tsu = -1;
+static int s_var_main = -1;
+static int s_var_side = -1;
+
+static uint16_t s_page_start[8];
+static uint16_t s_page_len[8];
 
 // ---------------------------------------------------------------- 小工具
-static uint32_t speed_ms(const gal_app_t *app)
+static void set_bg(lv_obj_t *o, uint32_t hex, lv_opa_t opa)
 {
-    static const uint32_t SPEED_MS[4] = { 60, 40, 18, 0 };   // 0 = 瞬间显示整页
-    const uint8_t idx = app->settings.text_speed > 3 ? 1 : app->settings.text_speed;
-    return SPEED_MS[idx];
+    lv_obj_set_style_bg_color(o, lv_color_hex(hex), 0);
+    lv_obj_set_style_bg_opa(o, opa, 0);
+    lv_obj_set_style_border_width(o, 0, 0);
+    lv_obj_set_style_radius(o, 0, 0);
+    lv_obj_set_style_pad_all(o, 0, 0);
 }
 
-static const char *speed_label(const gal_app_t *app)
+static lv_obj_t *mk_label(lv_obj_t *parent, const char *text, int x, int y, int w, int h)
 {
-    static const char *const LABEL[4] = { "慢", "中", "快", "瞬间" };
-    const uint8_t idx = app->settings.text_speed > 3 ? 1 : app->settings.text_speed;
-    return LABEL[idx];
+    lv_obj_t *l = lv_label_create(parent);
+    lv_label_set_text(l, text);
+    lv_obj_set_style_text_font(l, &gal_cjk_16, 0);
+    lv_obj_set_style_text_color(l, lv_color_hex(COLOR_TEXT), 0);
+    lv_obj_set_pos(l, x, y);
+    if (w > 0) {
+        lv_obj_set_width(l, w);
+    }
+    if (h > 0) {
+        lv_obj_set_size(l, w, h);
+    }
+    lv_label_set_long_mode(l, LV_LABEL_LONG_WRAP);
+    return l;
 }
 
-// 竖屏排版(框架规范):16px 档 13 字/行 × 5 行,20px 档 10 字/行 × 4 行。
-static void layout_for(const gal_app_t *app, int *units_per_line, int *lines_per_page)
+// 列表行专用：单行 + 末尾截断（长选项折行会压到下一行）。
+static lv_obj_t *mk_label_clip(lv_obj_t *parent, const char *text, int x, int y, int w, int h)
 {
-    if (app->settings.font_large) {
-        *units_per_line = 20;
-        *lines_per_page = GAL_TEXT_LINES_LARGE;
+    lv_obj_t *l = mk_label(parent, text, x, y, w, h);
+    lv_label_set_long_mode(l, LV_LABEL_LONG_CLIP);
+    return l;
+}
+
+static lv_obj_t *mk_row(lv_obj_t *parent, int i)
+{
+    lv_obj_t *r = lv_obj_create(parent);
+    lv_obj_set_size(r, SCR_W - 24, LIST_ROW_H - 4);
+    lv_obj_set_pos(r, 12, LIST_TOP + i * LIST_ROW_H);
+    set_bg(r, COLOR_ROW, LV_OPA_COVER);
+    lv_obj_set_style_border_width(r, 1, 0);
+    lv_obj_set_style_border_color(r, lv_color_hex(0x1E3A46), 0);
+    lv_obj_set_scrollbar_mode(r, LV_SCROLLBAR_MODE_OFF);
+    return r;
+}
+
+static void row_set(lv_obj_t *row, const char *text, bool selected)
+{
+    lv_obj_t *lbl = lv_obj_get_child(row, 0);
+    if (!lbl) {
+        lbl = mk_label_clip(row, text, 8, 4, SCR_W - 44, 0);
     } else {
-        *units_per_line = 26;
-        *lines_per_page = GAL_TEXT_LINES_SMALL;
+        lv_label_set_text(lbl, text);
+    }
+    lv_obj_set_style_bg_color(row, lv_color_hex(selected ? COLOR_ROW_SEL : COLOR_ROW), 0);
+    lv_obj_set_style_border_color(row, lv_color_hex(selected ? COLOR_ACCENT : 0x1E3A46), 0);
+    lv_obj_set_style_text_color(lbl, lv_color_hex(selected ? 0xFFFFFF : 0xC7D8DE), 0);
+}
+
+static int utf8_next(const char *s, int i)
+{
+    unsigned char c = (unsigned char)s[i];
+    if (!c) {
+        return i;
+    }
+    if (c < 0x80) {
+        return i + 1;
+    }
+    if ((c >> 5) == 6) {
+        return i + 2;
+    }
+    if ((c >> 4) == 14) {
+        return i + 3;
+    }
+    return i + 4;
+}
+
+static int utf8_count(const char *s)
+{
+    int n = 0;
+    for (int i = 0; s && s[i]; i = utf8_next(s, i)) {
+        n++;
+    }
+    return n;
+}
+
+static const lv_font_t *body_font(const gal_app_t *app)
+{
+    return app->settings.font ? &gal_cjk_20 : &gal_cjk_16;
+}
+
+static int cjk_width(const gal_app_t *app)
+{
+    return app->settings.font ? 20 : 16;
+}
+
+static int glyph_w(const char *s, int i, int cjk_w)
+{
+    return (unsigned char)s[i] < 0x80 ? cjk_w / 2 : cjk_w;
+}
+
+static void copy_utf8(char *dst, size_t cap, const char *src)
+{
+    if (cap == 0) {
+        return;
+    }
+    size_t n = 0;
+    while (src && src[n] && n + 1 < cap) {
+        n++;
+    }
+    // 不要把一个 UTF-8 序列截成半个字符。
+    while (n > 0 && ((unsigned char)src[n] & 0xC0) == 0x80) {
+        n--;
+    }
+    memcpy(dst, src ? src : "", n);
+    dst[n] = 0;
+}
+
+// ---------------------------------------------------------------- 分页
+static int paginate(const char *text, int cjk_w, uint16_t *starts, uint16_t *lens,
+                    int max_pages)
+{
+    int len = (int)strlen(text);
+    int pages = 0;
+    int i = 0;
+    while (i < len && pages < max_pages) {
+        int start = i;
+        for (int line = 0; line < TEXT_LINES && i < len; line++) {
+            int w = 0;
+            while (i < len) {
+                unsigned char c = (unsigned char)text[i];
+                if (c == '\n') {
+                    i++;
+                    break;
+                }
+                int gw = glyph_w(text, i, cjk_w);
+                if (w + gw > TEXT_W) {
+                    break;
+                }
+                w += gw;
+                i = utf8_next(text, i);
+            }
+        }
+        if (i == start) {
+            i = utf8_next(text, i);   // 防御：异常超宽字符至少前进一个码点
+        }
+        starts[pages] = (uint16_t)start;
+        lens[pages] = (uint16_t)(i - start);
+        pages++;
+    }
+    return pages ? pages : 1;
+}
+
+static void reader_refresh_text(gal_app_t *app)
+{
+    if (!app->lbl_text) {
+        return;
+    }
+    const char *src = app->text + s_page_start[app->page_index];
+    int n = s_page_len[app->page_index];
+    if (app->typing && app->typed < n) {
+        n = app->typed;
+    }
+    char buf[TEXT_LINES * 140 + 8];
+    if (n > (int)sizeof(buf) - 1) {
+        n = (int)sizeof(buf) - 1;
+    }
+    memcpy(buf, src, n);
+    buf[n] = 0;
+    lv_label_set_text(app->lbl_text, buf);
+    if (app->lbl_page) {
+        char page[32];
+        if (app->page_count > 1) {
+            snprintf(page, sizeof(page), "%d/%d", app->page_index + 1, app->page_count);
+        } else {
+            page[0] = '\0';
+        }
+        lv_label_set_text(app->lbl_page, page);
     }
 }
 
-static void show_notice(gal_app_t *app, const char *text)
+static void reader_refresh_hint(gal_app_t *app)
 {
-    snprintf(app->notice, sizeof(app->notice), "%s", text ? text : "");
-    app->notice_ms = text && text[0] ? 2000 : 0;
-    gal_ui_set_notice(&app->ui, app->notice);
+    if (!app->lbl_tag) {
+        return;
+    }
+    const char *hint = NULL;
+    if (app->notice_ms) {
+        hint = app->notice;
+    } else if (app->draw_error) {
+        hint = "素材读取失败";
+    } else if (app->fast_forward) {
+        hint = "快进";
+    } else if (app->auto_mode) {
+        hint = "自动";
+    }
+    if (hint) {
+        lv_label_set_text(app->lbl_tag, hint);
+        lv_obj_set_style_text_color(app->lbl_tag, lv_color_hex(COLOR_CYAN), 0);
+    } else {
+        lv_label_set_text(app->lbl_tag, pq_tag_label(&app->game.pack, app->tag));
+        lv_obj_set_style_text_color(app->lbl_tag, lv_color_hex(COLOR_DIM), 0);
+    }
 }
 
-static void move_selection(int *sel, int count, int delta)
+// ---------------------------------------------------------------- 画面
+static void clear_root(gal_app_t *app)
 {
-    if (count <= 0) return;
-    int next = *sel + delta;
-    if (next < 0) next = 0;          // 列表不绕圈:到顶/到底停住
-    if (next >= count) next = count - 1;
-    *sel = next;
+    app->reader_built = false;
+    if (app->root) {
+        lv_obj_del(app->root);
+    }
+    app->root = lv_obj_create(lv_screen_active());
+    lv_obj_set_size(app->root, SCR_W, SCR_H);
+    lv_obj_set_pos(app->root, 0, 0);
+    set_bg(app->root, COLOR_BG, LV_OPA_COVER);
+    lv_obj_set_scrollbar_mode(app->root, LV_SCROLLBAR_MODE_OFF);
+    app->img_art = NULL;
+    app->img_art2 = NULL;
+    app->box = NULL;
+    app->lbl_speaker = NULL;
+    app->lbl_tag = NULL;
+    app->lbl_page = NULL;
+    app->lbl_text = NULL;
+    app->lbl_hint = NULL;
+    app->header = NULL;
+    for (int i = 0; i < PQ_LIST_ROWS; i++) {
+        app->rows[i] = NULL;
+        app->row_labels[i] = NULL;
+    }
 }
 
-// ---------------------------------------------------------------- 章节与事件
-// 事件所属的章节名:向后扫描最后一个章节过场。
-static const char *chapter_name_at(int event_index)
+static void title_art(gal_app_t *app);
+
+static void attach_art(gal_app_t *app);
+static void invalidate_art(gal_app_t *app);
+
+#ifdef PQ_UI_TEST_HOOKS
+int s_draw_scene_calls;
+#endif
+
+static bool draw_scene(gal_app_t *app)
 {
-    const char *name = "第 1 章";
-    for (int i = 0; i <= event_index && i < gal_content_event_count; ++i) {
-        if (gal_content_events[i].kind == GAL_EV_TRANSITION) {
-            name = gal_content_transitions[gal_content_events[i].index].chapter;
+#ifdef PQ_UI_TEST_HOOKS
+    s_draw_scene_calls++;
+#endif
+    pq_pack_t *pack = &app->game.pack;
+    bool ok = true;
+    pq_gfx_clear(0x0000);
+    if (app->bg != PQ_NO_IMAGE) {
+        uint16_t img = pq_asset_image(pack, app->bg);
+        const pq_img_entry_t *e = pq_img_entry(pack, img);
+        if (img == PQ_NO_IMAGE || !e) {
+            ok = false;
+        } else {
+            // 背景铺满整屏 0..239（原图只有 320x150，1:1 会在 150 截断）：
+            // 等比 cover 到 320xcanvas_h，多出的部分居中裁。
+            ok = pq_gfx_draw_jpeg_cover(pack, img, 0, 0, ART_W,
+                                        pq_gfx_canvas_height()) && ok;
         }
     }
-    return name;
-}
-
-// 某章节的第一个事件(章节页从这里开始)。
-static int chapter_first_event(int chapter)
-{
-    if (chapter <= 0) return 0;
-    int seen = 0;
-    for (int i = 0; i < gal_content_event_count; ++i) {
-        if (gal_content_events[i].kind == GAL_EV_TRANSITION) {
-            if (++seen == chapter) return i;
+    uint16_t order[3];
+    int n = 0;
+    for (int i = 0; i < 3; i++) {
+        if (app->bodies[i] != PQ_NO_IMAGE) {
+            order[n++] = app->bodies[i];
         }
     }
-    return 0;
+    static const int center1[1] = {160};
+    static const int center2[2] = {93, 227};
+    static const int center3[3] = {67, 160, 253};
+    const int *centers = n == 1 ? center1 : n == 2 ? center2 : center3;
+    for (int i = 0; i < n; i++) {
+        bool body_ok = false, patch_ok = true;
+        (void)pq_gfx_draw_portrait(pack, order[i], centers[i], &body_ok, &patch_ok);
+        if (!body_ok || !patch_ok) {
+            ok = false;
+        }
+    }
+    if (app->cutin != PQ_NO_IMAGE) {
+        pq_gfx_dim(150);
+        if (!pq_gfx_draw_cutin(pack, app->cutin, app->cutin_opacity ? app->cutin_opacity : 200)) {
+            ok = false;
+        }
+    }
+    if (!ok) {
+        pq_gfx_clear(0x2000);   // 明确的错误底色，不静默缺图
+    } else if (app->bg != PQ_NO_IMAGE) {
+        pq_game_mark_cg(&app->game, app->bg);   // 完整成功才解锁该 CG 组
+    }
+    app->draw_error = !ok;
+    invalidate_art(app);
+    return ok;
 }
 
-static gal_page_t event_page(const gal_event_t *ev)
+// 画布条带 -> LVGL 图像控件。双带模式两条竖着拼成 320x240，单块回退只有第 0 条。
+static void attach_art(gal_app_t *app)
 {
-    switch (ev->kind) {
-    case GAL_EV_CHOICE: return GAL_PAGE_CHOICE;
-    case GAL_EV_TRANSITION: return GAL_PAGE_TRANSITION;
-    case GAL_EV_ENDING: return GAL_PAGE_ENDING;
-    case GAL_EV_LINE:
-    default: return GAL_PAGE_GAME;
+    app->img_art = lv_image_create(app->root);
+    lv_image_set_src(app->img_art, pq_gfx_canvas(0));
+    lv_obj_set_pos(app->img_art, 0, 0);
+    app->img_art2 = NULL;
+    if (pq_gfx_band_count() > 1) {
+        app->img_art2 = lv_image_create(app->root);
+        lv_image_set_src(app->img_art2, pq_gfx_canvas(1));
+        lv_obj_set_pos(app->img_art2, 0, PQ_BAND_H);
     }
 }
 
-// 按当前事件切页并渲染。
-static void enter_event(gal_app_t *app)
+static void invalidate_art(gal_app_t *app)
 {
-    if (app->event_index < 0 || app->event_index >= gal_content_event_count) {
-        app->event_index = gal_content_event_count - 1;
+    if (app->img_art) {
+        lv_obj_invalidate(app->img_art);
     }
-    unlock_visit(app);   // 到这里就算看过:解锁 CG / 章节并写入事件标记
-    // 自动进度:记下当前事件与页,继续游戏就从这里接上。
-    app->progress.valid = 1;
-    app->progress.event_index = (uint16_t)app->event_index;
-    app->progress.page_index = (uint16_t)app->page_index;
-    app->progress_dirty = true;
-    app->progress_accum_ms = 0;
-    app->page = event_page(&gal_content_events[app->event_index]);
-    // 快进碰到选项、过场或结局就停下,把操作交回给玩家(render_page 会同步指示);
-    // 自动阅读不解除,过场自己会走过去,所以计时从头开始。
-    if (app->page != GAL_PAGE_GAME) {
-        app->fast_forward = false;
+    if (app->img_art2) {
+        lv_obj_invalidate(app->img_art2);
+    }
+}
+
+static void build_reader_objects(gal_app_t *app)
+{
+    clear_root(app);
+    app->reader_built = true;
+    attach_art(app);
+
+    app->box = lv_obj_create(app->root);
+    lv_obj_set_size(app->box, SCR_W, BOX_H);
+    lv_obj_set_pos(app->box, 0, BOX_Y);
+    set_bg(app->box, COLOR_PANEL, 180);   // 0xB4：半透
+    lv_obj_set_style_border_width(app->box, 1, 0);
+    lv_obj_set_style_border_color(app->box, lv_color_hex(COLOR_ACCENT), 0);
+
+    app->lbl_speaker = mk_label(app->root, pq_speaker(&app->game.pack, app->speaker),
+                                10, 128, 0, 18);
+    lv_obj_set_style_text_color(app->lbl_speaker, lv_color_hex(COLOR_CYAN), 0);
+    // 名字在框外：底条只包文字（内容宽度 + 左右 6px），不再固定 160 拉满。
+    lv_obj_set_width(app->lbl_speaker, LV_SIZE_CONTENT);
+    lv_obj_set_height(app->lbl_speaker, 18);
+    lv_obj_set_style_pad_hor(app->lbl_speaker, 6, 0);
+    lv_obj_set_style_bg_color(app->lbl_speaker, lv_color_hex(COLOR_PANEL), 0);
+    lv_obj_set_style_bg_opa(app->lbl_speaker, 180, 0);
+    app->lbl_tag = mk_label(app->root, pq_tag_label(&app->game.pack, app->tag),
+                            170, 128, 142, 18);
+    lv_obj_set_style_text_align(app->lbl_tag, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_obj_set_style_text_color(app->lbl_tag, lv_color_hex(COLOR_DIM), 0);
+    // 页码独立 label：挪到面板外的右上（132..150），与左侧名字同一行；
+    // 这样正文可以贴到面板顶 y=154 而不与页码相撞。
+    app->lbl_page = mk_label(app->root, "", 262, 128, 50, 18);
+    lv_obj_set_style_text_align(app->lbl_page, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_obj_set_style_text_color(app->lbl_page, lv_color_hex(COLOR_DIM), 0);
+    app->lbl_text = mk_label(app->root, "", TEXT_X, TEXT_Y, TEXT_W, 0);
+    lv_obj_set_style_text_font(app->lbl_text, body_font(app), 0);
+    lv_obj_set_style_text_line_space(app->lbl_text, 0, 0);
+    if (app->view == PQ_VIEW_ANOTHER) {
+        lv_obj_t *banner = mk_label(app->root, "ANOTHER VIEW", 4, 2, 120, 18);
+        lv_obj_set_style_bg_color(banner, lv_color_hex(0x04070C), 0);
+        lv_obj_set_style_bg_opa(banner, LV_OPA_60, 0);
+        lv_obj_set_style_text_color(banner, lv_color_hex(COLOR_CYAN), 0);
+    }
+    reader_refresh_text(app);
+    reader_refresh_hint(app);
+}
+
+// ---------------------------------------------------------------- 列表
+static int clamp_top(int sel, int count)
+{
+    int top = sel - PQ_LIST_ROWS / 2;
+    if (top > count - PQ_LIST_ROWS) {
+        top = count - PQ_LIST_ROWS;
+    }
+    if (top < 0) {
+        top = 0;
+    }
+    return top;
+}
+
+static void list_begin(gal_app_t *app, const char *title, int count, int sel, int *top_out)
+{
+    clear_root(app);
+    app->header = mk_label(app->root, title, 12, 4, SCR_W - 24, 20);
+    lv_obj_set_style_text_color(app->header, lv_color_hex(COLOR_CYAN), 0);
+    int top = clamp_top(sel, count);
+    if (top_out) {
+        *top_out = top;
+    }
+    app->list_top = top;
+    int shown = count - top;
+    if (shown > PQ_LIST_ROWS) {
+        shown = PQ_LIST_ROWS;
+    }
+    for (int i = 0; i < shown; i++) {
+        app->rows[i] = mk_row(app->root, i);
+        app->row_labels[i] = lv_obj_get_child(app->rows[i], 0);
+    }
+    if (count == 0) {
+        mk_label(app->root, "（没有可显示的条目）", 16, LIST_TOP + 4, SCR_W - 32, 20);
+    }
+    lv_obj_t *hint = mk_label(app->root,
+                              app->notice_ms ? app->notice
+                                             : "UP/DOWN 选择 · OK 确认 · 长按 OK 返回",
+                              12, SCR_H - 16, SCR_W - 24, 18);
+    lv_obj_set_style_text_color(hint, lv_color_hex(app->notice_ms ? COLOR_CYAN : COLOR_DIM),
+                                0);
+}
+
+static void list_row_text(gal_app_t *app, int i, int index, int sel, const char *text)
+{
+    if (i < 0 || i >= PQ_LIST_ROWS || !app->rows[i]) {
+        return;
+    }
+    row_set(app->rows[i], text, index == sel);
+}
+
+static void slot_label(const pq_pack_t *pack, int slot, int index, char *out, size_t cap)
+{
+    char name[24];
+    if (slot == -1) {
+        snprintf(name, sizeof(name), "自动存档");
+    } else {
+        snprintf(name, sizeof(name), "存档 %02d", slot + 1);
+    }
+    pq_save_info_t info;
+    if (!pq_game_slot_peek(index, pack, &info)) {
+        snprintf(out, cap, "%s · 空", name);
+        return;
+    }
+    if (!info.valid) {
+        snprintf(out, cap, "%s · 存档无法读取", name);
+        return;
+    }
+    const char *label = pq_tag_label(pack, info.tag);
+    char preview[40];
+    copy_utf8(preview, sizeof(preview), info.preview);
+    if (info.mode == 1) {
+        snprintf(out, cap, "%s · %s · 待选", name, label);
+    } else {
+        snprintf(out, cap, "%s · %.14s · %.10s", name, label, preview);
+    }
+}
+
+static int title_bg_unlocked(gal_app_t *app, int index)
+{
+    if (index == 1) {
+        int32_t v = 0;
+        return s_var_rin >= 0 && pq_game_global_var(&app->game, (uint16_t)s_var_rin, &v) && v;
+    }
+    if (index == 2) {
+        int32_t v = 0;
+        return s_var_tsu >= 0 && pq_game_global_var(&app->game, (uint16_t)s_var_tsu, &v) && v;
+    }
+    return 1;
+}
+
+static int resolve_title_bg(gal_app_t *app)
+{
+    int idx = app->settings.title_bg;
+    if (idx < 0 || idx > 2 || !title_bg_unlocked(app, idx)) {
+        idx = 0;
+    }
+    return idx;
+}
+
+static void title_art(gal_app_t *app)
+{
+    int idx = resolve_title_bg(app);
+    const pq_title_t *art = pq_title(&app->game.pack, (uint8_t)idx);
+    pq_gfx_clear(0x0000);
+    if (art) {
+        // 标题背景 320x150 == 画布尺寸：cover 后正好 1:1 铺满、不裁。
+        // （pack 里的 title 矩形按 320x240 布局给的是 158 的 y，画布只有 150 高，
+        //   照抄会画到画布外，所以这里按画布矩形做 cover。）
+        (void)pq_gfx_draw_jpeg_cover(&app->game.pack, art->image, 0, 0, ART_W, ART_H);
+    }
+    const pq_title_t *logo = pq_title(&app->game.pack, 3);
+    if (logo) {
+        (void)pq_gfx_draw_image(&app->game.pack, logo->image, 10, 8);
+    }
+    invalidate_art(app);
+}
+
+static int title_item_count(gal_app_t *app)
+{
+    int32_t v = 0;
+    bool after = s_var_main >= 0 && pq_game_global_var(&app->game, (uint16_t)s_var_main, &v) && v;
+    return after ? 7 : 6;
+}
+
+static const char *title_item_label(int i, bool after)
+{
+    if (after) {
+        return (i >= 0 && i < 7) ? s_title_items[i] : "";
+    }
+    return (i >= 0 && i + 1 < 7) ? s_title_items[i + 1] : "";
+}
+
+// ---------------------------------------------------------------- 页面
+static void build_title(gal_app_t *app);
+static void build_reader(gal_app_t *app);
+static void build_choice(gal_app_t *app);
+static void build_menu(gal_app_t *app);
+static void build_slots(gal_app_t *app, bool save);
+static void build_history(gal_app_t *app);
+static void build_settings(gal_app_t *app);
+static void build_gallery(gal_app_t *app);
+static void build_cg(gal_app_t *app);
+static void build_routes(gal_app_t *app);
+static void build_chapters(gal_app_t *app);
+static void build_ending(gal_app_t *app);
+static void build_about(gal_app_t *app);
+static void build_overwrite(gal_app_t *app);
+static void build_error(gal_app_t *app);
+
+static void rebuild_current_page(gal_app_t *app)
+{
+    switch (app->page) {
+    case PQ_PAGE_TITLE:
+        build_title(app);
+        break;
+    case PQ_PAGE_READER:
+        build_reader(app);
+        break;
+    case PQ_PAGE_CHOICE:
+        build_choice(app);
+        break;
+    case PQ_PAGE_MENU:
+        build_menu(app);
+        break;
+    case PQ_PAGE_SAVE:
+        build_slots(app, true);
+        break;
+    case PQ_PAGE_LOAD:
+        build_slots(app, false);
+        break;
+    case PQ_PAGE_HISTORY:
+        build_history(app);
+        break;
+    case PQ_PAGE_SETTINGS:
+        build_settings(app);
+        break;
+    case PQ_PAGE_GALLERY:
+        build_gallery(app);
+        break;
+    case PQ_PAGE_CG:
+        build_cg(app);
+        break;
+    case PQ_PAGE_ROUTES:
+        build_routes(app);
+        break;
+    case PQ_PAGE_CHAPTERS:
+        build_chapters(app);
+        break;
+    case PQ_PAGE_ENDING:
+        build_ending(app);
+        break;
+    case PQ_PAGE_ABOUT:
+        build_about(app);
+        break;
+    case PQ_PAGE_OVERWRITE:
+        build_overwrite(app);
+        break;
+    case PQ_PAGE_ERROR:
+        build_error(app);
+        break;
+    default:
+        break;
+    }
+}
+
+static void goto_page(gal_app_t *app, pq_page_t page)
+{
+    if (page != app->page) {
+        if (app->page_depth < (int)(sizeof(app->page_stack) / sizeof(app->page_stack[0]))) {
+            app->page_stack[app->page_depth++] = app->page;
+        }
+    }
+    app->page = page;
+    rebuild_current_page(app);
+}
+
+static void go_back(gal_app_t *app)
+{
+    if (app->page_depth > 0) {
+        app->page = app->page_stack[--app->page_depth];
+    } else {
+        app->page = PQ_PAGE_TITLE;
+        app->title_sel = 0;
+    }
+    rebuild_current_page(app);
+}
+
+// ---------------------------------------------------------------- 正文推进
+static void apply_visual(gal_app_t *app, uint16_t visual_index)
+{
+    app->visual_fp = visual_index;
+    if (visual_index < app->game.pack.visual_count) {
+        const pq_visual_t *v = &app->game.pack.visuals[visual_index];
+        app->bg = v->bg;
+        app->bodies[0] = v->body[0];
+        app->bodies[1] = v->body[1];
+        app->bodies[2] = v->body[2];
+        app->cutin = v->cutin;
+        app->view = v->view;
+        app->cutin_opacity = v->opacity;
+        return;
+    }
+    app->bg = PQ_NO_IMAGE;
+    app->bodies[0] = app->bodies[1] = app->bodies[2] = PQ_NO_IMAGE;
+    app->cutin = PQ_NO_IMAGE;
+    app->view = PQ_VIEW_NORMAL;
+    app->cutin_opacity = 0;
+}
+
+static bool has_reading_checkpoint(const gal_app_t *app)
+{
+    return app->game.mode == 1 || app->game.text_op != 0xFFFFFFFF;
+}
+
+// 自动档：正文/待选的有效阅读点，无论当前停在哪个子页都保存同一句/同一页/同一待选。
+static bool save_auto_checkpoint(gal_app_t *app)
+{
+    if (!has_reading_checkpoint(app)) {
+        return false;
+    }
+    uint8_t page = app->game.mode == 1 ? 0 : (uint8_t)app->page_index;
+    const bool ok = pq_game_save(&app->game, PQ_SLOT_AUTO, page);
+    app->auto_dirty = !ok;
+    if (!ok) {
+        ESP_LOGW(TAG, "自动档写入失败（2s 后重试）");
+    }
+    return ok;
+}
+
+static void reader_enter_page(gal_app_t *app)
+{
+    app->typed = 0;
+    app->type_accum_ms = 0;
+    // 快进时整页瞬显（自动阅读仍逐字）。
+    app->typing = app->settings.speed != 3 && !app->fast_forward;
+    if (app->fast_forward) {
+        app->typed = s_page_len[app->page_index];
+    }
+    app->auto_accum_ms = 0;
+    reader_refresh_text(app);
+    reader_refresh_hint(app);
+}
+
+static void start_chapter(gal_app_t *app, uint16_t scene);
+static bool auto_next_chapter(gal_app_t *app);
+
+static void load_step(gal_app_t *app)
+{
+    pq_step_t step;
+    for (int guard = 0; guard < 8; guard++) {
+        if (!pq_game_step(&app->game, &step)) {
+            snprintf(app->error_text, sizeof(app->error_text), "%s",
+                     step.error ? step.error : "剧情执行失败");
+            app->page = PQ_PAGE_ERROR;
+            rebuild_current_page(app);
+            return;
+        }
+        if (step.kind == PQ_STEP_TEXT) {
+            copy_utf8(app->text, sizeof(app->text), step.text ? step.text : "");
+            app->page_count = paginate(app->text, cjk_width(app), s_page_start, s_page_len, 8);
+            app->page_index = 0;
+            app->speaker = step.speaker;
+            app->tag = step.tag;
+            app->shown_op = step.op;
+            const uint16_t visual_before = app->visual_fp;
+            apply_visual(app, step.visual);
+            app->page = PQ_PAGE_READER;
+            app->page_index = 0;
+            // 快进时进页就整页显示（不启动打字机）。
+            app->typing = (app->settings.speed != 3) && !app->fast_forward;
+            app->typed = app->fast_forward ? s_page_len[0] : 0;
+            // 快进/同画面连续若干句：对象不重建、画面不重解码，只换文本。
+            const bool same_visual = (visual_before == app->visual_fp) && app->reader_built;
+            if (!same_visual) {
+                build_reader_objects(app);
+                (void)draw_scene(app);
+            }
+            if (app->game.scene != app->auto_scene) {
+                app->auto_scene = app->game.scene;
+                (void)save_auto_checkpoint(app);
+            }
+            reader_enter_page(app);
+            return;
+        }
+        if (step.kind == PQ_STEP_CHOICE) {
+            apply_visual(app, app->game.current_visual);
+            app->page = PQ_PAGE_CHOICE;
+            app->auto_paused = true;
+            app->fast_forward = false;
+            build_choice(app);   // 保留待选光标
+            return;
+        }
+        if (step.kind == PQ_STEP_END) {
+            // 章节播完先自动接下一章（同一路线）；只有最后一章才进结局页。
+            if (auto_next_chapter(app)) {
+                return;
+            }
+            app->ending_index = (uint16_t)(pq_ending_index(&app->game.pack, app->game.scene));
+            if (app->ending_index > 0xFF) {
+                app->ending_index = 0;
+            }
+            // 后日谈通关后自动切到对应标题背景（源 0.1.5 语义）
+            const pq_scene_t *scene = pq_scene_by_id(&app->game.pack, app->game.scene);
+            if (app->game.story && scene) {
+                if (s_var_rin >= 0 && scene->clear_var == s_var_rin) {
+                    app->settings.title_bg = 1;
+                    (void)pq_settings_save(&app->settings);
+                } else if (s_var_tsu >= 0 && scene->clear_var == s_var_tsu) {
+                    app->settings.title_bg = 2;
+                    (void)pq_settings_save(&app->settings);
+                }
+            }
+            app->auto_mode = false;
+            app->fast_forward = false;
+            app->page = PQ_PAGE_ENDING;
+            (void)pq_game_save_meta(&app->game);
+            rebuild_current_page(app);
+            return;
+        }
+        if (step.kind == PQ_STEP_ERROR) {
+            snprintf(app->error_text, sizeof(app->error_text), "%s",
+                     step.error ? step.error : "剧情执行失败");
+            app->page = PQ_PAGE_ERROR;
+            rebuild_current_page(app);
+            return;
+        }
+    }
+    snprintf(app->error_text, sizeof(app->error_text), "跳转次数过多");
+    app->page = PQ_PAGE_ERROR;
+    rebuild_current_page(app);
+}
+
+static void advance_reader(gal_app_t *app)
+{
+    if (app->typing) {
+        app->typed = s_page_len[app->page_index];
+        app->typing = false;
+        app->type_accum_ms = 0;
+        reader_refresh_text(app);
         app->auto_accum_ms = 0;
-    }
-    render_page(app);
-}
-
-static void advance_event(gal_app_t *app)
-{
-    // 跳过条件不满足的台词(分支的另一半)。
-    int next = app->event_index + 1;
-    while (next < gal_content_event_count && !event_visible(app, next)) next++;
-    if (next >= gal_content_event_count) {
-        goto_page(app, GAL_PAGE_TITLE);
-        show_notice(app, "已经到最后了");
-        return;
-    }
-    app->event_index = next;
-    app->page_index = 0;
-    app->shown_line = -1;
-    // 注意:这里不清快进。按住“上”时快进要一直推到最后一句。
-    enter_event(app);
-}
-
-static void history_add(gal_app_t *app, const gal_line_t *line)
-{
-    if (app->history_count >= GAL_HISTORY_MAX) return;
-    app->history[app->history_count++] = line;
-}
-
-// 显示当前句的当前页(自动分页,长句不会被裁掉)。
-static void show_line(gal_app_t *app, int line_index)
-{
-    if (line_index < 0 || line_index >= gal_content_line_count) return;
-    const gal_line_t *line = &gal_content_lines[line_index];
-
-    int units = 26;
-    int lines = 5;
-    layout_for(app, &units, &lines);
-
-    uint32_t offsets[GAL_TEXT_MAX_PAGES + 1];
-    int pages = gal_text_pages(line->text, units, lines, offsets, GAL_TEXT_MAX_PAGES + 1);
-    if (pages < 1) pages = 1;
-    if (pages > GAL_TEXT_MAX_PAGES) pages = GAL_TEXT_MAX_PAGES;
-    if (app->page_index >= pages) app->page_index = pages - 1;
-    app->page_count = pages;
-
-    const uint32_t begin = offsets[app->page_index];
-    uint32_t end = offsets[app->page_index + 1];
-    if (end < begin) end = begin;
-    size_t len = end - begin;
-    if (len >= GAL_TEXT_CAPACITY) len = GAL_TEXT_CAPACITY - 1;
-    char page_text[GAL_TEXT_CAPACITY];
-    memcpy(page_text, line->text + begin, len);
-    page_text[len] = '\0';
-
-    // 快进时直接整页显示,不再走打字机。
-    gal_ui_set_text(&app->ui, line->speaker, page_text,
-                    app->fast_forward ? 0 : speed_ms(app),
-                    line->image, line->body);
-    gal_ui_set_chapter(&app->ui, chapter_name_at(app->event_index));
-    app->shown_line = line_index;
-    app->shown_page = app->page_index;
-    // 翻页也算进度(恢复时回到同一页)。
-    app->progress.valid = 1;
-    app->progress.event_index = (uint16_t)app->event_index;
-    app->progress.page_index = (uint16_t)app->page_index;
-    app->progress_dirty = true;
-
-    if (app->page_index == 0) history_add(app, line);
-}
-
-// 推进一句(打字中先全显;页内翻页优先,再前进到下一个事件)。
-static void advance_reading(gal_app_t *app, bool fast)
-{
-    const gal_event_t *ev = &gal_content_events[app->event_index];
-    if (ev->kind != GAL_EV_LINE) {
-        advance_event(app);
-        return;
-    }
-    if (!fast && gal_ui_typing(&app->ui)) {
-        gal_ui_show_full_text(&app->ui);
         return;
     }
     if (app->page_index + 1 < app->page_count) {
         app->page_index++;
-        show_line(app, ev->index);
+        reader_enter_page(app);
         return;
     }
-    advance_event(app);
+    load_step(app);
 }
 
-// ---------------------------------------------------------------- 存读档
-static void do_save(gal_app_t *app, int slot)
+static void show_title(gal_app_t *app)
 {
-    if (slot < 0 || slot >= GAL_SAVE_SLOTS) return;
-    gal_slot_t *s = &app->save.slots[slot];
-    s->occupied = 1;
-    s->event_index = (uint16_t)app->event_index;
-    s->page_index = (uint16_t)app->page_index;
-    snprintf(s->chapter, sizeof(s->chapter), "%s", chapter_name_at(app->event_index));
-    if (!gal_save_store(&app->save)) {
-        show_notice(app, "保存失败");
+    if (app->game.meta_dirty) {
+        pq_game_flush_meta(&app->game);
+    }
+    (void)save_auto_checkpoint(app);
+    pq_game_flush_meta(&app->game);
+    app->page_depth = 0;
+    app->page = PQ_PAGE_TITLE;
+    app->title_sel = 0;
+    app->auto_mode = false;
+    app->fast_forward = false;
+    app->auto_scene = 0xFFFF;
+    rebuild_current_page(app);
+}
+
+// ---------------------------------------------------------------- 构建：标题
+static void build_title(gal_app_t *app)
+{
+    clear_root(app);
+    attach_art(app);
+    title_art(app);
+
+    int count = title_item_count(app);
+    int32_t v = 0;
+    bool after = s_var_main >= 0 && pq_game_global_var(&app->game, (uint16_t)s_var_main, &v) && v;
+    if (app->title_sel >= count) {
+        app->title_sel = count - 1;
+    }
+    for (int i = 0; i < count; i++) {
+        int col = i % 2;
+        int row = i / 2;
+        lv_obj_t *cell = lv_obj_create(app->root);
+        lv_obj_set_size(cell, 154, 20);
+        lv_obj_set_pos(cell, col == 0 ? 6 : 162, BOX_Y + 2 + row * 21);
+        set_bg(cell, i == app->title_sel ? COLOR_ROW_SEL : COLOR_ROW, LV_OPA_COVER);
+        lv_obj_set_style_border_width(cell, 1, 0);
+        lv_obj_set_style_border_color(cell, lv_color_hex(i == app->title_sel ? COLOR_ACCENT
+                                                                          : 0x162A34), 0);
+        lv_obj_set_scrollbar_mode(cell, LV_SCROLLBAR_MODE_OFF);
+        lv_obj_t *lbl = mk_label(cell, title_item_label(i, after), 7, 1, 140, 18);
+        lv_obj_set_style_text_color(lbl, lv_color_hex(i == app->title_sel ? 0xFFFFFF
+                                                                         : 0xBFD2D9), 0);
+        if (i >= PQ_LIST_ROWS) {
+            continue;
+        }
+        app->rows[i] = cell;
+        app->row_labels[i] = lbl;
+    }
+    const char *hint = app->notice_ms ? app->notice : "UP/DOWN · OK";
+    lv_obj_t *h = app->notice_ms ? mk_label(app->root, hint, 8, SCR_H - 16, SCR_W - 16, 16)
+                                 : mk_label(app->root, hint, 168, 128, 146, 18);
+    lv_obj_set_style_text_align(h, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_obj_set_style_text_color(h, lv_color_hex(COLOR_DIM), 0);
+}
+
+// ---------------------------------------------------------------- 构建：正文
+static void build_reader(gal_app_t *app)
+{
+    build_reader_objects(app);
+    (void)draw_scene(app);
+    reader_refresh_text(app);
+    reader_refresh_hint(app);
+}
+
+// ---------------------------------------------------------------- 构建：选项
+static void build_choice(gal_app_t *app)
+{
+    build_reader_objects(app);
+    (void)draw_scene(app);
+    int count = pq_game_choice_count(&app->game);
+    if (app->game.choice_sel >= count) {
+        app->game.choice_sel = 0;
+    }
+    // 覆盖对话框区：选项列表放在下半屏
+    if (app->box) {
+        lv_obj_del(app->box);
+        app->box = NULL;
+    }
+    lv_obj_t *card = lv_obj_create(app->root);
+    lv_obj_set_size(card, SCR_W, BOX_H);
+    lv_obj_set_pos(card, 0, BOX_Y);
+    set_bg(card, COLOR_PANEL, LV_OPA_COVER);
+    lv_obj_set_style_border_width(card, 1, 0);
+    lv_obj_set_style_border_color(card, lv_color_hex(COLOR_ACCENT), 0);
+    lv_obj_set_scrollbar_mode(card, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_t *title = mk_label(card, "选择下一步", 8, 2, 200, 18);
+    lv_obj_set_style_text_color(title, lv_color_hex(COLOR_CYAN), 0);
+    for (int i = 0; i < count && i < PQ_LIST_ROWS; i++) {
+        const pq_choice_item_t *item = pq_game_choice_item(&app->game, i);
+        char text[96] = "?";
+        if (item) {
+            copy_utf8(text, sizeof(text),
+                      pq_text_get(&app->game.pack, item->text_off, item->text_len));
+        }
+        lv_obj_t *row = lv_obj_create(card);
+        lv_obj_set_size(row, SCR_W - 16, 26);
+        lv_obj_set_pos(row, 8, 22 + i * 30);
+        set_bg(row, i == app->game.choice_sel ? COLOR_ROW_SEL : COLOR_ROW, LV_OPA_COVER);
+        lv_obj_set_style_border_width(row, 1, 0);
+        lv_obj_set_style_border_color(
+            row, lv_color_hex(i == app->game.choice_sel ? COLOR_ACCENT : 0x1E3A46), 0);
+        lv_obj_set_scrollbar_mode(row, LV_SCROLLBAR_MODE_OFF);
+        lv_obj_t *lbl = mk_label_clip(row, text, 8, 4, SCR_W - 40, 20);
+        lv_obj_set_style_text_color(lbl, lv_color_hex(i == app->game.choice_sel ? 0xFFFFFF
+                                                                                : 0xC7D8DE), 0);
+        app->rows[i] = row;
+        app->row_labels[i] = lbl;
+    }
+    lv_obj_t *hint = mk_label(card, "OK 确认 · 长按 OK 菜单", 8, BOX_H - 18, SCR_W - 16, 16);
+    lv_obj_set_style_text_color(hint, lv_color_hex(COLOR_DIM), 0);
+}
+
+// ---------------------------------------------------------------- 构建：菜单
+static void build_menu(gal_app_t *app)
+{
+    int top = 0;
+    list_begin(app, "菜单", s_game_menu_count, app->menu_sel, &top);
+    app->list_top = top;
+    for (int i = 0; i < PQ_LIST_ROWS; i++) {
+        int idx = top + i;
+        if (idx >= s_game_menu_count) {
+            break;
+        }
+        list_row_text(app, i, idx, app->menu_sel, s_game_menu[idx]);
+    }
+}
+
+static void build_slots(gal_app_t *app, bool save)
+{
+    int count = save ? PQ_SLOT_COUNT : PQ_SLOT_COUNT + 1;   // 读取页首行是自动档
+    int *sel = save ? &app->save_sel : &app->load_sel;
+    if (*sel >= count) {
+        *sel = count - 1;
+    }
+    int top = 0;
+    list_begin(app, save ? "保存进度" : "读取存档", count, *sel, &top);
+    for (int i = 0; i < PQ_LIST_ROWS; i++) {
+        int idx = top + i;
+        if (idx >= count) {
+            break;
+        }
+        char text[96];
+        if (save) {
+            slot_label(&app->game.pack, idx, idx, text, sizeof(text));
+        } else if (idx == 0) {
+            slot_label(&app->game.pack, -1, PQ_SLOT_AUTO, text, sizeof(text));
+        } else {
+            slot_label(&app->game.pack, idx - 1, idx - 1, text, sizeof(text));
+        }
+        list_row_text(app, i, idx, *sel, text);
+        pq_save_info_t info;
+        bool exists = save ? pq_game_slot_peek(idx, &app->game.pack, &info)
+                           : pq_game_slot_peek(idx == 0 ? PQ_SLOT_AUTO : idx - 1,
+                                               &app->game.pack, &info);
+        if (!exists && app->rows[i] && app->row_labels[i]) {
+            lv_obj_set_style_text_color(app->row_labels[i], lv_color_hex(COLOR_DIM), 0);
+        }
+    }
+}
+
+static void build_history(gal_app_t *app)
+{
+    int count = pq_game_history_count(&app->game);
+    if (app->list_sel >= count) {
+        app->list_sel = count ? count - 1 : 0;
+    }
+    int top = 0;
+    list_begin(app, "历史文本", count, app->list_sel, &top);
+    for (int i = 0; i < PQ_LIST_ROWS; i++) {
+        int idx = top + i;
+        if (idx >= count) {
+            break;
+        }
+        const pq_history_t *h = pq_game_history_at(&app->game, idx);
+        if (!h) {
+            continue;
+        }
+        char text[128];
+        snprintf(text, sizeof(text), "%s%s%s", pq_speaker(&app->game.pack, h->speaker),
+                 h->speaker == 0xFFFF ? "" : "：", h->text);
+        list_row_text(app, i, idx, app->list_sel, text);
+    }
+}
+
+static void build_settings(gal_app_t *app)
+{
+    int top = 0;
+    list_begin(app, "设置", s_settings_count, app->settings_sel, &top);
+    for (int i = 0; i < PQ_LIST_ROWS; i++) {
+        int idx = top + i;
+        if (idx >= s_settings_count) {
+            break;
+        }
+        char text[64];
+        if (idx == 0) {
+            snprintf(text, sizeof(text), "文字速度 · %s", s_speed_names[app->settings.speed]);
+        } else if (idx == 1) {
+            snprintf(text, sizeof(text), "自动速度 · %s",
+                     s_auto_names[app->settings.auto_speed]);
+        } else if (idx == 2) {
+            snprintf(text, sizeof(text), "字号 · %s", app->settings.font ? "大 20px"
+                                                                        : "标准 16px");
+        } else if (idx >= 3 && idx <= 5) {
+            int bg = idx - 3;
+            snprintf(text, sizeof(text), "%s%s", s_settings_names[idx],
+                     title_bg_unlocked(app, bg) ? "" : " · 未解锁");
+        } else {
+            snprintf(text, sizeof(text), "%s", s_settings_names[idx]);
+        }
+        list_row_text(app, i, idx, app->settings_sel, text);
+        if (idx >= 3 && idx <= 5 && !title_bg_unlocked(app, idx - 3) && app->row_labels[i]) {
+            lv_obj_set_style_text_color(app->row_labels[i], lv_color_hex(COLOR_LOCK), 0);
+        }
+    }
+}
+
+static void build_gallery(gal_app_t *app)
+{
+    int count = (int)app->game.pack.gallery_group_count;
+    if (app->gallery_sel >= count) {
+        app->gallery_sel = count - 1;
+    }
+    int top = 0;
+    list_begin(app, "CG 鉴赏", count, app->gallery_sel, &top);
+    for (int i = 0; i < PQ_LIST_ROWS; i++) {
+        int idx = top + i;
+        if (idx >= count) {
+            break;
+        }
+        bool unlocked = pq_game_cg_unlocked(&app->game, (uint16_t)idx);
+        char text[64];
+        snprintf(text, sizeof(text), "%s %s · %u 张", unlocked ? "◆" : "◇",
+                 pq_gallery_label(&app->game.pack, (uint16_t)idx),
+                 (unsigned)pq_gallery_count(&app->game.pack, (uint16_t)idx));
+        list_row_text(app, i, idx, app->gallery_sel, text);
+        if (!unlocked && app->row_labels[i]) {
+            lv_obj_set_style_text_color(app->row_labels[i], lv_color_hex(COLOR_LOCK), 0);
+        }
+    }
+}
+
+static void build_cg(gal_app_t *app)
+{
+    clear_root(app);
+    attach_art(app);
+    int count = (int)pq_gallery_count(&app->game.pack, (uint16_t)app->cg_group);
+    if (app->cg_member >= count) {
+        app->cg_member = count ? count - 1 : 0;
+    }
+    uint16_t asset = pq_gallery_member(&app->game.pack, (uint16_t)app->cg_group,
+                                       (uint16_t)app->cg_member);
+    uint16_t image = pq_asset_image(&app->game.pack, asset);
+    const pq_img_entry_t *e = pq_img_entry(&app->game.pack, image);
+    pq_gfx_clear(0x0000);
+    bool ok = false;
+    if (e) {
+        // cover：等比放大到宽高都盖住 320x150，多的部分居中裁（不非等比拉伸）。
+        // 画布有 240 高时铺满整屏（CG 页不再留 90px 空条）；内存不够回落到 150 时
+        // 只铺满画面区，底部仍由对话框/留白承担。
+        ok = pq_gfx_draw_jpeg_cover(&app->game.pack, image, 0, 0, ART_W,
+                                    pq_gfx_canvas_height());
+    }
+    app->draw_error = !ok;
+    invalidate_art(app);   // 双带：两条都要重新取像素
+    char caption[96];
+    snprintf(caption, sizeof(caption), "%s · %d/%d%s",
+             pq_gallery_label(&app->game.pack, (uint16_t)app->cg_group), app->cg_member + 1,
+             count, count > 1 ? " · UP/DOWN 切换差分" : "");
+    lv_obj_t *cap = mk_label(app->root, ok ? caption : "素材读取失败", 8, BOX_Y + 6,
+                             SCR_W - 16, 20);
+    lv_obj_set_style_text_color(cap, lv_color_hex(ok ? COLOR_TEXT : 0xFF8080), 0);
+    const char *label = pq_gallery_label(&app->game.pack, (uint16_t)app->cg_group);
+    lv_obj_t *name = mk_label(app->root, label, 8, BOX_Y + 34, SCR_W - 16, 20);
+    lv_obj_set_style_text_color(name, lv_color_hex(COLOR_CYAN), 0);
+    lv_obj_t *hint = mk_label(app->root, "OK 返回列表 · 长按 OK 返回", 8, SCR_H - 18,
+                              SCR_W - 16, 16);
+    lv_obj_set_style_text_color(hint, lv_color_hex(COLOR_DIM), 0);
+    if (ok) {
+        pq_game_mark_cg(&app->game, asset);
+    }
+}
+
+static void build_routes(gal_app_t *app)
+{
+    int count = (int)app->game.pack.route_count;
+    if (app->route_sel >= count) {
+        app->route_sel = count - 1;
+    }
+    int top = 0;
+    list_begin(app, "章节选择 · 路线", count, app->route_sel, &top);
+    for (int i = 0; i < PQ_LIST_ROWS; i++) {
+        int idx = top + i;
+        if (idx >= count) {
+            break;
+        }
+        char text[80];
+        snprintf(text, sizeof(text), "%s  (%u 章)", pq_route_name(&app->game.pack,
+                                                                  (uint16_t)idx),
+                 (unsigned)pq_route_chapter_count(&app->game.pack, (uint16_t)idx));
+        list_row_text(app, i, idx, app->route_sel, text);
+    }
+}
+
+static void build_chapters(gal_app_t *app)
+{
+    int route = app->route_sel;
+    int first = (int)pq_route_first_chapter(&app->game.pack, (uint16_t)route);
+    int count = (int)pq_route_chapter_count(&app->game.pack, (uint16_t)route);
+    if (app->chapter_sel >= count) {
+        app->chapter_sel = count ? count - 1 : 0;
+    }
+    int top = 0;
+    list_begin(app, pq_route_name(&app->game.pack, (uint16_t)route), count, app->chapter_sel,
+               &top);
+    for (int i = 0; i < PQ_LIST_ROWS; i++) {
+        int idx = top + i;
+        if (idx >= count) {
+            break;
+        }
+        list_row_text(app, i, idx, app->chapter_sel,
+                      pq_chapter_label(&app->game.pack, (uint16_t)(first + idx)));
+    }
+}
+
+static void build_ending(gal_app_t *app)
+{
+    clear_root(app);
+    attach_art(app);
+    pq_gfx_clear(0x0000);
+    char title[64];
+    snprintf(title, sizeof(title), "%s · 阅读完毕",
+             pq_ending_name(&app->game.pack, app->game.scene));
+    if (title[0] == ' ') {
+        snprintf(title, sizeof(title), "阅读完毕");
+    }
+    lv_obj_t *t = mk_label(app->root, title, 12, 8, SCR_W - 24, 22);
+    lv_obj_set_style_text_color(t, lv_color_hex(COLOR_CYAN), 0);
+    char body[160];
+    int unlocked = 0;
+    for (uint16_t i = 0; i < app->game.pack.ending_name_count; i++) {
+        if (pq_game_ending_seen(&app->game, i)) {
+            unlocked++;
+        }
+    }
+    snprintf(body, sizeof(body), "已解锁结局 %d / %u\n\nOK 返回标题", unlocked,
+             (unsigned)app->game.pack.ending_name_count);
+    lv_obj_t *b = mk_label(app->root, body, 12, 40, SCR_W - 24, 100);
+    lv_obj_set_style_text_color(b, lv_color_hex(COLOR_TEXT), 0);
+}
+
+static void build_about(gal_app_t *app)
+{
+    clear_root(app);
+    app->header = mk_label(app->root, "关于", 12, 4, SCR_W - 24, 20);
+    lv_obj_set_style_text_color(app->header, lv_color_hex(COLOR_CYAN), 0);
+    lv_obj_t *body = mk_label(app->root,
+                              "《PARQUET》横屏阅读器\n"
+                              "基于 PARQUET RW5 源快照移植\n"
+                              "保留 107 个场景 / 2 处分支 / 4 个结局\n"
+                              "全部 CG（37 组 367 张）与表情差分\n"
+                              "\n"
+                              "UP 推进 / 长按快进\n"
+                              "DOWN 历史 / 长按自动\n"
+                              "OK 菜单 / 长按 OK 列表返回\n"
+                              "\n"
+                              "本固件仅供个人学习交流，\n"
+                              "原作版权归 YUZUSOFTSOUR 等权利人。",
+                              12, 28, SCR_W - 24, 0);
+    lv_obj_set_style_text_color(body, lv_color_hex(COLOR_TEXT), 0);
+    lv_obj_t *hint = mk_label(app->root, "长按 OK 返回", 12, SCR_H - 18, SCR_W - 24, 16);
+    lv_obj_set_style_text_color(hint, lv_color_hex(COLOR_DIM), 0);
+}
+
+static void build_overwrite(gal_app_t *app)
+{
+    clear_root(app);
+    app->header = mk_label(app->root, "覆盖存档？", 12, 4, SCR_W - 24, 20);
+    lv_obj_set_style_text_color(app->header, lv_color_hex(COLOR_CYAN), 0);
+    char text[96];
+    slot_label(&app->game.pack, app->overwrite_slot, app->overwrite_slot, text, sizeof(text));
+    lv_obj_t *detail = mk_label(app->root, text, 12, 32, SCR_W - 24, 40);
+    lv_obj_set_style_text_color(detail, lv_color_hex(COLOR_TEXT), 0);
+    app->rows[0] = mk_row(app->root, 0);
+    app->rows[1] = mk_row(app->root, 1);
+    list_row_text(app, 0, 0, app->list_sel, "确认覆盖");
+    list_row_text(app, 1, 1, app->list_sel, "取消");
+    lv_obj_t *hint = mk_label(app->root, "UP/DOWN 选择 · OK 确认", 12, SCR_H - 18,
+                              SCR_W - 24, 16);
+    lv_obj_set_style_text_color(hint, lv_color_hex(COLOR_DIM), 0);
+}
+
+static void build_error(gal_app_t *app)
+{
+    clear_root(app);
+    lv_obj_t *t = mk_label(app->root, "暂时无法继续", 12, 20, SCR_W - 24, 24);
+    lv_obj_set_style_text_color(t, lv_color_hex(0xFF9090), 0);
+    lv_obj_t *b = mk_label(app->root, app->error_text, 12, 56, SCR_W - 24, 90);
+    lv_obj_set_style_text_color(b, lv_color_hex(COLOR_TEXT), 0);
+    lv_obj_t *hint = mk_label(app->root, "OK 返回标题", 12, SCR_H - 18, SCR_W - 24, 16);
+    lv_obj_set_style_text_color(hint, lv_color_hex(COLOR_DIM), 0);
+}
+
+// ---------------------------------------------------------------- 动作
+static void start_story(gal_app_t *app, uint16_t scene)
+{
+    pq_game_start(&app->game, scene, true);
+    app->auto_scene = 0xFFFF;
+    app->auto_mode = false;
+    app->fast_forward = false;
+    app->auto_paused = false;
+    app->page_depth = 0;
+    load_step(app);
+}
+
+
+// 当前场景所在的章节下标（找不到返回 -1）。
+static int chapter_index_of_scene(const gal_app_t *app, uint16_t scene)
+{
+    const pq_pack_t *pack = &app->game.pack;
+    for (uint16_t i = 0; i < pack->chapter_count; i++) {
+        if (pq_chapter_scene(pack, i) == scene) {
+            return (int)i;
+        }
+    }
+    return -1;
+}
+
+// 章节播完：同一路线还有下一章就自动接着播（重置章节内 cursor、保留全局
+// 解锁/已读/设置，背景立绘音乐由 start_chapter 重新初始化），并把自动档
+// 落到新章开头；只有最后一章才回主菜单（结局页）。
+static bool auto_next_chapter(gal_app_t *app)
+{
+    const pq_pack_t *pack = &app->game.pack;
+    const int cur = chapter_index_of_scene(app, app->game.scene);
+    if (cur < 0) {
+        return false;
+    }
+    const int next = cur + 1;
+    if (next >= (int)pack->chapter_count) {
+        return false;                       // 最后一章
+    }
+    if (pq_chapter_route(pack, (uint16_t)next) != pq_chapter_route(pack, (uint16_t)cur)) {
+        return false;                       // 跨路线不自动接，交给用户选
+    }
+    const uint16_t scene = pq_chapter_scene(pack, (uint16_t)next);
+    if (scene == 0xFFFF) {
+        return false;
+    }
+    start_chapter(app, scene);
+    // 新章开头的自动档（cursor=0），保证读档落在这里。
+    (void)save_auto_checkpoint(app);
+    return true;
+}
+
+static void start_chapter(gal_app_t *app, uint16_t scene)
+{
+    pq_game_start(&app->game, scene, false);
+    app->auto_scene = 0xFFFF;
+    app->auto_mode = false;
+    app->fast_forward = false;
+    app->auto_paused = false;
+    app->page_depth = 0;
+    load_step(app);
+}
+
+static void open_menu(gal_app_t *app)
+{
+    if (app->page != PQ_PAGE_READER && app->page != PQ_PAGE_CHOICE) {
         return;
     }
-    show_notice(app, "已保存");
-    render_page(app);
+    app->menu_return = app->page;
+    app->menu_sel = 0;
+    app->auto_paused = true;
+    app->fast_forward = false;
+    if (app->typing) {
+        app->typed = s_page_len[app->page_index];
+        app->typing = false;
+    }
+    app->page = PQ_PAGE_MENU;
+    rebuild_current_page(app);
+}
+
+static void save_settings(gal_app_t *app) { (void)pq_settings_save(&app->settings); }
+
+static void do_save(gal_app_t *app, int slot)
+{
+    bool ok = pq_game_save(&app->game, slot, (uint8_t)app->page_index);
+    snprintf(app->notice, sizeof(app->notice), "%s", ok ? "已保存" : "保存失败");
+    app->notice_ms = NOTICE_MS;
+    if (!ok) {
+        ESP_LOGW(TAG, "保存失败（NVS 不可用或写入失败）");
+    }
 }
 
 static void do_load(gal_app_t *app, int slot)
 {
-    if (slot < 0 || slot >= GAL_SAVE_SLOTS) return;
-    const gal_slot_t *s = &app->save.slots[slot];
-    if (!s->occupied) {
-        show_notice(app, "空槽位");
+    uint8_t page = 0;
+    if (!pq_game_load(&app->game, slot, &page)) {
+        snprintf(app->notice, sizeof(app->notice), "该栏位没有可用存档");
+        app->notice_ms = NOTICE_MS;
+        rebuild_current_page(app);
         return;
     }
-    app->event_index = s->event_index;
-    app->page_index = s->page_index;
-    app->shown_line = -1;
-    app->choice_sel = 0;
-    enter_event(app);
-    show_notice(app, "已读取");
-}
-
-// 开始新游戏:直接从第一句开始(章节选择在鉴赏室里)。
-// 进入读档页时把光标放到第一个有存档的槽位。
-static int first_occupied_slot(const gal_app_t *app)
-{
-    for (int i = 0; i < GAL_SAVE_SLOTS; ++i) {
-        if (app->save.slots[i].occupied) return i;
-    }
-    return 0;
-}
-
-static void start_new_game(gal_app_t *app)
-{
-    app->history_count = 0;
-    app->shown_line = -1;
-    app->choice_sel = 0;
-    app->event_index = 0;
-    app->page_index = 0;
-    gal_progress_clear(&app->progress);   // 新游戏不沿用上次进度
-    enter_event(app);
-}
-
-// ---------------------------------------------------------------- 弹窗
-enum {
-    MODAL_ACT_NONE = 0,
-    MODAL_ACT_SAVE,
-};
-
-static const char *const MODAL_CONFIRM_ACTIONS[] = { "取消", "确认覆盖" };
-
-static void open_confirm_overwrite(gal_app_t *app)
-{
-    static char body[96];
-    const gal_slot_t *s = &app->save.slots[app->save_sel];
-    snprintf(body, sizeof(body), "%s 的进度将被新存档替换。\n此操作无法撤销。",
-             s->chapter[0] ? s->chapter : "原有");
-    app->modal = GAL_MODAL_CONFIRM;
-    app->modal_page = GAL_PAGE_SAVE;
-    app->modal_sel = 0;
-    app->modal_action = MODAL_ACT_SAVE;
-    gal_ui_show_modal(&app->ui, GAL_MODAL_CONFIRM, "覆盖该存档?", body,
-                      MODAL_CONFIRM_ACTIONS, 2, 0);
-}
-
-static void close_modal(gal_app_t *app)
-{
-    gal_ui_hide_modal(&app->ui);
-    app->modal = GAL_MODAL_NONE;
-    render_page(app);
-}
-
-// ---------------------------------------------------------------- 渲染
-static void fill_slots(gal_app_t *app, gal_list_t list, int selected)
-{
-    static char labels[GAL_SAVE_SLOTS][12];
-    static char values[GAL_SAVE_SLOTS][GAL_SAVE_CHAPTER_LEN + 8];
-    const char *label_ptrs[GAL_SAVE_SLOTS];
-    const char *value_ptrs[GAL_SAVE_SLOTS];
-
-    for (int i = 0; i < GAL_SAVE_SLOTS; ++i) {
-        snprintf(labels[i], sizeof(labels[i]), "槽位 %02d", i + 1);
-        label_ptrs[i] = labels[i];
-        const gal_slot_t *s = &app->save.slots[i];
-        if (s->occupied) {
-            snprintf(values[i], sizeof(values[i]), "%s", s->chapter);
-        } else {
-            snprintf(values[i], sizeof(values[i]), "空槽位");
-        }
-        value_ptrs[i] = values[i];
-    }
-    gal_ui_set_rows(&app->ui, list, label_ptrs, value_ptrs, GAL_SAVE_SLOTS, selected);
-    // 读档页的空槽位不可选(存档页的空槽位是可以写入的)。
-    for (int i = 0; i < GAL_SAVE_SLOTS; ++i) {
-        const bool usable = list == GAL_LIST_SAVE || app->save.slots[i].occupied;
-        gal_ui_set_row_enabled(&app->ui, list, i, usable);
-    }
-
-    // 槽位预览 + 页脚。
-    const gal_slot_t *sel = &app->save.slots[selected];
-    if (sel->occupied) {
-        gal_ui_set_save_preview(&app->ui, sel->chapter);
-    } else {
-        gal_ui_set_save_preview(&app->ui, "空槽位\n选择一个槽位后再操作");
-    }
-    gal_ui_set_footer(&app->ui, GAL_PAGE_SAVE, "共 3 个槽位");
-    gal_ui_set_footer(&app->ui, GAL_PAGE_LOAD,
-                      gal_save_any(&app->save) ? "共 3 个槽位" : "暂无存档");
-}
-
-static void fill_settings(gal_app_t *app)
-{
-    static const char *const LABELS_READER[7] = { "文字速度", "文字大小", "自动阅读",
-                                                  "对话透明度", "恢复默认",
-                                                  "返回标题", "返回" };
-    static const char *const LABELS_TITLE[6] = { "文字速度", "文字大小", "自动阅读",
-                                                 "对话透明度", "恢复默认", "返回" };
-    const bool reader = settings_from_reader(app);
-    static char transparency[8];
-    snprintf(transparency, sizeof(transparency), "%u%%",
-             (unsigned)app->settings.panel_transparency);
-    const char *values_reader[7] = {
-        speed_label(app),
-        app->settings.font_large ? "大" : "小",
-        app->settings.auto_play ? "开" : "关",
-        transparency,
-        "", "", "",
-    };
-    const char *values_title[6] = {
-        speed_label(app),
-        app->settings.font_large ? "大" : "小",
-        app->settings.auto_play ? "开" : "关",
-        transparency,
-        "", "",
-    };
-    if (reader) {
-        gal_ui_set_rows(&app->ui, GAL_LIST_SETTINGS, LABELS_READER, values_reader, 7,
-                        app->settings_sel);
-    } else {
-        gal_ui_set_rows(&app->ui, GAL_LIST_SETTINGS, LABELS_TITLE, values_title, 6,
-                        app->settings_sel);
-    }
-}
-
-static void fill_history(gal_app_t *app)
-{
-    static char text[GAL_HISTORY_MAX][192];
-    const char *labels[GAL_HISTORY_MAX];
-    for (int i = 0; i < app->history_count; ++i) {
-        const gal_line_t *line = app->history[i];
-        if (line->speaker && line->speaker[0]) {
-            snprintf(text[i], sizeof(text[i]), "%s\n%s", line->speaker, line->text);
-        } else {
-            snprintf(text[i], sizeof(text[i]), "旁白\n%s", line->text);
-        }
-        labels[i] = text[i];
-    }
-    gal_ui_set_rows(&app->ui, GAL_LIST_HISTORY, labels, NULL, app->history_count,
-                    app->history_sel);
-    if (app->history_count == 0) gal_ui_set_page_title(&app->ui, GAL_PAGE_HISTORY, "历史文本");
-}
-
-static void fill_chapters(gal_app_t *app)
-{
-    static char labels[8][32];
-    const char *label_ptrs[8];
-    const char *value_ptrs[8];
-    const int count = gal_content_chapter_count > 8 ? 8 : gal_content_chapter_count;
-    for (int i = 0; i < count; ++i) {
-        snprintf(labels[i], sizeof(labels[i]), "%s", gal_content_chapters[i].name);
-        label_ptrs[i] = labels[i];
-        value_ptrs[i] = chapter_unlocked(app, i) ? "可选" : "锁定";
-    }
-    gal_ui_set_rows(&app->ui, GAL_LIST_CHAPTER, label_ptrs, value_ptrs, count,
-                    app->chapter_sel);
-
-    const gal_chapter_t *c = &gal_content_chapters[app->chapter_sel];
-    static char info[192];
-    snprintf(info, sizeof(info), "%s\n%s\n%s", c->name, c->summary, c->progress);
-    gal_ui_set_chapter_info(&app->ui, info);
-    gal_ui_set_action_hint(&app->ui, "单路线作品可省略此页");
-}
-
-static void fill_about(gal_app_t *app)
-{
-    static char text[1024];
-    size_t used = 0;
-    for (int i = 0; i < gal_content_about_row_count; ++i) {
-        const int n = snprintf(text + used, sizeof(text) - used, "%s：%s\n",
-                               gal_content_about_rows[i].label,
-                               gal_content_about_rows[i].value);
-        if (n > 0) used += (size_t)n;
-        if (used >= sizeof(text)) break;
-    }
-    if (used < sizeof(text)) {
-        snprintf(text + used, sizeof(text) - used, "\n%s", GAL_CONTENT_ABOUT);
-    }
-    gal_ui_set_about(&app->ui, GAL_CONTENT_TITLE, GAL_CONTENT_LOGO_SUB, text);
-}
-
-// CG 回想:只列出已经看过的场景(剧情锁),右侧显示所在章节。
-static int s_recall_map[GAL_LIST_MAX_ROWS];
-static int s_recall_shown;
-
-static void fill_recalls(gal_app_t *app)
-{
-    static char labels[GAL_LIST_MAX_ROWS][48];
-    static char footer[48];
-    const char *label_ptrs[GAL_LIST_MAX_ROWS];
-    const char *value_ptrs[GAL_LIST_MAX_ROWS];
-
-    s_recall_shown = 0;
-    for (int i = 0; i < gal_content_recall_count && s_recall_shown < GAL_LIST_MAX_ROWS; ++i) {
-        const gal_recall_t *recall = &gal_content_recalls[i];
-        if (!cg_unlocked(app, recall->cg_index)) continue;   // 没看过的场景不出现
-        snprintf(labels[s_recall_shown], sizeof(labels[0]), "%s", recall->title);
-        label_ptrs[s_recall_shown] = labels[s_recall_shown];
-        value_ptrs[s_recall_shown] = recall->chapter;
-        s_recall_map[s_recall_shown] = i;
-        s_recall_shown++;
-    }
-    if (app->recall_sel >= s_recall_shown) {
-        app->recall_sel = s_recall_shown > 0 ? s_recall_shown - 1 : 0;
-    }
-    gal_ui_set_rows(&app->ui, GAL_LIST_RECALL, label_ptrs, value_ptrs, s_recall_shown,
-                    app->recall_sel);
-    if (s_recall_shown == 0) {
-        gal_ui_set_footer(&app->ui, GAL_PAGE_RECALL, "看过剧情后这里会出现回想");
-    } else {
-        snprintf(footer, sizeof(footer), "共 %d 段回想", s_recall_shown);
-        gal_ui_set_footer(&app->ui, GAL_PAGE_RECALL, footer);
-    }
-}
-
-// 音乐鉴赏:同样按剧情锁只列出听过的曲目;正在播放的显示“播放中”。
-static int s_track_map[GAL_LIST_MAX_ROWS];
-static int s_track_shown;
-
-static void fill_tracks(gal_app_t *app)
-{
-    static char labels[GAL_LIST_MAX_ROWS][32];
-    static char footer[48];
-    const char *label_ptrs[GAL_LIST_MAX_ROWS];
-    const char *value_ptrs[GAL_LIST_MAX_ROWS];
-    const int playing = gal_music_current();
-
-    s_track_shown = 0;
-    for (int i = 0; i < gal_content_track_count && s_track_shown < GAL_LIST_MAX_ROWS; ++i) {
-        const gal_track_t *track = &gal_content_tracks[i];
-        if (!cg_unlocked(app, track->cg_index)) continue;
-        snprintf(labels[s_track_shown], sizeof(labels[0]), "%s", track->title);
-        label_ptrs[s_track_shown] = labels[s_track_shown];
-        value_ptrs[s_track_shown] = (playing == i) ? "播放中" : track->duration;
-        s_track_map[s_track_shown] = i;
-        s_track_shown++;
-    }
-    if (app->music_sel >= s_track_shown) {
-        app->music_sel = s_track_shown > 0 ? s_track_shown - 1 : 0;
-    }
-    gal_ui_set_rows(&app->ui, GAL_LIST_MUSIC, label_ptrs, value_ptrs, s_track_shown,
-                    app->music_sel);
-    if (s_track_shown == 0) {
-        gal_ui_set_footer(&app->ui, GAL_PAGE_MUSIC, "听过剧情后这里会出现曲目");
-    } else if (playing >= 0) {
-        gal_ui_set_footer(&app->ui, GAL_PAGE_MUSIC, "短按确定停止播放");
-    } else {
-        snprintf(footer, sizeof(footer), "共 %d 曲 · 短按确定播放", s_track_shown);
-        gal_ui_set_footer(&app->ui, GAL_PAGE_MUSIC, footer);
-    }
-}
-
-static void fill_cg(gal_app_t *app)
-{
-    const gal_cg_t *cg = &gal_content_cgs[app->cg_sel];
-    char index_text[24];
-    snprintf(index_text, sizeof(index_text), "%s / %02d", cg->label, gal_content_cg_count);
-    gal_ui_set_cg(&app->ui, index_text, cg->caption, "", cg->image);
-}
-
-// 鉴赏室缩略图:解锁状态由剧情锁的观看记录换算;未解锁只显示问号。
-static void fill_gallery(gal_app_t *app)
-{
-    static gal_cg_t items[GAL_CG_TILES];
-    static char footer[32];
-    int count = gal_content_cg_count;
-    if (count > GAL_CG_TILES) count = GAL_CG_TILES;
-    int unlocked = 0;
-    for (int i = 0; i < count; ++i) {
-        items[i] = gal_content_cgs[i];
-        items[i].unlocked = cg_unlocked(app, i);
-        if (items[i].unlocked) unlocked++;
-    }
-    gal_ui_set_gallery(&app->ui, items, count, app->cg_sel);
-    snprintf(footer, sizeof(footer), "已解锁 %d / %d", unlocked, count);
-    gal_ui_set_footer(&app->ui, GAL_PAGE_CG_LIST, footer);
-}
-
-static void render_page(gal_app_t *app)
-{
-    gal_ui_show_page(&app->ui, app->page);
-    // 自动阅读在对话页与章节过场都保持(过场会自动过去)。
-    const bool auto_page = app->page == GAL_PAGE_GAME || app->page == GAL_PAGE_TRANSITION;
-    gal_ui_set_mode(&app->ui, app->auto_mode && auto_page);
-
-    switch (app->page) {
-    case GAL_PAGE_START: {
-        static const char *const rows[1] = { "开始游戏" };
-        gal_ui_set_rows(&app->ui, GAL_LIST_START, rows, NULL, 1, 0);
-        return;
-    }
-    case GAL_PAGE_TITLE: {
-        gal_ui_set_rows(&app->ui, GAL_LIST_TITLE, gal_content_title_menu, NULL,
-                        gal_content_title_menu_count, app->title_sel);
-        // 继续游戏看自动进度;读取存档看手动槽位。
-        const bool any_save = gal_save_any(&app->save);
-        gal_ui_set_row_enabled(&app->ui, GAL_LIST_TITLE, GAL_TITLE_MENU_CONTINUE,
-                               app->progress.valid);
-        gal_ui_set_row_enabled(&app->ui, GAL_LIST_TITLE, GAL_TITLE_MENU_LOAD, any_save);
-        return;
-    }
-    case GAL_PAGE_GAME: {
-        const gal_event_t *ev = &gal_content_events[app->event_index];
-        if (ev->kind != GAL_EV_LINE) {
-            enter_event(app);
-            return;
-        }
-        // 从子页面返回时保留已经显示的文字,不重新打字。
-        if (app->shown_line != (int)ev->index || app->shown_page != app->page_index) {
-            show_line(app, ev->index);
-        }
-        gal_ui_set_chapter(&app->ui, chapter_name_at(app->event_index));
-        return;
-    }
-    case GAL_PAGE_CHOICE: {
-        const gal_event_t *ev = &gal_content_events[app->event_index];
-        if (ev->kind != GAL_EV_CHOICE) return;
-        const gal_choice_t *choice = &gal_content_choices[ev->index];
-        gal_ui_set_choice(&app->ui, choice->prompt, choice->options, choice->count,
-                          app->choice_sel);
-        // 条件不满足的选项置灰(剧情锁)。
-        for (int i = 0; i < choice->count && i < GAL_LIST_MAX_ROWS; ++i) {
-            const uint8_t need = choice->options[i].require_flag;
-            const bool ok = need == GAL_UNLOCK_NONE || gal_unlock_has_flag(&app->unlock, need);
-            gal_ui_set_row_enabled(&app->ui, GAL_LIST_CHOICE, i, ok);
-        }
-        return;
-    }
-    case GAL_PAGE_MENU:
-        gal_ui_set_rows(&app->ui, GAL_LIST_MENU, gal_content_quick_menu, NULL,
-                        gal_content_quick_menu_count, app->menu_sel);
-        return;
-    case GAL_PAGE_SAVE:
-        fill_slots(app, GAL_LIST_SAVE, app->save_sel);
-        return;
-    case GAL_PAGE_LOAD:
-        fill_slots(app, GAL_LIST_LOAD, app->load_sel);
-        return;
-    case GAL_PAGE_SETTINGS:
-        fill_settings(app);
-        return;
-    case GAL_PAGE_HISTORY:
-        fill_history(app);
-        return;
-    case GAL_PAGE_GALLERY: {
-        // 鉴赏室:四个分类入口,数量按剧情锁实时统计。
-        static char values[4][16];
-        int cg_count = 0;
-        for (int i = 0; i < gal_content_cg_count; ++i) {
-            if (cg_unlocked(app, i)) cg_count++;
-        }
-        int recall_count = 0;
-        for (int i = 0; i < gal_content_recall_count; ++i) {
-            if (cg_unlocked(app, gal_content_recalls[i].cg_index)) recall_count++;
-        }
-        int track_count = 0;
-        for (int i = 0; i < gal_content_track_count; ++i) {
-            if (cg_unlocked(app, gal_content_tracks[i].cg_index)) track_count++;
-        }
-        snprintf(values[0], sizeof(values[0]), "%d/%d 张", cg_count, gal_content_cg_count);
-        snprintf(values[1], sizeof(values[1]), "%d 段", recall_count);
-        snprintf(values[2], sizeof(values[2]), "%d 章", gal_content_chapter_count);
-        snprintf(values[3], sizeof(values[3]), "%d 曲", track_count);
-        const char *value_ptrs[4] = { values[0], values[1], values[2], values[3] };
-        gal_ui_set_rows(&app->ui, GAL_LIST_GALLERY, gal_content_gallery_menu, value_ptrs,
-                        gal_content_gallery_menu_count, app->gallery_sel);
-        return;
-    }
-    case GAL_PAGE_CG_LIST:
-        fill_gallery(app);
-        return;
-    case GAL_PAGE_RECALL:
-        fill_recalls(app);
-        return;
-    case GAL_PAGE_MUSIC:
-        fill_tracks(app);
-        return;
-    case GAL_PAGE_CHAPTER:
-        fill_chapters(app);
-        return;
-    case GAL_PAGE_TRANSITION: {
-        const gal_event_t *ev = &gal_content_events[app->event_index];
-        if (ev->kind != GAL_EV_TRANSITION) return;
-        const gal_transition_t *tr = &gal_content_transitions[ev->index];
-        gal_ui_set_transition(&app->ui, tr->eyebrow, tr->title, tr->subtitle);
-        return;
-    }
-    case GAL_PAGE_ENDING: {
-        const gal_event_t *ev = &gal_content_events[app->event_index];
-        if (ev->kind != GAL_EV_ENDING) return;
-        const gal_ending_t *ending = &gal_content_endings[ev->index];
-        gal_ui_set_ending(&app->ui, ending->eyebrow, ending->title, ending->body);
-        return;
-    }
-    case GAL_PAGE_ABOUT:
-        fill_about(app);
-        return;
-    case GAL_PAGE_CG:
-        fill_cg(app);
-        return;
-    default:
-        return;
-    }
-}
-
-static void goto_page(gal_app_t *app, gal_page_t page)
-{
-    // 离开音乐鉴赏就停止播放(回到列表再手动开)。
-    if (page != GAL_PAGE_MUSIC) gal_music_stop();
-    app->page = page;
-    app->idle_ms = 0;
-    app->fast_forward = false;
+    app->auto_scene = 0xFFFF;
     app->auto_mode = false;
-    render_page(app);
-}
-
-// ---------------------------------------------------------------- 按键:各页面
-static void handle_start(gal_app_t *app, const gal_key_t *key)
-{
-    if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
-        app->title_sel = 0;
-        goto_page(app, GAL_PAGE_TITLE);
-    }
-}
-
-static void handle_title(gal_app_t *app, const gal_key_t *key)
-{
-    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        move_selection(&app->title_sel, gal_content_title_menu_count,
-                       key->btn == BSP_BTN_UP ? -1 : 1);
-        gal_ui_select_row(&app->ui, GAL_LIST_TITLE, app->title_sel);
+    app->fast_forward = false;
+    app->auto_paused = false;
+    app->page_depth = 0;
+    pq_step_t step;
+    if (!pq_game_step(&app->game, &step)) {
+        snprintf(app->error_text, sizeof(app->error_text), "%s",
+                 step.error ? step.error : "读档后剧情执行失败");
+        app->page = PQ_PAGE_ERROR;
+        rebuild_current_page(app);
         return;
     }
-    if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
-
-    switch (app->title_sel) {
-    case GAL_TITLE_MENU_NEW:
-        start_new_game(app);
-        break;
-    case GAL_TITLE_MENU_CONTINUE: {
-        // 继续游戏:直接从自动进度接上。
-        if (!app->progress.valid) {
-            show_notice(app, "没有进度");
-            return;
-        }
-        app->event_index = app->progress.event_index;
-        app->page_index = app->progress.page_index;
-        app->shown_line = -1;
-        enter_event(app);
-        break;
-    }
-    case GAL_TITLE_MENU_LOAD:
-        app->load_sel = first_occupied_slot(app);
-        app->return_page = GAL_PAGE_TITLE;
-        goto_page(app, GAL_PAGE_LOAD);
-        break;
-    case GAL_TITLE_MENU_SETTINGS:
-        app->return_page = GAL_PAGE_TITLE;
-        app->settings_sel = 0;
-        goto_page(app, GAL_PAGE_SETTINGS);
-        break;
-    case GAL_TITLE_MENU_GALLERY:
-        app->gallery_sel = 0;
-        goto_page(app, GAL_PAGE_GALLERY);
-        break;
-    default:
-        goto_page(app, GAL_PAGE_ABOUT);
-        break;
-    }
-}
-
-static void handle_game(gal_app_t *app, const gal_key_t *key)
-{
-    // 短按(确定/上/下任意一个):下一句(打字中先全显)。
-    if (key->ev == BSP_BTN_CLICK &&
-        (key->btn == BSP_BTN_OK || key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        app->fast_forward = false;
-        advance_reading(app, false);
-        return;
-    }
-    // 长按确定:游戏内快捷菜单(返回剧情、存读档、历史、设置、返回标题)。
-    if (key->btn == BSP_BTN_OK && key->ev == BSP_BTN_LONG) {
-        app->fast_forward = false;
-        app->menu_sel = 0;
-        goto_page(app, GAL_PAGE_MENU);
-        return;
-    }
-    // 长按上:快进,松开停(快进不显示文字提示)。
-    if (key->btn == BSP_BTN_UP) {
-        if (key->ev == BSP_BTN_LONG) {
-            app->fast_forward = true;
-            app->ff_accum_ms = 0;
-            gal_ui_show_full_text(&app->ui);
-            return;
-        }
-        if (key->ev == BSP_BTN_RELEASE) {
-            app->fast_forward = false;
-            return;
-        }
-    }
-    // 长按下:自动阅读开关(任意键停止,不另做提示)。
-    if (key->btn == BSP_BTN_DOWN && key->ev == BSP_BTN_LONG) {
-        app->settings.auto_play = app->settings.auto_play ? 0 : 1;
-        gal_settings_store(&app->settings);
-        app->auto_mode = app->settings.auto_play != 0;
-        app->auto_accum_ms = 0;
-        app->fast_forward = false;
-        if (app->auto_mode) gal_ui_show_full_text(&app->ui);
-        gal_ui_set_mode(&app->ui, app->auto_mode);
-        return;
-    }
-}
-
-static void handle_choice(gal_app_t *app, const gal_key_t *key)
-{
-    const gal_event_t *ev = &gal_content_events[app->event_index];
-    if (ev->kind != GAL_EV_CHOICE) return;
-    const gal_choice_t *choice = &gal_content_choices[ev->index];
-
-    if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
-        // 长按确定 = 返回剧情(选项本身必须选一个)。
-        goto_page(app, GAL_PAGE_GAME);
-        return;
-    }
-    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        move_selection(&app->choice_sel, choice->count, key->btn == BSP_BTN_UP ? -1 : 1);
-        gal_ui_select_row(&app->ui, GAL_LIST_CHOICE, app->choice_sel);
-        return;
-    }
-    if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
-        const gal_option_t *opt = &choice->options[app->choice_sel];
-        // 剧情锁:条件不满足的选项不能选。
-        if (opt->require_flag != GAL_UNLOCK_NONE &&
-            !gal_unlock_has_flag(&app->unlock, opt->require_flag)) {
-            show_notice(app, "条件不足");
-            return;
-        }
-        // 选中的分支会写剧情标记,后面的台词与解锁都看它。
-        if (opt->flag_set != GAL_UNLOCK_NONE) {
-            gal_unlock_set_flag(&app->unlock, opt->flag_set);
-            (void)gal_unlock_store(&app->unlock);
-        }
-        app->choice_sel = 0;
-        advance_event(app);
-    }
-}
-
-static void handle_menu(gal_app_t *app, const gal_key_t *key)
-{
-    if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
-        goto_page(app, GAL_PAGE_GAME);
-        return;
-    }
-    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        move_selection(&app->menu_sel, gal_content_quick_menu_count,
-                       key->btn == BSP_BTN_UP ? -1 : 1);
-        gal_ui_select_row(&app->ui, GAL_LIST_MENU, app->menu_sel);
-        return;
-    }
-    if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
-
-    switch (app->menu_sel) {
-    case GAL_MENU_RESUME:
-        goto_page(app, GAL_PAGE_GAME);
-        break;
-    case GAL_MENU_SAVE:
-        app->save_sel = 0;
-        app->return_page = GAL_PAGE_MENU;
-        goto_page(app, GAL_PAGE_SAVE);
-        break;
-    case GAL_MENU_LOAD:
-        app->load_sel = first_occupied_slot(app);
-        app->return_page = GAL_PAGE_MENU;
-        goto_page(app, GAL_PAGE_LOAD);
-        break;
-    case GAL_MENU_HISTORY:
-        app->history_sel = app->history_count > 0 ? app->history_count - 1 : 0;
-        app->return_page = GAL_PAGE_MENU;
-        goto_page(app, GAL_PAGE_HISTORY);
-        break;
-    case GAL_MENU_SETTINGS:
-        app->return_page = GAL_PAGE_MENU;
-        app->settings_sel = 0;
-        goto_page(app, GAL_PAGE_SETTINGS);
-        break;
-    default:
-        goto_page(app, GAL_PAGE_TITLE);
-        break;
-    }
-}
-
-static void handle_save_load(gal_app_t *app, const gal_key_t *key)
-{
-    const bool saving = app->page == GAL_PAGE_SAVE;
-    int *sel = saving ? &app->save_sel : &app->load_sel;
-    const gal_list_t list = saving ? GAL_LIST_SAVE : GAL_LIST_LOAD;
-
-    if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
-        goto_page(app, app->return_page);
-        return;
-    }
-    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        move_selection(sel, GAL_SAVE_SLOTS, key->btn == BSP_BTN_UP ? -1 : 1);
-        fill_slots(app, list, *sel);
-        return;
-    }
-    if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
-
-    if (saving) {
-        if (app->save.slots[*sel].occupied) {
-            open_confirm_overwrite(app);   // 覆盖已有进度前先确认
-        } else {
-            do_save(app, *sel);
-        }
-        return;
-    }
-    if (!app->save.slots[*sel].occupied) {
-        // 空槽位没有可读的进度:空槽位本身也是不可选的。
-        show_notice(app, "空槽位");
-        return;
-    }
-    do_load(app, *sel);
-}
-
-enum {
-    SACT_SPEED = 0,
-    SACT_SIZE,
-    SACT_AUTO,
-    SACT_TRANSPARENCY,
-    SACT_RESET,
-    SACT_TITLE,
-    SACT_BACK,
-};
-
-static bool settings_from_reader(const gal_app_t *app)
-{
-    return app->return_page == GAL_PAGE_GAME || app->return_page == GAL_PAGE_MENU;
-}
-
-static int settings_action(const gal_app_t *app, int index)
-{
-    if (settings_from_reader(app)) return index;   // 阅读中:下标即动作
-    static const int TITLE_MAP[6] = { SACT_SPEED, SACT_SIZE, SACT_AUTO,
-                                      SACT_TRANSPARENCY, SACT_RESET, SACT_BACK };
-    return (index >= 0 && index < 6) ? TITLE_MAP[index] : SACT_BACK;
-}
-
-static void handle_settings(gal_app_t *app, const gal_key_t *key)
-{
-    const int count = settings_from_reader(app) ? 7 : 6;
-    if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
-        goto_page(app, app->return_page);
-        return;
-    }
-    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        move_selection(&app->settings_sel, count, key->btn == BSP_BTN_UP ? -1 : 1);
-        gal_ui_select_row(&app->ui, GAL_LIST_SETTINGS, app->settings_sel);
-        return;
-    }
-    if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
-
-    switch (settings_action(app, app->settings_sel)) {
-    case SACT_SPEED:
-        app->settings.text_speed = (uint8_t)((app->settings.text_speed + 1) % 4);
-        break;
-    case SACT_SIZE:
-        app->settings.font_large = app->settings.font_large ? 0 : 1;
-        gal_ui_set_font_size(&app->ui, app->settings.font_large != 0);
-        break;
-    case SACT_AUTO:
-        app->settings.auto_play = app->settings.auto_play ? 0 : 1;
-        break;
-    case SACT_TRANSPARENCY:
-        app->settings.panel_transparency =
-            gal_transparency_next(app->settings.panel_transparency);
-        gal_ui_set_panel_transparency(&app->ui, app->settings.panel_transparency);
-        break;
-    case SACT_RESET:
-        gal_settings_reset(&app->settings);
-        gal_ui_set_font_size(&app->ui, app->settings.font_large != 0);
-        gal_ui_set_panel_transparency(&app->ui, app->settings.panel_transparency);
-        break;
-    case SACT_TITLE:
-        goto_page(app, GAL_PAGE_TITLE);
-        return;
-    default:   // SACT_BACK
-        goto_page(app, app->return_page);
-        return;
-    }
-    gal_settings_store(&app->settings);
-    fill_settings(app);   // 列表右侧的值就地刷新
-}
-
-static void handle_history(gal_app_t *app, const gal_key_t *key)
-{
-    if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
-        goto_page(app, app->return_page);
-        return;
-    }
-    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        const int count = app->history_count > 0 ? app->history_count : 1;
-        move_selection(&app->history_sel, count, key->btn == BSP_BTN_UP ? -1 : 1);
-        gal_ui_select_row(&app->ui, GAL_LIST_HISTORY, app->history_sel);
-    }
-}
-
-static void handle_gallery(gal_app_t *app, const gal_key_t *key)
-{
-    if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
-        goto_page(app, GAL_PAGE_TITLE);
-        return;
-    }
-    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        move_selection(&app->gallery_sel, gal_content_gallery_menu_count,
-                       key->btn == BSP_BTN_UP ? -1 : 1);
-        gal_ui_select_row(&app->ui, GAL_LIST_GALLERY, app->gallery_sel);
-        return;
-    }
-    if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
-
-    if (app->gallery_sel == GAL_GALLERY_RECALL) {
-        // CG 回想:重看已看过的场景。
-        app->recall_sel = 0;
-        goto_page(app, GAL_PAGE_RECALL);
-        return;
-    }
-    if (app->gallery_sel == GAL_GALLERY_STORY) {
-        // 剧情鉴赏:章节 / 路线选择。
-        app->chapter_sel = 0;
-        app->return_page = GAL_PAGE_GALLERY;
-        goto_page(app, GAL_PAGE_CHAPTER);
-        return;
-    }
-    if (app->gallery_sel == GAL_GALLERY_MUSIC) {
-        // 音乐鉴赏。
-        app->music_sel = 0;
-        goto_page(app, GAL_PAGE_MUSIC);
-        return;
-    }
-    app->cg_sel = 0;
-    goto_page(app, GAL_PAGE_CG_LIST);
-}
-
-static void handle_cg_list(gal_app_t *app, const gal_key_t *key)
-{
-    if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
-        goto_page(app, GAL_PAGE_GALLERY);
-        return;
-    }
-    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        move_selection(&app->cg_sel, gal_content_cg_count, key->btn == BSP_BTN_UP ? -1 : 1);
-        gal_ui_set_gallery(&app->ui, gal_content_cgs, gal_content_cg_count, app->cg_sel);
-        return;
-    }
-    if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
-        if (!cg_unlocked(app, app->cg_sel)) {
-            show_notice(app, "尚未解锁");
-            return;
-        }
-        goto_page(app, GAL_PAGE_CG);
-    }
-}
-
-static void handle_chapter(gal_app_t *app, const gal_key_t *key)
-{
-    if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
-        goto_page(app, app->return_page);   // 从鉴赏室进来的,就回鉴赏室
-        return;
-    }
-    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        move_selection(&app->chapter_sel, gal_content_chapter_count,
-                       key->btn == BSP_BTN_UP ? -1 : 1);
-        fill_chapters(app);
-        return;
-    }
-    if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
-        if (!chapter_unlocked(app, app->chapter_sel)) {
-            show_notice(app, "章节未解锁");
-            return;
-        }
-        app->event_index = chapter_first_event(app->chapter_sel);
-        app->page_index = 0;
-        app->shown_line = -1;
-        app->history_count = 0;
-        enter_event(app);
-    }
-}
-
-static void handle_transition(gal_app_t *app, const gal_key_t *key)
-{
-    // 过场没有多余的“继续”按钮:任意短按进入下一段剧情。
-    if (key->ev == BSP_BTN_CLICK) {
-        advance_event(app);
-    }
-}
-
-static void handle_ending(gal_app_t *app, const gal_key_t *key)
-{
-    // 结局页没有后续入口按钮:短按或长按确定都回到标题页。
-    if ((key->ev == BSP_BTN_CLICK || key->ev == BSP_BTN_LONG) && key->btn == BSP_BTN_OK) {
-        app->title_sel = 0;
-        goto_page(app, GAL_PAGE_TITLE);
-    }
-}
-
-static void handle_about(gal_app_t *app, const gal_key_t *key)
-{
-    if ((key->ev == BSP_BTN_CLICK || key->ev == BSP_BTN_LONG) &&
-        (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        const int dir = key->btn == BSP_BTN_UP ? -1 : 1;
-        gal_ui_scroll(&app->ui, GAL_PAGE_ABOUT, dir * (key->ev == BSP_BTN_LONG ? 80 : 20));
-        return;
-    }
-    if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
-        goto_page(app, GAL_PAGE_TITLE);
-    }
-}
-
-static void handle_cg(gal_app_t *app, const gal_key_t *key)
-{
-    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        move_selection(&app->cg_sel, gal_content_cg_count, key->btn == BSP_BTN_UP ? -1 : 1);
-        fill_cg(app);
-        return;
-    }
-    if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
-        goto_page(app, GAL_PAGE_CG_LIST);
-    }
-}
-
-static void handle_recall(gal_app_t *app, const gal_key_t *key)
-{
-    if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
-        goto_page(app, GAL_PAGE_GALLERY);
-        return;
-    }
-    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        move_selection(&app->recall_sel, s_recall_shown, key->btn == BSP_BTN_UP ? -1 : 1);
-        gal_ui_select_row(&app->ui, GAL_LIST_RECALL, app->recall_sel);
-        return;
-    }
-    if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
-    if (s_recall_shown <= 0) return;
-
-    // 回想:直接回到那一段的事件,重新演一遍。
-    const int index = s_recall_map[app->recall_sel];
-    app->event_index = gal_content_recalls[index].event_index;
-    app->page_index = 0;
-    app->shown_line = -1;
-    enter_event(app);
-    show_notice(app, "回想");
-}
-
-static void handle_music(gal_app_t *app, const gal_key_t *key)
-{
-    if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
-        gal_music_stop();
-        goto_page(app, GAL_PAGE_GALLERY);
-        return;
-    }
-    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        move_selection(&app->music_sel, s_track_shown, key->btn == BSP_BTN_UP ? -1 : 1);
-        gal_ui_select_row(&app->ui, GAL_LIST_MUSIC, app->music_sel);
-        return;
-    }
-    if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
-    if (s_track_shown <= 0) return;
-
-    // 短按确定:播放 / 停止当前曲目。
-    const int index = s_track_map[app->music_sel];
-    if (gal_music_current() == index) {
-        gal_music_stop();
+    if (step.kind == PQ_STEP_TEXT) {
+        copy_utf8(app->text, sizeof(app->text), step.text ? step.text : "");
+        app->page_count = paginate(app->text, cjk_width(app), s_page_start, s_page_len, 8);
+        app->page_index = page < app->page_count ? page : 0;
+        app->speaker = step.speaker;
+        app->tag = step.tag;
+        app->shown_op = step.op;
+        apply_visual(app, step.visual);
+        app->page = PQ_PAGE_READER;
+        build_reader_objects(app);
+        (void)draw_scene(app);
+        app->typed = s_page_len[app->page_index];
+        app->typing = false;
+        app->type_accum_ms = 0;
+        reader_refresh_text(app);
+    } else if (step.kind == PQ_STEP_CHOICE) {
+        apply_visual(app, app->game.current_visual);
+        app->page = PQ_PAGE_CHOICE;
+        app->auto_paused = true;
+        build_choice(app);
+    } else if (step.kind == PQ_STEP_END) {
+        app->ending_index = 0;
+        app->page = PQ_PAGE_ENDING;
+        rebuild_current_page(app);
     } else {
-        gal_music_play(index);
+        snprintf(app->error_text, sizeof(app->error_text), "读档状态无效");
+        app->page = PQ_PAGE_ERROR;
+        rebuild_current_page(app);
     }
-    fill_tracks(app);
+    app->notice_ms = 0;
+    ESP_LOGI(TAG, "读档 %d 场景 %u 页 %u", slot + 1, app->game.scene, app->page_index);
 }
 
-static void handle_modal(gal_app_t *app, const gal_key_t *key)
+static void repaginate_at(gal_app_t *app, int byte_off)
 {
-    const int count = 2;
-    // 弹窗里长按确定 = 取消。
-    if (key->ev == BSP_BTN_LONG && key->btn == BSP_BTN_OK) {
-        close_modal(app);
-        return;
+    int cjk = cjk_width(app);
+    app->page_count = paginate(app->text, cjk, s_page_start, s_page_len, 8);
+    int page = 0;
+    for (int i = 0; i < app->page_count; i++) {
+        if (byte_off >= s_page_start[i]) {
+            page = i;
+        }
     }
-    if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        move_selection(&app->modal_sel, count, key->btn == BSP_BTN_UP ? -1 : 1);
-        gal_ui_select_row(&app->ui, GAL_LIST_MODAL, app->modal_sel);
-        return;
-    }
-    if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
-
-    const int action = app->modal_action;
-    const int sel = app->modal_sel;
-    const gal_page_t from = app->modal_page;
-
-    if (action == MODAL_ACT_SAVE) {
-        close_modal(app);
-        if (sel == 1) do_save(app, app->save_sel);
-        return;
-    }
-    close_modal(app);
-    if (from == GAL_PAGE_TITLE) goto_page(app, GAL_PAGE_TITLE);
+    app->page_index = page;
+    app->typed = s_page_len[page];
+    app->typing = false;
 }
 
-// ---------------------------------------------------------------- 入口
+static void toggle_auto(gal_app_t *app)
+{
+    if (app->page != PQ_PAGE_READER) {
+        return;
+    }
+    app->auto_mode = !app->auto_mode;
+    app->auto_paused = false;
+    app->auto_accum_ms = 0;
+    reader_refresh_hint(app);
+}
+
+// ---------------------------------------------------------------- 输入
+static void handle_page_key(gal_app_t *app, const gal_key_t *key)
+{
+    const bool up = key->btn == BSP_BTN_UP;
+    const bool down = key->btn == BSP_BTN_DOWN;
+    const bool ok = key->btn == BSP_BTN_OK;
+    const bool click = key->ev == BSP_BTN_CLICK;
+    const bool longp = key->ev == BSP_BTN_LONG;
+    if (!click && !longp) {
+        return;
+    }
+    switch (app->page) {
+    case PQ_PAGE_TITLE: {
+        int count = title_item_count(app);
+        if ((up || down) && click) {
+            app->title_sel = (uint8_t)((app->title_sel + (down ? 1 : count - 1)) % count);
+            rebuild_current_page(app);
+            break;
+        }
+        if (ok && longp) {
+            goto_page(app, PQ_PAGE_ABOUT);   // 长 OK = 关于/按键说明（TITLE 栈底，OK 可回）
+            break;
+        }
+        if (!ok || !click) {
+            break;
+        }
+        int32_t v = 0;
+        bool after = s_var_main >= 0 &&
+                     pq_game_global_var(&app->game, (uint16_t)s_var_main, &v) && v;
+        int idx = after ? app->title_sel : app->title_sel + 1;
+        switch (idx) {
+        case 0:   // AFTER STORY
+            start_story(app, app->game.pack.after);
+            break;
+        case 1: {   // START：前传完成后进正篇
+            int32_t side = 0;
+            bool cleared = s_var_side >= 0 &&
+                           pq_game_global_var(&app->game, (uint16_t)s_var_side, &side) && side;
+            start_story(app, cleared ? app->game.pack.flow : app->game.pack.side);
+            break;
+        }
+        case 2:
+            start_story(app, app->game.pack.side);
+            break;
+        case 3:
+            app->route_sel = 0;
+            goto_page(app, PQ_PAGE_ROUTES);
+            break;
+        case 4:
+            app->load_sel = 0;
+            goto_page(app, PQ_PAGE_LOAD);
+            break;
+        case 5:
+            app->settings_sel = 0;
+            goto_page(app, PQ_PAGE_SETTINGS);
+            break;
+        case 6:
+            app->gallery_sel = 0;
+            goto_page(app, PQ_PAGE_GALLERY);
+            break;
+        default:
+            break;
+        }
+        break;
+    }
+    case PQ_PAGE_READER:
+        if (ok) {
+            // 短按 OK 与上键一致：推进下一句。长按 OK 才进菜单（长按后的补发
+            // CLICK 已由 gal_app_key 的 suppress_click 吞掉，不会多推一句）。
+            if (longp) {
+                open_menu(app);
+            } else if (click) {
+                advance_reader(app);
+            }
+            break;
+        }
+        if (up) {
+            if (longp) {
+                app->fast_forward = true;
+                app->ff_accum_ms = 0;
+                // 快进一开就把当前页打满，不再逐字。
+                app->typed = s_page_len[app->page_index];
+                app->typing = false;
+                app->type_accum_ms = 0;
+                reader_refresh_text(app);
+                reader_refresh_hint(app);
+            } else if (click) {
+                app->fast_forward = false;
+                advance_reader(app);
+            }
+            break;
+        }
+        if (down) {
+            if (longp) {
+                toggle_auto(app);
+            } else if (click) {
+                app->list_sel = 0;
+                goto_page(app, PQ_PAGE_HISTORY);
+            }
+        }
+        break;
+    case PQ_PAGE_CHOICE: {
+        int count = pq_game_choice_count(&app->game);
+        if (up && click && app->game.choice_sel > 0) {
+            app->game.choice_sel--;
+            rebuild_current_page(app);
+        } else if (down && click && app->game.choice_sel + 1 < count) {
+            app->game.choice_sel++;
+            rebuild_current_page(app);
+        } else if (ok && longp) {
+            open_menu(app);
+        } else if (ok && click) {
+            if (pq_game_choose(&app->game, app->game.choice_sel)) {
+                app->auto_paused = false;
+                load_step(app);
+            }
+        }
+        break;
+    }
+    case PQ_PAGE_MENU:
+        if (up && click) {
+            app->menu_sel = (app->menu_sel + s_game_menu_count - 1) % s_game_menu_count;
+            rebuild_current_page(app);
+        } else if (down && click) {
+            app->menu_sel = (app->menu_sel + 1) % s_game_menu_count;
+            rebuild_current_page(app);
+        } else if (ok && longp) {
+            app->page = app->menu_return;
+            app->auto_paused = false;
+            rebuild_current_page(app);
+        } else if (ok && click) {
+            switch (app->menu_sel) {
+            case 0:
+                app->page = app->menu_return;
+                app->auto_paused = false;
+                rebuild_current_page(app);
+                break;
+            case 1:
+                app->save_sel = 0;
+                goto_page(app, PQ_PAGE_SAVE);
+                break;
+            case 2:
+                app->load_sel = 0;
+                goto_page(app, PQ_PAGE_LOAD);
+                break;
+            case 3:
+                app->list_sel = pq_game_history_count(&app->game) > 0
+                                    ? pq_game_history_count(&app->game) - 1
+                                    : 0;
+                goto_page(app, PQ_PAGE_HISTORY);
+                break;
+            case 4:
+                app->gallery_sel = 0;
+                goto_page(app, PQ_PAGE_GALLERY);
+                break;
+            case 5:
+                app->route_sel = 0;
+                goto_page(app, PQ_PAGE_ROUTES);
+                break;
+            case 6:
+                app->settings_sel = 0;
+                goto_page(app, PQ_PAGE_SETTINGS);
+                break;
+            case 7:
+                show_title(app);
+                break;
+            default:
+                break;
+            }
+        }
+        break;
+    case PQ_PAGE_SAVE:
+    case PQ_PAGE_LOAD: {
+        const bool save = app->page == PQ_PAGE_SAVE;
+        const int count = save ? PQ_SLOT_COUNT : PQ_SLOT_COUNT + 1;
+        int *sel = save ? &app->save_sel : &app->load_sel;
+        if (up && click) {
+            *sel = (*sel + count - 1) % count;
+            rebuild_current_page(app);
+        } else if (down && click) {
+            *sel = (*sel + 1) % count;
+            rebuild_current_page(app);
+        } else if (ok && longp) {
+            go_back(app);
+        } else if (ok && click) {
+            if (save) {
+                pq_save_info_t info;
+                if (pq_game_slot_peek(*sel, &app->game.pack, &info)) {
+                    app->overwrite_slot = *sel;
+                    app->list_sel = 1;
+                    app->page = PQ_PAGE_OVERWRITE;
+                    rebuild_current_page(app);
+                } else {
+                    do_save(app, *sel);
+                    rebuild_current_page(app);
+                }
+            } else {
+                if (*sel == 0) {
+                    do_load(app, PQ_SLOT_AUTO);
+                } else {
+                    do_load(app, *sel - 1);
+                }
+            }
+        }
+        break;
+    }
+    case PQ_PAGE_OVERWRITE:
+        if ((up || down) && click) {
+            app->list_sel = app->list_sel ? 0 : 1;
+            rebuild_current_page(app);
+        } else if (ok && click) {
+            if (app->list_sel == 0) {
+                do_save(app, app->overwrite_slot);
+                app->page = PQ_PAGE_SAVE;
+                rebuild_current_page(app);
+            } else {
+                app->page = PQ_PAGE_SAVE;
+                rebuild_current_page(app);
+            }
+        } else if (ok && longp) {
+            app->page = PQ_PAGE_SAVE;
+            rebuild_current_page(app);
+        }
+        break;
+    case PQ_PAGE_HISTORY: {
+        int count = pq_game_history_count(&app->game);
+        if (up && click && count) {
+            app->list_sel = (app->list_sel + count - 1) % count;
+            rebuild_current_page(app);
+        } else if (down && click && count) {
+            app->list_sel = (app->list_sel + 1) % count;
+            rebuild_current_page(app);
+        } else if (ok && (click || longp)) {
+            go_back(app);
+        }
+        break;
+    }
+    case PQ_PAGE_SETTINGS:
+        if ((up || down) && click) {
+            app->settings_sel = (app->settings_sel + (down ? 1 : s_settings_count - 1)) %
+                                s_settings_count;
+            rebuild_current_page(app);
+        } else if (ok && click) {
+            if (app->settings_sel == 0) {
+                app->settings.speed = (uint8_t)((app->settings.speed + 1) % 4);
+                save_settings(app);
+            } else if (app->settings_sel == 1) {
+                app->settings.auto_speed = (uint8_t)((app->settings.auto_speed + 1) % 3);
+                save_settings(app);
+            } else if (app->settings_sel == 2) {
+                int keep = (app->page_count > 0 && app->page_index < app->page_count)
+                               ? s_page_start[app->page_index]
+                               : 0;
+                app->settings.font = app->settings.font ? 0 : 1;
+                save_settings(app);
+                repaginate_at(app, keep);
+                if (app->lbl_text) {
+                    lv_obj_set_style_text_font(app->lbl_text, body_font(app), 0);
+                    reader_refresh_text(app);
+                }
+                snprintf(app->notice, sizeof(app->notice), "字号：%s",
+                         app->settings.font ? "大 20px" : "标准 16px");
+                app->notice_ms = NOTICE_MS;
+            } else if (app->settings_sel >= 3 && app->settings_sel <= 5) {
+                int bg = app->settings_sel - 3;
+                if (title_bg_unlocked(app, bg)) {
+                    app->settings.title_bg = (uint8_t)bg;
+                    save_settings(app);
+                    snprintf(app->notice, sizeof(app->notice), "已切换标题背景");
+                    app->notice_ms = NOTICE_MS;
+                } else {
+                    snprintf(app->notice, sizeof(app->notice), "完成后日谈后解锁");
+                    app->notice_ms = NOTICE_MS;
+                }
+            } else {
+                go_back(app);
+                break;
+            }
+            rebuild_current_page(app);
+        } else if (ok && longp) {
+            go_back(app);
+        }
+        break;
+    case PQ_PAGE_GALLERY:
+        if (up && click) {
+            int count = (int)app->game.pack.gallery_group_count;
+            app->gallery_sel = (app->gallery_sel + count - 1) % count;
+            rebuild_current_page(app);
+        } else if (down && click) {
+            int count = (int)app->game.pack.gallery_group_count;
+            app->gallery_sel = (app->gallery_sel + 1) % count;
+            rebuild_current_page(app);
+        } else if (ok && longp) {
+            go_back(app);
+        } else if (ok && click) {
+            if (pq_game_cg_unlocked(&app->game, (uint16_t)app->gallery_sel)) {
+                app->cg_group = app->gallery_sel;
+                app->cg_member = 0;
+                goto_page(app, PQ_PAGE_CG);
+            } else {
+                snprintf(app->notice, sizeof(app->notice), "尚未解锁");
+                app->notice_ms = NOTICE_MS;
+                rebuild_current_page(app);
+            }
+        }
+        break;
+    case PQ_PAGE_CG: {
+        int count = (int)pq_gallery_count(&app->game.pack, (uint16_t)app->cg_group);
+        if (up && click && count) {
+            app->cg_member = (app->cg_member + 1) % count;
+            rebuild_current_page(app);
+        } else if (down && click && count) {
+            app->cg_member = (app->cg_member + count - 1) % count;
+            rebuild_current_page(app);
+        } else if (ok && (click || longp)) {
+            go_back(app);
+        }
+        break;
+    }
+    case PQ_PAGE_ROUTES:
+        if (app->game.pack.route_count == 0) {
+            if (ok && longp) go_back(app);   // 0 路线：不取模、不进入空章节，但仍可返回
+            break;
+        }
+        if (up && click) {
+            int count = (int)app->game.pack.route_count;
+            app->route_sel = (app->route_sel + count - 1) % count;
+            rebuild_current_page(app);
+        } else if (down && click) {
+            int count = (int)app->game.pack.route_count;
+            app->route_sel = (app->route_sel + 1) % count;
+            rebuild_current_page(app);
+        } else if (ok && longp) {
+            go_back(app);
+        } else if (ok && click) {
+            app->chapter_sel = 0;
+            goto_page(app, PQ_PAGE_CHAPTERS);
+        }
+        break;
+    case PQ_PAGE_CHAPTERS: {
+        int count = (int)pq_route_chapter_count(&app->game.pack, (uint16_t)app->route_sel);
+        if (up && click && count) {
+            app->chapter_sel = (app->chapter_sel + count - 1) % count;
+            rebuild_current_page(app);
+        } else if (down && click && count) {
+            app->chapter_sel = (app->chapter_sel + 1) % count;
+            rebuild_current_page(app);
+        } else if (ok && longp) {
+            go_back(app);
+        } else if (ok && click) {
+            int first = (int)pq_route_first_chapter(&app->game.pack,
+                                                    (uint16_t)app->route_sel);
+            uint16_t scene = pq_chapter_scene(&app->game.pack,
+                                             (uint16_t)(first + app->chapter_sel));
+            if (scene != 0xFFFF) {
+                start_chapter(app, scene);
+            }
+        }
+        break;
+    }
+    case PQ_PAGE_ENDING:
+        if (ok && (click || longp)) {
+            show_title(app);
+        }
+        break;
+    case PQ_PAGE_ABOUT:
+        if (ok && (click || longp)) {
+            go_back(app);
+        }
+        break;
+    case PQ_PAGE_ERROR:
+        if (ok && (click || longp)) {
+            show_title(app);
+        }
+        break;
+    default:
+        break;
+    }
+}
+
 void gal_app_key(gal_app_t *app, const gal_key_t *key)
 {
-    if (!app || !key) return;
     app->idle_ms = 0;
-
-    // iot_button 会把窗口内的两次快速点击合并成 DOUBLE,且不补发单击:
-    // 阅读时连按很常见,把双击当一次单击处理。
-    gal_key_t as_click;
-    if (key->ev == BSP_BTN_DOUBLE) {
-        as_click = *key;
-        as_click.ev = BSP_BTN_CLICK;
-        key = &as_click;
-    }
-
     if (!bsp_lvgl_lock(200)) {
-        ESP_LOGW(TAG, "拿不到 LVGL 锁,忽略本次按键");
         return;
     }
-
-    // 弹窗优先:它盖在当前页面上。
-    if (app->modal != GAL_MODAL_NONE) {
-        handle_modal(app, key);
+    const bool up = key->btn == BSP_BTN_UP;
+    // 松手：停止快进。
+    if (key->ev == BSP_BTN_RELEASE) {
+        if (up) {
+            app->fast_forward = false;
+            app->ff_accum_ms = 0;
+            reader_refresh_hint(app);
+        }
         bsp_lvgl_unlock();
         return;
     }
-
-    // 自动阅读中按任意键:退出自动阅读(右上角的“自动”指示会隐藏),并吃掉这次按键。
-    // PRESS/RELEASE 不算“按键”:否则下键长按进入自动后,松手就会把它关掉。
-    if (app->auto_mode && key->ev != BSP_BTN_PRESS && key->ev != BSP_BTN_RELEASE) {
-        app->auto_mode = false;
-        app->auto_accum_ms = 0;
-        app->settings.auto_play = 0;
-        gal_settings_store(&app->settings);
-        gal_ui_set_mode(&app->ui, false);
+    // 新的按下先解除"长按后吞 CLICK"的守卫：长按自身可能补发 CLICK（要吞），
+    // 但下一次独立短按的 CLICK 不能受影响。
+    if (key->ev == BSP_BTN_PRESS) {
+        app->suppress_click = false;
+        bsp_lvgl_unlock();
+        return;   // 导航只在 CLICK/LONG 上触发，PRESS 不动作
+    }
+    if (key->ev == BSP_BTN_CLICK && app->suppress_click) {
+        app->suppress_click = false;
         bsp_lvgl_unlock();
         return;
     }
-
-    switch (app->page) {
-    case GAL_PAGE_START: handle_start(app, key); break;
-    case GAL_PAGE_TITLE: handle_title(app, key); break;
-    case GAL_PAGE_GAME: handle_game(app, key); break;
-    case GAL_PAGE_CHOICE: handle_choice(app, key); break;
-    case GAL_PAGE_MENU: handle_menu(app, key); break;
-    case GAL_PAGE_SAVE:
-    case GAL_PAGE_LOAD: handle_save_load(app, key); break;
-    case GAL_PAGE_SETTINGS: handle_settings(app, key); break;
-    case GAL_PAGE_HISTORY: handle_history(app, key); break;
-    case GAL_PAGE_GALLERY: handle_gallery(app, key); break;
-    case GAL_PAGE_CG_LIST: handle_cg_list(app, key); break;
-    case GAL_PAGE_RECALL: handle_recall(app, key); break;
-    case GAL_PAGE_MUSIC: handle_music(app, key); break;
-    case GAL_PAGE_CHAPTER: handle_chapter(app, key); break;
-    case GAL_PAGE_TRANSITION: handle_transition(app, key); break;
-    case GAL_PAGE_ENDING: handle_ending(app, key); break;
-    case GAL_PAGE_ABOUT: handle_about(app, key); break;
-    case GAL_PAGE_CG: handle_cg(app, key); break;
-    default: break;
+    if (key->ev == BSP_BTN_LONG) {
+        app->suppress_click = true;   // 驱动可能再补一个 CLICK，吞掉
     }
+    if (app->notice_ms) {
+        app->notice_ms = 0;
+    }
+    handle_page_key(app, key);
     bsp_lvgl_unlock();
+}
+
+// ---------------------------------------------------------------- tick
+static uint32_t speed_ms(const gal_app_t *app)
+{
+    static const uint32_t table[4] = {55, 25, 10, 0};
+    return table[app->settings.speed & 3];
+}
+
+static uint32_t auto_wait_ms(const gal_app_t *app)
+{
+    static const uint32_t base[3] = {2600, 1500, 800};
+    int chars = utf8_count(app->text);
+    uint32_t extra = chars > 60 ? (uint32_t)(chars - 60) * 55u : 0;
+    if (extra > 5000) {
+        extra = 5000;
+    }
+    return base[app->settings.auto_speed % 3] + extra;
 }
 
 void gal_app_tick(gal_app_t *app, uint32_t elapsed_ms)
 {
-    if (!app) return;
-    app->idle_ms += elapsed_ms;
-
-    if (app->fast_forward && app->page == GAL_PAGE_GAME) {
-        app->ff_accum_ms += elapsed_ms;
-        if (app->ff_accum_ms >= GAL_FAST_FORWARD_MS) {
-            app->ff_accum_ms = 0;
-            if (bsp_lvgl_lock(100)) {
-                advance_reading(app, true);
-                bsp_lvgl_unlock();
-            }
-        }
-    }
-
-    // 自动阅读:当前页打完之后才开始计时,每 900ms 推进一步;
-    // 章节过场停留固定时长后自动继续(自动模式不解除)。
-    if (app->auto_mode && app->page == GAL_PAGE_GAME) {
-        if (gal_ui_typing(&app->ui)) {
-            app->auto_accum_ms = 0;
-        } else {
-            app->auto_accum_ms += elapsed_ms;
-            if (app->auto_accum_ms >= GAL_AUTO_ADVANCE_MS) {
-                app->auto_accum_ms = 0;
-                if (bsp_lvgl_lock(100)) {
-                    advance_reading(app, false);
-                    bsp_lvgl_unlock();
-                }
-            }
-        }
-        // 自动阅读期间不算空闲:不调暗、不息屏、不进 deep sleep。
-        app->idle_ms = 0;
-    } else if (app->auto_mode && app->page == GAL_PAGE_TRANSITION) {
-        app->auto_accum_ms += elapsed_ms;
-        if (app->auto_accum_ms >= GAL_AUTO_TRANSITION_MS) {
-            app->auto_accum_ms = 0;
-            if (bsp_lvgl_lock(100)) {
-                advance_event(app);
-                bsp_lvgl_unlock();
-            }
-        }
-        app->idle_ms = 0;
-    } else {
-        app->auto_accum_ms = 0;
-    }
-
-    // 正在放曲子时也不进空闲:别在听音乐时熄屏。
-    if (gal_music_current() >= 0) app->idle_ms = 0;
-
-    if (app->notice_ms > 0) {
+    if (app->auto_mode || app->fast_forward) app->idle_ms = 0;
+    else app->idle_ms += elapsed_ms;
+    const bool notice_expired = app->notice_ms != 0 && app->notice_ms <= elapsed_ms;
+    if (app->notice_ms) {
         app->notice_ms = app->notice_ms > elapsed_ms ? app->notice_ms - elapsed_ms : 0;
-        if (app->notice_ms == 0 && bsp_lvgl_lock(50)) {
-            gal_ui_set_notice(&app->ui, NULL);
-            bsp_lvgl_unlock();
-        }
     }
-
-    // 自动进度节流落盘。
-    if (app->progress_dirty) {
-        app->progress_accum_ms += elapsed_ms;
-        if (app->progress_accum_ms >= GAL_PROGRESS_SAVE_MS) {
-            app->progress_accum_ms = 0;
-            if (gal_progress_store(&app->progress)) app->progress_dirty = false;
+    if (app->game.meta_dirty) {
+        app->meta_retry_ms += elapsed_ms;
+        if (app->meta_retry_ms >= 2000) {
+            app->meta_retry_ms = 0;
+            pq_game_flush_meta(&app->game);
         }
+    } else {
+        app->meta_retry_ms = 0;
     }
-
+    if (app->auto_dirty) {
+        app->auto_retry_ms += elapsed_ms;
+        if (app->auto_retry_ms >= 2000) {
+            app->auto_retry_ms = 0;
+            (void)save_auto_checkpoint(app);
+        }
+    } else {
+        app->auto_retry_ms = 0;
+    }
     app->battery_accum_ms += elapsed_ms;
-    if (app->battery_accum_ms < 10000) return;
-    app->battery_accum_ms = 0;
-    const int soc = bsp_battery_soc();
-    if (soc == app->battery_percent) return;
-    app->battery_percent = soc;
-    if (!bsp_lvgl_lock(50)) return;
-    gal_ui_set_battery(&app->ui, soc);
+    if (app->battery_accum_ms >= 10000) {
+        app->battery_accum_ms = 0;
+        app->battery_percent = bsp_battery_soc();
+    }
+    if (app->page != PQ_PAGE_READER) {
+        // 提示到期后重建一次列表页，把页脚恢复成按键提示（提示本身在 list_begin 里）。
+        if (!notice_expired) {
+            return;
+        }
+        if (!bsp_lvgl_lock(50)) {
+            return;
+        }
+        rebuild_current_page(app);
+        bsp_lvgl_unlock();
+        return;
+    }
+    if (!bsp_lvgl_lock(50)) {
+        return;
+    }
+    if (app->fast_forward && app->typing) {
+        // 快进期间任何残留的打字都立即补满。
+        app->typed = s_page_len[app->page_index];
+        app->typing = false;
+        app->type_accum_ms = 0;
+        reader_refresh_text(app);
+    }
+    if (app->typing) {
+        uint32_t step = speed_ms(app);
+        if (step == 0) {
+            app->typed = s_page_len[app->page_index];
+            app->typing = false;
+            app->type_accum_ms = 0;
+        } else {
+            // 输入节拍 50ms 与最慢打字 55ms/字不同步：按累计时间算，保留余数，
+            // 不规则短 tick 也不会丢时间或停顿。
+            app->type_accum_ms += elapsed_ms;
+            uint32_t chars = app->type_accum_ms / step;
+            if (chars > 0) {
+                app->type_accum_ms -= chars * step;
+            }
+            int n = s_page_len[app->page_index];
+            while (chars-- > 0 && app->typed < n) {
+                app->typed = utf8_next(app->text + s_page_start[app->page_index], app->typed);
+            }
+            if (app->typed >= n) {
+                app->typed = n;
+                app->typing = false;
+                app->type_accum_ms = 0;
+                app->auto_accum_ms = 0;
+            }
+        }
+        reader_refresh_text(app);
+    } else if (app->fast_forward) {
+        // 快进：每个 tick 立刻推进，不再等 40ms 累积、也不等打字机
+        // （用户反馈“快进时每句之间还有停顿”，那正是累积+打字等待造成的）。
+        app->ff_accum_ms = 0;
+        int stepped = 0;
+        while (stepped < 4 && app->page_index + 1 < app->page_count) {
+            app->page_index++;
+            stepped++;
+        }
+        if (stepped > 0) {
+            app->typed = s_page_len[app->page_index];
+            app->typing = false;
+            reader_refresh_text(app);
+        } else {
+            load_step(app);   // 换下一句/下一个事件
+            // load_step 可能带来新文本：快进时立刻整页显示，不逐字。
+            if (app->typing) {
+                app->typed = s_page_len[app->page_index];
+                app->typing = false;
+                app->type_accum_ms = 0;
+                reader_refresh_text(app);
+            }
+        }
+    } else if (app->auto_mode && !app->auto_paused) {
+        app->auto_accum_ms += elapsed_ms;
+        if (app->auto_accum_ms >= auto_wait_ms(app)) {
+            app->auto_accum_ms = 0;
+            advance_reader(app);
+        }
+    }
+    reader_refresh_hint(app);
     bsp_lvgl_unlock();
 }
 
 uint32_t gal_app_idle_ms(const gal_app_t *app)
 {
+    // 自动/快进期间不得调暗/熄屏/深睡。
+    if (app && (app->auto_mode || app->fast_forward)) return 0;
     return app ? app->idle_ms : 0;
 }
 
 void gal_app_flush(gal_app_t *app)
 {
-    if (!app || !app->progress_dirty) return;
-    if (gal_progress_store(&app->progress)) app->progress_dirty = false;
+    (void)save_auto_checkpoint(app);
+    pq_game_flush_meta(&app->game);
 }
 
 void gal_app_show_sleeping(gal_app_t *app)
 {
-    if (!app) return;
-    gal_ui_set_notice(&app->ui, "已休眠");
+    if (!bsp_lvgl_lock(200)) {
+        return;
+    }
+    clear_root(app);
+    lv_obj_t *l = mk_label(app->root, "休眠中 · 按任意键唤醒", 16, 108, SCR_W - 32, 24);
+    lv_obj_set_style_text_color(l, lv_color_hex(COLOR_CYAN), 0);
+    bsp_lvgl_unlock();
+    app->sleeping = true;
 }
 
-bool gal_app_init(gal_app_t *app)
+// ---------------------------------------------------------------- 测试钩子
+
+// 测试钩子：当前页的字节长度（用于断言快进时 typed == 页长）。
+int gal_app_test_page_len(const gal_app_t *app);
+int gal_app_test_page_len(const gal_app_t *app)
 {
-    if (!app) return false;
-    memset(app, 0, sizeof(*app));
-    app->battery_percent = -1;
-    app->shown_line = -1;
-    app->return_page = GAL_PAGE_TITLE;
+    if (!app || app->page_index >= app->page_count) return 0;
+    return (int)s_page_len[app->page_index];
+}
 
-    gal_settings_default(&app->settings);
-    if (!gal_settings_init()) {
-        ESP_LOGW(TAG, "设置存储不可用,本次使用默认值");
-    } else {
-        (void)gal_settings_load(&app->settings);
+#ifdef PQ_UI_TEST_HOOKS
+// 测试钩子：章节自动续播。
+void gal_app_test_start_chapter(gal_app_t *app, uint16_t scene);
+int gal_app_test_draw_scene_count(void);
+void gal_app_test_reset_draw_scene_count(void);
+bool gal_app_test_draw_scene(gal_app_t *app);
+void gal_app_test_start_chapter(gal_app_t *app, uint16_t scene);
+bool gal_app_test_auto_next_chapter(gal_app_t *app);
+void gal_app_test_start_chapter(gal_app_t *app, uint16_t scene)
+{
+    start_chapter(app, scene);
+}
+bool gal_app_test_auto_next_chapter(gal_app_t *app)
+{
+    return auto_next_chapter(app);
+}
+bool gal_app_test_draw_scene(gal_app_t *app)
+{
+    return draw_scene(app);
+}
+int gal_app_test_draw_scene_count(void) { return s_draw_scene_calls; }
+void gal_app_test_reset_draw_scene_count(void) { s_draw_scene_calls = 0; }
+
+void gal_app_test_goto_title(gal_app_t *app)
+{
+    if (!bsp_lvgl_lock(200)) {
+        return;
     }
+    show_title(app);
+    bsp_lvgl_unlock();
+}
 
-    gal_save_clear(&app->save);
-    if (!gal_save_init()) {
-        ESP_LOGW(TAG, "存档存储不可用,本次运行内有效");
-    } else {
-        (void)gal_save_load(&app->save);
-    }
-
-    gal_unlock_clear(&app->unlock);
-    if (!gal_unlock_init()) {
-        ESP_LOGW(TAG, "解锁记录不可用,本次运行内有效");
-    } else {
-        (void)gal_unlock_load(&app->unlock);
-    }
-
-    gal_progress_clear(&app->progress);
-    if (!gal_progress_init()) {
-        ESP_LOGW(TAG, "进度存储不可用,本次运行内有效");
-    } else {
-        (void)gal_progress_load(&app->progress);
-        if (app->progress.valid) {
-            ESP_LOGI(TAG, "找到上次进度:事件 %u 第 %u 页",
-                     (unsigned)app->progress.event_index,
-                     (unsigned)app->progress.page_index + 1);
-        }
-    }
-
-    if (!gal_music_init()) ESP_LOGW(TAG, "音乐播放任务创建失败,音乐鉴赏不可用");
-
-    if (!bsp_lvgl_lock(-1)) {
-        ESP_LOGE(TAG, "LVGL 未就绪");
+bool gal_app_test_goto_choice(gal_app_t *app)
+{
+    if (!bsp_lvgl_lock(200)) {
         return false;
     }
-    const bool ui_ok = gal_ui_create(&app->ui, &gal_cjk_16, &gal_cjk_20);
-    if (ui_ok) {
-        gal_ui_set_brand(&app->ui, GAL_CONTENT_TITLE, GAL_CONTENT_SUBTITLE);
-        gal_ui_set_title_image(&app->ui, gal_content_title_image);
-        gal_ui_set_battery(&app->ui, app->battery_percent);
-        gal_ui_set_font_size(&app->ui, app->settings.font_large != 0);
-        gal_ui_set_panel_transparency(&app->ui, app->settings.panel_transparency);
-        app->auto_mode = app->settings.auto_play != 0;
-        goto_page(app, GAL_PAGE_START);
+    pq_game_start(&app->game, app->game.pack.after, true);
+    for (int i = 0; i < 400; i++) {
+        load_step(app);
+        if (app->page == PQ_PAGE_CHOICE) {
+            break;
+        }
+        if (app->page != PQ_PAGE_READER) {
+            break;
+        }
+    }
+    bool ok = app->page == PQ_PAGE_CHOICE;
+    bsp_lvgl_unlock();
+    return ok;
+}
+
+bool gal_app_test_advance_to_scene(gal_app_t *app, uint16_t start_scene, uint16_t target_scene)
+{
+    if (!bsp_lvgl_lock(200)) {
+        return false;
+    }
+    pq_game_start(&app->game, start_scene, true);
+    bool found = false;
+    for (int i = 0; i < 3000; i++) {
+        load_step(app);
+        if (app->game.scene == target_scene) {
+            found = true;
+            break;
+        }
+        if (app->page == PQ_PAGE_CHOICE) {
+            if (!pq_game_choose(&app->game, 0)) {
+                break;
+            }
+        } else if (app->page == PQ_PAGE_ENDING ||
+                   app->page == PQ_PAGE_ERROR) {
+            break;
+        }
     }
     bsp_lvgl_unlock();
-    return ui_ok;
+    return found;
+}
+
+bool gal_app_test_reload_line(gal_app_t *app)
+{
+    if (!bsp_lvgl_lock(200)) {
+        return false;
+    }
+    app->typing = true;
+    app->typed = 0;
+    app->type_accum_ms = 0;
+    app->page_index = 0;
+    reader_refresh_text(app);
+    bsp_lvgl_unlock();
+    return true;
+}
+
+bool gal_app_test_render_scene(gal_app_t *app, uint16_t bg, uint16_t a, uint16_t b, uint16_t c,
+                               uint16_t cutin)
+{
+    if (!bsp_lvgl_lock(200)) {
+        return false;
+    }
+    app->bg = bg;
+    app->bodies[0] = a;
+    app->bodies[1] = b;
+    app->bodies[2] = c;
+    app->cutin = cutin;
+    app->cutin_opacity = cutin == PQ_NO_IMAGE ? 0 : 200;
+    app->view = 0;
+    app->page = PQ_PAGE_READER;
+    build_reader_objects(app);
+    bool ok = draw_scene(app);
+    bsp_lvgl_unlock();
+    return ok;
+}
+
+void gal_app_test_set_page(gal_app_t *app, pq_page_t page)
+{
+    if (!bsp_lvgl_lock(200)) {
+        return;
+    }
+    app->page = page;
+    rebuild_current_page(app);
+    bsp_lvgl_unlock();
+}
+#endif
+
+// ---------------------------------------------------------------- init
+bool gal_app_init(gal_app_t *app)
+{
+    memset(app, 0, sizeof(*app));
+    app->auto_scene = 0xFFFF;
+    app->bg = PQ_NO_IMAGE;
+    app->bodies[0] = app->bodies[1] = app->bodies[2] = PQ_NO_IMAGE;
+    app->cutin = PQ_NO_IMAGE;
+    app->battery_percent = -1;
+    if (!pq_game_init(&app->game)) {
+        return false;
+    }
+    (void)pq_settings_load(&app->settings);
+    s_var_rin = pq_var_find(&app->game.pack, "sf.parquet_after_rin_clear");
+    s_var_tsu = pq_var_find(&app->game.pack, "sf.parquet_after_tsu_clear");
+    s_var_main = pq_var_find(&app->game.pack, "sf.parquet_main_clear");
+    s_var_side = pq_var_find(&app->game.pack, "sf.parquet_side_clear");
+
+    if (!bsp_lvgl_lock(1000)) {
+        ESP_LOGE(TAG, "LVGL 锁超时");
+        return false;
+    }
+    bsp_lvgl_set_landscape(true);
+    bsp_lvgl_unlock();
+
+    if (!pq_gfx_init()) {
+        return false;
+    }
+    if (!bsp_lvgl_lock(1000)) {
+        return false;
+    }
+    app->page = PQ_PAGE_TITLE;
+    rebuild_current_page(app);
+    bsp_lvgl_unlock();
+
+    size_t canvas = 0, scratch = 0;
+    pq_gfx_stats(&canvas, &scratch);
+    ESP_LOGI(TAG, "就绪: 场景 %u / op %u / 图 %u / 立绘 %u / 鉴赏 %u 组 | 画布 %u B, 工作区 %u B, 空闲堆 %u B",
+             (unsigned)app->game.pack.scene_count, (unsigned)app->game.pack.op_count,
+             (unsigned)app->game.pack.img_entry_count,
+             (unsigned)app->game.pack.sprite_count,
+             (unsigned)app->game.pack.gallery_group_count, (unsigned)canvas,
+             (unsigned)scratch,
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
+    return true;
 }

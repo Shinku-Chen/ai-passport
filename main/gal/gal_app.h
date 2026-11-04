@@ -1,98 +1,160 @@
-// main/gal/gal_app.h —— 框架骨架的应用状态机。
+// main/gal/gal_app.h —— 《PARQUET》横屏（320x240）阅读器界面状态。
 //
-// 按键语义(框架规范,三键):
-//   启动页     短按确定进入标题页
-//   标题菜单   上/下 移动光标,确定 进入,长按确定 返回
-//   对话页     短按(确定/上/下)= 下一句(打字中先全显);长按确定=游戏内菜单;
-//              长按上=快进,松手停;长按下=自动阅读开关(任意键停)
-//   选项/菜单  上/下 移动,确定 执行,长按确定 返回
-//   列表页     上/下 移动,确定 执行(存档/读档/鉴赏室/章节/结局),长按确定 返回
-//   关于页     上/下 滚动正文,长按确定 返回
+// 按键语义（三键）：
+//   标题/列表   UP/DOWN 移动光标，OK 进入/确认，长按 OK 返回
+//   正文        UP 推进（打字中先全显），长按 UP 快进（松手停）
+//               DOWN 历史，长按 DOWN 自动阅读开关
+//               OK 打开游戏内菜单，长按 OK 同样打开菜单
+//   待选        UP/DOWN 移动，OK 确认，长按 OK 打开菜单
+// 所有 LVGL 写入都在 bsp_lvgl_lock 下；按键回调只入队（见 main.c）。
 #pragma once
 
-#include "gal_progress.h"
-#include "gal_save.h"
-#include "gal_settings.h"
-#include "gal_ui.h"
-#include "gal_unlock.h"
+#include "parquet_game.h"
+#include "parquet_gfx.h"
+
+#include "lvgl.h"
 
 #include <stdbool.h>
 #include <stdint.h>
 
-#define GAL_HISTORY_MAX 16
+#define PQ_HISTORY_VISIBLE 5
+#define PQ_LIST_ROWS 5
+#define PQ_TITLE_ROWS 4
 
 typedef struct {
     uint8_t btn;   // bsp_btn_t
     uint8_t ev;    // bsp_btn_ev_t
 } gal_key_t;
 
+typedef enum {
+    PQ_PAGE_TITLE = 0,
+    PQ_PAGE_READER,
+    PQ_PAGE_CHOICE,
+    PQ_PAGE_MENU,
+    PQ_PAGE_SAVE,
+    PQ_PAGE_LOAD,
+    PQ_PAGE_HISTORY,
+    PQ_PAGE_SETTINGS,
+    PQ_PAGE_GALLERY,
+    PQ_PAGE_CG,
+    PQ_PAGE_ROUTES,
+    PQ_PAGE_CHAPTERS,
+    PQ_PAGE_ENDING,
+    PQ_PAGE_ABOUT,
+    PQ_PAGE_OVERWRITE,
+    PQ_PAGE_ERROR,
+} pq_page_t;
+
 typedef struct {
-    gal_ui_t ui;
-    gal_settings_t settings;
-    gal_save_t save;
-    gal_unlock_t unlock;            // 剧情锁:观看记录与剧情标记
-    gal_progress_t progress;        // 自动进度(继续游戏用它接上)
-    bool progress_dirty;            // 有尚未落盘的进度
-    uint32_t progress_accum_ms;
+    // 数据与存储
+    pq_game_t game;
+    pq_settings_t settings;
 
-    gal_page_t page;
-    gal_page_t return_page;         // 子页面返回的目标
-
-    gal_modal_t modal;              // 当前弹窗(叠加在存档 / 读档页)
-    gal_page_t modal_page;          // 弹窗所属页面
-    int modal_sel;
-    int modal_action;               // 确认后执行的动作(见 gal_app.c)
-
-    int start_sel;
+    // 页面
+    pq_page_t page;
+    pq_page_t page_stack[8];
+    int page_depth;
+    pq_page_t menu_return;      // 菜单返回的页面
+    int page_refresh;           // 每页独立光标
     int title_sel;
     int menu_sel;
+    int list_sel;               // 通用列表光标（滑动窗口）
+    int list_top;
+    int route_sel;
+    int chapter_sel;
+    int gallery_sel;
+    int cg_group;
+    int cg_member;
     int settings_sel;
+    int overwrite_slot;
     int save_sel;
     int load_sel;
-    int history_sel;
-    int gallery_sel;                // 鉴赏室分类光标
-    int cg_sel;                     // CG 鉴赏网格光标
-    int recall_sel;                 // CG 回想光标
-    int music_sel;                  // 音乐鉴赏光标
-    int chapter_sel;
-    int ending_sel;
-    int choice_sel;
 
-    int event_index;                // 当前事件
-    int page_index;                 // 当前事件内的页
-    int page_count;                 // 当前事件的页数
-    int shown_line;                 // 已显示的行(避免从子页面返回时重新打字)
-    int shown_page;
-
-    bool fast_forward;
-    uint32_t ff_accum_ms;
+    // 正文
+    char text[PQ_TEXT_MAX];
+    int page_index;
+    int page_count;
+    int page_start[8];
+    int page_len[8];
+    int typed;
+    uint32_t type_accum_ms;   // 逐字打字的时间余数（50ms 输入节拍下累积到 speed_ms）
+    bool typing;
     bool auto_mode;
+    bool auto_paused;
+    bool fast_forward;
     uint32_t auto_accum_ms;
+    uint32_t ff_accum_ms;
 
-    const gal_line_t *history[GAL_HISTORY_MAX];   // 只记指针,文本在内容层
-    int history_count;
+    // 当前视觉（text op 快照）
+    uint16_t bg;
+    uint16_t bodies[3];
+    uint16_t cutin;
+    uint8_t view;
+    uint8_t cutin_opacity;
+    uint16_t speaker;
+    uint8_t tag;
+    uint32_t shown_op;
+    bool draw_error;
+    uint16_t visual_fp;    // 当前 visual 下标（同值则跳过重建/解码）
+    bool reader_built;     // 阅读页对象是否已建（快进时复用）
 
+    // 结局 / 错误
+    uint16_t ending_index;
+    char error_text[64];
+
+    // LVGL 对象
+    lv_obj_t *root;
+    lv_obj_t *img_art;      // 画布第 0 条带（y=0）
+    lv_obj_t *img_art2;     // 第 1 条带（y=120）；单块回退模式下为 NULL
+    lv_obj_t *box;
+    lv_obj_t *lbl_speaker;
+    lv_obj_t *lbl_tag;
+    lv_obj_t *lbl_page;
+    lv_obj_t *lbl_text;
+    lv_obj_t *lbl_hint;
+    lv_obj_t *header;
+    lv_obj_t *rows[PQ_LIST_ROWS];
+    lv_obj_t *row_labels[PQ_LIST_ROWS];
+
+    // 运行状态
+    uint32_t meta_retry_ms;
+    uint32_t auto_retry_ms;
+    bool auto_dirty;          // 自动档写失败，tick 里退避重试
+    uint32_t notice_ms;
+    uint32_t idle_ms;
     int battery_percent;
     uint32_t battery_accum_ms;
-    uint32_t idle_ms;
-    char notice[24];
-    uint32_t notice_ms;
+    uint16_t auto_scene;
+    bool suppress_click;
+    bool sleeping;
+    char notice[32];
 } gal_app_t;
 
-// 初始化:读设置与存档、建界面、进入启动页。
 bool gal_app_init(gal_app_t *app);
-
-// 处理一次按键(在输入任务里调用,内部自行加 LVGL 锁)。
 void gal_app_key(gal_app_t *app, const gal_key_t *key);
-
-// 周期性 tick:快进/自动推进、提示超时、电量刷新。
 void gal_app_tick(gal_app_t *app, uint32_t elapsed_ms);
-
-// 空闲时长(毫秒),供 main 决定变暗/深睡。
 uint32_t gal_app_idle_ms(const gal_app_t *app);
-
-// 把待写的自动进度立刻落盘(深睡前调用)。
 void gal_app_flush(gal_app_t *app);
-
-// 深睡前在屏幕上显示提示(唤醒后设备会重启)。
 void gal_app_show_sleeping(gal_app_t *app);
+
+#ifdef PQ_UI_TEST_HOOKS
+// 测试钩子：当前页的字节长度。
+int gal_app_test_page_len(const gal_app_t *app);
+// 测试钩子：章节自动续播（末章返回 false）。
+void gal_app_test_start_chapter(gal_app_t *app, uint16_t scene);
+bool gal_app_test_auto_next_chapter(gal_app_t *app);
+// 测试钩子：直接重画一帧（立绘底边断言用）。
+bool gal_app_test_draw_scene(gal_app_t *app);
+// 测试钩子：draw_scene 调用次数（验证快进时同背景不重复解码）。
+int gal_app_test_draw_scene_count(void);
+void gal_app_test_reset_draw_scene_count(void);
+// 宿主测试入口：直接驱动生产 UI 状态机（不模拟触摸/按键队列）。
+void gal_app_test_goto_title(gal_app_t *app);
+bool gal_app_test_goto_choice(gal_app_t *app);
+bool gal_app_test_advance_to_scene(gal_app_t *app, uint16_t start_scene,
+                                  uint16_t target_scene);
+bool gal_app_test_reload_line(gal_app_t *app);
+bool gal_app_test_render_scene(gal_app_t *app, uint16_t bg, uint16_t a, uint16_t b,
+                               uint16_t c, uint16_t cutin);
+void gal_app_test_set_page(gal_app_t *app, pq_page_t page);
+#endif

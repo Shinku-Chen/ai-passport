@@ -11,3 +11,7 @@ managed_components/
 /.agents/skills/passport-build
 /.agents/skills/passport-device-test
 /.agents/skills/passport-debug
+
+# PARQUET gate 生成的逐图像参考 fixture（由 tools/parquet_verify.py 重建）。
+tests/parquet/fixtures/
+__pycache__/

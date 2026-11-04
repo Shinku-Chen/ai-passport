@@ -1,24 +1,22 @@
-# GalGame 框架骨架:只编译框架应用的源码。
-# baseline 的 demo_*.c / ui_pixel.c 仍留在仓库里(可切回硬件自检 demo),
-# 但不再参与本应用的构建,也不再注册到菜单。
+# 《PARQUET》横屏阅读器：复用框架 BSP/LVGL，应用层是 parquet/* + gal_app.c。
 idf_component_register(
     SRCS "main.c"
-         "gal/gal_text.c"
-         "gal/gal_content.c"
-         "gal/gal_settings.c"
-         "gal/gal_save.c"
-         "gal/gal_unlock.c"
-         "gal/gal_progress.c"
-         "gal/gal_tone.c"
-         "gal/gal_music.c"
-         "gal/gal_ui.c"
          "gal/gal_app.c"
-    INCLUDE_DIRS "." "gal"
-    REQUIRES bsp lvgl esp_timer nvs_flash esp_hw_support
+         "parquet/parquet_pack.c"
+         "parquet/parquet_inflate.c"
+         "parquet/parquet_gfx.c"
+         "parquet/parquet_game.c"
+         "parquet/tjpgd/tjpgd.c"
+    INCLUDE_DIRS "." "gal" "parquet" "parquet/tjpgd"
+    REQUIRES bsp lvgl esp_timer nvs_flash esp_hw_support esp_rom
 )
 
-# 中文字体子集(assets/fonts 下由 tools/gal_font.py 生成;源字体不入库)。
+# 中文字体子集（assets/fonts 下由 tools/gal_font.py 生成；源字体不入库）。
 target_sources(${COMPONENT_LIB} PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/../assets/fonts/gal_cjk_16.c"
     "${CMAKE_CURRENT_LIST_DIR}/../assets/fonts/gal_cjk_20.c"
 )
+
+# 资源包：编进固件后由 parquet_pack.c 直接以只读指针读取（不做文件系统）。
+target_add_binary_data(${COMPONENT_LIB} "parquet_data/parquet_img.bin" BINARY)
+target_add_binary_data(${COMPONENT_LIB} "parquet_data/parquet_scn.bin" BINARY)

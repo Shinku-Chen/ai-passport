@@ -283,6 +283,68 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 - **没有语音生成** —— 当前版本不接 TTS：回答只以文字上屏（设备屏 + App），设备不会念出来。
 
 
+### PARQUET（横屏阅读器）
+
+把《PARQUET》（YUZUSOFTSOUR / JUNOS / NekoNyan / HIKARI FIELD）的 RW5 手表移植
+`parquet-rw5` 做成 AI Passport 的 **320×240 横屏**视觉小说阅读器：
+**107 场景 / 434 剧本块 / 11,205 条 op / 11,098 句正文 / 2 处选项（4 个选项）/
+4 个结局端 / 37 组 367 张 CG / 979 个立绘 id**，全程离线。
+状态：**软件审核通过，生产代码冻结，等待设备验收（Device tests = NOT RUN）**。
+
+- 分支：`feature/port-parquet-landscape`
+- 构建：`FoloToy-AI-Passport.bin` **7,179,360 B**
+  SHA-256 `2b634e0f3c499f2dd61acd3ed6203ce8ab66b7ba9516c3b6a3c7861dc28a7724`；
+  `FoloToy-AI-Passport-full.bin` **7,244,896 B**
+  SHA-256 `c5167b5dc92e77aef4f2b53816e060821ec18f8ef2c801dfbbb72c24c1fdea98`
+- 同次归档：`build/firmware/c5167b5dc92e77aef4f2b53816e060821ec18f8ef2c801dfbbb72c24c1fdea98/`（full/app/ELF/MAP/bootloader/分区表/
+  flash_args/manifest，已 `archive_firmware.py verify`）
+- 源快照：`parquet-rw5` @ `8ab38afe`；剧本/章节/鉴赏元数据入库在
+  [`assets/parquet-source/`](assets/parquet-source)，图片与源字体不入库
+- 资源管线：[`tools/parquet_pack.py`](tools/parquet_pack.py)（源目录 →
+  `main/parquet_data/parquet_{img,scn}.bin`）、[`tools/gal_font.py`](tools/gal_font.py)
+  （16/20 px 中文子集，2,589 码位、0 缺字）、[`tools/parquet_verify.py`](tools/parquet_verify.py)
+  （逐 op/逐图/鉴权对照）、[`tools/parquet_audit.py`](tools/parquet_audit.py)（独立源审计）
+- 资源包：图片 **5,187,277 B**（402 JPEG + 36 共用身体 + 970 表情层 + 101 cut-in + Logo）
+  + 剧本 **535,634 B**（361 个 32-op 正文块），编进 app 分区，不占文件系统。
+
+**操作（三键）：** 正文 **UP** 推进（长按快进、松手停）、**DOWN** 历史（长按自动）、
+**OK** 菜单；待选 **UP/DOWN** 选、**短 OK** 确认、**长 OK** 开菜单（返回后待选与光标保留）；
+列表 **UP/DOWN** 移动、**OK** 确认、**长按 OK** 返回。标题页可开始/前传/后日谈/章节/读档/
+鉴赏/设置。
+
+**实现要点：**
+
+- **只合成画面区** —— 320×150 RGB565 画布（96,000 B，对话框由 LVGL 不透明面板承担）；
+  背景/CG 用内置 tjpgd 逐 MCU 解码，立绘用「调色板 + 逐索引 alpha + 8 行一块 zlib」的
+  BLOCK 身体 + 「RGB565 + 8bit alpha」的表情 PATCH 叠加；cut-in 带源 200/255 不透明度。
+- **内容零丢失，入口按源** —— 107 场景全部打包；正文整段 SHA-256 与源一致；START 首次进前传、
+  之后进正篇，正篇通关后标题出现 AFTER STORY；SIDE STORY 可单独重读；章节回顾不写周目。
+  源里 99 号选择节点没有入口（保留并单独回归）。
+- **立绘去重** —— 979 个立绘 id 只存 36 张共用身体 + 970 张表情层，按源 faceAnchor 与
+  同一 150/262 比例定位；不按 alias 复制、不预合成身体×表情。
+- **存档** —— 30 个手动槽 + 独立自动槽（NVS），保存场景/op/页/模式/待选光标/变量/预览，
+  版本 + 长度 + CRC 校验；失败不动旧档；全局周目记录独立、启动即加载、读旧档只合并新增位、
+  写盘失败按 2 秒退避重试；NVS 不可用时只降级不擦除。
+- **字体** —— 16 px 与 20 px 两档，全剧本 + 界面覆盖，设置里可切换。
+
+**坏包边界：** 段区间顺序/不重叠/起点≥header、长度乘法与正文块回绕均在 init 拒绝；tracked C 负例 18 项（正常包与合法边界仍通过）。
+
+**验证：** 本作 gate 通过（生产 C 回归 **109,324** 项 + 坏包负例 **18** 项 + UI 按键序列 **168** 项，0 失败；
+独立源审计 22 项 0 失败；1,510 张图逐像素/网格对照；负例编译门禁；字库 0 缺字；
+IDF 构建、合并镜像、布局校验、同次归档校验）。整仓 `tools/validate.sh --static`
+本轮为本机真实 **PASS 18 / FAIL 2 / SKIP 4**：4 个 SKIP 是已知 baseline demo 链接差异；
+2 个 FAIL 是未修改的基线自检（Windows 路径断言、目录符号链接权限，WinError 1314），
+与本作无关且如实记为 FAIL；本作 gate 在该次运行中 PASS。门禁每次写到唯一的
+`build/validate-*` 目录并保留逐 case 日志；tracked 负例证明本作 C 编译/运行失败会让
+汇总 FAIL、退出非零。Device tests = NOT RUN。
+
+**内存账（同次 MAP）：** `_heap_start=0x3fca29e0` → `0x3fcce710` 共 **179,504 B**；
+动态峰值 = 画布 96,000 + LVGL 刷屏 19,200 + 输入栈 8,192 + LVGL 栈 7,168 +
+main/esp_timer/event 9,472 + NVS 约 8,400 + 堆元数据约 2,000 = **150,432 B**，余约 28.4 KiB。
+idle 栈 1,536 B 是 FreeRTOS 静态栈（已在 MAP），不重复计。系统任务、NVS 与碎片未实测，
+**不视为内存已通过**。
+
+
 ## 说明
 
 - 每个应用都是基于上游基线的一个独立 `feature/*` 分支。不要把 demo 分支整支合入
