@@ -15,6 +15,16 @@
 - 添加字库前评估 Flash 与内部 RAM 影响；ESP32-C3 无 PSRAM。
 - 不提交许可不允许分发的字库。
 
+为《命运石之门 0》阅读器在本地生成、**不提交**：
+`fonts/steins0_font16.c`（3,733 码位，16px/4bpp，源码 2,955,758 字节，
+编译后 font 对象 444,920 字节）。它把源游戏 `sg-original.ttf` 的 PUA 字形与
+Noto Sans SC 的 ASCII/UI 字形合并；比早先的 3,700 码位子集新增 33 个 glyph。
+游戏字库部分仍归原作权利人所有，因此该文件仅用于本地技术验证，不得发布。
+当前生成源码 SHA256：
+`cd29856e69cd72ed6a6b9b16677d98e4ef0c83c57fa3a92f0f31d5c0dc4bc2b7`。
+用 `tools/steins0_font.py` 重新生成（见
+`docs/reference/shinku-chen/steins0/README.zh_CN.md`）。
+
 ## 图片（images）
 
 可复用的源图与生成的显示资产放在 `images/`。

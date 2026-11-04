@@ -1,0 +1,8 @@
+dependencies:
+  idf: ">=5.5.3,<5.6.0"
+  # Keep the framework's pinned LVGL version; do not let the new esp_jpeg
+  # manifest pull LVGL 9.6 into this port.
+  lvgl/lvgl: "9.5.0"
+  espressif/esp_lvgl_port: "2.9.0"
+  # 背景/立绘/CG 都以 JPEG 存储,需要组件自带的 TJpgDec(RGB565 输出 + 回调逐块合成)。
+  espressif/esp_jpeg: "^1.3.1"

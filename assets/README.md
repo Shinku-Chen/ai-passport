@@ -17,6 +17,17 @@ Store reusable font files and generated font sources in `fonts/`.
 - Check Flash and internal-RAM impact before adding a font; the ESP32-C3 has no PSRAM.
 - Do not commit fonts whose license does not permit redistribution.
 
+Generated locally for the Steins;Gate 0 reader, **not committed**:
+`fonts/steins0_font16.c` (3,733 code points, 16 px/4 bpp, 2,955,758-byte
+source, 444,920-byte compiled object). It merges PUA glyphs from the source
+game's `sg-original.ttf` with ASCII/UI glyphs from Noto Sans SC; this is 33
+glyphs more than the earlier 3,700-point subset. The game-font portion remains
+under the original game rights, so this file is produced only for local
+technical validation and must not be published. SHA256 of the current generated
+source: `cd29856e69cd72ed6a6b9b16677d98e4ef0c83c57fa3a92f0f31d5c0dc4bc2b7`.
+Regenerate it with `tools/steins0_font.py` (see
+`docs/reference/shinku-chen/steins0/README.md`).
+
 ## Images
 
 Store reusable source images and generated display assets in `images/`.
