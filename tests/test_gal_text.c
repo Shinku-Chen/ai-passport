@@ -1,9 +1,10 @@
-// tests/test_gal_text.c —— 框架骨架的排版纯逻辑测试（宿主运行，不需要设备）。
+// tests/test_gal_text.c —— 排版纯逻辑测试（宿主运行，不需要设备）。
+// 横屏 320x240:16px 档每行 19 字(38 单位)x4 行,20px 档每行 15 字(30 单位)x3 行。
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "gal/gal_text.h"
+#include "gal_text.h"
 
 int main(void)
 {
@@ -33,5 +34,29 @@ int main(void)
     assert(gal_text_pages("中中中中", 2, 1, NULL, 0) == 4);
 
     puts("gal_text pagination: PASS");
+    // 横屏 16px 档:38 单位/行、4 行/页 —— 76 个全角字正好一页。
+    {
+        // 用真实 UTF-8 汉字更直观
+        char text[400] = { 0 };
+        for (int i = 0; i < 76; ++i) strcat(text, "中");
+        assert(gal_text_pages(text, 38, 4, offsets, GAL_TEXT_MAX_PAGES + 1) == 1);
+        strcat(text, "多");   // 第 77 个字 -> 第二页
+        assert(gal_text_pages(text, 38, 4, offsets, GAL_TEXT_MAX_PAGES + 1) == 2);
+    }
+    // 横屏 20px 档:30 单位/行、3 行/页 —— 45 个全角字一页,第 46 个字换页。
+    {
+        char text[400] = { 0 };
+        for (int i = 0; i < 45; ++i) strcat(text, "中");
+        assert(gal_text_pages(text, 30, 3, offsets, GAL_TEXT_MAX_PAGES + 1) == 1);
+        strcat(text, "多");
+        assert(gal_text_pages(text, 30, 3, offsets, GAL_TEXT_MAX_PAGES + 1) == 2);
+    }
+    // 台词最长 117 字:16px 档 2 页内装得下(38/4 与 30/3 都够)。
+    {
+        char text[400] = { 0 };
+        for (int i = 0; i < 117; ++i) strcat(text, "中");
+        assert(gal_text_pages(text, 38, 4, offsets, GAL_TEXT_MAX_PAGES + 1) == 2);
+        assert(gal_text_pages(text, 30, 3, offsets, GAL_TEXT_MAX_PAGES + 1) == 3);
+    }
     return 0;
 }

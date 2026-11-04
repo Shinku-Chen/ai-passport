@@ -17,6 +17,18 @@ attached to this repository's [Releases](https://github.com/Shinku-Chen/ai-passp
 
 ## Projects
 
+### GalGame port: GalGod
+
+A complete landscape (320×240) port of the GalGod galgame: all 18 chapters / 5,457 lines / 119,410 characters, 15 choice
+groups including the scored quiz with the `bad_end_flag >= 7` branch, 4 endings
+plus afterstory, all 55 sprite expressions, 38 backgrounds, 34 CG/SD references (33 unique after
+de-duplication) with a paged gallery, three save slots plus autosave, history and settings.
+
+- Branch: `feature/port-galgod-landscape`
+- Details: [`docs/games/galgod.md`](docs/games/galgod.md)
+- Controls: in dialogue UP advances (hold to fast-forward), DOWN opens history,
+  OK opens the menu; in lists UP/DOWN select, OK activates, long OK goes back.
+
 ### Voice Keychain
 
 A sound-effects keychain that turns the AI Passport into a pocket audio player:

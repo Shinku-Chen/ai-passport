@@ -9,7 +9,8 @@
 
 static const char *TAG = "bsp_lvgl";
 
-#define BSP_LVGL_DRAW_BUFFER_LINES 40
+// 视觉小说每屏只重绘一次,24 行缓冲(single buffer)足够,并把堆让给 LVGL。
+#define BSP_LVGL_DRAW_BUFFER_LINES 24
 
 static lv_display_t *s_disp;
 static bool s_port_initialized;

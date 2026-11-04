@@ -16,6 +16,17 @@ ESP32-C3、240×320 彩屏、三键操作、8 MB Flash、无 PSRAM）的开发�
 
 ## 项目
 
+### GalGame 移植：想成为Galgame领域大神！！！
+
+把「诺提拉观察所」的 galgame **《想成为Galgame领域大神！！！》** 完整搬到 AI Passport：
+横屏 320×240、全部 18 章 / 5,457 句 / 119,410 字、15 组选项（含答题计分与
+`bad_end_flag >= 7` 分支）、4 个结局与后日谈、55 张立绘全表情、38 张背景、
+34 个 CG/SD 引用（去重后 33 张，鉴赏室分页）、三槽存档 + 自动存档、历史与设置。
+
+- 分支：`feature/port-galgod-landscape`
+- 说明：[`docs/games/galgod.zh_CN.md`](docs/games/galgod.zh_CN.md)
+- 操作：正文 UP 推进（长按快进）、DOWN 历史、OK 菜单；列表 UP/DOWN 选择、OK 确认、长按 OK 返回。
+
 ### 音效钥匙扣（Voice Keychain）
 
 把 AI Passport 变成口袋音频播放器的音效钥匙扣：开机即进入应用，播放来自几十个角色包的
