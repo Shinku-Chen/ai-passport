@@ -15,6 +15,15 @@
 - 添加字库前评估 Flash 与内部 RAM 影响；ESP32-C3 无 PSRAM。
 - 不提交许可不允许分发的字库。
 
+### `fonts/manosaba_16.c`
+
+《魔法少女的魔女审判》阅读器专用 16px/4bpp LVGL 字库：2,999 码位、行高 19、
+0 缺字。源为快照内 `src/common/manosaba.otf`（Noto Sans Mono CJK SC，
+SIL OFL 1.1）；该子集缺少的 5 个字形（`↑`、`↓`、`栈`、`棚`、`盏`）由系统
+Noto Sans SC（SIL OFL 1.1）栅格化补齐。用 `tools/manosaba_font.py --check`
+或 `--font` 重新生成；提交生成的 C 源，不提交源 OTF。目标：由
+`main/CMakeLists.txt` 链接进 `main`。
+
 ## 图片（images）
 
 可复用的源图与生成的显示资产放在 `images/`。

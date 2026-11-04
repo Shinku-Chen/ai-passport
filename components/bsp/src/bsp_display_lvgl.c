@@ -9,7 +9,10 @@
 
 static const char *TAG = "bsp_lvgl";
 
-#define BSP_LVGL_DRAW_BUFFER_LINES 40
+// Keep the panel's native 240-pixel width; 24 lines = 240*24*2 = 11,520 B.
+// This is a deliberate 7,680 B reduction from 40 lines, while retaining the
+// same single-buffer, rotated flush and recursive port lock.
+#define BSP_LVGL_DRAW_BUFFER_LINES 24
 
 static lv_display_t *s_disp;
 static bool s_port_initialized;
@@ -84,8 +87,8 @@ lv_display_t *bsp_lvgl_init(void) {
     const lvgl_port_display_cfg_t dc = {
         .panel_handle = bsp_display_panel(),
         .io_handle    = bsp_display_io(),
-        // ⚠ C3 无 PSRAM,DMA 只能用内部 RAM。40 行单缓冲约 19.2KB，
-        // 可减少窗口命令和队列提交次数；仍保留单缓冲，避免双缓冲挤压音频/Wi-Fi。
+        // C3 无 PSRAM，DMA 只能用内部 RAM。24 行单缓冲 11,520 B，
+        // 比 40 行少 7,680 B；仍保留单缓冲，避免双缓冲挤压音频/Wi-Fi。
         .buffer_size   = (uint32_t)BSP_LCD_W * BSP_LVGL_DRAW_BUFFER_LINES,
         .double_buffer = false,
         .hres = BSP_LCD_W, .vres = BSP_LCD_H,

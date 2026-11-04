@@ -17,6 +17,16 @@ Store reusable font files and generated font sources in `fonts/`.
 - Check Flash and internal-RAM impact before adding a font; the ESP32-C3 has no PSRAM.
 - Do not commit fonts whose license does not permit redistribution.
 
+### `fonts/manosaba_16.c`
+
+Generated 16px/4bpp LVGL font for the Manosaba reader: 2,999 codepoints,
+line height 19, 0 missing glyphs. Source is the snapshot's
+`src/common/manosaba.otf` (Noto Sans Mono CJK SC, SIL OFL 1.1); the five
+glyphs absent from that subset (U+2191, U+2193, U+6808, U+68DA, U+76CF) are
+rasterized from the system Noto Sans SC (SIL OFL 1.1). Regenerate with
+`tools/manosaba_font.py --check`/`--font`; the font C source is committed but
+the source OTF is not. Destination: linked into `main` by `main/CMakeLists.txt`.
+
 ## Images
 
 Store reusable source images and generated display assets in `images/`.
