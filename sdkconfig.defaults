@@ -7,7 +7,7 @@ CONFIG_IDF_TARGET="esp32c3"
 CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
 # 固定 8MB 镜像头，关闭 detect，便于 idf.py merge-bin。
 CONFIG_ESPTOOLPY_HEADER_FLASHSIZE_UPDATE=n
-# 默认模板只保留 NVS、PHY data 和占用剩余空间的 factory app；用户可按需修改。
+# 默认模板只保留 NVS、PHY data 和占用剩余空间的 factory app。
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
@@ -19,26 +19,20 @@ CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
 
 # --- LVGL ---
 CONFIG_LV_COLOR_DEPTH_16=y
-# 20 ms display refresh period targets up to 50 FPS when rendering and SPI
-# transfer complete within the same budget.
 CONFIG_LV_DEF_REFR_PERIOD=20
 CONFIG_LV_FONT_MONTSERRAT_14=y
 CONFIG_LV_FONT_MONTSERRAT_20=y
-# LVGL 内置 malloc 池大小(KB)。它是独立静态区、不与系统堆共享,配大了会白白占用 RAM。
-# 本 demo UI 简单,24KB 足够;若自建复杂界面出现绘制卡死/看门狗,调大此值。
+# LVGL 内置 malloc 池(KB)。本作界面是常驻对象树,64KB 足够;画布像素是静态数组,
+# 不从这里分配,见 docs 的 RAM 账。
 CONFIG_LV_MEM_SIZE_KILOBYTES=64
 
 # --- 系统 ---
 CONFIG_FREERTOS_HZ=1000
 
-# --- Bluetooth LE / NimBLE ---
-# ESP32-C3 仅支持 BLE；示例只启用单连接 peripheral 所需的最小 host 配置。
-CONFIG_BT_ENABLED=y
-CONFIG_BT_NIMBLE_ENABLED=y
-CONFIG_BT_NIMBLE_ROLE_CENTRAL=n
-CONFIG_BT_NIMBLE_ROLE_PERIPHERAL=y
-CONFIG_BT_NIMBLE_ROLE_BROADCASTER=y
-CONFIG_BT_NIMBLE_ROLE_OBSERVER=n
-CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
-CONFIG_BT_NIMBLE_HOST_BASED_PRIVACY=n
-CONFIG_BT_NIMBLE_NVS_PERSIST=n
+# --- 射频:阅读器完全离线 ---
+# 上游基线默认开 BLE(NimBLE)；本应用不联网/不配网/无音频任务，关掉以释放静态 RAM
+# 与堆。Wi-Fi 在 IDF 5.5 里是隐藏符号，config 覆盖无效；本应用从不调用 esp_wifi_init()。
+CONFIG_BT_ENABLED=n
+CONFIG_ESP_COEX_SW_COEXIST_ENABLE=n
+# 显式：arena 接线后 refresh/input 静态链 ≤1.7K，8 KiB 留足余量（见 build/ui-arena/REPORT.md）。
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192

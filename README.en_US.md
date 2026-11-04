@@ -430,6 +430,23 @@ green once you can speak; release to send. A short **OK** press only lights the 
 - **No speech synthesis** — this version does not do TTS: answers are text on the device screen and in the app, and the device never reads them aloud.
 
 
+### anemoi (landscape reader, partial-content prototype)
+
+Part of the Redmi Watch 5 port of *anemoi* on the 320×240 AI Passport panel: layered body + native
+face sprites, 320×180 backgrounds/CGs, the request board, 30 save slots plus an auto slot, a CG
+gallery and a chapter list. **This build covers 71 of 264 source scenes** (23 common chapters plus
+the request letters/tasks; 764,847 of 3,088,939 dialogue bytes); heroine routes and after-story
+arcs are not ported and show a volume-boundary screen instead of silently skipping content.
+Measured with a measurement-only 32-bit text-id variant, a whole-work single pack is 18.97 MB at
+0.52/32 colours/q30 and 16.70 MB at 0.46/16 colours/q25 — 2.6× / 2.3× the 7,266,422 B resource
+ceiling. That bounds these measured encodings, not every possible strategy; splitting into volumes
+is a candidate, not a delivered whole work. Reviewed prototype: app 8,191,504 B / full 8,257,040 B
+(sha256 `bee2d1a2…`).
+
+**Controls:** reading — UP advance / hold UP fast-forward (stops on release), DOWN history / hold DOWN auto-play, OK advance / hold OK menu; lists — OK enter, hold OK back.
+
+
+
 ## Notes
 
 - Each application is a separate `feature/*` branch off the upstream baseline.

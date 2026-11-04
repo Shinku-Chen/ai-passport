@@ -1,24 +1,27 @@
-# GalGame 框架骨架:只编译框架应用的源码。
-# baseline 的 demo_*.c / ui_pixel.c 仍留在仓库里(可切回硬件自检 demo),
-# 但不再参与本应用的构建,也不再注册到菜单。
+# 《anemoi》AI Passport 横屏阅读器：BSP/LVGL + main/anemoi 应用层。
 idf_component_register(
     SRCS "main.c"
-         "gal/gal_text.c"
-         "gal/gal_content.c"
-         "gal/gal_settings.c"
-         "gal/gal_save.c"
-         "gal/gal_unlock.c"
-         "gal/gal_progress.c"
-         "gal/gal_tone.c"
-         "gal/gal_music.c"
-         "gal/gal_ui.c"
-         "gal/gal_app.c"
-    INCLUDE_DIRS "." "gal"
-    REQUIRES bsp lvgl esp_timer nvs_flash esp_hw_support
+         "anemoi/anemoi_pack.c"
+         "anemoi/anemoi_script.c"
+         "anemoi/anemoi_canvas.c"
+         "anemoi/anemoi_image.c"
+         "anemoi/anemoi_store.c"
+         "anemoi/anemoi_store_nvs.c"
+         "anemoi/anemoi_ui.c"
+         "anemoi/anemoi_app.c"
+         "anemoi/anemoi_render.c"
+         "anemoi/anemoi_startup.c"
+         "anemoi/tjpgd/tjpgd.c"
+         "anemoi_data/anemoi_data.c"
+    INCLUDE_DIRS "." "anemoi" "anemoi/tjpgd" "anemoi_data"
+    REQUIRES bsp lvgl esp_timer nvs_flash esp_hw_support esp_rom
 )
 
-# 中文字体子集(assets/fonts 下由 tools/gal_font.py 生成;源字体不入库)。
+# 中文字体子集（assets/fonts/gal_cjk_16.c；字符集来自资源包正文 + 界面文案，
+# 由 tools/gal_font.py 生成并逐字形回读校验）。20px 在本卷体积内放不下，不提供。
 target_sources(${COMPONENT_LIB} PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/../assets/fonts/gal_cjk_16.c"
-    "${CMAKE_CURRENT_LIST_DIR}/../assets/fonts/gal_cjk_20.c"
 )
+
+# 资源包：编进固件后由 anemoi_pack.c 直接以指针读取。
+target_add_binary_data(${COMPONENT_LIB} "anemoi_data/anemoi_pack.bin" BINARY)

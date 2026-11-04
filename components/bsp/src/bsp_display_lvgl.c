@@ -15,6 +15,8 @@ static lv_display_t *s_disp;
 static bool s_port_initialized;
 static bool s_port_init_failed;
 
+static unsigned s_flush_count;
+
 static void rounded_flush_event(lv_event_t *event)
 {
     lv_display_t *disp = lv_event_get_target(event);
@@ -25,6 +27,12 @@ static void rounded_flush_event(lv_event_t *event)
         return;
     }
 
+    if (s_flush_count < 5) {
+        ESP_LOGW(TAG, "flush#%u area x=%d..%d y=%d..%d stride=%u buf=%u B",
+                 ++s_flush_count, (int)area->x1, (int)area->x2, (int)area->y1,
+                 (int)area->y2, (unsigned)draw_buf->header.stride,
+                 (unsigned)draw_buf->data_size);
+    }
     const int32_t width = lv_area_get_width(area);
     if (draw_buf->header.stride < (uint32_t)width * sizeof(uint16_t)) return;
 
@@ -91,6 +99,12 @@ lv_display_t *bsp_lvgl_init(void) {
         .hres = BSP_LCD_W, .vres = BSP_LCD_H,
         // 旋转/镜像必须在这里配:esp_lvgl_port 注册显示时会重新下发 MADCTL,
         // 覆盖 bsp_display.c 里 esp_lcd_panel_mirror() 的设置。
+        // 在注册显示时就配好横屏：esp_lvgl_port 在 lvgl_port_add_disp() 里调用一次
+        // lvgl_port_disp_rotation_update()（esp_lvgl_port_disp.c:131），并且注册了
+        // LV_EVENT_RESOLUTION_CHANGED 回调（同文件 :446），运行期 lv_display_set_rotation()
+        // 也会经 lv_display.c:996 → update_resolution() → 事件 → 该回调重下发 MADCTL。
+        // 两种写法等价（{swap_xy:true,mirror_x:true} 与 {false,false,false}+ROTATION_90
+        // 算出的 swap_xy/mirror 相同），这里选初始化期配置以减少运行期依赖。
         .rotation = { .swap_xy = false, .mirror_x = false, .mirror_y = false },
         // swap_bytes:LVGL 输出小端 RGB565,ST7789 走 SPI 要大端 → 需交换高低字节。
         .flags = { .buff_dma = true, .swap_bytes = true },
@@ -124,6 +138,11 @@ lv_display_t *bsp_lvgl_init(void) {
     s_disp = disp;
     lvgl_port_unlock();
 
+    ESP_LOGW(TAG, "disp: hres=%d vres=%d stride=%d cf=%d",
+             (int)lv_display_get_horizontal_resolution(disp),
+             (int)lv_display_get_vertical_resolution(disp),
+             (int)lv_display_get_buf_active(disp)->header.stride,
+             (int)lv_display_get_buf_active(disp)->header.cf);
     ESP_LOGI(TAG, "LVGL 就绪，全局圆角=%d，外部填充=黑色", BSP_LVGL_SCREEN_RADIUS);
     return s_disp;
 }
@@ -138,15 +157,17 @@ void bsp_lvgl_unlock(void) {
 
 esp_err_t bsp_lvgl_set_landscape(bool landscape) {
     if (!s_disp) return ESP_FAIL;
+    // LVGL 逻辑分辨率必须靠 lv_display_set_rotation() 改：它会 update_resolution()
+    // 并发出 RESOLUTION_CHANGED，esp_lvgl_port 的回调再重下发 MADCTL
+    // （esp_lvgl_port_disp.c:446）。只改 disp_cfg.rotation 只动硬件、不动 LVGL 分辨率。
+    const lv_display_rotation_t rotation =
+        landscape ? LV_DISPLAY_ROTATION_90 : LV_DISPLAY_ROTATION_0;
+    lv_display_set_rotation(s_disp, rotation);
 
     // LVGL ROTATION_90/270 只是“相对 disp_cfg.rotation 再转 90 度”:esp_lvgl_port
     // 收到 RESOLUTION_CHANGED 后会写入 MADCTL(MV 翻转行列 + 一个 mirror 保证是
     // 旋转而不是镜像),并同步 LVGL 逻辑分辨率。
     // 方向若上下颠倒,把这里的 90 换成 270 即可(对应另一组 mirror)。
-    const lv_display_rotation_t rotation =
-        landscape ? LV_DISPLAY_ROTATION_90 : LV_DISPLAY_ROTATION_0;
-    lv_display_set_rotation(s_disp, rotation);
-
     ESP_LOGI(TAG, "LVGL 方向: %s(%dx%d)", landscape ? "横屏" : "竖屏",
              (int)lv_display_get_horizontal_resolution(s_disp),
              (int)lv_display_get_vertical_resolution(s_disp));

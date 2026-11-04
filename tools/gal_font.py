@@ -114,10 +114,17 @@ def source_chars(root: str) -> set:
     return chars
 
 
-def required_chars(pack_paths: list, source_root: str, inventory_dir: str = "") -> set:
+def required_chars(pack_paths: list, source_root: str, inventory_dir: str = "",
+                   chars_files: list = None) -> set:
     chars = source_chars(source_root)
     for path in pack_paths:
         chars |= pack_chars(path)
+    for path in chars_files or []:
+        with open(path, encoding="utf-8") as fh:
+            for line in fh:
+                if not line.startswith("#"):
+                    chars |= {c for c in line.rstrip(chr(10))
+                              if c not in chr(13) + chr(10) + chr(9)}
     chars |= inventory_chars(inventory_dir)
     for start, end in ((0x20, 0x7E),):
         chars |= {chr(c) for c in range(start, end + 1)}
@@ -136,7 +143,7 @@ def inventory_chars(out_dir: str) -> set:
         for line in fh:
             if line.startswith("#"):
                 continue
-            chars |= {c for c in line.rstrip("\n") if c not in "\r\n\t"}
+            chars |= {c for c in line.rstrip(chr(10)) if c not in chr(13)+chr(10)+chr(9)}
     return chars
 
 
@@ -421,9 +428,9 @@ def verify(path: str, codepoints: list, glyphs: dict) -> int:
 
 
 # ---------------------------------------------------------------- 自检
-def check(out_dir: str, codepoints: list) -> int:
+def check(out_dir: str, codepoints: list, sizes=None) -> int:
     ok = True
-    for size in SIZES:
+    for size in (sizes or SIZES):
         path = os.path.join(out_dir, f"gal_cjk_{size}.c")
         if not os.path.exists(path):
             log(f"缺少字体文件: {path}")
@@ -458,7 +465,7 @@ def check(out_dir: str, codepoints: list) -> int:
 
 # ---------------------------------------------------------------- 主流程
 def generate(args) -> int:
-    chars = required_chars(args.pack, args.source_root, args.out_dir)
+    chars = required_chars(args.pack, args.source_root, args.out_dir, args.chars_file)
     codepoints = sorted(ord(c) for c in chars)
     os.makedirs(args.out_dir, exist_ok=True)
     with open(os.path.join(args.out_dir, INVENTORY_FILE), "w",
@@ -484,8 +491,9 @@ def generate(args) -> int:
     except ImportError:
         log("  (未安装 fontTools,跳过源字体缺字诊断)")
 
+    sizes = tuple(int(x) for x in args.sizes.split(",") if x.strip())
     rc = 0
-    for size in SIZES:
+    for size in sizes:
         log(f"  生成 {size}px/{BPP}bpp ...")
         glyphs = rasterize(args.font, size, codepoints)
         _require_pillow()
@@ -502,7 +510,7 @@ def generate(args) -> int:
             fh.write(text)
         log(f"    {path} ({os.path.getsize(path) / 1024:.0f} KB 源码)")
         rc |= verify(path, codepoints, glyphs)
-    rc |= check(args.out_dir, codepoints)
+    rc |= check(args.out_dir, codepoints, sizes)
     return rc
 
 
@@ -512,15 +520,21 @@ def main() -> int:
     ap.add_argument("--pack", action="append",
                     default=[],
                     help="资源包路径,可给多次(字符集取并集)")
+    ap.add_argument("--chars-file", action="append", default=[],
+                    help="额外的字符清单文件(UTF-8 文本,逐字符取并集)")
+    ap.add_argument("--sizes", default="16,20",
+                    help="要生成的像素字号,逗号分隔(默认 16,20)")
     ap.add_argument("--source-root", default="main")
     ap.add_argument("--out-dir", default="assets/fonts")
     ap.add_argument("--check", action="store_true", help="只做覆盖/结构自检,不生成")
     args = ap.parse_args()
 
     codepoints = sorted(ord(c) for c in
-                        required_chars(args.pack, args.source_root, args.out_dir))
+                        required_chars(args.pack, args.source_root, args.out_dir,
+                                       args.chars_file))
     if args.check:
-        return check(args.out_dir, codepoints)
+        return check(args.out_dir, codepoints,
+                     tuple(int(x) for x in args.sizes.split(",") if x.strip()))
     if not args.font:
         ap.error("生成模式需要 --font")
     return generate(args)
