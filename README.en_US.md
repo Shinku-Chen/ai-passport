@@ -15,6 +15,17 @@ the BSP, and the development workflow come from upstream — see
 [`docs/contribution/`](docs/contribution/). Released firmware for each project is
 attached to this repository's [Releases](https://github.com/Shinku-Chen/ai-passport/releases).
 
+> **Current branch: CLANNAD port (`feature/port-clannad-landscape`)**
+>
+> A 320x240 landscape CLANNAD reader for the AI Passport. It preserves the
+> current watch snapshot's 212 scenes / 411 story chunks / 150,288 ops / 309
+> choices / 68 gallery groups with 174 images / 386 sprite images, plus 30 manual
+> save slots, an independent auto slot and cross-playthrough `g[]` progress.
+> App image 8,149,744 B, merged image 8,215,280 B; image policy, RAM accounting,
+> validation evidence and limitations are in the
+> [CLANNAD port document](docs/reference/shinku-chen/clannad/README.md).
+> Status: software implementation and host audit complete; device tests **NOT RUN**.
+
 ## Projects
 
 ### Voice Keychain

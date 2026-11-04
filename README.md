@@ -14,6 +14,15 @@ ESP32-C3、240×320 彩屏、三键操作、8 MB Flash、无 PSRAM）的开发�
 [`docs/contribution/`](docs/contribution/)。每个项目的固件发布挂在本仓库的
 [Releases](https://github.com/Shinku-Chen/ai-passport/releases) 上。
 
+> **当前分支：CLANNAD 移植（`feature/port-clannad-landscape`）**
+>
+> AI Passport 上的 320x240 横屏《CLANNAD》阅读器：保留当前手表源快照的全部
+> 212 个场景 / 411 个剧情分块 / 150,288 个 op / 309 个选项 / 68 组 174 张 CG /
+> 386 张立绘；30 个手动存档、独立自动档和跨周目 `g[]` 进度。
+> app 镜像 8,149,744 B，合并镜像 8,215,280 B；图像策略、内存账、验证证据与限制见
+> [CLANNAD 移植文档](docs/reference/shinku-chen/clannad/README.zh_CN.md)。
+> 状态：软件实现与宿主审计完成，真机测试 **NOT RUN**。
+
 ## 项目
 
 ### 音效钥匙扣（Voice Keychain）

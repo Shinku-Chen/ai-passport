@@ -36,6 +36,13 @@ class InstallPassportSkillsTest(unittest.TestCase):
             source = self.root / "skills" / name
             source.mkdir(parents=True)
             (source / "SKILL.md").write_text(f"# {name}\n", encoding="utf-8")
+        # Windows without Developer Mode cannot create symlinks (WinError 1314).
+        probe = self.root / ".symlink-probe"
+        try:
+            probe.symlink_to(self.root / "skills", target_is_directory=True)
+            probe.unlink()
+        except (OSError, NotImplementedError) as error:
+            self.skipTest(f"symlinks unavailable on this host: {error}")
 
     def run_installer(self, *args: str) -> tuple[int, str, str]:
         with (
