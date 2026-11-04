@@ -354,6 +354,46 @@ idle time, so a story left running never dims or sleeps by itself.
 - **A real hardware find behind "the menu opens by itself"** — the three keys share one ADC pin behind voltage windows, and a long press whose contact briefly opens sweeps past the widest window and reads as a different key; the BSP now locks the key identity until the voltage returns to the released range, and confirms a press for 40 ms before accepting it. This is board-level logic and belongs upstream.
 - **Serial debugging channel** — `SENRENPAGE [title | <chapter> <step>]` captures a frame from the LVGL flush path and streams it back as raw RGB565; `SENRENJUMP`, `SENRENSKIP`, `SENRENSAVE`, `SENRENLOAD`, `SENRENINFO` and `SENRENKEYS` (the last one a ring of the last 32 key events with the ADC voltage each was detected at, which is how the key-window defect above was proven) cover scene jumps, chapter skipping, save and load, state readout and key tracing.
 
+### eden* (eden* They Were Only Two, On The Planet.)
+
+A 320x240 landscape visual-novel reader carrying the complete script of the eden* source port:
+**21 chapters, 8,860 dialogue lines, 295 CG groups**, plus 2,178 composed pictures (1,594 patch
+deltas) and a 2,632-code-point Chinese font subset. Fully offline. Script and art come from
+[`xuanyide01/eden-rw5`](https://github.com/xuanyide01/eden-rw5) (a Mi Band smartwatch port); this
+branch rewrites the landscape UI and reading engine on top of the `gal_text` pagination logic from
+the galgame framework branch and keeps the three-button control scheme.
+
+- Branch: `feature/port-eden-landscape` (based on `feature/galgame-framework`)
+- Data pipeline: [`tools/eden_pack.py`](tools/eden_pack.py) turns the source tree's
+  `src/common/{assets.js,story,reports}` into `main/eden_data/eden_pack.bin` (5,598,972 bytes). Each
+  atlas tile is cropped by its `sourceRect` into a standalone JPEG; base/patch references, the
+  chapter table, the CG gallery index, and the whole script travel in one read-only pack that the
+  firmware maps byte-wise from flash — no JSON parsing, no whole-pack decompression at runtime.
+- Fonts: [`tools/gal_font.py`](tools/gal_font.py) emits the 16px and 20px 4bpp subsets; the character
+  set comes from the pack plus `main/` literals (2,681 code points) and every glyph is read back and
+  compared against a fresh rasterisation.
+
+**Layout:** the picture is shown **1:1 at the source's 264x165 (16:10)**, with 28px black bars on
+each side of the 4:3 panel — no upscaling, no cropping, so the original framing stays intact. The
+bottom 75px is a translucent dialogue band: 18 characters x 3 lines at the 16px tier, 14 x 3 at 20px.
+
+**Controls (three buttons):** OK on the splash screen enters the title. On the title and every list
+page, up/down moves the cursor, OK confirms, long-press OK goes back. While reading, a short up press
+advances (completing the typewriter, then turning the page), long-press up fast-forwards until
+released, a short down press opens the history, and OK opens the pause menu (resume / save / load /
+history / settings / back to title). In settings, OK cycles text speed, font tier (16px / 20px),
+auto-play, and dialogue-panel transparency.
+
+**Saves and idle policy:** three manual slots (chapter name and line preview; overwriting needs a
+second confirmation) plus one automatic reading position. Story variables persist with the save, and
+gallery unlocks are global across saves. Idle: dim at 60s, screen off at 180s, deep sleep at 420s;
+any key wakes back to the splash screen.
+
+**Known limits:** the original is a kinetic novel with no player choices — the choice page exists but
+nothing triggers it. Music playback is not implemented (the source repository only has track names,
+no audio data). The CG gallery is a paged list plus a full-screen viewer rather than a thumbnail wall:
+this board has no PSRAM, and six decoded thumbnails would need roughly 64 KB resident.
+
 ### Saya no Uta
 
 A landscape visual-novel reader ported from the Mi Band 10 fan port of Nitroplus'

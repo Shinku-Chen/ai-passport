@@ -45,6 +45,16 @@ ENGLISH_PEER_SUFFIX = ".en_US.md"
 VENDORED_DOC_ROOTS: tuple[str, ...] = ()
 
 
+def posix_rel(path: Path) -> str:
+    """Report repository-relative paths with forward slashes.
+
+    Error messages are compared against POSIX-style paths by the host tests, and
+    the same text shows up in CI logs; on Windows ``str(Path)`` would render
+    backslashes and quietly change the message.
+    """
+    return path.relative_to(ROOT).as_posix()
+
+
 def vendored_document_roots(errors: list[str]) -> tuple[Path, ...]:
     """Validate explicit repository-relative directories; reject symlink roots."""
     roots: list[Path] = []
@@ -156,7 +166,7 @@ def check_markdown_links(
             local = unquote(target.split("#", 1)[0])
             resolved = (ROOT / local.lstrip("/")) if local.startswith("/") else (path.parent / local)
             if local and not resolved.resolve().exists():
-                errors.append(f"{path.relative_to(ROOT)}: missing link target {target}")
+                errors.append(f"{posix_rel(path)}: missing link target {target}")
 
 
 def check_community_document_links(files: list[Path], errors: list[str]) -> None:
@@ -182,7 +192,7 @@ def check_community_document_links(files: list[Path], errors: list[str]) -> None
         opening_targets = [target_path(raw) for raw in MARKDOWN_LINK_RE.findall(first_line)]
         if expected not in opening_targets or re.search(r"<!--|</?[A-Za-z][^>]*>", first_line):
             errors.append(
-                f"{path.relative_to(ROOT)}: language switch must use a Markdown link to {expected} on the first nonempty line, outside HTML"
+                f"{posix_rel(path)}: language switch must use a Markdown link to {expected} on the first nonempty line, outside HTML"
             )
 
         # Also reject relative HTML anchors so the original homepage bug cannot
@@ -199,14 +209,14 @@ def check_community_document_links(files: list[Path], errors: list[str]) -> None
                 ("/folotoy/ai-passport/blob/", "/folotoy/ai-passport/tree/")
             ):
                 errors.append(
-                    f"{path.relative_to(ROOT)}: community document link must not hardcode the upstream repository/ref: {target}"
+                    f"{posix_rel(path)}: community document link must not hardcode the upstream repository/ref: {target}"
                 )
                 continue
             if target.startswith(("#", "http://", "https://", "mailto:")):
                 continue
             if not target.startswith("/") or target.startswith("//"):
                 errors.append(
-                    f"{path.relative_to(ROOT)}: community document link must use a repository-root path: {target}"
+                    f"{posix_rel(path)}: community document link must use a repository-root path: {target}"
                 )
 
 
@@ -229,11 +239,11 @@ def check_document_languages(
             english_path = path.with_name(english_name)
             if english_path not in markdown:
                 errors.append(
-                    f"{path.relative_to(ROOT)}: missing English peer {english_name}"
+                    f"{posix_rel(path)}: missing English peer {english_name}"
                 )
             elif english_name not in opening:
                 errors.append(
-                    f"{path.relative_to(ROOT)}: missing top language link to {english_name}"
+                    f"{posix_rel(path)}: missing top language link to {english_name}"
                 )
             continue
 
@@ -242,18 +252,18 @@ def check_document_languages(
             chinese_path = path.with_name(chinese_name)
             if chinese_path not in markdown:
                 errors.append(
-                    f"{path.relative_to(ROOT)}: missing Simplified Chinese default {chinese_name}"
+                    f"{posix_rel(path)}: missing Simplified Chinese default {chinese_name}"
                 )
             elif chinese_name not in opening:
                 errors.append(
-                    f"{path.relative_to(ROOT)}: missing top language link to {chinese_name}"
+                    f"{posix_rel(path)}: missing top language link to {chinese_name}"
                 )
             english_prose = text.replace("简体中文", "")
             match = CJK_RE.search(english_prose)
             if match:
                 line = english_prose.count("\n", 0, match.start()) + 1
                 errors.append(
-                    f"{path.relative_to(ROOT)}:{line}: English peer Markdown must use English prose"
+                    f"{posix_rel(path)}:{line}: English peer Markdown must use English prose"
                 )
             continue
 
@@ -262,11 +272,11 @@ def check_document_languages(
             default_path = path.with_name(default_name)
             if default_path not in markdown:
                 errors.append(
-                    f"{path.relative_to(ROOT)}: missing English default {default_name}"
+                    f"{posix_rel(path)}: missing English default {default_name}"
                 )
             elif default_name not in opening:
                 errors.append(
-                    f"{path.relative_to(ROOT)}: missing top language link to {default_name}"
+                    f"{posix_rel(path)}: missing top language link to {default_name}"
                 )
             continue
 
@@ -274,11 +284,11 @@ def check_document_languages(
         chinese_path = path.with_name(chinese_name)
         if chinese_path not in markdown:
             errors.append(
-                f"{path.relative_to(ROOT)}: missing Simplified Chinese peer {chinese_name}"
+                f"{posix_rel(path)}: missing Simplified Chinese peer {chinese_name}"
             )
         elif chinese_name not in opening:
             errors.append(
-                f"{path.relative_to(ROOT)}: missing top language link to {chinese_name}"
+                f"{posix_rel(path)}: missing top language link to {chinese_name}"
             )
 
         english_prose = text.replace("简体中文", "")
@@ -286,7 +296,7 @@ def check_document_languages(
         if match:
             line = english_prose.count("\n", 0, match.start()) + 1
             errors.append(
-                f"{path.relative_to(ROOT)}:{line}: default Markdown must use English prose"
+                f"{posix_rel(path)}:{line}: default Markdown must use English prose"
             )
 
 
@@ -302,10 +312,10 @@ def check_action_pins(errors: list[str]) -> None:
                 continue
             if action.startswith("docker://"):
                 if "@sha256:" not in action:
-                    errors.append(f"{path.relative_to(ROOT)}:{line_number}: unpinned Docker action {action}")
+                    errors.append(f"{posix_rel(path)}:{line_number}: unpinned Docker action {action}")
                 continue
             if "@" not in action or not FULL_SHA_RE.fullmatch(action.rsplit("@", 1)[1]):
-                errors.append(f"{path.relative_to(ROOT)}:{line_number}: action must use a full commit SHA: {action}")
+                errors.append(f"{posix_rel(path)}:{line_number}: action must use a full commit SHA: {action}")
 
 
 def check_issue_forms(errors: list[str]) -> None:
@@ -313,12 +323,12 @@ def check_issue_forms(errors: list[str]) -> None:
     for name in ("feature_request.yml", "usage_question.yml"):
         path = issue_dir / name
         if not path.is_file():
-            errors.append(f"missing issue form: {path.relative_to(ROOT)}")
+            errors.append(f"missing issue form: {posix_rel(path)}")
             continue
         text = path.read_text(encoding="utf-8")
         for field in ("name:", "description:", "body:"):
             if not re.search(rf"(?m)^{re.escape(field)}", text):
-                errors.append(f"{path.relative_to(ROOT)}: missing top-level {field[:-1]}")
+                errors.append(f"{posix_rel(path)}: missing top-level {field[:-1]}")
 
 
 def check_sensitive_content(files: list[Path], errors: list[str]) -> None:
@@ -326,18 +336,18 @@ def check_sensitive_content(files: list[Path], errors: list[str]) -> None:
         text = path.read_text(encoding="utf-8")
         for label, pattern in SECRET_PATTERNS.items():
             if pattern.search(text):
-                errors.append(f"{path.relative_to(ROOT)}: possible {label}")
+                errors.append(f"{posix_rel(path)}: possible {label}")
 
         for match in re.finditer(r"https://ai-passport\.folotoy\.cn/trae/\?s=([^&\s)]+)&k=([^\s)]+)", text):
             if "<" not in match.group(1) and "AAAAAA" not in match.group(1):
-                errors.append(f"{path.relative_to(ROOT)}: possible unsanitized device QR link")
+                errors.append(f"{posix_rel(path)}: possible unsanitized device QR link")
 
 
 def check_conflict_markers(files: list[Path], errors: list[str]) -> None:
     marker = re.compile(r"(?m)^(<<<<<<< |=======\s*$|>>>>>>> )")
     for path in files:
         if marker.search(path.read_text(encoding="utf-8")):
-            errors.append(f"{path.relative_to(ROOT)}: unresolved merge conflict marker")
+            errors.append(f"{posix_rel(path)}: unresolved merge conflict marker")
 
 
 def main() -> int:

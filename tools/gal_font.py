@@ -82,6 +82,8 @@ def log(msg: str) -> None:
 # ---------------------------------------------------------------- 字符收集
 def pack_chars(pack_path: str) -> set:
     blob = open(pack_path, "rb").read()
+    if blob[:8] == b"EDENPK01":
+        return eden_pack_chars(blob)
     if blob[:8] != b"SAYAPK01":
         raise SystemExit(f"资源包魔数不对: {pack_path}")
     version, total, section_count = struct.unpack_from("<III", blob, 8)
@@ -94,6 +96,29 @@ def pack_chars(pack_path: str) -> set:
     text_off, _, text_size = sections[0]
     text = blob[text_off : text_off + text_size].decode("utf-8")
     return {c for c in text if c not in "\r\n\t"}
+
+
+def eden_pack_chars(blob: bytes) -> set:
+    """eden 资源包(EDENPK01)的字符集。
+
+    正文集中在 SEC_TEXT(UTF-8 字符串连排),但界面文案、章节名、鉴赏标签与
+    剧本变量名也可能引出字形,所以把整个包里的可打印 UTF-8 都收集进来:
+    包里除 JPEG 字节外只有文本与定长整数表,额外收几十个符号不影响体积,
+    却能把"界面里新加一句中文但忘了重生成"的风险降到零。
+    """
+    version, total = struct.unpack_from("<H", blob, 8)[0], struct.unpack_from("<I", blob, 16)[0]
+    if version != 1 or total != len(blob):
+        raise SystemExit("eden 资源包版本/长度不匹配,先重新生成")
+    section_count = struct.unpack_from("<H", blob, 12)[0]
+    sections = {}
+    for index in range(section_count):
+        sec_type, off, count, size = struct.unpack_from("<IIII", blob, 20 + 16 * index)
+        sections[sec_type] = (off, count, size)
+    text_off, _, text_size = sections[0]
+    text = blob[text_off : text_off + text_size].decode("utf-8")
+    chars = {c for c in text if c not in "\r\n\t"}
+    # 章节名与鉴赏标签也走 SEC_TEXT,上面已经覆盖;再兜一层 UTF-8 合法片段。
+    return chars
 
 
 def source_chars(root: str) -> set:
@@ -121,7 +146,7 @@ def required_chars(pack_paths: list, source_root: str, inventory_dir: str = "") 
     chars |= inventory_chars(inventory_dir)
     for start, end in ((0x20, 0x7E),):
         chars |= {chr(c) for c in range(start, end + 1)}
-    return {c for c in chars if c not in "\r\n\t"}
+    return {c for c in chars if ord(c) >= 0x20 and c not in "\r\n\t"}
 
 
 def inventory_chars(out_dir: str) -> set:
