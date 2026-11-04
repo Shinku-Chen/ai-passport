@@ -21,7 +21,8 @@ static const char *TAG = "gal";
 
 // 快进:按住“上”期间每 180ms 推进一步。自动阅读:每句打完后再等 900ms;
 // 章节过场自动停留 1600ms 后继续,不打断自动。
-#define GAL_FAST_FORWARD_MS 180u
+// 快进：每个 tick 立刻推进（无 page 间延迟），文字由 0ms 打字机瞬显。
+#define GAL_FAST_FORWARD_MS 0u
 #define GAL_AUTO_ADVANCE_MS 900u
 #define GAL_AUTO_TRANSITION_MS 1600u
 // 自动进度最多每 2 秒落盘一次:NVS 擦写寿命有限,而且不需要更实时。
@@ -791,6 +792,10 @@ static void handle_game(gal_app_t *app, const gal_key_t *key)
     // 短按(确定/上/下任意一个):下一句(打字中先全显)。
     if (key->ev == BSP_BTN_CLICK &&
         (key->btn == BSP_BTN_OK || key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
+        if (app->suppress_click) {
+            app->suppress_click = false;   // 长按后的补发 CLICK，不推进
+            return;
+        }
         app->fast_forward = false;
         advance_reading(app, false);
         return;
@@ -800,6 +805,7 @@ static void handle_game(gal_app_t *app, const gal_key_t *key)
         app->fast_forward = false;
         app->menu_sel = 0;
         goto_page(app, GAL_PAGE_MENU);
+        app->suppress_click = true;   // 吞掉驱动在 LONG 后补发的 CLICK
         return;
     }
     // 长按上:快进,松开停(快进不显示文字提示)。

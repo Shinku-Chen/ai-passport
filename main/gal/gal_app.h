@@ -65,6 +65,7 @@ typedef struct {
     int shown_page;
 
     bool fast_forward;
+    bool suppress_click;   // 长按后驱动补发的 CLICK 要吞掉
     uint32_t ff_accum_ms;
     bool auto_mode;
     uint32_t auto_accum_ms;
