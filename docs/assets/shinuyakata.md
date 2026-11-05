@@ -317,3 +317,42 @@ PASS for flashing, startup and those user-observed changes. Unverified:
 prolonged operation, exhaustive CG/font combinations, complete manual save/load
 and unattended screen-on/idle/sleep/wake behavior. At the time of this device
 check, no commit, push or release had been performed.
+
+## Published release and community submission (2026-11-05)
+
+The public release is [v0.1.3-shinuyakata](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.3-shinuyakata).
+Its tag remains fixed at code commit
+`9f98ec9c362794f651fada2722d49d11d23228a4`; later documentation commits do
+not move the tag.
+
+The [merged firmware download](https://github.com/Shinku-Chen/ai-passport/releases/download/v0.1.3-shinuyakata/FoloToy-AI-Passport-full.bin)
+is the accepted local image, 8,180,560 bytes, with SHA-256
+`4f3b0d6777eb464c3114078f68b024d45ff19a60ceaf4ae06b9695f936f47318`.
+An anonymous public download matched that size and digest. Its matching ELF
+SHA-256 is `8080e38226c8fd45a15824128a5ae536d22750142b330d7f1ea181f5f7fe742a`.
+The verified bundle remains at
+`build/firmware/4f3b0d6777eb464c3114078f68b024d45ff19a60ceaf4ae06b9695f936f47318/`.
+
+The release uses the [official portrait cover](../../assets/images/shinuyakata-cover.png)
+from the game's retail package artwork. The
+[source record](../../assets/images/shinuyakata-cover-source.json) retains its
+origin URLs and image hashes; artwork rights remain with CLEARRAVE / BUG SYSTEM.
+The approved game introduction and sole upstream reference,
+[xuanyide01/shinuyakata-rw5](https://github.com/xuanyide01/shinuyakata-rw5),
+are used in the release and community descriptions.
+
+The community submission is project `2018`, revision `4767`, slug `galgame-4`,
+category `games`. Its server status is `pending`: submitted for review, with
+public listing still pending. The submitted source URL is
+[feature/port-shinuyakata](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-shinuyakata).
+
+Local Build and Host tests remain PASS from the complete gate and corpus
+checks above. The duplicate tag-triggered
+[Build firmware run 42041421808](https://github.com/Shinku-Chen/ai-passport/actions/runs/42041421808)
+was deliberately cancelled to preserve the tested release image; its terminal
+state is `completed` / `cancelled`, so this Actions run is not recorded as PASS.
+The published asset digest was checked again afterward and remained unchanged.
+Device tests remain PASS for the previously accepted 0.1.3 application-only
+flash and user checks above. The full image was not flashed again after
+publication, and no new device regression is claimed. The remaining checks
+listed in the preceding device-check section are still unverified.

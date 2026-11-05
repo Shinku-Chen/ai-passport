@@ -2,7 +2,12 @@
 
 # Shinuyakata GalGame
 
-An offline landscape reader for AI Passport, adapting the RW5 runtime content of *Shiniyuku Kimi, Yakata ni Mebuku Zouo*. Read the story, choose branches, save your place and revisit unlocked CGs.
+## Game introduction
+
+When beings calling themselves a superior race appear, Miya’s ordinary world collapses. After losing her family, she lashes out at one of them and is taken to a strange mansion. Every time she awakens from another nightmare, she finds herself back in the same bed, her injuries gone. Caught in a cycle she cannot understand, Miya searches for the truth behind the mansion and a way to escape.
+
+Upstream reference: xuanyide01/shinuyakata-rw5
+https://github.com/xuanyide01/shinuyakata-rw5
 
 ![Official package artwork](assets/images/shinuyakata-cover.png)
 
@@ -13,6 +18,8 @@ Current version: **0.1.3-shinuyakata**. This branch maintains this reader; see t
 - [Release: v0.1.3-shinuyakata](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.3-shinuyakata)
 - [Merged firmware: FoloToy-AI-Passport-full.bin](https://github.com/Shinku-Chen/ai-passport/releases/download/v0.1.3-shinuyakata/FoloToy-AI-Passport-full.bin)
 - [Official web flasher](https://ai-passport.folotoy.cn/tools/web-flasher/)
+
+Community submission: project `2018`, revision `4767`, slug `galgame-4`; status `pending` (submitted for review, with public listing still pending).
 
 For first installation, flash the merged image at `0x0`. A full-image write may clear stored data. To retain saves when upgrading a development build, use compatible component images under the [firmware and stored-data policy](docs/development/engineering/firmware-layout.md). Older portrait or taller-dialogue saves keep their event and route variables, replaying their current line under the new pagination.
 

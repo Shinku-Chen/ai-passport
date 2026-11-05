@@ -247,3 +247,34 @@ panic、栈故障、断言、看门狗或意外重启。随后已关闭串口。
 “可以了”。Build: PASS。Host tests: PASS。Device tests: PASS（烧录、启动及上述
 用户目视/按键实测）。Unverified: 长时间运行、穷举 CG/字体组合、完整手动存读档，
 以及无人值守常亮/空闲/休眠/唤醒行为。此次真机检查完成时，尚未提交、推送或发布。
+
+## Release 发布与社区投稿（2026-11-05）
+
+[Release v0.1.3-shinuyakata](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.3-shinuyakata)
+已公开。标签固定对应代码提交
+`9f98ec9c362794f651fada2722d49d11d23228a4`；后续文档提交不会移动该标签。
+
+[完整固件下载](https://github.com/Shinku-Chen/ai-passport/releases/download/v0.1.3-shinuyakata/FoloToy-AI-Passport-full.bin)
+使用已验收的本地镜像，大小为 8,180,560 字节，SHA-256 为
+`4f3b0d6777eb464c3114078f68b024d45ff19a60ceaf4ae06b9695f936f47318`。
+匿名下载公开附件后，大小与摘要均一致。匹配 ELF 的 SHA-256 为
+`8080e38226c8fd45a15824128a5ae536d22750142b330d7f1ea181f5f7fe742a`。
+已验证归档仍位于
+`build/firmware/4f3b0d6777eb464c3114078f68b024d45ff19a60ceaf4ae06b9695f936f47318/`。
+
+Release 使用原作发行渠道包装图制作的[官方竖版封面](../../assets/images/shinuyakata-cover.png)。
+[来源记录](../../assets/images/shinuyakata-cover-source.json)保留原始网址与图片摘要，
+美术版权归 CLEARRAVE / BUG SYSTEM。Release 与社区简介均采用用户确认的剧情简介，
+上游参考仓库仅列
+[xuanyide01/shinuyakata-rw5](https://github.com/xuanyide01/shinuyakata-rw5)。
+
+社区投稿为项目 `2018`、修订 `4767`、slug `galgame-4`，服务器分类为 `games`。
+服务端状态为 `pending`：已提交审核，尚未公开上架。提交的源码地址为
+[feature/port-shinuyakata](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-shinuyakata)。
+
+本地 Build 和 Host tests 沿用上述完整门禁与全量内容检查的 PASS 结果。标签触发的重复
+[Build firmware run 42041421808](https://github.com/Shinku-Chen/ai-passport/actions/runs/42041421808)
+为保留已实测发布镜像而主动取消，终态为 `completed` / `cancelled`，不能记为 Actions PASS。
+之后再次核对公开附件摘要，确认未变。Device tests 沿用上述已验收的 0.1.3 仅应用烧录
+及用户检查结果，仍为 PASS；发布后没有重新刷入完整镜像，也没有新增真机回归结论。
+前一节列出的剩余检查仍未验证。

@@ -2,7 +2,12 @@
 
 # 死馆 GalGame
 
-把《死に逝く君、館に芽吹く憎悪》的 RW5 移植内容带到 AI Passport，离线横向阅读故事、选择分支，随时保存进度并回看已解锁的 CG。
+## 游戏介绍
+
+自称“上位种族”的存在突然降临，平静的人类世界随之崩塌。失去家人的少女美亚在逃亡中刺伤了其中一人，却被带进一座陌生的洋馆。每当她经历噩梦般的遭遇、再次醒来，都会回到那张床上，身上的伤口也消失无踪。在一次次轮回中，她试图弄清这座馆的秘密，并寻找逃离的方法。
+
+上游参考仓库：xuanyide01/shinuyakata-rw5
+https://github.com/xuanyide01/shinuyakata-rw5
 
 ![官方包装封面](assets/images/shinuyakata-cover.png)
 
@@ -13,6 +18,8 @@
 - [Release：v0.1.3-shinuyakata](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.3-shinuyakata)
 - [完整固件 FoloToy-AI-Passport-full.bin](https://github.com/Shinku-Chen/ai-passport/releases/download/v0.1.3-shinuyakata/FoloToy-AI-Passport-full.bin)
 - [官方刷机页](https://ai-passport.folotoy.cn/tools/web-flasher/)
+
+社区投稿：项目 `2018`，修订 `4767`，slug `galgame-4`；当前为 `pending`（已提交审核，尚未公开上架）。
 
 首次安装使用完整固件，从 `0x0` 烧录。完整烧录可能清除原有数据；开发版升级需保留存档时，应按[固件布局与数据策略](docs/development/engineering/firmware-layout.zh_CN.md)使用兼容的分段应用镜像。旧竖屏或较高对白框的存档会保留事件和路线变量，从当前句开头重新分页。
 
