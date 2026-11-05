@@ -236,8 +236,9 @@ within about 160 bytes, means the same body — keep the last slot only.
 
 All twelve ports live in `Shinku-Chen/ai-passport` as separate branches; each
 one is built from its own worktree and released with its own annotated tag. The
-branch names all end in `-landscape` for historical reasons, but **nianniang and
-paper are portrait 240x320** — the suffix is not a description of the layout.
+branch names all end in `-landscape` for historical reasons, but **nianniang is
+portrait 240x320** — the suffix is not a description of the layout for that one
+title.
 
 | Game | Branch | Tag | Layout | Flash use | Free |
 | --- | --- | --- | --- | --- | --- |
@@ -252,7 +253,7 @@ paper are portrait 240x320** — the suffix is not a description of the layout.
 | galgod | `feature/port-galgod-landscape` | `v1.0.0-galgod` | 320x240 | 39.48% | 5,037,248 B |
 | eden | `feature/port-eden-landscape` | `v1.0.0-eden` | 320x240 | 93.54% | 538,000 B |
 | stella | `feature/port-stella-landscape` | `v1.0.0-stella` | 320x240 | 99.20% | 66,992 B |
-| paper | `feature/port-paper-landscape` | `v1.0.0-paper` | **240x320** | 75.56% | 2,033,760 B |
+| paper | `feature/port-paper-landscape` | `v1.0.0-paper` | 320x240 | 75.56% | 2,033,760 B |
 
 Figures are the application image against each branch's own `factory` partition.
 **stella (66,992 B), anemoi (82,224 B) and clannad (173,056 B)** are close enough

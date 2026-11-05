@@ -175,7 +175,7 @@ root 变成可滚动，LVGL 就画出滚动条。
 
 十二部作品都在 `Shinku-Chen/ai-passport` 的不同分支上，各自用独立 worktree 构建、
 各打一个 annotated tag。分支名因历史原因统一以 `-landscape` 结尾，但
-**nianniang 与 paper 实际是竖屏 240x320** —— 后缀不代表实际方向。
+**仅 nianniang 为竖屏 240x320** —— 对这一部而言后缀不代表实际方向。
 
 | 作品 | 分支 | tag | 方向 | Flash 占用 | 余量 |
 | --- | --- | --- | --- | --- | --- |
@@ -190,7 +190,7 @@ root 变成可滚动，LVGL 就画出滚动条。
 | galgod | `feature/port-galgod-landscape` | `v1.0.0-galgod` | 320x240 | 39.48% | 5,037,248 B |
 | eden | `feature/port-eden-landscape` | `v1.0.0-eden` | 320x240 | 93.54% | 538,000 B |
 | stella | `feature/port-stella-landscape` | `v1.0.0-stella` | 320x240 | 99.20% | 66,992 B |
-| paper | `feature/port-paper-landscape` | `v1.0.0-paper` | **240x320** | 75.56% | 2,033,760 B |
+| paper | `feature/port-paper-landscape` | `v1.0.0-paper` | 320x240 | 75.56% | 2,033,760 B |
 
 数字是应用镜像对该分支自己的 `factory` 分区。**stella（66,992 B）、anemoi（82,224 B）、
 clannad（173,056 B）** 已经贴到上限，任何后续改动都必须先做 flash 预算核算。
