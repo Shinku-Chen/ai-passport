@@ -10,6 +10,10 @@ DLNA 的手机 App（网易云音乐、多数播放器等）把音乐投到设�
 
 本应用构建在 `feature/netease-dlna-player` 分支上。
 
+## 本项目：DLNA 投屏播放器
+
+本分支把 AI Passport 变成一台**联网音箱**：设备实现 DLNA/UPnP 媒体渲染器（SSDP 发现 + HTTP/SOAP 控制端点），手机上的网易云音乐等 App 可以直接发现设备并把音乐推过来；设备用 HTTP 拉流、板载 MP3 解码，再从 I2S 喇叭播放。固件开机直接进入播放器（无主菜单）。**UP / DOWN 短按**调音量，**OK 短按**播放 / 暂停，**UP / DOWN 长按**切换本地曲目，**长按 OK** 回到演示菜单。没有 Wi-Fi 凭证或 STA 连不上时，设备自动开 softAP 热点配网，密码断电不丢。
+
 ## 功能
 
 - **DLNA/UPnP 媒体渲染器** —— SSDP 发现 + HTTP/SOAP 控制端点，手机 App 能发现

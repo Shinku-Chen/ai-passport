@@ -12,6 +12,10 @@ boots straight into the player (no demo menu).
 
 This is the application built on the `feature/netease-dlna-player` branch.
 
+## This build: DLNA Player
+
+This branch turns the AI Passport into a **networked speaker**: the firmware is a DLNA/UPnP media renderer (SSDP discovery plus HTTP/SOAP control endpoints), so apps such as NetEase Cloud Music can find the device and cast to it. The unit streams over HTTP, decodes MP3 on-device and plays through I2S. The firmware boots straight into the player with no main menu. **Short UP / DOWN** adjust volume, **short OK** toggles play/pause, **long UP / DOWN** step through local tracks, and a **long press on OK** returns to the demo menu. Without stored Wi-Fi credentials, or when the STA connection fails, it opens a softAP provisioning hotspot whose password survives power loss.
+
 ## What it does
 
 - **DLNA/UPnP media renderer** — SSDP discovery plus an HTTP/SOAP control
