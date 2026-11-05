@@ -55,7 +55,7 @@ Board: ESP32-C3, 8 MB flash, no PSRAM. Flashing and stored-data rules: [`docs/de
 
 ## Upstream and provenance
 
-- Upstream port repository: `parquet-rw5` (snapshot `8ab38afe77c6`; the upstream repository URL is not published; the snapshot commit is recorded here)
+- Upstream port repository: [parquet-rw5](https://github.com/xuanyide01/parquet-rw5) (snapshot `8ab38afe77c6`)
 - Application baseline: [`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport) at `feature/galgame-framework`
 - Original work: *PARQUET*; script, art and fonts remain with their rights holders, the upstream projects declare no licence, and this port is for personal, non-commercial use
 
