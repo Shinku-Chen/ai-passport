@@ -4,55 +4,37 @@
 
 # DLNA Player
 
-A DLNA/UPnP media renderer that turns the FoloToy AI Passport into a networked
-speaker. Cast music to it from any DLNA-capable app (NetEase Cloud Music, most
-media players, etc.) over your home Wi-Fi; the device pulls the stream over
-HTTP, decodes it on board, and plays it through the I2S speaker. The firmware
-boots straight into the player (no demo menu).
+A **landscape** DLNA casting player for the AI Passport: cast music from an app such as NetEase Cloud Music, and the device streams, decodes on board and plays through the I2S speaker.
 
-This is the application built on the `feature/netease-dlna-player` branch.
+## Controls
 
-## This build: DLNA Player
+**Short UP / DOWN** adjust volume, **short OK** toggles play/pause, **long UP / DOWN** step through local tracks (the phone app's previous/next is not forwarded), and a **long press on OK** returns to the demo menu.
 
-This branch turns the AI Passport into a **networked speaker**: the firmware is a DLNA/UPnP media renderer (SSDP discovery plus HTTP/SOAP control endpoints), so apps such as NetEase Cloud Music can find the device and cast to it. The unit streams over HTTP, decodes MP3 on-device and plays through I2S. The firmware boots straight into the player with no main menu. **Short UP / DOWN** adjust volume, **short OK** toggles play/pause, **long UP / DOWN** step through local tracks, and a **long press on OK** returns to the demo menu. Without stored Wi-Fi credentials, or when the STA connection fails, it opens a softAP provisioning hotspot whose password survives power loss.
+## Features
 
-## What it does
+- **DLNA/UPnP renderer** — SSDP discovery plus HTTP/SOAP control endpoints, so phone apps can find and cast to it.
+- **HTTP streaming** — the compressed stream fills a ring buffer and the audio task decodes straight into I2S, so network jitter does not stall playback.
+- **On-board MP3 decoding** — decoding happens on the device, not the phone.
+- **Wi-Fi provisioning** — without credentials, or when the STA connection fails, it opens a softAP hotspot whose password survives power loss.
 
-- **DLNA/UPnP media renderer** — SSDP discovery plus an HTTP/SOAP control
-  endpoint, so a phone app can find the device and push music to it.
-- **HTTP streaming player** — `esp_http_client` pulls the compressed stream into
-  a ring buffer while an audio task decodes and feeds the I2S output, so playback
-  never blocks on network jitter.
-- **On-board MP3 decode** — the branch adds a `music_decoder` component (MP3);
-  decode happens on the device, not on the phone.
-- **Wi-Fi provisioning** — connects to the saved SSID from NVS on boot; if there
-  are no credentials or the STA link fails, it starts a soft-AP hotspot so you
-  can configure the network once and the password survives reboots.
-- **Pixel UI** — status, track title, volume, and battery on the 240×320 screen.
+## Dependencies
 
-## Interaction
+**Needs a LAN source**: phone and device on the same Wi-Fi, casting from a DLNA-capable app. The device provides no library of its own.
 
-- **UP / DOWN (short)** — volume + / −.
-- **OK (short)** — play / pause.
-- **UP / DOWN (hold)** — skip tracks locally (no effect on the phone app's
-  previous/next).
-- **OK (hold)** — back to the demo menu.
-
-## Firmware / build
-
-Standard ESP-IDF project (target `esp32c3`). Build with the usual flow:
+## Build and flash
 
 ```bash
-idf.py set-target esp32c3
-idf.py build
-idf.py flash monitor
+idf.py set-target esp32c3 && idf.py build
+idf.py merge-bin
+esptool.py --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 build/merged-binary.bin
 ```
 
-No separate release is attached for this branch yet; build from source.
+## Known limitations
 
-## Source
+- The phone app's previous/next is not forwarded; only long UP / DOWN steps local tracks.
+- It plays what the app casts; it cannot browse a network library itself.
+- Discovery can fail on 5 GHz-only networks or with client isolation enabled.
 
-- Branch: [`feature/netease-dlna-player`](https://github.com/Shinku-Chen/ai-passport/tree/feature/netease-dlna-player)
-- Key files: `main/dlna_service.c` (SSDP + SOAP), `main/dlna_player.c` +
-  `main/dlna_pipeline.c` (HTTP pull → ring buffer → decode), `main/dlna_wifi.c`
-  (STA + soft-AP provisioning), `components/music_decoder/` (MP3).
+## License
+
+MIT, see [`LICENSE`](LICENSE).

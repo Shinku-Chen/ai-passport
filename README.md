@@ -4,50 +4,37 @@
 
 # DLNA 投屏播放器（DLNA Player）
 
-一个 DLNA/UPnP 媒体渲染器，把 FoloToy AI Passport 变成联网音箱。用任意支持
-DLNA 的手机 App（网易云音乐、多数播放器等）把音乐投到设备上；设备通过 HTTP
-拉流、板载解码，再从 I2S 喇叭播出。固件开机直接进入播放器（无主菜单）。
+AI Passport 上的**横屏** DLNA 投屏播放器：用手机上的网易云音乐等 App 把音乐投到设备，设备拉流、板载解码，再从 I2S 喇叭播出。
 
-本应用构建在 `feature/netease-dlna-player` 分支上。
+## 操作
 
-## 本项目：DLNA 投屏播放器
-
-本分支把 AI Passport 变成一台**联网音箱**：设备实现 DLNA/UPnP 媒体渲染器（SSDP 发现 + HTTP/SOAP 控制端点），手机上的网易云音乐等 App 可以直接发现设备并把音乐推过来；设备用 HTTP 拉流、板载 MP3 解码，再从 I2S 喇叭播放。固件开机直接进入播放器（无主菜单）。**UP / DOWN 短按**调音量，**OK 短按**播放 / 暂停，**UP / DOWN 长按**切换本地曲目，**长按 OK** 回到演示菜单。没有 Wi-Fi 凭证或 STA 连不上时，设备自动开 softAP 热点配网，密码断电不丢。
+**UP / DOWN 短按** 调音量，**OK 短按** 播放 / 暂停，**UP / DOWN 长按** 切换本地曲目（对手机 App 的上一首 / 下一首无效），**长按 OK** 返回演示菜单。
 
 ## 功能
 
-- **DLNA/UPnP 媒体渲染器** —— SSDP 发现 + HTTP/SOAP 控制端点，手机 App 能发现
-  设备并把音乐推给它。
-- **HTTP 流式播放** —— `esp_http_client` 把压缩流拉进环形缓冲，音频任务边解码边
-  喂给 I2S 输出，播放不因网络抖动而卡顿。
-- **板载 MP3 解码** —— 本分支新增 `music_decoder` 组件（MP3）；解码在设备端完成，
-  不占用手机。
-- **Wi-Fi 配网** —— 开机连 NVS 里保存的 SSID；无凭证或 STA 连不上时自动开启
-  softAP 热点配网，密码断电不丢。
-- **像素风 UI** —— 240×320 屏显示状态、曲名、音量与电量。
+- **DLNA/UPnP 渲染器** —— SSDP 发现 + HTTP/SOAP 控制端点，手机 App 能发现并推送。
+- **HTTP 流式播放** —— 压缩流进环形缓冲，音频任务边解码边喂 I2S，网络抖动不卡顿。
+- **板载 MP3 解码** —— 解码在设备端完成，不占手机。
+- **Wi-Fi 配网** —— 无凭证或 STA 连不上时自动开 softAP 热点配网，密码断电不丢。
 
-## 操作方式
+## 依赖
 
-- **UP / DOWN（短按）** —— 音量 + / −。
-- **OK（短按）** —— 播放 / 暂停。
-- **UP / DOWN（长按）** —— 本地切换曲目（对手机 App 的"上一首/下一首"无效）。
-- **OK（长按）** —— 返回演示菜单。
+**需要局域网推流源**：手机与设备在同一 Wi-Fi，用支持 DLNA 的 App 投屏；设备本身不提供曲库。
 
-## 构建 / 固件
-
-标准 ESP-IDF 工程（target `esp32c3`）。常规流程构建：
+## 构建与刷写
 
 ```bash
-idf.py set-target esp32c3
-idf.py build
-idf.py flash monitor
+idf.py set-target esp32c3 && idf.py build
+idf.py merge-bin
+esptool.py --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 build/merged-binary.bin
 ```
 
-本分支尚未单独发布固件，请从源码构建。
+## 已知限制
 
-## 来源
+- 手机 App 的上一首 / 下一首不会转发到设备，只能长按 UP / DOWN 切本地曲目。
+- 只能播 App 推过来的流，不能自己浏览网络曲库。
+- 5 GHz-only 或开启客户端隔离的网络下发现可能失败。
 
-- 分支：[`feature/netease-dlna-player`](https://github.com/Shinku-Chen/ai-passport/tree/feature/netease-dlna-player)
-- 关键文件：`main/dlna_service.c`（SSDP + SOAP）、`main/dlna_player.c` +
-  `main/dlna_pipeline.c`（HTTP 拉流 → 环形缓冲 → 解码）、`main/dlna_wifi.c`
-  （STA + softAP 配网）、`components/music_decoder/`（MP3）。
+## 许可
+
+MIT，见 [`LICENSE`](LICENSE)。
