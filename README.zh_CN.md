@@ -2,194 +2,105 @@
   <strong>简体中文</strong> · <a href="README.md">English</a>
 </p>
 
-# FoloToy AI Passport —— Shinku-Chen 的 fork
+# 聚光灯柠檬果酱（limelight lemonade jam）—— AI Passport 阅读器
 
-本仓库是 [`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport) 的个人 fork。
-上游仓库是 [FoloToy AI Passport](https://ai-passport.folotoy.cn)（开源可穿戴 AI 设备：
-ESP32-C3、240×320 彩屏、三键操作、8 MB Flash、无 PSRAM）的开发基线。
+把小米手环版《limelight lemonade jam》搬到
+[FoloToy AI Passport](https://ai-passport.folotoy.cn) 的**竖屏视觉小说阅读器**：
+**230 个章节点、68,229 句对白、约 120 万字、991 张打包图像、8 个选项点**，
+在 8 MB Flash、无 PSRAM 的 ESP32-C3 上完全离线运行。
 
-这个 fork 在基线之上承载了**多个独立应用**，每个项目各自位于一个 `feature/*` 分支上，
-下面逐个介绍。板卡事实、BSP 与开发流程来自上游仓库 —— 见
-[`docs/README.md`](docs/README.md)、[`AGENTS.md`](AGENTS.md) 与
-[`docs/contribution/`](docs/contribution/)。每个项目的固件发布挂在本仓库的
-[Releases](https://github.com/Shinku-Chen/ai-passport/releases) 上。
+> 音乐、伙伴，以及爱情。从遇见她的那天起，世界就变得明亮——
 
-## 项目
-
-### 音效钥匙扣（Voice Keychain）
-
-把 AI Passport 变成口袋音频播放器的音效钥匙扣：开机即进入应用，播放来自几十个角色包的
-**数百条中文语音片段** —— jojo、meme cat、刘华强、哈吉米、奶龙等等。最新版：**v1.3.0**。
-
-- 分支：[`feature/voice-keychain`](https://github.com/Shinku-Chen/ai-passport/tree/feature/voice-keychain)
-- 发布：[v1.1.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.1.0)、[v1.3.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.3.0)
-- 经验沉淀：[`docs/reference/shinku-chen/voice-keychain/`](docs/reference/shinku-chen/voice-keychain/)
-
-**操作方式（三键）：** UP / DOWN 在列表中移动，**OK** 进入目录、选择片段或播放，
-**OK（长按）** 进入设置（音量、电量）或返回。
-
-**v1.3.0 亮点：**
-
-- **自包含固件** —— `FoloToy-AI-Passport-full.bin` 把 `voicefs` 数据分区（位于
-  `0x210000`）打进同一个 8 MB 镜像，从 `0x0` 整体烧录即可，无需再单独刷数据分区。
-- **深睡唤醒已修复** —— GPIO0 唤醒源此前从未启用（把引脚号当位掩码传入），导致"睡了
-  按不醒"；现改为 5 分钟无操作入睡、任意按键可唤醒（真机验证）。
-- **列表播放更可靠** —— 此前每次播放都临时申请 16 KB Opus 解码栈，堆不足时"停掉当前
-  声音却不播选中项"；改为单个常驻播放任务（静态栈 + 二值信号量）。
-- 电量每 30 秒刷新；CW2017 上电偶发读到 `0xFF` 时，按开路电压查表兜底估算电量。
-
-### 今天吃啥（What to Eat Today）
-
-按键驱动的食物转盘决策器，终结"今天吃什么"。按住 **UP** 播放"今天午餐要吃什么呢？"
-引导动画，按住 **DOWN** 滚动食物选择器，松开停在随机结果上。最新版：**v1.2.0**。
-
-- 分支：[`feature/cheerful-goodall`](https://github.com/Shinku-Chen/ai-passport/tree/feature/cheerful-goodall)
-- 发布：[v1.2.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.2.0)
-- 经验沉淀：[`docs/reference/shinku-chen/eat-what/`](docs/reference/shinku-chen/eat-what/)
-
-**操作方式：** 按住 UP / DOWN 运行两套动画，松开停在当前帧；**OK** 切换 LVGL 局部刷新
-与快速隔行刷新。空闲 2 分钟自动关机（深睡，GPIO0 唤醒）。
-
-### 生字卡片识记（Shengzi Cards）
-
-汉字闪卡识记应用。三种模式 —— **浏览（Browse）**：滚动字卡；**自测（Self-test）**：
-标记每个字认识/不认识；**拼读（Spell）**：看拼音猜字。**OK 短按**揭晓答案，已认识
-标记持久化到 NVS。最新版：**v1.0.0**。
-
-- 分支：[`feature/shengzi-cards`](https://github.com/Shinku-Chen/ai-passport/tree/feature/shengzi-cards)
-- 发布：[v1.0.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0)
-
-### 四子棋（Connect Four）
-
-AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对战（低 / 中 / 高三档难度，先手可选玩家或电脑），也可双人同机轮下。最新版本：**v1.6.0-connect-four**。
-
-- 分支：[`feature/connect-four`](https://github.com/Shinku-Chen/ai-passport/tree/feature/connect-four)
-- 发布：[v1.6.0-connect-four](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.6.0-connect-four)
-
-**操作：** 上 / 下移动落子列（横屏持握时「上」在右手边），**确定**落子，**长按确定**回设置屏。设置屏上用上 / 下选行、确定切换取值（模式：`HUMAN vs AI` / `AI vs HUMAN` / `TWO PLAYERS`，难度：`低` / `中` / `高`，预览：`落点` / `顶部行`），选到 `START` 按确定开局；两个电脑模式只差先后手。
-
-**亮点：**
-
-- **横屏 320 × 240、棋盘密排** —— 70 个格子、26px 棋子、相邻仅隔 3px，靠 BSP 层的 MADCTL 硬件旋转铺满屏幕。
-- **三档电脑难度** —— 用墙钟搜索预算把每步控制在 1 秒内；低 / 中难度带固定失误率放水，保证打得赢。
-- **无素材音效** —— 换列、落子、胜、负、平局音都由正弦表实时合成，不占 flash 资源。
-- **空闲自动深睡** —— 设置屏 60 秒、对局中 180 秒后进入深睡，任意键唤醒（GPIO0 低电平唤醒，已修复 ADC 占用该脚导致的立即自唤醒）。
-- **串口截图** —— `FAP_SCREENSHOT_V1` 命令回传真实 320 × 240 画面，本版封面就是这么抓的。
-
-
-### 飞鸟会长不肯认输（Asunabi）
-
-从小米手环版本 [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband)
-移植到 AI Passport 的竖屏视觉小说：**30 章、4649 句对白、约 9.4 万字**，从头读到唯一结局。
-状态：**已发布** —— tag `v0.1.0-asunabi`，并已投稿到 AI Passport 社区市场（审核中）。
-
-- 分支：[`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame)
-- 发布：[`v0.1.0-asunabi`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-asunabi) —— 合并镜像 `FoloToy-AI-Passport-full.bin`，7,917,142 字节
-- 上游作品：[`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) —— 本次移植所依据的小米手环快应用版本。该仓库未声明许可；其美术与章节剧本随分支提交在 `assets/gal-source/`，并以上游项目作为来源标注。
-- 素材工具链：[`tools/gal/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame/tools/gal)
-
-**操作方式（三键）：** **UP** 推进一句（打字中则立即全显）；**UP（长按）** 按住快进、松手即停；
-**OK** 呼出菜单（继续阅读、保存、读取、跳过本章、设置、返回标题）；**DOWN** 滚动超出面板的文字；
-**DOWN（长按）** 开关自动阅读：每句显示完毕后 0.9 秒自动推进，按任意键解除。
-长按判定 300 ms（由 BSP 显式下发，而不是用 button 组件默认的 1500 ms）。
-
-**模式与存档：** 6 个手动存档槽，位置包含「分页中的第几页」（在槽上长按确定键删除）；
-最后一次位置自动记住，「继续阅读」即从这里接着读；另有章节跳转列表，以及设置页
-（文字速度：慢 / 中 / 快 / 瞬间，文字大小：16px / 20px 带实时打字预览，自动阅读开关）。
-全部只有一个结局，读完后会清掉继续点。
-
-**亮点：**
-
-- **第三方美术随分支提交** —— 美术与剧本来自上游项目，而它未声明任何许可；它们提交在 `assets/gal-source/`，
-  因此 clone 就能构建出完整作品。打包器把它们打进独立的 4 MiB `assets` 数据分区（实际用 3.55 MiB），
-  并在放不下时让构建失败而不是产出被截断的镜像；没有该目录时构建仍能启动，只是改为占位包。
-- **串口截图** —— `FAP_SCREENSHOT_V1` 命令会通过控制台回一帧当前画面（RGB565LE），这是社区发布接受投稿前的硬性要求。
-- **画面优先的界面** —— 标题背景、选项底板与对白面板都改为半透明叠色（30% / 50% / 70%）而不是不透明，
-  画面保持可见、近白色文字也压得住；固件也不会熄灭屏幕。
-- **无 PSRAM 也能铺满全屏美术** —— 背景是内存映射分区里的 LVGL 索引图，直接从 flash 绘制、
-  按行解码（约 960 字节），而不是 150 KB 的帧缓冲；占用芯片 128 个 flash-MMU 页中的 83 个。
-- **面板高度由字号推导** —— 四行 × 行高 + 内边距，因此 16px 与 20px 下一页四行都完整显示。
-  仍然放不下的长句是**翻页而不是裁掉**：切页在纯 model 层完成（含标点禁则），页号进存档。
-- **按住快进不改 BSP** —— BSP 没有松手事件，于是快进轮询公开的 `bsp_button_read_mv()`，
-  读数一旦离开该键文档化的电压窗口就停。
-- **两次把素材体积压下来** —— 立绘先裁到真能进入屏幕的区域、再取 alpha 包围盒
-  （0.82 MiB → 0.24 MiB）；被替换的素材只存一份而非两份（4.41 MiB → 3.55 MiB）。
-- **解析与排版有 host 测试** —— 包读取、推进规则与分页不依赖 ESP-IDF/LVGL，由 host 测试覆盖，
-  含格式要求的 4 字节结构对齐守卫，以及一条让打包素材名与固件查询名保持一致的守卫。
-- **顺带修掉上游 8 处素材缺失** —— 上游剧本引用了 8 张它自己仓库里没有的图（其中 5 处是笔误），
-  现在打包时逐条替换并报告，而不是在设备上画出空白帧。
-
-### ATRI 阅读器（ATRI Reader）
-
-把小米手环上的《ATRI -My Dear Moments-》同人移植搬到 AI Passport 上的**竖屏视觉小说阅读器**：
-**34 章、1,069 幕、12,188 句对白、5 张全身立绘、三个结局**，完全离线。剧本与素材取自
-[`fywmjj/better-mb9p-ATRI`](https://github.com/fywmjj/better-mb9p-ATRI)（它在
-[`liuyuze61/ATRI-miband`](https://github.com/liuyuze61/ATRI-miband) 基础上重构，补上了原版没有的
-`src/common/character/*` 全身立绘）。原版是 Vela OS 的触屏应用，本分支用 C + LVGL 重写阅读引擎，
-改成三键操作。状态：**已发布** —— tag `v1.0.2-atri-reader`，并已投稿到 AI Passport 社区市场
-（作品 `my-dear-moments-2`，审核中）。
-
-- 分支：[`feature/atri-reader`](https://github.com/Shinku-Chen/ai-passport/tree/feature/atri-reader)
-- 发布：[`v1.0.2-atri-reader`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.2-atri-reader) —— 合并镜像 `FoloToy-AI-Passport-full.bin`，5,134,544 字节
-- 上游作品：[`fywmjj/better-mb9p-ATRI`](https://github.com/fywmjj/better-mb9p-ATRI) 与 [`liuyuze61/ATRI-miband`](https://github.com/liuyuze61/ATRI-miband) —— 本次移植所依据的同人版本，两个仓库都未声明许可；其剧本、背景与立绘随分支提交并打包进固件，来源以上游项目标注。
-- 素材工具链：[`tools/atri_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/atri-reader/tools/atri_pack.py)（剧本 + 图像打包成 `main/atri_data/atri_pack.bin`，3.83 MB）与 [`tools/atri_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/atri-reader/tools/atri_font.py)（16px 中文字体子集，2,771 个码位）
-
-**操作方式（三键）：** 列表页上 / 下移动光标、**确定**进入、**长按确定**返回上一层；正文里
-**上 / 下短按**是下一句、**长按上**是快进（松手即停，快进时整句直接显示）、
-**长按下**开关自动阅读（打字完停 0.7 秒自动翻页，右下角显示「自动」，任意键停止，期间屏幕不熄灭）、
-**确定**打开菜单（继续阅读、保存进度、读取存档、跳过章节、返回标题）；选项页上 / 下选择、确定确认，
-跳过章节会一直推进到下一章，遇到选项或结局停下。长按判定 300 ms、短按 120 ms；文字速度可选
-瞬间 / 慢 / 中 / 快，关于页用上 / 下滚动。
-
-**存档、结局与空闲：** 五个手动槽 + 一个自动槽（每次换幕自动写入，标题页的「继续阅读」读它），
-存档页短按确定存 / 读、长按确定删除手动槽；剧本里的三次选择通向圆满或悲剧结局，两者都达成后
-标题页解锁「真正的结局」，与原版手环应用的门槛一致。空闲 45 秒调暗、2.5 分钟熄屏、7 分钟深睡，
-任意键唤醒，自动阅读期间不计入空闲。
-
-**亮点：**
-
-- **立绘跟着说话人** —— 只有带人物名称的台词才出现全身立绘，说完即收；事件 CG、黑屏与男主视角不出镜，立绘按原作站位靠右。
-- **无 PSRAM 也扛得住整屏合成** —— 背景用 JPEG 直接解码进画布，立绘与特效叠加用无损 RGB565 + 4bpp alpha 遮罩（按 alpha 包围盒裁剪），空闲堆仍留 40 KB 以上。
-- **离线数据管线** —— 运行时不下载任何东西，`tools/atri_pack.py` 与 `tools/atri_font.py` 的产物提交进仓库，普通 checkout 直接能编。
-- **串口调试通道** —— `ATRISHOT <章> <幕>` 把任意一幕渲染进画面区并回传原始 240 × 320 帧，本版封面与历次版面验证靠的就是它；`ATRIJUMP` 可直接跳章。
-
-### 聚光灯柠檬果酱（limelight lemonade jam）
-
-把小米手环上的《limelight lemonade jam》同人移植搬到 AI Passport 上的**竖屏视觉小说阅读器**：
-**230 个章节标记、68,229 句对白、约 120 万字、991 张打包图像、8 个选项点**，完全离线。剧本与素材取自
+剧本与素材取自
 [`skdkzzx/limelight-lemonade-jam-xiaomi-band10`](https://github.com/skdkzzx/limelight-lemonade-jam-xiaomi-band10)
 （面向小米手环的 Vela OS 触屏应用）；本分支用 C + LVGL 重写阅读引擎，改成三键操作。
 状态：**已发布** —— tag `v0.1.0-limelight`，并已投稿到 AI Passport 社区市场（审核中）。
 
 - 分支：[`cindy/curious-babbage`](https://github.com/Shinku-Chen/ai-passport/tree/cindy/curious-babbage)
-- 发布：[`v0.1.0-limelight`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-limelight) —— 合并镜像 `FoloToy-AI-Passport-full.bin`，7,897,824 字节
-- 上游作品：[`skdkzzx/limelight-lemonade-jam-xiaomi-band10`](https://github.com/skdkzzx/limelight-lemonade-jam-xiaomi-band10) —— 本次移植所依据的手环版本，该仓库未声明许可；其美术与剧本随分支提交并打包进固件，来源以上游项目标注。
-- 素材工具链：[`tools/limelight_material_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_material_pack.py) 与 [`tools/limelight_script_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_script_pack.py)（打包成 `main/limelight_data/` 下的 4.49 MB + 1.81 MB），以及 [`tools/limelight_lvgl_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_lvgl_font.py)（Noto Sans SC 的 16px 中文字体子集，3,449 个码位）
-- 合并镜像：`FoloToy-AI-Passport-full.bin`，7,431,456 字节
+- 发布：[`v0.1.0-limelight`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-limelight)
+  —— 合并镜像 `FoloToy-AI-Passport-full.bin`，**7,897,824 字节**
+- 上游作品：[`skdkzzx/limelight-lemonade-jam-xiaomi-band10`](https://github.com/skdkzzx/limelight-lemonade-jam-xiaomi-band10)
+  —— 本次移植所依据的手环版本。该仓库未声明许可；其美术与剧本随本分支提交并打包进固件，
+  来源以上游项目标注。
+- 素材工具链：
+  [`tools/limelight_material_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_material_pack.py)、
+  [`tools/limelight_script_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_script_pack.py)
+  （打包成 `main/limelight_data/` 下的 4.49 MB + 1.81 MB），以及
+  [`tools/limelight_lvgl_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/cindy/curious-babbage/tools/limelight_lvgl_font.py)
+  （Noto Sans SC 的 16px 中文字体子集，3,449 个码位）。
 
-**操作方式（三键）：** 正文里**上 / 下短按**是下一句、**长按上**是快进（松手即停）、
-**长按下**开关自动阅读（打字完自动翻页，右下角显示「自动」，任意键停止，期间屏幕不熄灭）、
-**确定**打开菜单（继续阅读、保存进度、读取存档、章节跳转、CG 鉴赏、返回标题）、
-**长按确定**从列表返回；选项页上 / 下选择、确定确认。长按判定 500 ms、短按 180 ms ——
-由 BSP 显式下发，不用按键组件默认的 1,500 ms。
+## 三键操作
 
-**存档、章节与空闲：** 五个手动槽 + 一个自动槽（每次换幕自动写入，读取时单独一行提供）；
-存档页长按确定删除手动槽。章节跳转列表把上游剧本里的 230 个 `[CHAPTERx-y]` 标记显示成 `X-Y`，
-正文页左上角也显示同样的 `X-Y`。空闲 60 秒调暗、3 分钟熄屏、7 分钟深睡，任意键唤醒；
-自动阅读与快进不计入空闲，期间屏幕保持常亮。
+左上角显示当前章节「章-节」（例如 `7-2`），右上角是电量。短按判定 180 ms，
+长按判定 500 ms；由 BSP 显式下发，而不是使用按键组件默认的 1,500 ms。
 
-**亮点：**
+| 按键 | 正文 | 菜单 / 列表 |
+| --- | --- | --- |
+| 上（短按） | 下一句；打字中则立即显示整句 | 光标上移 |
+| 上（长按） | 按住快进，松手即停 | — |
+| 确定（短按） | 打开菜单 | 进入所选行 |
+| 确定（长按） | — | 返回上一层 |
+| 下（短按） | 下一句；打字中则立即显示整句 | 光标下移 |
+| 下（长按） | 开关自动阅读（右下角显示「自动」；任意键停止） | — |
 
-- **立绘贴屏幕右下角、下摆藏在对话框后面** —— 画面区只有 0~213 行，以下的立绘下摆用一个指向解码缓冲的 LVGL 图像对象绘制（不占额外 RAM），再被半透明正文带盖住，与原作版面一致。
-- **两张包共 5.9 MB，无 PSRAM** —— 背景与 CG 存 240 × 214 JPEG，立绘存 alpha 裁剪的 RGB565 + 1bpp 遮罩，剧本是 UTF-8 分块（每块 250 条）由 ESP32-C3 ROM 的 `tinfl` 解压，解压不占固件空间。
-- **上游文本在打包时清洗** —— 104 条带内联排版指令（`%f`、`$名字$`、`#rrggbbaa`）与 7 条混进正文的译者备注在打包阶段剔除，对白本身一字未改。
-- **串口验收通道** —— `LIMEIMAGE <偏移>` 回传原始帧、`LIMEPAGE` 跳对白或按名字切页、`LIMEAUTO on|off` 开关自动阅读、`LIMEBTN` 读按键 ADC 电压；每次亮度变化都带空闲毫秒数记日志，「自动阅读不调暗」就是靠它验证的。
+选项页用上 / 下选择、确定确认。菜单包含继续阅读、保存、读取、章节跳转、CG 鉴赏、
+设置与返回标题。空闲 60 秒调暗、3 分钟熄屏、7 分钟深睡，任意键唤醒；自动阅读与
+快进算作活动，期间屏幕保持常亮。
 
-## 说明
+## 功能
 
-- 每个应用都是基于上游基线的一个独立 `feature/*` 分支。不要把 demo 分支整支合入
-  `main`；需要复用时应抽取可移植的模式（见上游 `AGENTS.md`）。
-- 烧录使用[在线刷机工具](https://ai-passport.folotoy.cn/tools/web-flasher/)或 `esptool` ——
-  每个 release 都提供合并固件 `FoloToy-AI-Passport-full.bin`，从偏移 `0x0` 写入即可。
-  目标板卡：8 MB Flash。
-- 这些发布沉淀的可复用工程经验位于 [`docs/reference/shinku-chen/`](docs/reference/shinku-chen/)。
+- **五个手动存档槽 + 一个自动存档槽。** 自动槽在每次换幕时写入，读取时单独一行提供；
+  在手动槽上长按确定可删除。分页位置属于存档状态。
+- **230 个章节点。** 章节跳转列表把上游剧本里的 `[CHAPTERx-y]` 标记显示成 `X-Y`，
+  正文页左上角使用同样的格式。
+- **无 PSRAM 也能铺满竖屏美术。** 背景与 CG 存 240 × 214 JPEG，直接解码进画面区；
+  立绘为 alpha 裁剪的 RGB565 + 1bpp 遮罩。对白带半透明，画面保持可见、文字仍可读。
+- **两个打包数据共 5.9 MB。** 素材包 4.49 MiB（991 条背景、CG 与立绘），剧本包
+  1.81 MiB（68,229 句，分 273 个 deflate 块）；由 ESP32-C3 ROM 的 inflater 解压，
+  解压不占固件空间。
+- **打包时清洗上游文本。** 104 条带内联排版指令（`%f`、`$名字$`、`#rrggbbaa`）与
+  7 条混进正文的译者备注会在打包阶段剔除，对白本身一字未改。
+- **串口验收通道。** `LIMEIMAGE <偏移>` 回传原始帧，`LIMEPAGE` 跳对白或按名字切页，
+  `LIMEAUTO on|off` 开关自动阅读，`LIMEBTN` 读按键 ADC 电压；每次亮度变化都带空闲
+  毫秒数记日志，「自动阅读不调暗」靠它验证。
+
+## 构建与刷写
+
+```bash
+./tools/validate.sh --firmware   # 构建、合并并校验 0x0 镜像
+idf.py build                     # 可选的增量应用构建
+# 用网页刷机工具或 esptool 从 0x0 刷入 build/FoloToy-AI-Passport-full.bin
+```
+
+打包脚本需要 Pillow 与 FreeType（ESP-IDF 使用的 Python 环境）。只跑 `idf.py build`
+不会生成或校验合并镜像。使用[在线刷机工具](https://ai-passport.folotoy.cn/tools/web-flasher/)
+或 `esptool`；目标板卡为 8 MB Flash 的 AI Passport。
+
+## 发布
+
+`v0.1.0-limelight` 提供 tag 触发的 CI 合并镜像 `FoloToy-AI-Passport-full.bin`
+（7,897,824 字节）。两份打包数据提交在 `main/limelight_data/` 下，普通 checkout
+即可构建完整本篇。
+
+## 已知限制
+
+- 本固件是纯文字/美术阅读器：没有语音、音乐或网络路径；剧情完全从 Flash 里的
+  打包数据读取。
+- 正文字体固定为 16px Noto Sans SC 子集（每行 13 个全角字、每页 5 行），没有
+  20px 正文字号选项。
+- 目标板卡没有 PSRAM。5.9 MB 打包数据与 240 × 214 画面区按 8 MB 单应用镜像预算；
+  增加大体积媒体需要重新核算内存与分区。
+- 上游美术与剧本未声明许可，仅作为标注来源的同人转换随分支提供；下方 MIT 许可
+  覆盖阅读器代码，不覆盖第三方剧情与美术。Noto Sans SC 子集使用 OFL-1.1。
+
+## 经验文档
+
+这些发布沉淀的可复用工程经验位于
+[`docs/reference/shinku-chen/`](docs/reference/shinku-chen/)。构建与贡献流程见
+[`docs/README.md`](docs/README.md)、[`AGENTS.md`](AGENTS.md) 与
+[`docs/contribution/`](docs/contribution/)。
+
+## 许可
+
+阅读器源码使用仓库的 [MIT 许可](LICENSE)。剧情、美术与角色素材的权利归原作者所有，
+本项目不会对其重新授权。
