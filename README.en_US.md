@@ -445,7 +445,14 @@ is a candidate, not a delivered whole work. Reviewed prototype: app 8,191,504 B 
 
 **Controls:** reading — UP advance / hold UP fast-forward (stops on release), DOWN history / hold DOWN auto-play, OK advance / hold OK menu; lists — OK enter, hold OK back.
 
-
+- **Release**: tag [`v1.0.0-anemoi`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-anemoi),
+  branch [`feature/port-anemoi-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-anemoi-landscape); merged image
+  `FoloToy-AI-Passport-full.bin` (app 8,240,848 B / full 8,306,384 B, version `1.0.0`).
+- **Layout**: 320x240 landscape.
+- **Three keys**: reading - UP advances, hold UP fast-forwards, DOWN opens history, hold DOWN toggles auto-read, OK advances, hold OK opens the menu; in lists and choices UP/DOWN move, OK confirms and hold OK goes back.
+- **Features**: multi-slot saves plus an automatic slot, load, CG gallery, chapter list, scrollable history, auto-read and instant fast-forward.
+- **Idle**: dim after 60 s, screen off after 300 s, deep sleep after 1800 s; any key wakes the device and resumes the session. Auto-read and fast-forward never idle out.
+- **Known limits**: flash use is **99.01%** with **82,224 B** free, so any change must start with a flash budget check.
 
 ## Notes
 

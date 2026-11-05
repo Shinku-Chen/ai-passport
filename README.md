@@ -296,6 +296,15 @@ app 8,191,504 B / full 8,257,040 B（sha256 `bee2d1a2…`）。
 
 **操作（三键）：** 正文 UP 推进 / 长按 UP 快进（松手停）、DOWN 历史 / 长按 DOWN 自动播放、OK 推进 / 长按 OK 菜单；列表 OK 进入、长按 OK 返回。
 
+- **发布**：tag [`v1.0.0-anemoi`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-anemoi)，
+  分支 [`feature/port-anemoi-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-anemoi-landscape)；合并固件
+  `FoloToy-AI-Passport-full.bin`（app 8,240,848 B / full 8,306,384 B，版本 `1.0.0`）。
+- **方向**：320×240 横屏。
+- **三键**：正文 UP 推进 / 长按 UP 快进，DOWN 历史 / 长按 DOWN 自动阅读，OK 推进 / 长按 OK 菜单；
+  列表与选项 UP/DOWN 移动、OK 确认、长按 OK 返回。
+- **功能**：多槽存档 + 自动档、读档、CG 鉴赏、章节列表、历史回看、自动阅读、快进瞬显。
+- **空闲**：60 s 调暗、300 s 熄屏、1800 s 深睡，任意键唤醒并回到原进度；自动阅读与快进期间不休眠。
+- **已知限制**：分区占用 **99.01%**，余量仅 **82,224 B**，任何改动前先做 Flash 预算。
 
 ## 说明
 
