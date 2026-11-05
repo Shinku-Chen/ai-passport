@@ -69,6 +69,7 @@ The engineering rules themselves live under
 - [Senren * Banka](shinku-chen/senren-banka/README.md) — a portrait visual novel reader that carries the whole game — story, backgrounds, sprites and event illustrations — on the device, with auto-read, fast-forward, chapter skipping and save slots.
 - [Sanoba Witch](shinku-chen/sanoba-witch/README.md) — a portrait visual novel reader with 101 chapters, five routes and five endings, packed entirely into Flash.
 - [Pocket Intercom](shinku-chen/intercom/README.md) — a phone-tethered AI intercom: hold OK to talk through a companion Android app, with the answer back on the device screen and in the phone, three buttons, and no network setup on the device itself.
+- [Galgame Porting Notes](shinku-chen/galgame-port/README.md) — the shared reader contract behind twelve visual-novel ports plus the traps that only appear on hardware (single-line labels, BGR colour order, banded rendering on a no-PSRAM part), with a branch and release map.
 
 ### PhoenixZHC
 
