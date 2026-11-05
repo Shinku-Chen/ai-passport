@@ -49,6 +49,12 @@ python -m esptool --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 \
 - 分区占用 97.35%，余量 216,720 B；改动内容前仍需确认 Flash 预算。
 - 内容覆盖范围与取舍见 [docs/reference/shinku-chen/steins/](docs/reference/shinku-chen/steins/)。
 
+## 上游与来源
+
+- 上游移植仓库：`steins-rw5`（快照 `28e5b52f11c7`；仓库地址上游未公开，此处记录快照提交）
+- 应用基线：[`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport) 的 `feature/galgame-framework`
+- 原作品：《命运石之门》；剧本、美术与字库版权归原权利方，上游项目未声明许可，本移植仅供个人、非商业使用
+
 ## 移植经验
 
 十二部作品共用的阅读器契约、真机踩坑与验收清单：[`docs/reference/shinku-chen/galgame-port/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/galgame-framework/docs/reference/shinku-chen/galgame-port)。
