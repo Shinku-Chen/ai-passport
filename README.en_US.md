@@ -58,6 +58,12 @@ Board: ESP32-C3, 8 MB flash, no PSRAM. Flashing and stored-data rules: [`docs/de
 - Only **82,224 B** of flash is free (99.01% used); any change must start with a flash budget check.
 - Content coverage and the trade-offs behind it: [docs/development/engineering/galgame-anemoi.md](docs/development/engineering/galgame-anemoi.md).
 
+## Upstream and provenance
+
+- Upstream port repository: [xuanyide01/anemoi-rw5](https://github.com/xuanyide01/anemoi-rw5) (snapshot `3e27714c50b8`)
+- Application baseline: [`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport) at `feature/galgame-framework`
+- Original work: *anemoi*; script, art and fonts remain with their rights holders, the upstream projects declare no licence, and this port is for personal, non-commercial use
+
 ## Porting notes
 
 The reader contract, hardware traps and acceptance checklist shared by all twelve ports: [`docs/reference/shinku-chen/galgame-port/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/galgame-framework/docs/reference/shinku-chen/galgame-port).
