@@ -15,9 +15,7 @@ with firmware published in this repository's
 and the development workflow come from upstream — see [`docs/README.md`](docs/README.md),
 [`AGENTS.md`](AGENTS.md) and [`docs/contribution/`](docs/contribution/).
 
-## Projects
-
-### 1. Visual-novel readers — v1.0.0 batch (12 titles)
+## 1. Visual-novel readers — v1.0.0 batch (12 titles)
 
 Each branch turns the device into a three-key visual-novel reader: script, sprites,
 backgrounds and CGs are packed into the application partition, so a plain clone builds
@@ -27,7 +25,7 @@ a complete, playable firmware with no SD card and no network access.
 |---|---|---|---|---|
 | anemoi | [`feature/port-anemoi-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-anemoi-landscape) | `v1.0.0-anemoi` | Landscape | 99.01% |
 | Steins;Gate | [`feature/port-steins-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-steins-landscape) | `v1.0.0-steins` | Landscape | 97.35% |
-| Steins;Gate 0 (命运石之门0) | [`feature/port-steins0-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-steins0-landscape) | `v1.0.0-steins0` | Landscape | 95.47% |
+| Steins;Gate 0 | [`feature/port-steins0-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-steins0-landscape) | `v1.0.0-steins0` | Landscape | 95.47% |
 | CLANNAD | [`feature/port-clannad-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-clannad-landscape) | `v1.0.0-clannad` | Landscape | 97.92% |
 | Summer Pockets RB | [`feature/port-summer-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-summer-landscape) | `v1.0.0-summer` | Landscape | 91.86% |
 | Mahou Shoujo no Majo Saiban | [`feature/port-manosaba-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-manosaba-landscape) | `v1.0.0-manosaba` | Landscape | 94.77% |
@@ -35,44 +33,71 @@ a complete, playable firmware with no SD card and no network access.
 | NianNiang Love Story | [`feature/port-nianniang-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-nianniang-landscape) | `v1.0.0-nianniang` | **Portrait** | 21.01% |
 | Galgame Master | [`feature/port-galgod-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-galgod-landscape) | `v1.0.0-galgod` | Landscape | 39.48% |
 | eden* | [`feature/port-eden-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-eden-landscape) | `v1.0.0-eden` | Landscape | 93.54% |
-| Stella of the End (星之终途) | [`feature/port-stella-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-stella-landscape) | `v1.0.0-stella` | Landscape | 99.20% |
-| Paper no Mahou Tsukai (纸上的魔法使) | [`feature/port-paper-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-paper-landscape) | `v1.0.0-paper` | **Portrait** | 75.56% |
+| Stella of the End | [`feature/port-stella-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-stella-landscape) | `v1.0.0-stella` | Landscape | 99.20% |
+| Paper no Mahou Tsukai | [`feature/port-paper-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-paper-landscape) | `v1.0.0-paper` | **Portrait** | 75.56% |
+
+All twelve share the same feature set: three-key reading (short OK advances, long OK
+opens the menu, long UP fast-forwards, long DOWN toggles auto-advance), a typewriter
+effect, save/load slots, history, chapter jump, CG gallery, auto-advance, instant text
+under fast-forward, and no dim/sleep while auto or fast-forward is active.
 
 > Branch names keep the `-landscape` suffix even for the two portrait titles; they are
 > left unchanged to avoid breaking existing references. The orientation above is what
 > the firmware actually renders.
 
-### 2. Visual-novel readers — earlier ports
+## 2. Visual-novel readers — earlier ports
 
-| Title | Branch | Release | Orientation | Size |
-|---|---|---|---|---|
-| Asunabi | [`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame) | `v0.1.0-asunabi` | Portrait | 30 chapters / 4,649 lines |
-| ATRI -My Dear Moments- | [`feature/atri-reader`](https://github.com/Shinku-Chen/ai-passport/tree/feature/atri-reader) | `v1.0.2-atri-reader` | Portrait | 34 chapters / 1,069 scenes / 12,188 lines |
-| DRACU-RIOT! | [`feature/dracu-riot`](https://github.com/Shinku-Chen/ai-passport/tree/feature/dracu-riot) | `v0.1.0-dracu-riot` | Portrait | Five heroine routes with after-stories |
-| limelight lemonade jam | [`feature/limelight`](https://github.com/Shinku-Chen/ai-passport/tree/feature/limelight) | `v0.1.0-limelight` | Portrait | 230 chapter points / 68,229 lines |
-| Sanoba Witch | [`feature/sanoba-witch`](https://github.com/Shinku-Chen/ai-passport/tree/feature/sanoba-witch) | `v0.1.0-sanoba-witch` | Portrait | 101 chapters / 53,190 lines / 1.1M characters |
-| Saya no Uta | [`feature/saya-no-uta`](https://github.com/Shinku-Chen/ai-passport/tree/feature/saya-no-uta) | `v0.1.1-saya-no-uta` | Landscape | 44 chapters / 3,828 lines / 3 endings |
-| Senren * Banka | [`feature/senren-banka`](https://github.com/Shinku-Chen/ai-passport/tree/feature/senren-banka) | `v0.1.0-senren-banka` | Portrait | Full story with backgrounds and CGs |
-| Hoshizora Tetsudou to Shiro no Tabi | [`feature/starry-sky-railroad`](https://github.com/Shinku-Chen/ai-passport/tree/feature/starry-sky-railroad) | `v0.1.0-starry-sky-railroad` | Portrait | Includes the Chinese fan translation |
-| TSXX RE-BOOT | [`feature/tsxx-reboot`](https://github.com/Shinku-Chen/ai-passport/tree/feature/tsxx-reboot) | `v0.1.0-tsxx-reboot` | — | Offline three-key reading |
+- **Asunabi** — `feature/asunabi-galgame` (`v0.1.0-asunabi`): portrait, 30 chapters,
+  4,649 lines (~94k characters), single ending; six manual save slots, chapter jump and
+  text-speed/font-size settings.
+- **ATRI -My Dear Moments-** — `feature/atri-reader` (`v1.0.2-atri-reader`): portrait,
+  34 chapters, 1,069 scenes, 12,188 lines, three endings, fully offline. This project
+  also defined the reader interaction patterns reused later.
+- **DRACU-RIOT!** — `feature/dracu-riot` (`v0.1.0-dracu-riot`): portrait, five heroine
+  routes with their after-stories and endings.
+- **limelight lemonade jam** — `feature/limelight` (`v0.1.0-limelight`): portrait, 230
+  chapter points and 68,229 lines from the commercial release.
+- **Sanoba Witch** — `feature/sanoba-witch` (`v0.1.0-sanoba-witch`): portrait, 101
+  chapters, 53,190 lines (~1.1M characters), five routes and five endings.
+- **Saya no Uta** — `feature/saya-no-uta` (`v0.1.1-saya-no-uta`): landscape, 44
+  chapters, 3,828 lines, three endings.
+- **Senren \* Banka** — `feature/senren-banka` (`v0.1.0-senren-banka`): portrait; story,
+  backgrounds, sprites and event CGs all live in the firmware.
+- **Hoshizora Tetsudou to Shiro no Tabi** — `feature/starry-sky-railroad`
+  (`v0.1.0-starry-sky-railroad`): portrait, includes the Chinese fan translation.
+- **TSXX RE-BOOT** — `feature/tsxx-reboot` (`v0.1.0-tsxx-reboot`): offline three-key
+  reading.
 
-### 3. Audio and connectivity
+## 3. Audio and connectivity
 
-| Project | Branch | Release | Description |
-|---|---|---|---|
-| Voice Keychain | [`feature/voice-keychain`](https://github.com/Shinku-Chen/ai-passport/tree/feature/voice-keychain) | `v1.15-voice-keychain` | Pocket audio player with hundreds of Chinese voice clips from dozens of character packs |
-| Pocket Intercom | [`feature/openclaw-intercom`](https://github.com/Shinku-Chen/ai-passport/tree/feature/openclaw-intercom) | `v1.14-intercom` | Hold OK to talk; a companion Android app relays speech to a LAN AI and shows the reply |
-| DLNA Audio Receiver | [`feature/dlna-receiver`](https://github.com/Shinku-Chen/ai-passport/tree/feature/dlna-receiver) | — | Turns the device into a DLNA renderer on the local network |
-| DLNA Player | [`feature/netease-dlna-player`](https://github.com/Shinku-Chen/ai-passport/tree/feature/netease-dlna-player) | — | DLNA casting playback (works with NetEase Cloud Music and similar) |
+- **Voice Keychain** — `feature/voice-keychain` (`v1.15-voice-keychain`): a pocket audio
+  player with hundreds of Chinese voice clips from dozens of character packs; UP/DOWN
+  move through folders, OK plays, long OK opens settings (volume, battery).
+- **Pocket Intercom** — `feature/openclaw-intercom` (`v1.14-intercom`): hold OK to talk;
+  a companion Android app relays speech to an AI assistant on the LAN and brings the
+  answer back to the device screen and the phone (two-device BLE link plus voice uplink).
+- **DLNA Audio Receiver** — `feature/dlna-receiver`: turns the device into a DLNA
+  renderer on the local network.
+- **DLNA Player** — `feature/netease-dlna-player`: DLNA casting playback, usable with
+  NetEase Cloud Music and other casting sources.
 
-### 4. Small games and utilities
+## 4. Small games and utilities
 
-| Project | Branch | Release | Description |
-|---|---|---|---|
-| Connect Four | [`feature/connect-four`](https://github.com/Shinku-Chen/ai-passport/tree/feature/connect-four) | `v1.7.0-connect-four` | 10×7 board, three AI levels or two players |
-| What to Eat Today | [`feature/cheerful-goodall`](https://github.com/Shinku-Chen/ai-passport/tree/feature/cheerful-goodall) | — | Hold a key to cycle recommendations, release to land on one |
-| Tuner | [`feature/tuner`](https://github.com/Shinku-Chen/ai-passport/tree/feature/tuner) | — | Pitch detection and tuning indicator using the onboard microphone |
-| Shengzi Cards | [`feature/shengzi-cards`](https://github.com/Shinku-Chen/ai-passport/tree/feature/shengzi-cards) | — | Flash-card drill for Chinese characters |
+- **Connect Four** — `feature/connect-four` (`v1.7.0-connect-four`): a 10×7 board in
+  landscape, three AI levels or two-player pass-and-play.
+- **What to Eat Today** — `feature/cheerful-goodall`: hold a key to cycle through
+  recommendations, release to land on one.
+- **Tuner** — `feature/tuner`: pitch detection and tuning indication from the onboard
+  microphone.
+- **Shengzi Cards** — `feature/shengzi-cards`: a flash-card drill for Chinese characters.
+
+## 5. Documentation and experience branches
+
+- `feature/galgame-framework` carries the shared capabilities and pitfalls of the
+  twelve ports under `docs/reference/shinku-chen/galgame-port/` (English + Chinese).
+- `docs/*` branches record topic-specific lessons (deep sleep and wake, display refresh,
+  font subsets, packing budgets, three-key event semantics) under
+  `docs/reference/shinku-chen/`.
 
 ## Three-key controls
 
@@ -105,12 +130,6 @@ at a lower baud rate.
 
 `anemoi` (82,224 B free), `stella` (66,992 B free) and `clannad` (173,056 B free)
 are close to the partition limit. Check the budget before changing those branches.
-
-## Lessons learned
-
-- Shared pitfalls from the 12-title batch: `feature/galgame-framework` branch,
-  `docs/reference/shinku-chen/galgame-port/` (English + Chinese).
-- Per-project implementation notes: `docs/reference/shinku-chen/`.
 
 ## License
 
