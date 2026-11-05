@@ -4,56 +4,46 @@
 
 # Voice Keychain
 
-A sound-effects keychain that turns the AI Passport into a pocket audio player.
-Open it and instantly play one of hundreds of Chinese voice clips from dozens of
-character packs — jojo, meme cat, Liu Huaqiang, Haji Mi, Nailong, Xiao Ming
-Jian Mo, and more.
+A **landscape** sound keychain for the AI Passport: it boots straight into the player and plays hundreds of Chinese voice clips from dozens of character packs.
 
-This is the application built on this `feature/voice-keychain` branch. The
-firmware boots straight into the voice keychain app (no demo menu).
+## Controls
 
-## This build: Voice Keychain
+**UP / DOWN** move through the list, **OK** opens a pack, selects a clip or plays it, and a **long press on OK** opens settings (volume, battery) or goes back one level.
 
-This branch turns the AI Passport into a **pocket sound keychain**: the firmware boots straight into the player (no demo menu) and plays hundreds of Chinese voice clips from dozens of character packs. **UP / DOWN** move through the list, **OK** opens a folder, selects a clip or plays it, and a **long press on OK** opens settings (volume, battery) or goes back one level. The self-contained image bundles the `voicefs` data partition into the 8 MB flash, so a single write from `0x0` is enough — no separate data-partition flash. Release tag: `v1.15-voice-keychain`.
+## Features
 
-## What it does
+- **Character catalogue** — a scrollable list of every character pack, with its clip names one level down.
+- **One-key playback** — built-in 8 kHz mono IMA-ADPCM decoding.
+- **Settings page** — battery percentage and voltage, plus playback volume.
+- **Self-contained image** — the `voicefs` data partition is bundled into the same 8 MB image.
 
-- **Character directory**: browse all character packs as a scrollable list. Each
-  entry is a pack of voice clips (e.g. jojo, MC, meme cat, Liu Huaqiang,
-  Liu Haizhu, Kaqiu Mixue'er, Luyin, Indian A-san, Ji Yi Kawai, Haji Mi,
-  Nailong, Bao Bao Duda Leilei, Xiao TuanTuan, Xiao Ming Jian Mo).
-- **Clip list**: enter a pack to see its clips by name.
-- **One-tap playback**: press OK to play the selected clip; built-in decoding
-  plays 8 kHz mono IMA-ADPCM audio.
-- **Settings** (hold OK): show current battery percentage and voltage, and
-  adjust the playback volume.
+## Dependencies
 
-## Interaction
+**Standalone and offline**: no phone, network or account; all audio ships inside the firmware.
 
-Three keys drive the whole app. A top bar shows the title and, on the home
-screen, the battery percentage (e.g. `97%`).
+## Build and flash
 
-- **UP / DOWN**: move selection (hold to scroll).
-- **OK**: enter a directory / select a clip / play.
-- **OK (hold)**: open settings, or go back.
+```bash
+idf.py set-target esp32c3 && idf.py build
+idf.py merge-bin
+esptool.py --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 build/merged-binary.bin
+```
 
-Long entries scroll horizontally so the full name is readable; the selected row
-is highlighted in blue.
+## Release
 
-## Firmware / build
+Tag `v1.15-voice-keychain`; the release ships the self-contained `FoloToy-AI-Passport-full.bin`.
 
-This branch adds the voice keychain application as a replacement for the demo
-menu: `main/voice_app.c` / `main/voice_app.h`, a rewired `main/main.c`, a
-re-triggerable `HOLD` button event in `bsp_button`, a CJK subset font
-(`main/fonts/voice_cjk.c`) for Chinese names, and a dedicated SPIFFS data
-partition (`voicefs`, 3 MB) that holds the compressed clips.
+## Known limitations
 
-The audio clips live in the `voicefs` SPIFFS data partition mounted at
-`/voices`, built via `tools/encode_voice.py` (decode → resample to 8 kHz mono →
-IMA-ADPCM 4-bit → build `main/voice_index.h` + `voicefs.img`). The app flashes
-the merged firmware image and that data partition separately.
+- Only the clips bundled in the firmware can be played; you cannot import your own audio.
+- Volume and battery are shown on the settings page only.
 
-## Source
+## Reference
 
-- **Branch**: [`feature/voice-keychain`](https://github.com/Shinku-Chen/ai-passport/tree/feature/voice-keychain)
-- Archive: [`plays/voice-keychain/`](plays/voice-keychain/README.md)
+- [Audio compression trade-offs](docs/reference/shinku-chen/audio-compression-trade-offs.md) — measured size/quality comparison for IMA-ADPCM.
+- [Peripheral power-off before deep sleep](docs/reference/shinku-chen/deep-sleep-peripheral-power-off.md) — what to switch off to save power.
+
+
+## License
+
+MIT, see [`LICENSE`](LICENSE).

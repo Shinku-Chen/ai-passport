@@ -4,44 +4,46 @@
 
 # 音效钥匙扣（Voice Keychain）
 
-一个把 AI Passport 变成口袋音频播放器的音效钥匙扣。打开即可播放来自几十个角色包的数百条中文语音片段
-——jojo、meme cat、刘华强、哈吉米、奶龙、小明剪膜等等。
+AI Passport 上的**横屏**音效钥匙扣：开机直接进入播放界面，播放来自几十个角色包的数百条中文语音片段。
 
-这是本 `feature/voice-keychain` 分支承载的应用：固件启动后直接进入音效钥匙扣界面（无 demo 菜单）。
+## 操作
 
-## 本项目：音效钥匙扣
-
-本分支把 AI Passport 做成一个**口袋音效钥匙扣**：固件启动后直接进入播放界面（没有 demo 菜单），可播放来自几十个角色包的数百条中文语音片段。**UP / DOWN** 在列表中移动，**OK** 进入目录、选择片段或播放，**长按 OK** 进入设置（音量、电量）或返回上一级。自包含固件把 `voicefs` 数据分区一起打进 8 MB 镜像，从 `0x0` 整体烧录即可，无需再单独刷数据分区。发布 tag：`v1.15-voice-keychain`。
+**UP / DOWN** 在列表中移动，**OK** 进入目录、选择片段或播放，**长按 OK** 进入设置（音量、电量）或返回上一级。
 
 ## 功能
 
-- **角色目录**：以可滚动列表浏览所有角色包。每个条目是一个语音包（如 jojo、MC、meme cat、刘华强、
-  刘海柱、卡丘美雪、路银、印度阿三、吉一卡哇伊、哈吉米、奶龙、抱抱嘟大磊磊、小团团、小明剪膜）。
-- **片段列表**：进入某个包查看其中的片段名。
-- **一键播放**：按 OK 播放选中的片段；内置解码播放 8 kHz 单声道 IMA-ADPCM 音频。
-- **设置**（长按 OK）：显示当前电量百分比与电压，调节播放音量。
+- **角色目录** —— 可滚动列表浏览所有角色包，进入后查看片段名。
+- **一键播放** —— 内置解码播放 8 kHz 单声道 IMA-ADPCM 音频。
+- **设置页** —— 显示电量百分比与电压，可调播放音量。
+- **自包含固件** —— `voicefs` 数据分区打进同一个 8 MB 镜像。
 
-## 交互
+## 依赖
 
-三个按键驱动整个应用。顶部栏显示标题，主界面显示电量百分比（如 `97%`）。
+**单机离线**：不需要手机、网络或账号，所有音频随固件一起烧录。
 
-- **UP / DOWN**：移动选中项（长按滚动）。
-- **OK**：进入目录 / 选择片段 / 播放。
-- **OK（长按）**：打开设置，或返回。
+## 构建与刷写
 
-长条目横向滚动以便看清全名；选中行高亮为蓝色。
+```bash
+idf.py set-target esp32c3 && idf.py build
+idf.py merge-bin
+esptool.py --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 build/merged-binary.bin
+```
 
-## 固件 / 构建
+## 发布
 
-本分支把音效钥匙扣应用作为开机入口替代 demo 菜单：`main/voice_app.c` / `main/voice_app.h`、改写
-`main/main.c`、在 `bsp_button` 暴露可重复触发的 `HOLD` 按键事件、CJK 子集字体
-（`main/fonts/voice_cjk.c`）渲染中文，以及一个独立 SPIFFS 数据分区（`voicefs`，3 MB）存放压缩语音。
+tag `v1.15-voice-keychain`，release 附带自包含的 `FoloToy-AI-Passport-full.bin`。
 
-语音片段存放在挂载于 `/voices` 的 `voicefs` SPIFFS 数据分区，由 `tools/encode_voice.py` 生成
-（解码 → 重采样到 8 kHz 单声道 → IMA-ADPCM 4bit → 生成 `main/voice_index.h` + `voicefs.img`）。应用
-分别烧录合并固件镜像与该数据分区。
+## 已知限制
 
-## 来源
+- 只能播放随固件打包的片段，不能导入自己的音频。
+- 音量与电量只在设置页显示，播放界面不显示。
 
-- **分支**：[`feature/voice-keychain`](https://github.com/Shinku-Chen/ai-passport/tree/feature/voice-keychain)
-- 档案：[`plays/voice-keychain/`](plays/voice-keychain/README.zh_CN.md)
+## 经验文档
+
+- [音频压缩取舍](docs/reference/shinku-chen/audio-compression-trade-offs.zh_CN.md) —— IMA-ADPCM 与体积/音质的实测对比。
+- [外设断电与深睡](docs/reference/shinku-chen/deep-sleep-peripheral-power-off.zh_CN.md) —— 睡前关外设省电的做法。
+
+
+## 许可
+
+MIT，见 [`LICENSE`](LICENSE)。
