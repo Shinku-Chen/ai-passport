@@ -16,7 +16,7 @@ ESP32-C3、240×320 彩屏、三键操作、8 MB Flash、无 PSRAM）的开发�
 
 ## 本项目：随身 AI 对讲机（Pocket Intercom）
 
-本分支把 AI Passport 做成一台**随身 AI 对讲机**：**按住 OK 说话**，手机端 App 作为中介把语音交给后端 AI，回答同时回到设备小屏和手机里。按下的瞬间屏幕变红、网关就绪后变绿（可以说话），松手即发送；**短按 OK** 只点亮屏幕，**UP / DOWN** 翻看历史消息，**长按 UP** 进设置（亮度 / 音量 / 麦克风增益 / 设备信息 / 重新配对）。设备本身不联网，语音只经蓝牙在「设备 ↔ 手机」之间传输；需要配套 Android App（另一个仓库 `Shinku-Chen/ai-passport-openclaw-android`）与后端 OpenClaw 或 OpenAI 兼容服务（如 Hermes）。发布 tag：`v1.8.0-intercom`。
+本分支把 AI Passport 做成一台**随身 AI 对讲机**：**按住 OK 说话**，手机端 App 作为中介把语音交给后端 AI，回答同时回到设备小屏和手机里。按下的瞬间屏幕变红、网关就绪后变绿（可以说话），松手即发送；**短按 OK** 只点亮屏幕，**UP / DOWN** 翻看历史消息，**长按 UP** 进设置（亮度 / 音量 / 麦克风增益 / 设备信息 / 重新配对）。设备本身不联网，语音只经蓝牙在「设备 ↔ 手机」之间传输；需要配套 Android App（另一个仓库 `Shinku-Chen/ai-passport-openclaw-android`）与后端 OpenClaw 或 OpenAI 兼容服务（如 Hermes）。最新发布 tag：`v1.14-intercom`。
 
 ## 项目
 
