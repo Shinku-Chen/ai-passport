@@ -52,6 +52,12 @@ python -m esptool --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 \
 - 分区占用 91.86%，余量 672,080 B；改动内容前仍需确认 Flash 预算。
 - 内容覆盖范围与取舍见 [docs/development/engineering/galgame-summer.zh_CN.md](docs/development/engineering/galgame-summer.zh_CN.md)。
 
+## 上游与来源
+
+- 上游移植仓库：`summer-rw5`（快照 `28f8a41c3e77`；由小米 Vela 工程转换而来，快照为本地只读目录，无公开仓库地址）
+- 应用基线：[`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport) 的 `feature/galgame-framework`
+- 原作品：《Summer Pockets REFLECTION BLUE》；剧本、美术与字库版权归原权利方，上游项目未声明许可，本移植仅供个人、非商业使用
+
 ## 移植经验
 
 十二部作品共用的阅读器契约、真机踩坑与验收清单：[`docs/reference/shinku-chen/galgame-port/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/galgame-framework/docs/reference/shinku-chen/galgame-port)。

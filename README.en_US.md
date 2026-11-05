@@ -54,6 +54,12 @@ Board: ESP32-C3, 8 MB flash, no PSRAM. Flashing and stored-data rules: [`docs/de
 - Flash use is 91.86% with 672,080 B free; confirm the budget before changing content.
 - Content coverage and the trade-offs behind it: [docs/development/engineering/galgame-summer.md](docs/development/engineering/galgame-summer.md).
 
+## Upstream and provenance
+
+- Upstream port repository: `summer-rw5` (snapshot `28f8a41c3e77`; converted from the Xiaomi Vela project; the snapshot is a local read-only tree with no public URL)
+- Application baseline: [`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport) at `feature/galgame-framework`
+- Original work: *Summer Pockets REFLECTION BLUE*; script, art and fonts remain with their rights holders, the upstream projects declare no licence, and this port is for personal, non-commercial use
+
 ## Porting notes
 
 The reader contract, hardware traps and acceptance checklist shared by all twelve ports: [`docs/reference/shinku-chen/galgame-port/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/galgame-framework/docs/reference/shinku-chen/galgame-port).
