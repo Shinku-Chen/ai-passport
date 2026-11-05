@@ -11,6 +11,10 @@ the cents deviation from a reference. Built on the standard BSP demo architectur
 
 This is the application built on the `feature/tuner` branch.
 
+## This build: Tuner
+
+This branch is a **twelve-tone equal-temperament tuner** for the AI Passport: the onboard microphone captures audio and an integer NSDF pitch tracker turns it into note name, octave and frequency, with the deviation from the reference shown in cents. **Short OK** switches between `AUTO` (detect the current note) and `MANUAL` (pick a target note C4..B4 with UP / DOWN). A **long press on OK** opens a debug page showing the raw frequency and the RMS / NSDF intermediates, where UP / DOWN adjust microphone gain for on-device checks. It is built on the standard BSP demo skeleton with the tuner as the featured page.
+
 ## What it does
 
 - **Real-time pitch detection** — the mic is read in a dedicated worker task;
