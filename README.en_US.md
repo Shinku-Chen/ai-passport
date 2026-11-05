@@ -41,6 +41,16 @@ idle time, so a story left running never dims or sleeps by itself.
 - **A real hardware find behind "the menu opens by itself"** — the three keys share one ADC pin behind voltage windows, and a long press whose contact briefly opens sweeps past the widest window and reads as a different key; the BSP now locks the key identity until the voltage returns to the released range, and confirms a press for 40 ms before accepting it. This is board-level logic and belongs upstream.
 - **Serial debugging channel** — `SENRENPAGE [title | <chapter> <step>]` captures a frame from the LVGL flush path and streams it back as raw RGB565; `SENRENJUMP`, `SENRENSKIP`, `SENRENSAVE`, `SENRENLOAD`, `SENRENINFO` and `SENRENKEYS` (the last one a ring of the last 32 key events with the ADC voltage each was detected at, which is how the key-window defect above was proven) cover scene jumps, chapter skipping, save and load, state readout and key tracing.
 
+## This project: Senren * Banka
+
+A **portrait** visual-novel reader for the AI Passport, ported from the Senren * Banka watch port.
+The complete script, backgrounds, sprites and event CGs live in the firmware, so the whole story is
+readable with three keys. It ships **92 backgrounds, 123 poseable character sprites and 570 event
+illustrations**, with typewriter text and automatic pagination, chapter cards and menu-based chapter
+skipping. Three keys: **UP/DOWN** step through lines, holding **UP** fast-forwards, holding **DOWN**
+starts auto-read, **OK** opens the menu (save/load/chapter skip/back to title).
+Release: **v0.1.0-senren-banka**. Known limits: portrait 240x320 only; personal, non-commercial port.
+
 ## Notes
 
 - This branch carries one application. A `feature/*` branch README describes only
