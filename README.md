@@ -51,7 +51,7 @@ python -m esptool --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 \
 
 ## 上游与来源
 
-- 上游移植仓库：`steins0-rw5`（快照 `dd19f6ce40b3`；仓库地址上游未公开，此处记录快照提交）
+- 上游移植仓库：[steins0-rw5](https://github.com/xuanyide01/steins0-rw5)（快照 `dd19f6ce40b3`）
 - 应用基线：[`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport) 的 `feature/galgame-framework`
 - 原作品：《命运石之门0》；剧本、美术与字库版权归原权利方，上游项目未声明许可，本移植仅供个人、非商业使用
 
