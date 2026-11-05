@@ -5,9 +5,9 @@
 # Galgame 阅读器移植经验
 
 AI Passport 上用同一套阅读器框架移植了十二部视觉小说：*anemoi*、*Steins;Gate*、
-*Steins;Gate 0*、*CLANNAD*、*Summer Pockets REFLECTION BLUE*、《魔法少女的魔女审判》、
+命运石之门0（*Steins;Gate 0*）、*CLANNAD*、*Summer Pockets REFLECTION BLUE*、《魔法少女的魔女审判》、
 *PARQUET*、《娘々恋爱故事》*（NianNiang Love Story）*、*《想成为Galgame领域大神！！！》*、
-*eden\**、*Stella of the End*、《纸上的魔法使》。本文记录它们共同的需求、框架提供的能力、
+*eden\**、星之终途（*Stella of the End*）、纸上的魔法使（*Paper no Mahou Tsukai*）。本文记录它们共同的需求、框架提供的能力、
 只在真机上才暴露的缺陷，以及发版前的验收清单。它是写给下一个移植看的，不是更新日志。
 
 设备是 ESP32-C3，8 MB Flash，**没有 PSRAM**。下面所有约束都由此而来。
