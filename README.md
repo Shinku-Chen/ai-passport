@@ -10,6 +10,10 @@
 - 分支：[`feature/shengzi-cards`](https://github.com/Shinku-Chen/ai-passport/tree/feature/shengzi-cards)
 - 发布：[v1.0.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0)
 
+## 本项目：生字卡片识记
+
+本分支是一个**汉字闪卡识记**应用：**长按上 / 下**在 `BROWSE`（浏览）、`TEST`（自测）、`SPELL`（拼读）三种模式间切换。BROWSE 同时显示汉字与拼音，**上**回到上一张、**下**随机跳到另一张；TEST 先隐藏拼音，**OK** 揭晓，揭晓后**上**标记认识、**下**标记不认识；SPELL 同理用 **OK** 揭晓后再按 **OK** 随机推进。已认识的字会持久化到 NVS。发布 tag：`v1.0.0`。
+
 ## 操作
 
 三个按键驱动全部操作；底部信息行显示当前模式、字卡序号和已认识数量。

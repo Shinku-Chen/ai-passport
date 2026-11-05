@@ -11,6 +11,10 @@ Latest: **v1.0.0**.
 - Branch: [`feature/shengzi-cards`](https://github.com/Shinku-Chen/ai-passport/tree/feature/shengzi-cards)
 - Release: [v1.0.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0)
 
+## This build: Shengzi Cards
+
+This branch is a **Chinese character flashcard** app: **long press UP / DOWN** cycles between `BROWSE`, `TEST` and `SPELL`. BROWSE shows the character together with its pinyin, **UP** goes back one card and **DOWN** jumps to a random card; TEST hides the pinyin first, **OK** reveals it, then **UP** marks the card as known and **DOWN** as unknown; SPELL works the same way with **OK** revealing and a second **OK** advancing. Known characters are persisted in NVS. Release tag: `v1.0.0`.
+
 ## Controls
 
 The three keys drive everything, and the status line shows the current mode, the card
