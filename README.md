@@ -1,5 +1,5 @@
 <p align="right">
-  <strong>简体中文</strong> · <a href="README.en_US.md">English</a> · <a href="README.zh_CN.md">简体中文（独立文件）</a>
+  <strong>简体中文</strong> · <a href="README.en_US.md">English</a>
 </p>
 
 # FoloToy AI Passport —— Shinku-Chen 的 fork

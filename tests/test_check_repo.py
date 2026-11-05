@@ -146,7 +146,9 @@ class VendoredDocumentationTest(unittest.TestCase):
         target = self.document("components/vendor_audio/README.md")
         link = self.root / "README.md"
         self.symlink(link, target)
-        self.assertEqual(len(self.document_errors([link])), 2)
+        errors = self.document_errors([link])
+        self.assertEqual(len(errors), 1)
+        self.assertIn("missing link target", errors[0])
 
     def test_main_keeps_security_and_conflict_checks_for_vendored_text(self) -> None:
         # Assemble deliberately synthetic fixtures so the test source itself is clean.
