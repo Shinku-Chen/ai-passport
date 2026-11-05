@@ -70,6 +70,12 @@ Board: ESP32-C3, 8 MB flash, no PSRAM. Flashing and stored-data rules: [`docs/de
 - Flash use is 94.77% with 428,720 B free; confirm the budget before changing content.
 - Content coverage and the trade-offs behind it: [`docs/games/`](docs/games/).
 
+## Upstream and provenance
+
+- Upstream port repository: `manosaba-rw5` (snapshot `a309a3614837`; the upstream repository URL is not published; the snapshot commit is recorded here)
+- Application baseline: [`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport) at `feature/galgame-framework`
+- Original work: *Mahou Shojo no Majo Saiban*; script, art and fonts remain with their rights holders, the upstream projects declare no licence, and this port is for personal, non-commercial use
+
 ## Porting notes
 
 The reader contract, hardware traps and acceptance checklist shared by all twelve ports: [`docs/reference/shinku-chen/galgame-port/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/galgame-framework/docs/reference/shinku-chen/galgame-port).
