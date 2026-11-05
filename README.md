@@ -283,9 +283,9 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 - **没有语音生成** —— 当前版本不接 TTS：回答只以文字上屏（设备屏 + App），设备不会念出来。
 
 
-### 《命运石之门 0》横屏阅读器（Steins;Gate 0）
+### 《命运石之门0》横屏阅读器（Steins;Gate 0）
 
-把《命运石之门 0》（Steins;Gate 0）做成 AI Passport 上的视觉小说阅读器：全部剧本、背景、立绘与事件 CG 打包进应用分区，离线可读。
+把《命运石之门0》（Steins;Gate 0）做成 AI Passport 上的视觉小说阅读器：全部剧本、背景、立绘与事件 CG 打包进应用分区，离线可读。
 
 - **发布**：tag [`v1.0.0-steins0`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-steins0)，
   分支 [`feature/port-steins0-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-steins0-landscape)；合并固件
