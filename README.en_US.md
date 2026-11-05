@@ -9,6 +9,10 @@ the buttons to spin through a food lottery and release to land on a random food.
 
 This is the application built on this `feature/cheerful-goodall` branch.
 
+## This build: What to Eat Today
+
+This branch is a **food-wheel decision helper**: when you cannot decide what to eat, press any key to start the wheel spinning fast and release to stop on a random food — the frame itself carries the dish or restaurant name. A **long press on OK** switches the render path (LVGL partial refresh versus direct panel flush) for on-device A/B comparison only. Each draw first picks the category with equal probability and then starts from a random frame of that category, so results do not depend on the previous round.
+
 ## Interaction
 
 Three keys drive the app (button callbacks run in the button task, so they stay
