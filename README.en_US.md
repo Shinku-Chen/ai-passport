@@ -2,30 +2,9 @@
   <a href="README.md">简体中文</a> · <strong>English</strong>
 </p>
 
-# Manosaba: The Witch Trial of Magical Girls — AI Passport Landscape Reader
+# Mahou Shojo no Majo Saiban - AI Passport 320x240 landscape visual-novel reader
 
-This branch ports the Redmi Watch 5 (Vela) adaptation of *Magical Girl no Majo
-Shinpan* to the [FoloToy AI Passport](https://ai-passport.folotoy.cn) (ESP32-C3,
-320×240 landscape, three buttons, 8 MB Flash, no PSRAM). It is a standalone
-application, not a reskin of the upstream demo menu.
-
-- Project notes: [`docs/games/manosaba.md`](docs/games/manosaba.md)
-- Branch: `feature/port-manosaba-landscape`
-- Source snapshot: `manosaba-rw5 @ a309a3614837b555741e5d8fd7cfe2b9428e2e49`
-- Language: Simplified Chinese; complete 16px subset (2,999 glyphs, 0 missing)
-
-## Release
-
-- **Version**: tag [`v1.0.0-manosaba`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-manosaba),
-  branch [`feature/port-manosaba-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-manosaba-landscape); merged image
-  `FoloToy-AI-Passport-full.bin` (app 7,763,280 B / full 7,959,888 B, version `1.0.0`).
-- **Layout**: 320x240 landscape.
-- **Three keys**: reading - UP advances, hold UP fast-forwards, DOWN opens history, hold DOWN toggles auto-read, OK advances, hold OK opens the menu; in lists and choices UP/DOWN move, OK confirms and hold OK goes back.
-- **Features**: multi-slot saves plus an automatic slot, load, CG gallery, chapter list, scrollable history, auto-read and instant fast-forward.
-- **Idle**: dim after 60 s, screen off after 300 s, deep sleep after 1800 s; any key wakes the device and resumes the session. Auto-read and fast-forward never idle out.
-- **Known limits**: flash use is 94.77% with 428,720 B free; still confirm the budget before changing content.
-
-## Implemented
+The complete *Mahou Shojo no Majo Saiban* story as an AI Passport 320x240 landscape visual-novel reader: script, backgrounds, sprites and event CGs are packed into the application partition and read offline.
 
 - **All 458 source script files / 424 scenes / 90,243 commands** are packed into
   one read-only flash image and executed by a C VM that mirrors `engine.js` /
@@ -48,41 +27,53 @@ application, not a reskin of the upstream demo menu.
   history (long press toggles auto), OK opens the menu/objection list; lists
   use UP/DOWN + OK and long OK to return; choices require explicit OK.
 
-## Build
+## Controls
 
-ESP-IDF 5.5.3 and Python 3 (Pillow for assets/fonts) are required.
+| Key | While reading | In lists and choices |
+| --- | --- | --- |
+| OK (short) | Advance one page; completes the page if it is still typing | Confirm |
+| OK (hold) | Open the menu | Go back one level |
+| UP (short) | Advance one page | Move the cursor up |
+| UP (hold) | Fast-forward while held | - |
+| DOWN (short) | Open history | Move the cursor down |
+| DOWN (hold) | Toggle auto-read | - |
+
+## Features
+
+- Typewriter text with adjustable speed (instant included)
+- Auto-read: advances after a page finishes typing and keeps the screen awake
+- Fast-forward: the whole page appears at once instead of typing quickly
+- Saves: several manual slots plus an automatic slot written on every scene change
+- History, chapter list and a CG gallery
+- Idle: dim after 60 s, screen off after 300 s, deep sleep after 1800 s; any key wakes the device and resumes the session
+
+## Build and flash
 
 ```bash
-python tools/manosaba_pack.py --source <manosaba-rw5> --out main/gal_data/manosaba.pack
-python tools/manosaba_font.py --font <manosaba-rw5>/src/common/manosaba.otf \
-    --fallback-font "$WINDIR/Fonts/NotoSansSC-VF.ttf" \
-    --pack main/gal_data/manosaba.pack --source-root main --out-dir assets/fonts
-idf.py build
-idf.py merge-bin -o build/FoloToy-AI-Passport-full.bin
-python tools/verify_firmware.py build
+idf.py -B build-release build
+idf.py -B build-release merge-bin -o "$PWD/build-release/FoloToy-AI-Passport-full.bin"
+python -m esptool --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 \
+  build-release/FoloToy-AI-Passport-full.bin
 ```
 
-Host tests: `CC="$PWD/tools/cc-host.sh" MANOSABA_SOURCE=<manosaba-rw5> \
-bash tools/validate.sh --static`. On this Windows machine the
-`install_passport_skills` symlink test is skipped, so the full static gate is
-PARTIAL; all C tests in this project, the independent source audit, and the
-real-TJpgDec image regression are actually executed.
+Board: ESP32-C3, 8 MB flash, no PSRAM. Flashing and stored-data rules: [`docs/development/engineering/firmware-layout.md`](docs/development/engineering/firmware-layout.md).
 
-## Current validation
+## Release
 
-- Software review: **PASS; awaiting device acceptance** (production frozen at full `7f90c4e1…`)
-- Build: PASS (app 7,442,288 B, full 7,638,896 B; actual factory@0x30000, 749,712 B free; NVS@0x9000/0x26000)
-- Host tests: **PARTIAL** (gate PASS=42 FAIL=0 SKIP=1; only the Windows `install_passport_skills` symlink test is SKIPped)
-- Device tests: **NOT RUN / awaiting device acceptance** (no flashing or on-device acceptance)
-- Source audit: PASS (657,333 checks; 458 files / 90,243 commands / 5,586
-  expression comparisons)
-- Archive: `build/firmware/7f90c4e15f1bc4f8ff179759123b50b9c63fcdf17c1629200c791e7df538e976/` (old `a14d…`/`99b…` kept)
+- Tag: `v1.0.0-manosaba` (branch `feature/port-manosaba-landscape`)
+- Merged image: `FoloToy-AI-Passport-full.bin` (7,959,888 B)
+- Application image: 7,763,280 B, version `1.0.0`
+- Partition use: **94.77%**, **428,720 B** free
 
-## License and provenance
+## Known limits
 
-The upstream repository and BSP keep their own licenses. This port is an
-independent implementation; the original game's script, art, characters, and
-trademarks belong to their respective owners. The project does not claim a
-right to redistribute original assets. The font source is the snapshot's
-Noto Sans Mono CJK SC (SIL OFL 1.1); five missing glyphs come from the system
-Noto Sans SC (SIL OFL 1.1). See [`docs/games/manosaba.md`](docs/games/manosaba.md).
+- Flash use is 94.77% with 428,720 B free; confirm the budget before changing content.
+- Content coverage and the trade-offs behind it: [`docs/games/`](docs/games/).
+
+## Porting notes
+
+The reader contract, hardware traps and acceptance checklist shared by all twelve ports: [`docs/reference/shinku-chen/galgame-port/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/galgame-framework/docs/reference/shinku-chen/galgame-port).
+
+## License
+
+This repository is MIT, like upstream [FoloToy/ai-passport](https://github.com/FoloToy/ai-passport); see `LICENSE`. Scripts, art and fonts come from the original game and its community ports and remain with their rights holders; this port is for personal, non-commercial use.
