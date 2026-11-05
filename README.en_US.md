@@ -441,6 +441,19 @@ green once you can speak; release to send. A short **OK** press only lights the 
 - **No speech synthesis** — this version does not do TTS: answers are text on the device screen and in the app, and the device never reads them aloud.
 
 
+### CLANNAD (landscape reader)
+
+The complete *CLANNAD* story as an AI Passport visual-novel reader: script, backgrounds, sprites and event CGs are packed into the application partition and read offline.
+
+- **Release**: tag [`v1.0.0-clannad`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-clannad),
+  branch [`feature/port-clannad-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-clannad-landscape); merged image
+  `FoloToy-AI-Passport-full.bin` (app 8,150,016 B / full 8,215,552 B, version `1.0.0`).
+- **Layout**: 320x240 landscape.
+- **Three keys**: reading - UP advances, hold UP fast-forwards, DOWN opens history, hold DOWN toggles auto-read, OK advances, hold OK opens the menu; in lists and choices UP/DOWN move, OK confirms and hold OK goes back.
+- **Features**: multi-slot saves plus an automatic slot, load, CG gallery, chapter list, scrollable history, auto-read and instant fast-forward.
+- **Idle**: dim after 60 s, screen off after 300 s, deep sleep after 1800 s; any key wakes the device and resumes the session. Auto-read and fast-forward never idle out.
+- **Known limits**: flash use is **97.92%** with **173,056 B** free, so any change must start with a flash budget check.
+
 ## Notes
 
 - Each application is a separate `feature/*` branch off the upstream baseline.

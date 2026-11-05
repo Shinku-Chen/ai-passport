@@ -292,6 +292,20 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 - **没有语音生成** —— 当前版本不接 TTS：回答只以文字上屏（设备屏 + App），设备不会念出来。
 
 
+### 《CLANNAD》横屏阅读器
+
+把《CLANNAD》做成 AI Passport 上的视觉小说阅读器：全部剧本、背景、立绘与事件 CG 打包进应用分区，离线可读。
+
+- **发布**：tag [`v1.0.0-clannad`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-clannad)，
+  分支 [`feature/port-clannad-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-clannad-landscape)；合并固件
+  `FoloToy-AI-Passport-full.bin`（app 8,150,016 B / full 8,215,552 B，版本 `1.0.0`）。
+- **方向**：320×240 横屏。
+- **三键**：正文 UP 推进 / 长按 UP 快进，DOWN 历史 / 长按 DOWN 自动阅读，OK 推进 / 长按 OK 菜单；
+  列表与选项 UP/DOWN 移动、OK 确认、长按 OK 返回。
+- **功能**：多槽存档 + 自动档、读档、CG 鉴赏、章节列表、历史回看、自动阅读、快进瞬显。
+- **空闲**：60 s 调暗、300 s 熄屏、1800 s 深睡，任意键唤醒并回到原进度；自动阅读与快进期间不休眠。
+- **已知限制**：分区占用 **97.92%**，余量仅 **173,056 B**，任何改动前先做 Flash 预算。
+
 ## 说明
 
 - 每个应用都是基于上游基线的一个独立 `feature/*` 分支。不要把 demo 分支整支合入
