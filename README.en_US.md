@@ -13,6 +13,10 @@ Latest release: **v1.7.0-connect-four**, which adds two-device play over Bluetoo
 - Branch: [`feature/connect-four`](https://github.com/Shinku-Chen/ai-passport/tree/feature/connect-four)
 - Release: [v1.7.0-connect-four](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.7.0-connect-four)
 
+## This build: Connect Four
+
+This branch ships a standalone **Connect Four**: a landscape 10 × 7 board you can play against the computer (easy / medium / hard), against a second player on the same device, or against a second AI Passport over Bluetooth LE. Up / down moves the target column, **OK** drops a piece, and a **long press on OK** returns to the settings screen, where up / down picks a row and OK cycles the value until `START` launches a game. In link play both units broadcast and scan, so there is no host/join choice: set both to `LINK PLAY` and they connect and start automatically. Release tag: `v1.7.0-connect-four`.
+
 ## Controls
 
 UP / DOWN move the column cursor (held in landscape, UP is the right-hand key),

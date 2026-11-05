@@ -11,6 +11,10 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 - 分支：[`feature/connect-four`](https://github.com/Shinku-Chen/ai-passport/tree/feature/connect-four)
 - 发布：[v1.7.0-connect-four](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.7.0-connect-four)
 
+## 本项目：四子棋
+
+这是一份**独立分支构建**：横屏 10 × 7 的四子棋，可对电脑（低/中/高三档）、双人同机，或两台设备经蓝牙联机对战。上 / 下移动落子列，**确定**落子，**长按确定**回到设置屏；设置屏用上 / 下选行、确定切换取值，选到 `START` 开局。联机模式不需要选主机/加入，两台都设成 `LINK PLAY` 即可自动搜索并开局。发布 tag：`v1.7.0-connect-four`。
+
 ## 操作
 
 上 / 下移动落子列（横屏持握时「上」在右手边，往右移动），**确定**落子，**长按确定**回设置屏。设置屏上用上 / 下选行、确定切换取值（模式：`HUMAN vs AI` / `AI vs HUMAN` / `TWO PLAYERS` / `LINK PLAY`，难度：`EASY` / `MEDIUM` / `HARD`，预览：`LANDING` / `TOP ROW`），选到 `START` 按确定开局；`LINK PLAY` 下则进入联机屏。两个电脑模式只差先后手。
