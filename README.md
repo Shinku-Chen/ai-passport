@@ -4,50 +4,39 @@
 
 # DLNA 音频接收器（DLNA Audio Receiver）
 
-一个 DLNA/UPnP 音频投屏接收器，把 FoloToy AI Passport 变成联网音箱。用支持 DLNA 的
-手机 App 或小米妙播投音乐：设备在你的 Wi-Fi 上广播自己、接收流、板载解码，再从 I2S
-喇叭播出。固件开机直接进入接收器（无主菜单）。
+AI Passport 上的**横屏** DLNA/UPnP 音频投屏接收器：用支持 DLNA 的手机 App 或小米妙播投音乐，设备在你的 Wi-Fi 上广播自己、接收流、板载解码，再从 I2S 喇叭播出。固件开机直接进入接收器（无主菜单）。
 
-本应用构建在 `feature/dlna-receiver` 分支上。
-
-## 本项目：DLNA 音频接收器
-
-本分支把 AI Passport 变成一台**联网音箱**：设备实现 DLNA/UPnP 音频投屏接收器，在你的 Wi-Fi 上广播自己，支持 DLNA 的手机 App 或小米妙播把音乐推过来，设备收流、板载解码，再从 I2S 喇叭播出。固件开机直接进入接收器（无主菜单）。**UP / DOWN** 在状态 / 配网页之间切换，**OK** 进入或确认；**开机 10 秒内长按 OK** 会清除已保存的 Wi-Fi 配置并回到配网。
-
-## 功能
-
-- **DLNA 媒体渲染器** —— `custom_dlna` 协议栈（SSDP 发现 + SOAP 控制 + GENA 事件），
-  适配 ESP32-C3 单核、无 PSRAM。
-- **流式音频管线** —— HTTP 拉流进环形缓冲，`minimp3` / `esp_aac` 解码 →
-  `bsp_audio` I2S 输出。
-- **多音源** —— 按投送 App 的 `User-Agent` 切换音乐源配置；内置**小米妙播（MiPlay）**
-  支持（mDNS + TCP 8899），MiPlay 客户端连接时暂停 DLNA 播放，两者共享 I2S 总线不冲突。
-- **Wi-Fi 配网** —— 首次开机（或无凭证）时开启 softAP 热点 `AI-Passport-Prov`
-  （密码 `00114514`）供配置网络；凭证保存在 NVS。
-- **极简状态 UI** —— 240×320 屏显示标题栏、曲名、进度条、播放状态与电量。
-
-## 操作方式
-
-三键导航：
+## 操作
 
 - **UP / DOWN** —— 在状态 / 配网页之间切换。
 - **OK** —— 进入 / 确认。
 - **OK（长按，开机 10 秒内）** —— 清除已保存的 Wi-Fi 配置并回到配网。
 
-## 构建 / 固件
+## 功能
 
-标准 ESP-IDF 工程（target `esp32c3`）：
+- **DLNA 媒体渲染器** —— `custom_dlna` 协议栈（SSDP 发现 + SOAP 控制 + GENA 事件），适配 ESP32-C3 单核、无 PSRAM。
+- **流式音频管线** —— HTTP 拉流进环形缓冲，`minimp3` / `esp_aac` 解码 → `bsp_audio` I2S 输出。
+- **多音源** —— 按投送 App 的 `User-Agent` 切换音乐源配置；内置**小米妙播（MiPlay）**支持（mDNS + TCP 8899），MiPlay 客户端连接时暂停 DLNA 播放，两者共享 I2S 总线不冲突。
+- **Wi-Fi 配网** —— 开机连 NVS 里保存的 SSID；无凭证或 STA 连不上时自动开 softAP 热点配网。
+
+## 依赖
+
+**需要局域网推流源**：手机与设备在同一 Wi-Fi，用支持 DLNA 的 App（或小米妙播）投屏；设备本身不提供曲库，也不联网取流。
+
+## 构建与刷写
 
 ```bash
-idf.py set-target esp32c3
-idf.py build
-idf.py flash monitor
+idf.py set-target esp32c3 && idf.py build
+idf.py merge-bin
+esptool.py --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 build/merged-binary.bin
 ```
 
-## 来源
+## 已知限制
 
-- 分支：[`feature/dlna-receiver`](https://github.com/Shinku-Chen/ai-passport/tree/feature/dlna-receiver)
-- 关键文件：`main/dlna_app.c` / `dlna_app.h`（应用状态机 + 按键路由）、
-  `main/net_prov.c`（softAP 配网）、`components/custom_dlna/`（SSDP + SOAP + GENA）、
-  `components/dlna_audio/`（HTTP → 解码 → I2S）、`components/miplay/`（小米妙播）、
-  `components/esp_audio_codec/` + `components/dns_server/`。
+- 只能播 App 推过来的流，不能自己浏览网络曲库。
+- MiPlay 与 DLNA 共享 I2S：MiPlay 连接时 DLNA 播放会暂停，断开后需要重新投送。
+- 5 GHz-only 或开启客户端隔离的网络下 SSDP/mDNS 发现可能失败。
+
+## 许可
+
+MIT，见 [`LICENSE`](LICENSE)。
