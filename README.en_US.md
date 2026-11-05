@@ -4,55 +4,37 @@
 
 # Tuner
 
-A chromatic tuner for the FoloToy AI Passport. It samples the onboard microphone
-in real time, detects the pitch, and shows the note name, octave, frequency, and
-the cents deviation from a reference. Built on the standard BSP demo architecture
-(menu + demo pages) with the Tuner as the headlining page.
+A **landscape** twelve-tone equal-temperament tuner for the AI Passport: the onboard microphone captures audio and the screen shows note name, octave, frequency and the deviation in cents.
 
-This is the application built on the `feature/tuner` branch.
+## Controls
 
-## This build: Tuner
+**Short OK** switches between `AUTO` (detect the current note) and `MANUAL` (pick a target note C4..B4 with UP / DOWN); **short UP / DOWN** cycle the target note in MANUAL. A **long press on OK** opens a debug page showing the raw frequency and the RMS / NSDF intermediates, where UP / DOWN adjust microphone gain.
 
-This branch is a **twelve-tone equal-temperament tuner** for the AI Passport: the onboard microphone captures audio and an integer NSDF pitch tracker turns it into note name, octave and frequency, with the deviation from the reference shown in cents. **Short OK** switches between `AUTO` (detect the current note) and `MANUAL` (pick a target note C4..B4 with UP / DOWN). A **long press on OK** opens a debug page showing the raw frequency and the RMS / NSDF intermediates, where UP / DOWN adjust microphone gain for on-device checks. It is built on the standard BSP demo skeleton with the tuner as the featured page.
+## Features
 
-## What it does
+- **Real-time pitch detection** — the microphone is read on a dedicated worker task and an integer NSDF tracker yields note, octave and frequency.
+- **AUTO mode** — detects the current note and shows cents to the nearest equal-tempered pitch.
+- **MANUAL mode** — pick a target note and tune against it, with the header showing the offset.
+- **Debug mode** — large frequency readout plus RMS / NSDF, with adjustable gain.
 
-- **Real-time pitch detection** — the mic is read in a dedicated worker task;
-  an integer NSDF pitch tracker turns the samples into a note name, octave, and
-  frequency.
-- **AUTO mode** — identify the current note automatically; a meter shows how far
-  it sits from the nearest equal-tempered pitch (in cents).
-- **MANUAL mode** — pick a target note (C4..B4) with UP / DOWN and tune to it;
-  the meter shows the deviation from that target, which feels like tuning a
-  string.
-- **Debug mode** (hold OK) — shows the raw frequency plus RMS / NSDF intermediates
-  and lets you adjust the microphone gain with UP / DOWN for on-device
-  validation.
+## Dependencies
 
-## Interaction
+**Standalone and offline**: it uses only the onboard microphone; no phone, network or account.
 
-- **OK (short)** — switch between AUTO and MANUAL mode.
-- **UP / DOWN (short)** — in MANUAL mode, cycle the target note; in debug mode,
-  adjust the mic gain.
-- **OK (hold)** — toggle debug mode.
-- **OK (hold, in Tuner)** — the Tuner page consumes long-OK itself (no menu
-  return).
-
-The other demo pages (Display / Button / Audio / Battery / Wi-Fi / BLE / Low
-Power) remain available from the menu as BSP references.
-
-## Firmware / build
-
-Standard ESP-IDF project (target `esp32c3`):
+## Build and flash
 
 ```bash
-idf.py set-target esp32c3
-idf.py build
-idf.py flash monitor
+idf.py set-target esp32c3 && idf.py build
+idf.py merge-bin
+esptool.py --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 build/merged-binary.bin
 ```
 
-## Source
+## Known limitations
 
-- Branch: [`feature/tuner`](https://github.com/Shinku-Chen/ai-passport/tree/feature/tuner)
-- Key files: `main/demo_tuner.c` (page + key handling), `main/tuner_engine.c` /
-  `main/tuner_engine.h` (integer NSDF pitch detection).
+- Accuracy is limited by the onboard microphone and speaker echo; the low register (below C3) is noticeably worse.
+- MANUAL targets are limited to C4..B4.
+- There is no metronome or chord detection.
+
+## License
+
+MIT, see [`LICENSE`](LICENSE).

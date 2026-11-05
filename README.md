@@ -4,48 +4,37 @@
 
 # 调音器（Tuner）
 
-面向 FoloToy AI Passport 的十二平均律调音器。用板载麦克风实时采集声音、检测音高，
-显示音名/八度/频率以及与基准音的 cents 偏差。构建在标准 BSP demo 架构（菜单 + 演示页）
-之上，以 Tuner 为主打演示页。
+AI Passport 上的**横屏**十二平均律调音器：板载麦克风实时采集，显示音名、八度、频率以及与基准音的 cents 偏差。
 
-本应用构建在 `feature/tuner` 分支上。
+## 操作
 
-## 本项目：调音器
-
-本分支是面向 AI Passport 的**十二平均律调音器**：板载麦克风实时采集，整数 NSDF 音高跟踪把采样转成音名、八度与频率，并显示与基准音的 cents 偏差。**短按 OK** 在 `AUTO`（自动识别当前音名）与 `MANUAL`（用 UP / DOWN 选目标音 C4..B4）之间切换，**UP / DOWN 短按**在 MANUAL 模式循环选目标音。**长按 OK** 进入调试模式：大字显示原始频率与 RMS / NSDF 中间量，UP / DOWN 调麦克风增益，便于真机校验。构建在标准 BSP demo 架构之上，以 Tuner 为主打演示页。
+**OK 短按** 在 `AUTO`（自动识别当前音名）与 `MANUAL`（用 UP / DOWN 选目标音 C4..B4）之间切换，**UP / DOWN 短按** 在 MANUAL 模式循环选目标音。**长按 OK** 进入调试模式：大字显示原始频率与 RMS / NSDF 中间量，UP / DOWN 调麦克风增益。
 
 ## 功能
 
-- **实时音高检测** —— 麦克风在独立 worker 任务中采集；整数 NSDF 音高跟踪把采样转成
-  音名、八度与频率。
-- **AUTO 模式** —— 自动识别当前音名，表头指示它离最近标准音多远（cents）。
-- **MANUAL 模式** —— 用 UP / DOWN 选目标音（C4..B4）并照着调，表头指示与目标音的
-  偏差，更符合调弦直觉。
-- **调试模式**（长按 OK）—— 大字显示原始频率及 RMS / NSDF 中间量，并可用 UP / DOWN
-  调整麦克风增益，便于真机校验。
+- **实时音高检测** —— 麦克风在独立 worker 任务采集，整数 NSDF 跟踪输出音名 / 八度 / 频率。
+- **AUTO 模式** —— 自动识别当前音名，表头指示离最近标准音的 cents。
+- **MANUAL 模式** —— 选定目标音后照着调，表头指示与目标的偏差。
+- **调试模式** —— 大字频率 + RMS / NSDF，可调增益。
 
-## 操作方式
+## 依赖
 
-- **OK（短按）** —— 在 AUTO / MANUAL 模式间切换。
-- **UP / DOWN（短按）** —— MANUAL 模式下循环选择目标音；调试模式下调节麦克风增益。
-- **OK（长按）** —— 切换调试模式。
-- **OK（长按，在 Tuner 页内）** —— Tuner 页自行消费长按 OK（不返回菜单）。
+**单机离线**：只用板载麦克风，不需要手机、网络或账号。
 
-其余演示页（Display / Button / Audio / Battery / Wi-Fi / BLE / Low Power）仍可从
-菜单进入，作为 BSP 参考。
-
-## 构建 / 固件
-
-标准 ESP-IDF 工程（target `esp32c3`）：
+## 构建与刷写
 
 ```bash
-idf.py set-target esp32c3
-idf.py build
-idf.py flash monitor
+idf.py set-target esp32c3 && idf.py build
+idf.py merge-bin
+esptool.py --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 build/merged-binary.bin
 ```
 
-## 来源
+## 已知限制
 
-- 分支：[`feature/tuner`](https://github.com/Shinku-Chen/ai-passport/tree/feature/tuner)
-- 关键文件：`main/demo_tuner.c`（页面 + 按键处理）、`main/tuner_engine.c` /
-  `main/tuner_engine.h`（整数 NSDF 音高检测）。
+- 精度受板载麦克风与扬声器回声影响，低音区（C3 以下）误差更大。
+- 只在 C4..B4 之间可选 MANUAL 目标音。
+- 没有节拍器或和弦识别。
+
+## 许可
+
+MIT，见 [`LICENSE`](LICENSE)。
