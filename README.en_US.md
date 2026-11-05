@@ -49,6 +49,12 @@ Board: ESP32-C3, 8 MB flash, no PSRAM. Flashing and stored-data rules: [`docs/de
 - Flash use is 95.47% with 376,784 B free; confirm the budget before changing content.
 - Content coverage and the trade-offs behind it: [docs/reference/shinku-chen/steins0/](docs/reference/shinku-chen/steins0/).
 
+## Upstream and provenance
+
+- Upstream port repository: `steins0-rw5` (snapshot `dd19f6ce40b3`; the upstream repository URL is not published; the snapshot commit is recorded here)
+- Application baseline: [`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport) at `feature/galgame-framework`
+- Original work: *Steins;Gate 0*; script, art and fonts remain with their rights holders, the upstream projects declare no licence, and this port is for personal, non-commercial use
+
 ## Porting notes
 
 The reader contract, hardware traps and acceptance checklist shared by all twelve ports: [`docs/reference/shinku-chen/galgame-port/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/galgame-framework/docs/reference/shinku-chen/galgame-port).
