@@ -12,6 +12,10 @@ Jian Mo, and more.
 This is the application built on this `feature/voice-keychain` branch. The
 firmware boots straight into the voice keychain app (no demo menu).
 
+## This build: Voice Keychain
+
+This branch turns the AI Passport into a **pocket sound keychain**: the firmware boots straight into the player (no demo menu) and plays hundreds of Chinese voice clips from dozens of character packs. **UP / DOWN** move through the list, **OK** opens a folder, selects a clip or plays it, and a **long press on OK** opens settings (volume, battery) or goes back one level. The self-contained image bundles the `voicefs` data partition into the 8 MB flash, so a single write from `0x0` is enough — no separate data-partition flash. Release tag: `v1.15-voice-keychain`.
+
 ## What it does
 
 - **Character directory**: browse all character packs as a scrollable list. Each
