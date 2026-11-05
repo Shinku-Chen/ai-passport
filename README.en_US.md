@@ -59,6 +59,16 @@ observed, and `lf` matches the source MEXHAUST at `281:1404`. Device tests
 remain NOT RUN. Git Bash firmware packaging is PARTIAL; the native PowerShell
 build is the PASS result.
 
+- **Release**: tag [`v1.0.0-summer`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-summer),
+  branch [`feature/port-summer-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-summer-landscape); merged image
+  `FoloToy-AI-Passport-full.bin` (app 7,585,456 B / full 7,716,528 B, version `1.0.0`).
+- **Layout**: 320x240 landscape.
+- **Three keys**: reading - UP advances, hold UP fast-forwards, DOWN opens history, hold DOWN toggles auto-read, OK advances, hold OK opens the menu; in lists and choices UP/DOWN move, OK confirms and hold OK goes back.
+- **Features**: multi-slot saves plus an automatic slot, load, CG gallery, chapter list, scrollable history, auto-read and instant fast-forward.
+- **Idle**: dim after 90 s, screen off after 300 s, deep sleep after 1800 s; any key wakes the device and resumes the session. Auto-read and fast-forward never idle out.
+- **Known limits**: flash use is 91.86% with 672,080 B free; still confirm the budget before changing content.
+
+
 ### Voice Keychain
 
 A sound-effects keychain that turns the AI Passport into a pocket audio player:

@@ -47,6 +47,17 @@ header 复核 **PASS、无阻断**（`build/review-final-header-20261102T061006Z
 目前实际走通 4/13/8/9，`lf` 与源同样在 `281:1404` MEXHAUST；Device 仍为
 NOT RUN。Git Bash 固件包装为 PARTIAL，原生 PowerShell 构建才是 PASS。
 
+- **发布**：tag [`v1.0.0-summer`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-summer)，
+  分支 [`feature/port-summer-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-summer-landscape)；合并固件
+  `FoloToy-AI-Passport-full.bin`（app 7,585,456 B / full 7,716,528 B，版本 `1.0.0`）。
+- **方向**：320×240 横屏。
+- **三键**：正文 UP 推进 / 长按 UP 快进，DOWN 历史 / 长按 DOWN 自动阅读，OK 推进 / 长按 OK 菜单；
+  列表与选项 UP/DOWN 移动、OK 确认、长按 OK 返回。
+- **功能**：多槽存档 + 自动档、读档、CG 鉴赏、章节列表、历史回看、自动阅读、快进瞬显。
+- **空闲**：90 s 调暗、300 s 熄屏、1800 s 深睡，任意键唤醒并回到原进度；自动阅读与快进期间不休眠。
+- **已知限制**：分区占用 91.86%，余量 672,080 B；改动时仍需确认 Flash 预算。
+
+
 ### 音效钥匙扣（Voice Keychain）
 
 把 AI Passport 变成口袋音频播放器的音效钥匙扣：开机即进入应用，播放来自几十个角色包的
