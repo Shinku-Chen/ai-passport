@@ -31,7 +31,7 @@
 | 想成为Galgame领域大神 | [`feature/port-galgod-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-galgod-landscape) | `v1.0.0-galgod` | 横屏 | 39.48% |
 | eden* | [`feature/port-eden-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-eden-landscape) | `v1.0.0-eden` | 横屏 | 93.54% |
 | 星之终途（Stella of the End） | [`feature/port-stella-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-stella-landscape) | `v1.0.0-stella` | 横屏 | 99.20% |
-| 纸上的魔法使（Paper no Mahou Tsukai） | [`feature/port-paper-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-paper-landscape) | `v1.0.0-paper` | **竖屏** | 75.56% |
+| 纸上的魔法使（Paper no Mahou Tsukai） | [`feature/port-paper-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-paper-landscape) | `v1.0.0-paper` | 横屏 | 75.56% |
 
 12 部的功能一致：三键阅读（短 OK 推进、长 OK 菜单、长 UP 快进、长 DOWN 自动）、
 逐字打字机、存档读档、历史回看、章节跳转、CG 鉴赏、自动阅读、快进瞬显，
