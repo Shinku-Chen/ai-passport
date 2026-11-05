@@ -53,6 +53,8 @@ Board: ESP32-C3, 8 MB flash, no PSRAM. Flashing and stored-data rules: [`docs/de
 
 ## Known limits
 
+### Flash headroom warning
+
 - Only **82,224 B** of flash is free (99.01% used); any change must start with a flash budget check.
 - Content coverage and the trade-offs behind it: [docs/development/engineering/galgame-anemoi.md](docs/development/engineering/galgame-anemoi.md).
 

@@ -49,6 +49,8 @@ python -m esptool --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 \
 
 ## 已知限制
 
+### 余量告警
+
 - 分区余量仅 **82,224 B**（占用 99.01%），任何改动前先做 Flash 预算。
 - 内容覆盖范围与取舍见 [docs/development/engineering/galgame-anemoi.zh_CN.md](docs/development/engineering/galgame-anemoi.zh_CN.md)。
 
