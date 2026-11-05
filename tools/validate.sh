@@ -11,6 +11,13 @@ usage() {
 run_static_checks() {
     local actionlint_bin
     local test_dir
+    local dead_strip_flag
+
+    # Apple ld does not accept --gc-sections; -dead_strip is the equivalent.
+    dead_strip_flag="-Wl,--gc-sections"
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        dead_strip_flag="-Wl,-dead_strip"
+    fi
 
     python3 tools/check_repo.py
 
@@ -44,6 +51,10 @@ run_static_checks() {
         -o "${test_dir}/test_bsp_es8311_sleep_check"
     "${test_dir}/test_bsp_es8311_sleep_check"
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
+        -Itests/battery_stubs -Itests/bsp_stubs -Icomponents/bsp/include \
+        tests/test_bsp_battery.c -o "${test_dir}/test_bsp_battery"
+    "${test_dir}/test_bsp_battery"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
         -Itests/bsp_stubs -Icomponents/bsp/include \
         tests/test_bsp_button.c -o "${test_dir}/test_bsp_button"
     "${test_dir}/test_bsp_button"
@@ -71,10 +82,11 @@ run_static_checks() {
     for demo in audio low_power ble wifi; do
         "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
             -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \
-            "tests/test_demo_${demo}_runtime.c" -Wl,--gc-sections \
+            "tests/test_demo_${demo}_runtime.c" "${dead_strip_flag}" \
             -o "${test_dir}/test_demo_${demo}_runtime"
         "${test_dir}/test_demo_${demo}_runtime"
     done
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_battery_profile.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_deep_sleep_contract.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_key_wake_contract.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_check_repo.py

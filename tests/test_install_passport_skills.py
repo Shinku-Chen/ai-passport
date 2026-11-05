@@ -55,6 +55,12 @@ class InstallPassportSkillsTest(unittest.TestCase):
                 raise
             self.skipTest("Windows symlink tests require Developer Mode or elevation")
 
+    def require_directory_symlinks(self) -> None:
+        """Skip when the host cannot create directory symlinks, as on Windows without Developer Mode."""
+        probe = self.root / ".symlink-probe"
+        self.symlink(probe, self.root / "skills" / INSTALLER.SKILL_NAMES[0])
+        probe.unlink()
+
     def make_installation(self) -> Path:
         destination = self.root / ".agents" / "skills"
         destination.mkdir(parents=True)
@@ -79,6 +85,7 @@ class InstallPassportSkillsTest(unittest.TestCase):
         self.assertIn("All 5 skill links", output)
 
     def test_install_creates_relative_links_and_is_idempotent(self) -> None:
+        self.require_directory_symlinks()
         code, _, errors = self.run_installer("--install")
         self.assertEqual((code, errors), (0, ""))
         snapshots = {}
@@ -203,6 +210,7 @@ class InstallPassportSkillsTest(unittest.TestCase):
         self.assertEqual(parent.read_text(encoding="utf-8"), "preserve parent")
 
     def test_existing_other_skill_is_preserved(self) -> None:
+        self.require_directory_symlinks()
         other = self.root / ".agents" / "skills" / "user-skill" / "SKILL.md"
         other.parent.mkdir(parents=True)
         other.write_text("user-owned skill", encoding="utf-8")
@@ -226,6 +234,7 @@ class InstallPassportSkillsTest(unittest.TestCase):
             self.assertFalse((self.root / ".agents").exists())
 
     def test_partial_installation_failure_reports_kept_links_and_manual_paths(self) -> None:
+        self.require_directory_symlinks()
         original = Path.symlink_to
         failing = INSTALLER.SKILL_NAMES[2]
 

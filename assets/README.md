@@ -4,7 +4,7 @@
 
 # Assets
 
-This directory stores reusable fonts, images, music, and sound effects, organized by asset type.
+This directory stores reusable fonts, images, music, sound effects, and battery profiles, organized by asset type.
 
 Keep each asset in the matching subdirectory and document its destination, naming, integration method, and source/license. Do not mix binary assets with Markdown documentation.
 
@@ -41,3 +41,21 @@ Store reusable music and sound-effect sources in `music/`.
 - Prefer 16 kHz, 16-bit mono PCM when it matches the current BSP audio path.
 - Check Flash and internal-RAM cost before embedding audio; stream or chunk long recordings.
 - Do not commit media without redistribution permission.
+
+## Battery profiles
+
+[`battery/wanli-500mah-profile2-xil40x-20261020.txt`](battery/wanli-500mah-profile2-xil40x-20261020.txt)
+contains the supplied CW2017 profile for the Wanli New Energy 500 mAh cell
+(profile2, XIL40X, 2026-10-20). It is an unchanged copy of the project-supplied
+file, retained at the maintainer's request for this firmware update. Its
+original filename is recorded in the paired Chinese document. No separate
+license was included in the supplied file.
+
+The format is 80 lines of two hexadecimal digits, one byte per line in register
+order. The BSP embeds those bytes in `components/bsp/src/bsp_battery.c`; the
+host gate checks the source file and initializer for an exact match. Text-file
+SHA-256: `7ea96eba4634f4495a37c25ffacd54c1deaa0693b162c892d671a2ba68460919`.
+Decoded 80-byte SHA-256:
+`fa7365671093ef449c5bdcfb4adb279e3d275f888109f50b6b2f21e9b96220d5`.
+This is a fuel-gauge profile, not a charging configuration or a generic profile
+for every 500 mAh cell; see the [hardware guide](../docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md#9-cw2017-fuel-gauge).

@@ -100,6 +100,11 @@ The engineering rules themselves live under
 **Application playbooks:**
 
 - [Faraway](starsms007/faraway/README.md) — a travel journal for an orange cat: send it out for 15 seconds to 12 hours, collect 24 postcards and 24 keepsakes, unlock four mini-games, and watch seven weather layers drift by.
+### Noah-1106
+
+**Application playbooks:**
+
+- [Xiaonuo Jianlu (Voice Notes & Lists)](noah-1106/xiaonuo-jianlu/README.md) — hold-to-talk AI notes organized by a self-hosted hub, a stacked-card list UI, offline capture with on-device playback, BLUFI + mDNS zero-config setup, and a work-domain watchdog.
 
 ## Adding an experience entry
 
