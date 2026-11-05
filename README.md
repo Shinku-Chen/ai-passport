@@ -4,7 +4,9 @@
 
 # 《星之终途（Stella of the End）》· AI Passport 320×240 横屏阅读器
 
-把《星之终途》（Stella of the End）做成 AI Passport 上的视觉小说阅读器：全部剧本、背景、立绘与事件 CG 打包进应用分区，离线可读。
+把《星之终途》（Stella of the End）做成 AI Passport 上的视觉小说阅读器：**正篇 21 章**的剧本、背景、立绘与事件 CG 打包进应用分区，离线可读。
+
+> 收录范围：**仅正篇 21 章（9,425 句）**。上游另有 9 段后日谈（`story/101`–`109`，1,550 句，约 229 KB），受 8 MB 分区限制**未收录**；后日谈需要额外腾出约 70 KB 压缩文本空间才能加入。
 
 ## 玩法与三键
 
@@ -49,6 +51,7 @@ python -m esptool --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 \
 ### 余量告警
 
 - 分区余量仅 **66,992 B**（占用 99.20%），任何改动前先做 Flash 预算。
+- 分区余量仅 66,992 B，**不含后日谈**：上游 9 段后日谈（1,550 句，zlib 后约 70 KB）需要先腾出空间才能加入。
 - 内容覆盖范围与取舍见 [docs/reference/shinku-chen/stella/](docs/reference/shinku-chen/stella/)。
 
 ## 上游与来源
