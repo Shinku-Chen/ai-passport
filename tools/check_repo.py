@@ -33,8 +33,6 @@ ROOT_MARKDOWN_ALLOWLIST = {
     "CLAUDE.zh_CN.md",
     "README.md",
     "README.zh_CN.md",
-    # This fork keeps a trilingual root README: README.md is the Chinese default,
-    # README.zh_CN.md is the explicit Chinese copy and README.en_US.md is English.
     "README.en_US.md",
 }
 # Register only concrete, vendored component directories, e.g. "components/foo".
@@ -228,7 +226,7 @@ def check_document_languages(
             continue
         if path.parent == ROOT and name == "README.md":
             for peer in ("README.zh_CN.md", "README.en_US.md"):
-                if peer not in opening:
+                if path.with_name(peer) in markdown and peer not in opening:
                     errors.append(f"README.md: missing top language link to {peer}")
             continue
         if name.endswith(".zh_CN.md"):
