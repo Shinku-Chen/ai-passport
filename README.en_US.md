@@ -4,36 +4,39 @@
 
 # Shengzi Cards
 
-A Chinese-character flashcard app: a scrollable card list, a self-test that records
-what you already know, and a spelling drill, with learned marks persisted to NVS.
-Latest: **v1.0.0**.
-
-- Branch: [`feature/shengzi-cards`](https://github.com/Shinku-Chen/ai-passport/tree/feature/shengzi-cards)
-- Release: [v1.0.0](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0)
-
-## This build: Shengzi Cards
-
-This branch is a **Chinese character flashcard** app: **long press UP / DOWN** cycles between `BROWSE`, `TEST` and `SPELL`. BROWSE shows the character together with its pinyin, **UP** goes back one card and **DOWN** jumps to a random card; TEST hides the pinyin first, **OK** reveals it, then **UP** marks the card as known and **DOWN** as unknown; SPELL works the same way with **OK** revealing and a second **OK** advancing. Known characters are persisted in NVS. Release tag: `v1.0.0`.
+A **landscape** Chinese character flashcard app for the AI Passport: browse, self-test and spell modes, with known characters persisted in NVS.
 
 ## Controls
 
-The three keys drive everything, and the status line shows the current mode, the card
-position and how many cards are marked learned.
+**Long press UP / DOWN** cycles `BROWSE` → `TEST` → `SPELL`. BROWSE shows the character with its pinyin, **UP** goes back one card and **DOWN** jumps to a random one; TEST hides the pinyin first, **OK** reveals it, then **UP** marks the card known and **DOWN** unknown (both advance randomly); SPELL reveals with **OK** and advances on the next **OK**.
 
-- **UP / DOWN (hold)** cycles the mode: `BROWSE` → `TEST` → `SPELL`.
-- **BROWSE** — the card shows its character and pinyin: **UP** goes back one card,
-  **DOWN** jumps to a random card.
-- **TEST** — the pinyin stays hidden until **OK** reveals it; after the reveal **UP**
-  marks the card as known and **DOWN** as unknown, and either choice moves on to a
-  random card.
-- **SPELL** — a drill pass without marking: the pinyin stays hidden until **OK**, and
-  **OK** again moves on to a random card.
+## Features
 
-## Notes
+- **Three modes** — browse, self-test and spell, with the footer showing mode, card index and known count.
+- **Known marks persist** — known characters are stored in NVS and survive a reboot.
+- **Random advance** — prevents reciting in a fixed order.
 
-- This branch carries one application. A `feature/*` branch README describes only
-  its own application; the fork `main` root README is the catalog of every hosted
-  project.
-- Firmware is flashed with the [web flasher](https://ai-passport.folotoy.cn/tools/web-flasher/)
-  or `esptool` — every release ships a merged `FoloToy-AI-Passport-full.bin`
-  written from offset `0x0`. Target board: 8 MB Flash.
+## Dependencies
+
+**Standalone and offline**: the character list and pinyin ship with the firmware; no phone, network or account.
+
+## Build and flash
+
+```bash
+idf.py set-target esp32c3 && idf.py build
+idf.py merge-bin
+esptool.py --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 build/merged-binary.bin
+```
+
+## Release
+
+Tag `v1.0.0`.
+
+## Known limitations
+
+- The character list is fixed in the firmware and cannot be extended.
+- Only a known/unknown flag is stored; there is no spaced repetition or mistake log.
+
+## License
+
+MIT, see [`LICENSE`](LICENSE).
