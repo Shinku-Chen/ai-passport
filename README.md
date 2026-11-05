@@ -27,6 +27,17 @@ ESP32-C3、240×320 彩屏、三键操作、8 MB Flash、无 PSRAM）的开发�
 - 说明：[`docs/games/galgod.zh_CN.md`](docs/games/galgod.zh_CN.md)
 - 操作：正文 UP 推进（长按快进）、DOWN 历史、OK 菜单；列表 UP/DOWN 选择、OK 确认、长按 OK 返回。
 
+- **发布**：tag [`v1.0.0-galgod`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-galgod)，
+  分支 [`feature/port-galgod-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-galgod-landscape)；合并固件
+  `FoloToy-AI-Passport-full.bin`（app 3,285,824 B / full 3,351,360 B，版本 `1.0.0`）。
+- **方向**：320×240 横屏。
+- **三键**：正文 UP 推进 / 长按 UP 快进，DOWN 历史 / 长按 DOWN 自动阅读，OK 推进 / 长按 OK 菜单；
+  列表与选项 UP/DOWN 移动、OK 确认、长按 OK 返回。
+- **功能**：多槽存档 + 自动档、读档、CG 鉴赏、章节列表、历史回看、自动阅读、快进瞬显。
+- **空闲**：90 s 调暗、300 s 熄屏、1800 s 深睡，任意键唤醒并回到原进度；自动阅读与快进期间不休眠。
+- **已知限制**：分区占用 39.48%，余量 5,037,248 B；改动时仍需确认 Flash 预算。
+
+
 ### 音效钥匙扣（Voice Keychain）
 
 把 AI Passport 变成口袋音频播放器的音效钥匙扣：开机即进入应用，播放来自几十个角色包的

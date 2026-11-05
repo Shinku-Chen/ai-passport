@@ -29,6 +29,16 @@ de-duplication) with a paged gallery, three save slots plus autosave, history an
 - Controls: in dialogue UP advances (hold to fast-forward), DOWN opens history,
   OK opens the menu; in lists UP/DOWN select, OK activates, long OK goes back.
 
+- **Release**: tag [`v1.0.0-galgod`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-galgod),
+  branch [`feature/port-galgod-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-galgod-landscape); merged image
+  `FoloToy-AI-Passport-full.bin` (app 3,285,824 B / full 3,351,360 B, version `1.0.0`).
+- **Layout**: 320x240 landscape.
+- **Three keys**: reading - UP advances, hold UP fast-forwards, DOWN opens history, hold DOWN toggles auto-read, OK advances, hold OK opens the menu; in lists and choices UP/DOWN move, OK confirms and hold OK goes back.
+- **Features**: multi-slot saves plus an automatic slot, load, CG gallery, chapter list, scrollable history, auto-read and instant fast-forward.
+- **Idle**: dim after 90 s, screen off after 300 s, deep sleep after 1800 s; any key wakes the device and resumes the session. Auto-read and fast-forward never idle out.
+- **Known limits**: flash use is 39.48% with 5,037,248 B free; still confirm the budget before changing content.
+
+
 ### Voice Keychain
 
 A sound-effects keychain that turns the AI Passport into a pocket audio player:
