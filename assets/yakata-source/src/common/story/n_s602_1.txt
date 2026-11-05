@@ -1,0 +1,1 @@
+[{"id":"n_s602_1:choice","type":"choice","items":[{"text":"遵从米亚的指示","scene":"n_s602_1_0","changes":[]},{"text":"寻找能协助她的方法","scene":"n_s602_2_0","changes":[]}],"background":"black","portrait":"","pw":320,"ph":254}]

@@ -7,9 +7,11 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "yakata_flow.h"
 
 typedef struct {
     uint8_t valid;            // 0 = 还没有任何进度
+    int32_t variables[YAKATA_VAR_COUNT];
     uint16_t event_index;
     uint16_t page_index;
 } gal_progress_t;

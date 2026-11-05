@@ -1,0 +1,2 @@
+# Preserve the pinned source bytes verified by its SHA-256 manifest.
+assets/yakata-source/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

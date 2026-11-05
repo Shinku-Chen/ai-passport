@@ -1,0 +1,1 @@
+[{"id":"n_s601_2_2:end-notice","type":"text","speaker":"流程说明","text":"已到达原作未解析的脚本出口。\n该出口在原作元数据中即为占位，未接入剧情。","background":"black","portrait":""}]

@@ -1,0 +1,1 @@
+[{"id":"n_s105_106_2:transition","type":"text","speaker":"场景切换","text":"原作流程连接节点。","background":"black","portrait":""}]

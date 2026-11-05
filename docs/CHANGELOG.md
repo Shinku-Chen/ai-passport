@@ -56,3 +56,12 @@
 - Updated software-design and project README references for the new documentation structure.
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
+
+## v0.1.3-shinuyakata - 2026-11-05
+
+- Added the offline Shinuyakata reader with the supplied RW5 story choices, three manual saves, automatic progress, recalls and unlocked CG variants.
+- Added a landscape interface with two font tiers, content-sized speaker badges and a compact three-line dialogue panel.
+- Cached artwork for text refreshes and thumbnail navigation, avoiding repeated JPEG decoding and the gallery stack fault.
+- Added immediate held fast-forward across chapters; release, choices and endings stop it.
+- Kept route variables and unlocks when loading older development saves; changed text layouts replay their current line.
+- The supplied dataset has no audio/video and retains unresolved source exits. Device acceptance covers reading, gallery and the revised controls/UI; prolonged and exhaustive physical tests remain pending.

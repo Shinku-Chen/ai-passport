@@ -8,7 +8,7 @@
 
 static const char *TAG = "gal_save";
 
-#define GAL_SAVE_NAMESPACE "galsave"
+#define GAL_SAVE_NAMESPACE "yksave"
 #define GAL_SAVE_KEY "slots"
 #define GAL_SAVE_MAGIC 0x53u
 #define GAL_SAVE_VERSION 1u
@@ -62,6 +62,9 @@ bool gal_save_load(gal_save_t *save)
         return false;
     }
     memcpy(save->slots, blob.slots, sizeof(save->slots));
+    if (blob.reserved[0] != YAKATA_TEXT_LAYOUT_ID) {
+        for (int i = 0; i < GAL_SAVE_SLOTS; ++i) save->slots[i].page_index = 0;
+    }
     return gal_save_any(save);
 }
 
@@ -71,6 +74,7 @@ bool gal_save_store(const gal_save_t *save)
     gal_save_blob_t blob = { 0 };
     blob.magic = GAL_SAVE_MAGIC;
     blob.version = GAL_SAVE_VERSION;
+    blob.reserved[0] = YAKATA_TEXT_LAYOUT_ID;
     memcpy(blob.slots, save->slots, sizeof(blob.slots));
     const esp_err_t err = nvs_set_blob(s_handle, GAL_SAVE_KEY, &blob, sizeof(blob));
     if (err != ESP_OK) {

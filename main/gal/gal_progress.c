@@ -8,7 +8,7 @@
 
 static const char *TAG = "gal_prog";
 
-#define GAL_PROGRESS_NAMESPACE "galprog"
+#define GAL_PROGRESS_NAMESPACE "ykprog"
 #define GAL_PROGRESS_KEY "pos"
 #define GAL_PROGRESS_MAGIC 0x50u
 #define GAL_PROGRESS_VERSION 1u
@@ -61,6 +61,7 @@ bool gal_progress_load(gal_progress_t *out)
         return false;
     }
     *out = blob.progress;
+    if (blob.reserved[0] != YAKATA_TEXT_LAYOUT_ID) out->page_index = 0;
     return out->valid != 0;
 }
 
@@ -70,6 +71,7 @@ bool gal_progress_store(const gal_progress_t *in)
     gal_progress_blob_t blob = { 0 };
     blob.magic = GAL_PROGRESS_MAGIC;
     blob.version = GAL_PROGRESS_VERSION;
+    blob.reserved[0] = YAKATA_TEXT_LAYOUT_ID;
     blob.progress = *in;
     const esp_err_t err = nvs_set_blob(s_handle, GAL_PROGRESS_KEY, &blob, sizeof(blob));
     if (err != ESP_OK) {

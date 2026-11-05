@@ -157,7 +157,7 @@ static void input_task(void *arg)
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "AI Passport GalGame 框架骨架启动");
+    ESP_LOGI(TAG, "AI Passport Shinuyakata reader");
 
     // deep sleep 唤醒会重启整个应用,把原因打出来便于确认“按键真能唤醒”。
     const esp_sleep_wakeup_cause_t wakeup = esp_sleep_get_wakeup_cause();
@@ -187,6 +187,17 @@ void app_main(void)
                  BSP_LCD_MOSI, BSP_LCD_SCLK, BSP_LCD_CS, BSP_LCD_DC, BSP_LCD_BL);
         return;
     }
+    // Rotate under the LVGL lock before constructing any pages.
+    if (!bsp_lvgl_lock(-1)) {
+        ESP_LOGE(TAG, "横屏初始化无法获取 LVGL 锁");
+        return;
+    }
+    const esp_err_t rotation_err = bsp_lvgl_set_landscape(true);
+    bsp_lvgl_unlock();
+    if (rotation_err != ESP_OK) {
+        ESP_LOGE(TAG, "横屏初始化失败: %s", esp_err_to_name(rotation_err));
+        return;
+    }
     bsp_display_backlight(BACKLIGHT_FULL);
 
     if (!gal_app_init(&s_app)) {
@@ -199,7 +210,7 @@ void app_main(void)
         ESP_LOGE(TAG, "输入队列创建失败");
         return;
     }
-    if (xTaskCreate(input_task, "gal_input", 4096, NULL, 5, &s_input_task) != pdPASS) {
+    if (xTaskCreate(input_task, "gal_input", 8192, NULL, 5, &s_input_task) != pdPASS) {
         ESP_LOGE(TAG, "输入任务创建失败");
         vQueueDelete(s_input_queue);
         s_input_queue = NULL;
@@ -222,7 +233,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "空闲堆 %u 字节,最大连续块 %u 字节", (unsigned)esp_get_free_heap_size(),
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
-    ESP_LOGI(TAG, "就绪:框架骨架;短按任意键=下一句,长按确定=游戏内菜单,"
+    ESP_LOGI(TAG, "就绪:死馆阅读器;短按任意键=下一句,长按确定=游戏内菜单,"
                   "长按上=快进,长按下=自动阅读;空闲 %us 调暗,%us 熄屏,%us 休眠",
              (unsigned)(GAL_DIM_MS / 1000), (unsigned)(GAL_SCREEN_OFF_MS / 1000),
              (unsigned)(GAL_SLEEP_MS / 1000));

@@ -8,7 +8,7 @@
 
 static const char *TAG = "gal_unlock";
 
-#define GAL_UNLOCK_NAMESPACE "galunlock"
+#define GAL_UNLOCK_NAMESPACE "ykunlock"
 #define GAL_UNLOCK_KEY "bits"
 #define GAL_UNLOCK_MAGIC 0x4Cu
 #define GAL_UNLOCK_VERSION 1u
@@ -93,12 +93,12 @@ bool gal_unlock_store(const gal_unlock_t *in)
 
 void gal_unlock_grant_cg(gal_unlock_t *out, uint8_t index)
 {
-    if (out) bit_add(&out->cg, index);
+    if (out) bit_add(&out->cg[index / 32], index % 32);
 }
 
 void gal_unlock_grant_chapter(gal_unlock_t *out, uint8_t index)
 {
-    if (out) bit_add(&out->chapter, index);
+    if (out) bit_add(&out->chapter[index / 32], index % 32);
 }
 
 void gal_unlock_grant_ending(gal_unlock_t *out, uint8_t index)
@@ -113,12 +113,12 @@ void gal_unlock_set_flag(gal_unlock_t *out, uint8_t index)
 
 bool gal_unlock_has_cg(const gal_unlock_t *in, uint8_t index)
 {
-    return in && bit_has(in->cg, index);
+    return in && bit_has(in->cg[index / 32], index % 32);
 }
 
 bool gal_unlock_has_chapter(const gal_unlock_t *in, uint8_t index)
 {
-    return in && bit_has(in->chapter, index);
+    return in && bit_has(in->chapter[index / 32], index % 32);
 }
 
 bool gal_unlock_has_ending(const gal_unlock_t *in, uint8_t index)

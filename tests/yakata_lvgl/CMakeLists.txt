@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 3.20)
+project(yakata_layout LANGUAGES C CXX ASM)
+set(CMAKE_C_STANDARD 11)
+get_filename_component(REPO "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
+set(LV_BUILD_CONF_PATH "${CMAKE_CURRENT_SOURCE_DIR}/lv_conf.h" CACHE PATH "" FORCE)
+set(CONFIG_LV_BUILD_DEMOS OFF CACHE BOOL "" FORCE)
+set(CONFIG_LV_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(CONFIG_LV_USE_THORVG_INTERNAL OFF CACHE BOOL "" FORCE)
+add_subdirectory("${REPO}/managed_components/lvgl__lvgl" lvgl)
+add_executable(yakata_lvgl test_ui.c
+  "${REPO}/main/gal/gal_art.c" "${REPO}/main/gal/gal_text.c" "${REPO}/main/gal/gal_ui.c" "${REPO}/main/gal/gal_content.c"
+  "${REPO}/assets/fonts/gal_cjk_16.c" "${REPO}/assets/fonts/gal_cjk_20.c")
+target_include_directories(yakata_lvgl PRIVATE "${REPO}/main/gal" "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(yakata_lvgl PRIVATE lvgl)
+target_compile_options(yakata_lvgl PRIVATE -UNDEBUG)

@@ -1,9 +1,12 @@
-// main/gal/gal_ui.c —— 框架骨架的 LVGL 界面实现(竖屏 240x320)。
+// main/gal/gal_ui.c —— 框架骨架的 LVGL 界面实现(横屏 320x240)。
 //
 // 每个逻辑屏一个页面根对象,创建时全部建好,切换时只改可见性。
 // 列表行按需创建;行列表组件在标题菜单、选项、槽位、设置、历史、
 // 章节与结局入口之间复用。
 #include "gal_ui.h"
+#include "gal_art.h"
+#include "gal_text.h"
+#include "src/misc/lv_text_private.h"
 
 #include "esp_log.h"
 
@@ -33,10 +36,10 @@ static const char *TAG = "gal_ui";
 #define COL_TILE_B    0x8D708A
 #define COL_TILE_C    0xD49B83
 
-// 版面常量(竖屏 240x320)。
+// 版面常量(横屏 320x240)。
 #define BAR_Y 6          // 页头标题
-#define BODY_TOP 44      // 页头下方的正文起点
-#define ROW_H 34         // 列表行高(含 4px 间距)
+#define BODY_TOP 36      // 页头下方的正文起点
+#define ROW_H 32         // 列表行高(含 4px 间距)
 #define ROW_INSET 12     // 列表左右留白
 
 // ---------------------------------------------------------------- 图片
@@ -44,8 +47,12 @@ static const char *TAG = "gal_ui";
 static void apply_image(lv_obj_t *img, const void *dsc)
 {
     if (!img) return;
+    bool changed = false;
+    if (dsc && ((const lv_image_dsc_t *)dsc)->header.cf == LV_COLOR_FORMAT_RAW) {
+        dsc = gal_art_large(dsc, &changed);
+    }
     if (dsc) {
-        lv_image_set_src(img, dsc);
+        if (changed || lv_image_get_src(img) != dsc) lv_image_set_src(img, dsc);
         lv_obj_remove_flag(img, LV_OBJ_FLAG_HIDDEN);
     } else {
         lv_obj_add_flag(img, LV_OBJ_FLAG_HIDDEN);
@@ -53,6 +60,36 @@ static void apply_image(lv_obj_t *img, const void *dsc)
 }
 
 // ---------------------------------------------------------------- 打字机
+typedef struct {
+    const lv_font_t *font;
+    lv_text_attributes_t attributes;
+} text_layout_t;
+
+static size_t rendered_line(const char *text, size_t remaining, void *context)
+{
+    text_layout_t *layout = context;
+    return lv_text_get_next_line(text, (uint32_t)remaining, layout->font, NULL, &layout->attributes);
+}
+
+int gal_ui_text_pages(gal_ui_t *ui, const char *text, uint32_t *offsets, int max_offsets)
+{
+    if (!ui || !ui->text) return 0;
+    // Use the pinned LVGL 9.5 line iterator that also wraps this label. Approximate
+    // character widths disagree on long punctuation runs and can hide a line.
+    text_layout_t layout = {
+        .font = lv_obj_get_style_text_font(ui->text, LV_PART_MAIN),
+        .attributes = {
+            .max_width = GAL_TEXT_W,
+            .letter_space = lv_obj_get_style_text_letter_space(ui->text, LV_PART_MAIN),
+            .line_space = lv_obj_get_style_text_line_space(ui->text, LV_PART_MAIN),
+            .text_flags = LV_TEXT_FLAG_NONE,
+        },
+    };
+    int lines = (GAL_PANEL_H - 9 + layout.attributes.line_space) /
+                (lv_font_get_line_height(layout.font) + layout.attributes.line_space);
+    return gal_text_pages_by_line(text, lines, rendered_line, &layout, offsets, max_offsets);
+}
+
 static void typing_stop(gal_ui_t *ui)
 {
     ui->typing_active = false;
@@ -99,6 +136,7 @@ void gal_ui_set_text(gal_ui_t *ui, const char *speaker, const char *page_text,
                      uint32_t ms_per_char, const void *image, const void *body)
 {
     if (!ui) return;
+    ui->scene_source = image;
     apply_image(ui->scene_img, image);
     apply_image(ui->body_img, body);
     lv_label_set_text(ui->name, speaker ? speaker : "");
@@ -164,6 +202,8 @@ static void list_ensure_row(gal_ui_t *ui, gal_list_t id, int index)
         lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
         lv_obj_align(label, LV_ALIGN_LEFT_MID, 8, 0);
     } else {
+        lv_obj_set_size(label, width - 20, 24);
+        lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_DOTS);
         lv_obj_align(label, LV_ALIGN_LEFT_MID, 10, 0);
     }
 
@@ -189,6 +229,7 @@ void gal_ui_set_rows(gal_ui_t *ui, gal_list_t id, const char *const *labels,
     gal_list_ui_t *list = &ui->lists[id];
     if (count > GAL_LIST_MAX_ROWS) count = GAL_LIST_MAX_ROWS;
     list->count = count;
+    int next_y = list->top;
     for (int i = 0; i < GAL_LIST_MAX_ROWS; ++i) {
         if (i >= count) {
             if (list->rows[i]) {
@@ -200,6 +241,23 @@ void gal_ui_set_rows(gal_ui_t *ui, gal_list_t id, const char *const *labels,
         if (!list->rows[i]) continue;
         lv_label_set_text(list->rows[i], labels && labels[i] ? labels[i] : "");
         lv_label_set_text(list->values[i], values && values[i] ? values[i] : "");
+        const bool has_value = values && values[i] && values[i][0];
+        int available = list->width - 2 * list->inset - 20;
+        lv_obj_set_width(list->rows[i], has_value ? available / 2 : available);
+        lv_obj_set_size(list->values[i], has_value ? available / 2 - 4 : 0, 24);
+        lv_label_set_long_mode(list->values[i], LV_LABEL_LONG_MODE_DOTS);
+        lv_obj_set_style_text_align(list->values[i], LV_TEXT_ALIGN_RIGHT, 0);
+        if (list->wrap) {
+            // History entries contain whole dialogue lines, not fixed two-line
+            // snippets. Measure them so long entries never cover the next row.
+            lv_obj_update_layout(list->rows[i]);
+            lv_obj_t *row = lv_obj_get_parent(list->rows[i]);
+            int height = lv_obj_get_height(list->rows[i]) + 12;
+            if (height < list->row_h - 4) height = list->row_h - 4;
+            lv_obj_set_pos(row, list->inset, next_y);
+            lv_obj_set_height(row, height);
+            next_y += height + 4;
+        }
         lv_obj_remove_flag(lv_obj_get_parent(list->rows[i]), LV_OBJ_FLAG_HIDDEN);
     }
     gal_ui_select_row(ui, id, selected);
@@ -347,17 +405,20 @@ static void build_dialogue(gal_ui_t *ui, gal_page_t page)
     // 名牌挂在对话框上沿外侧、左对齐(不压住正文);父对象是本页,跟着页面一起隐藏。
     if (page == GAL_PAGE_GAME) {
         ui->name = mk_label(root, ui->font_small, COL_NAME);
+        lv_obj_set_size(ui->name, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+        lv_obj_set_style_max_width(ui->name, GAL_UI_W - 80, LV_PART_MAIN);
+        lv_label_set_long_mode(ui->name, LV_LABEL_LONG_MODE_DOTS);
         lv_obj_set_style_bg_color(ui->name, lv_color_black(), LV_PART_MAIN);
         lv_obj_set_style_bg_opa(ui->name, LV_OPA_50, LV_PART_MAIN);
         lv_obj_set_style_pad_hor(ui->name, 8, LV_PART_MAIN);
         lv_obj_set_style_pad_ver(ui->name, 2, LV_PART_MAIN);
         lv_obj_set_style_radius(ui->name, 6, LV_PART_MAIN);
-        lv_obj_align_to(ui->name, ui->panel, LV_ALIGN_OUT_TOP_LEFT, 8, -2);
+        lv_obj_align(ui->name, LV_ALIGN_BOTTOM_LEFT, 8, -(GAL_PANEL_H + 2));
         lv_obj_add_flag(ui->name, LV_OBJ_FLAG_HIDDEN);
     }
 
     ui->text = mk_label(ui->panel, ui->font_small, COL_TEXT);
-    lv_obj_set_pos(ui->text, GAL_TEXT_X, 6);
+    lv_obj_set_pos(ui->text, GAL_TEXT_X, 4);
     lv_obj_set_width(ui->text, GAL_TEXT_W);
     lv_label_set_long_mode(ui->text, LV_LABEL_LONG_WRAP);
     // 字体行高为 19/23,补 1px 行距后正好 20/24(框架规范)。
@@ -367,8 +428,8 @@ static void build_dialogue(gal_ui_t *ui, gal_page_t page)
     if (page == GAL_PAGE_GAME) {
         lv_obj_t *box = lv_obj_create(root);
         lv_obj_remove_style_all(box);
-        lv_obj_set_size(box, GAL_UI_W - 16, 118);
-        lv_obj_set_pos(box, 8, 46);
+        lv_obj_set_size(box, GAL_UI_W - 16, 112);
+        lv_obj_set_pos(box, 8, 34);
         lv_obj_set_style_bg_color(box, lv_color_hex(COL_BOX), LV_PART_MAIN);
         lv_obj_set_style_bg_opa(box, (lv_opa_t)242, LV_PART_MAIN);
         lv_obj_set_style_border_color(box, lv_color_hex(COL_ACCENT), LV_PART_MAIN);
@@ -404,8 +465,8 @@ static void build_title(gal_ui_t *ui)
     // 标题菜单框(原型:宽度占满、深色半透明、圆角)。
     lv_obj_t *box = lv_obj_create(page);
     lv_obj_remove_style_all(box);
-    lv_obj_set_size(box, GAL_UI_W - 22, 204);
-    lv_obj_set_pos(box, 11, 112);
+    lv_obj_set_size(box, 148, 192);
+    lv_obj_set_pos(box, 164, 28);
     lv_obj_set_style_bg_color(box, lv_color_hex(COL_BOX), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(box, LV_OPA_90, LV_PART_MAIN);
     lv_obj_set_style_border_color(box, lv_color_hex(COL_FRAME), LV_PART_MAIN);
@@ -414,7 +475,7 @@ static void build_title(gal_ui_t *ui)
     lv_obj_remove_flag(box, LV_OBJ_FLAG_SCROLLABLE);
 
     // 列表挂在 box 里,坐标相对 box。
-    list_create(ui, GAL_LIST_TITLE, box, box, "", 32, 8, 4, GAL_UI_W - 22, false);
+    list_create(ui, GAL_LIST_TITLE, box, box, "", 30, 8, 4, 148, false);
 }
 
 static void build_menu(gal_ui_t *ui)
@@ -432,8 +493,8 @@ static void build_menu(gal_ui_t *ui)
 
     lv_obj_t *box = lv_obj_create(page);
     lv_obj_remove_style_all(box);
-    lv_obj_set_size(box, 196, 244);
-    lv_obj_set_pos(box, 22, 38);
+    lv_obj_set_size(box, 264, 216);
+    lv_obj_set_pos(box, 28, 12);
     lv_obj_set_style_bg_color(box, lv_color_hex(COL_BOX), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(box, LV_OPA_COVER, LV_PART_MAIN);
     lv_obj_set_style_border_color(box, lv_color_hex(COL_ACCENT), LV_PART_MAIN);
@@ -446,7 +507,8 @@ static void build_menu(gal_ui_t *ui)
     lv_label_set_text(title, "快捷菜单");
     lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 10);
 
-    list_create(ui, GAL_LIST_MENU, box, box, "", 32, 40, 10, 196, false);
+    lv_obj_t *view = mk_scroll_view(box, 0, 38, 264, 170);
+    list_create(ui, GAL_LIST_MENU, view, box, "", 32, 0, 8, 264, false);
 }
 
 static void build_save_load(gal_ui_t *ui, gal_page_t page, gal_list_t list_id,
@@ -456,12 +518,12 @@ static void build_save_load(gal_ui_t *ui, gal_page_t page, gal_list_t list_id,
     mk_page_title(ui, page, title);
 
     // 槽位列表(3 行) + 槽位预览 + 页脚。
-    list_create(ui, list_id, root, NULL, "", 52, BODY_TOP, ROW_INSET, GAL_UI_W, false);
+    list_create(ui, list_id, root, NULL, "", 40, BODY_TOP, ROW_INSET, GAL_UI_W, false);
 
     lv_obj_t *preview = lv_obj_create(root);
     lv_obj_remove_style_all(preview);
-    lv_obj_set_pos(preview, ROW_INSET, 208);
-    lv_obj_set_size(preview, GAL_UI_W - 2 * ROW_INSET, 46);
+    lv_obj_set_pos(preview, ROW_INSET, 164);
+    lv_obj_set_size(preview, GAL_UI_W - 2 * ROW_INSET, 38);
     lv_obj_set_style_bg_color(preview, lv_color_hex(COL_ROW), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(preview, LV_OPA_COVER, LV_PART_MAIN);
     lv_obj_set_style_border_color(preview, lv_color_hex(COL_FRAME), LV_PART_MAIN);
@@ -472,7 +534,8 @@ static void build_save_load(gal_ui_t *ui, gal_page_t page, gal_list_t list_id,
     lv_obj_t *preview_text = mk_label(preview, ui->font_small, COL_DIM);
     lv_obj_set_pos(preview_text, 8, 6);
     lv_obj_set_width(preview_text, GAL_UI_W - 2 * ROW_INSET - 16);
-    lv_label_set_long_mode(preview_text, LV_LABEL_LONG_WRAP);
+    lv_obj_set_height(preview_text, 26);
+    lv_label_set_long_mode(preview_text, LV_LABEL_LONG_MODE_DOTS);
     if (page == GAL_PAGE_SAVE) ui->save_preview = preview_text;
 
     ui->footers[page] = mk_label(root, ui->font_small, COL_DIM);
@@ -485,7 +548,8 @@ static void build_simple_list(gal_ui_t *ui, gal_page_t page, gal_list_t list,
 {
     lv_obj_t *root = mk_page(ui, page, COL_PAGE_BG, true);
     mk_page_title(ui, page, title);
-    list_create(ui, list, root, NULL, "", row_h, BODY_TOP, ROW_INSET, GAL_UI_W, false);
+    lv_obj_t *view = mk_scroll_view(root, 0, BODY_TOP, GAL_UI_W, GAL_UI_H - BODY_TOP - 32);
+    list_create(ui, list, view, NULL, "", row_h, 0, ROW_INSET, GAL_UI_W, false);
     ui->footers[page] = mk_label(root, ui->font_small, COL_DIM);
     lv_obj_align(ui->footers[page], LV_ALIGN_BOTTOM_MID, 0, -8);
 }
@@ -494,8 +558,8 @@ static void build_settings(gal_ui_t *ui)
 {
     lv_obj_t *root = mk_page(ui, GAL_PAGE_SETTINGS, COL_PAGE_BG, true);
     mk_page_title(ui, GAL_PAGE_SETTINGS, "设置");
-    list_create(ui, GAL_LIST_SETTINGS, root, NULL, "", ROW_H, BODY_TOP, ROW_INSET, GAL_UI_W,
-                false);
+    lv_obj_t *view = mk_scroll_view(root, 0, BODY_TOP, GAL_UI_W, GAL_UI_H - BODY_TOP - 10);
+    list_create(ui, GAL_LIST_SETTINGS, view, NULL, "", ROW_H, 0, ROW_INSET, GAL_UI_W, false);
 }
 
 static void build_history(gal_ui_t *ui)
@@ -503,7 +567,8 @@ static void build_history(gal_ui_t *ui)
     lv_obj_t *root = mk_page(ui, GAL_PAGE_HISTORY, COL_PAGE_BG, true);
     mk_page_title(ui, GAL_PAGE_HISTORY, "历史文本");
     // 每条两行:说话人 + 正文,所以行高更大并允许换行。
-    list_create(ui, GAL_LIST_HISTORY, root, NULL, "", 52, BODY_TOP, ROW_INSET, GAL_UI_W, true);
+    lv_obj_t *view = mk_scroll_view(root, 0, BODY_TOP, GAL_UI_W, GAL_UI_H - BODY_TOP - 10);
+    list_create(ui, GAL_LIST_HISTORY, view, NULL, "", 52, 0, ROW_INSET, GAL_UI_W, true);
 }
 
 static void build_gallery(gal_ui_t *ui)
@@ -511,7 +576,7 @@ static void build_gallery(gal_ui_t *ui)
     lv_obj_t *root = mk_page(ui, GAL_PAGE_GALLERY, COL_PAGE_BG, true);
     mk_page_title(ui, GAL_PAGE_GALLERY, "鉴赏室");
     // 分类入口:CG 鉴赏 / 剧情鉴赏(右侧的数量在渲染时填)。
-    list_create(ui, GAL_LIST_GALLERY, root, NULL, "", 44, 100, 20, GAL_UI_W, false);
+    list_create(ui, GAL_LIST_GALLERY, root, NULL, "", 38, 44, 20, GAL_UI_W, false);
 }
 
 static void build_cg_list(gal_ui_t *ui)
@@ -519,12 +584,12 @@ static void build_cg_list(gal_ui_t *ui)
     lv_obj_t *root = mk_page(ui, GAL_PAGE_CG_LIST, COL_PAGE_BG, true);
     mk_page_title(ui, GAL_PAGE_CG_LIST, "CG 鉴赏");
 
-    // 3 列 x 3 行缩略图(前 6 张已解锁 + 2 张锁定,末格留空)。
+    // Landscape: four columns and two rows; native 64x40 thumbnails.
     const int gap = 6;
     const int left = 9;
-    const int top = 45;
-    const int bottom = 29;
-    const int cols = 3;
+    const int top = 36;
+    const int bottom = 34;
+    const int cols = 4;
     const int rows = (GAL_CG_TILES + cols - 1) / cols;
     const int tile_w = (GAL_UI_W - 2 * left - (cols - 1) * gap) / cols;
     const int tile_h = (GAL_UI_H - top - bottom - (rows - 1) * gap) / rows;
@@ -549,7 +614,7 @@ static void build_cg_list(gal_ui_t *ui)
         // 缩略图:用同一张 CG 图缩到格子大小(scale 以 1/256 为单位)。
         lv_obj_t *thumb = lv_image_create(tile);
         lv_obj_align(thumb, LV_ALIGN_TOP_MID, 0, 2);
-        lv_image_set_scale(thumb, 70);
+        lv_image_set_scale(thumb, 256);
         lv_obj_add_flag(thumb, LV_OBJ_FLAG_HIDDEN);
         ui->tile_img[i] = thumb;
 
@@ -567,12 +632,13 @@ static void build_chapter(gal_ui_t *ui)
     lv_obj_t *root = mk_page(ui, GAL_PAGE_CHAPTER, COL_PAGE_BG, true);
     mk_page_title(ui, GAL_PAGE_CHAPTER, "章节 / 路线");
 
-    list_create(ui, GAL_LIST_CHAPTER, root, NULL, "", 38, BODY_TOP, ROW_INSET, GAL_UI_W, false);
+    lv_obj_t *view = mk_scroll_view(root, 0, BODY_TOP, GAL_UI_W, 112);
+    list_create(ui, GAL_LIST_CHAPTER, view, NULL, "", 32, 0, ROW_INSET, GAL_UI_W, false);
 
     lv_obj_t *info = lv_obj_create(root);
     lv_obj_remove_style_all(info);
-    lv_obj_set_pos(info, ROW_INSET, 166);
-    lv_obj_set_size(info, GAL_UI_W - 2 * ROW_INSET, 66);
+    lv_obj_set_pos(info, ROW_INSET, 158);
+    lv_obj_set_size(info, GAL_UI_W - 2 * ROW_INSET, 44);
     lv_obj_set_style_bg_color(info, lv_color_hex(COL_ROW), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(info, LV_OPA_COVER, LV_PART_MAIN);
     lv_obj_set_style_border_color(info, lv_color_hex(COL_FRAME), LV_PART_MAIN);
@@ -583,7 +649,8 @@ static void build_chapter(gal_ui_t *ui)
     ui->chapter_info = mk_label(info, ui->font_small, COL_DIM);
     lv_obj_set_pos(ui->chapter_info, 8, 6);
     lv_obj_set_width(ui->chapter_info, GAL_UI_W - 2 * ROW_INSET - 16);
-    lv_label_set_long_mode(ui->chapter_info, LV_LABEL_LONG_WRAP);
+    lv_obj_set_height(ui->chapter_info, 26);
+    lv_label_set_long_mode(ui->chapter_info, LV_LABEL_LONG_MODE_DOTS);
 
     ui->action_hint = mk_label(root, ui->font_small, COL_DIM);
     lv_obj_align(ui->action_hint, LV_ALIGN_BOTTOM_MID, 0, -8);
@@ -593,11 +660,11 @@ static void build_transition(gal_ui_t *ui)
 {
     lv_obj_t *root = mk_page(ui, GAL_PAGE_TRANSITION, 0, false);
     ui->transition_eyebrow = mk_label(root, ui->font_small, COL_GOLD);
-    lv_obj_align(ui->transition_eyebrow, LV_ALIGN_TOP_MID, 0, 108);
+    lv_obj_align(ui->transition_eyebrow, LV_ALIGN_TOP_MID, 0, 60);
     ui->transition_title = mk_label(root, ui->font_large, COL_TEXT);
-    lv_obj_align(ui->transition_title, LV_ALIGN_TOP_MID, 0, 138);
+    lv_obj_align(ui->transition_title, LV_ALIGN_TOP_MID, 0, 92);
     ui->transition_sub = mk_label(root, ui->font_small, COL_GOLD);
-    lv_obj_align(ui->transition_sub, LV_ALIGN_TOP_MID, 0, 178);
+    lv_obj_align(ui->transition_sub, LV_ALIGN_TOP_MID, 0, 128);
 }
 
 static void build_ending(gal_ui_t *ui)
@@ -605,14 +672,14 @@ static void build_ending(gal_ui_t *ui)
     // 结局页只有结局标题与正文,底部不放后续入口按钮。
     lv_obj_t *root = mk_page(ui, GAL_PAGE_ENDING, 0, false);
     ui->ending_eyebrow = mk_label(root, ui->font_small, COL_GOLD);
-    lv_obj_align(ui->ending_eyebrow, LV_ALIGN_TOP_MID, 0, 110);
+    lv_obj_align(ui->ending_eyebrow, LV_ALIGN_TOP_MID, 0, 52);
     ui->ending_title = mk_label(root, ui->font_large, COL_TEXT);
-    lv_obj_align(ui->ending_title, LV_ALIGN_TOP_MID, 0, 142);
+    lv_obj_align(ui->ending_title, LV_ALIGN_TOP_MID, 0, 84);
     ui->ending_body = mk_label(root, ui->font_small, COL_DIM);
-    lv_obj_set_width(ui->ending_body, GAL_UI_W - 40);
+    lv_obj_set_size(ui->ending_body, GAL_UI_W - 40, 104);
     lv_label_set_long_mode(ui->ending_body, LV_LABEL_LONG_WRAP);
     lv_obj_set_style_text_align(ui->ending_body, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
-    lv_obj_align(ui->ending_body, LV_ALIGN_TOP_MID, 0, 182);
+    lv_obj_align(ui->ending_body, LV_ALIGN_TOP_MID, 0, 120);
 }
 
 static void build_about(gal_ui_t *ui)
@@ -622,8 +689,8 @@ static void build_about(gal_ui_t *ui)
 
     lv_obj_t *logo = lv_obj_create(root);
     lv_obj_remove_style_all(logo);
-    lv_obj_set_pos(logo, 10, 40);
-    lv_obj_set_size(logo, GAL_UI_W - 20, 52);
+    lv_obj_set_pos(logo, 10, 34);
+    lv_obj_set_size(logo, GAL_UI_W - 20, 54);
     lv_obj_set_style_bg_color(logo, lv_color_hex(0x263858), LV_PART_MAIN);
     lv_obj_set_style_bg_grad_color(logo, lv_color_hex(0x43364F), LV_PART_MAIN);
     lv_obj_set_style_bg_grad_dir(logo, LV_GRAD_DIR_HOR, LV_PART_MAIN);
@@ -636,9 +703,11 @@ static void build_about(gal_ui_t *ui)
     ui->about_logo = mk_label(logo, ui->font_small, COL_TEXT);
     lv_obj_align(ui->about_logo, LV_ALIGN_TOP_MID, 0, 8);
     ui->about_logo_sub = mk_label(logo, ui->font_small, COL_GOLD);
+    lv_obj_set_size(ui->about_logo_sub, GAL_UI_W - 36, 24);
+    lv_obj_set_style_text_align(ui->about_logo_sub, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(ui->about_logo_sub, LV_ALIGN_TOP_MID, 0, 30);
 
-    ui->about_view = mk_scroll_view(root, 10, 100, GAL_UI_W - 20, 200);
+    ui->about_view = mk_scroll_view(root, 10, 96, GAL_UI_W - 20, GAL_UI_H - 106);
     ui->about_text = mk_label(ui->about_view, ui->font_small, COL_TEXT);
     lv_obj_set_width(ui->about_text, GAL_UI_W - 32);
     lv_label_set_long_mode(ui->about_text, LV_LABEL_LONG_WRAP);
@@ -662,7 +731,7 @@ static void build_cg(gal_ui_t *ui)
 
     // CG 图:居中显示,无图时露出渐变占位。
     ui->cg_image = lv_image_create(root);
-    lv_obj_align(ui->cg_image, LV_ALIGN_TOP_MID, 0, 40);
+    lv_obj_align(ui->cg_image, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_add_flag(ui->cg_image, LV_OBJ_FLAG_HIDDEN);
 
     ui->cg_index = mk_label(root, ui->font_small, COL_TEXT);
@@ -675,8 +744,8 @@ static void build_cg(gal_ui_t *ui)
 
     lv_obj_t *bottom = lv_obj_create(root);
     lv_obj_remove_style_all(bottom);
-    lv_obj_set_pos(bottom, 8, 254);
-    lv_obj_set_size(bottom, GAL_UI_W - 16, 58);
+    lv_obj_set_pos(bottom, 8, 184);
+    lv_obj_set_size(bottom, GAL_UI_W - 16, 50);
     lv_obj_set_style_bg_color(bottom, lv_color_hex(COL_PANEL), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(bottom, LV_OPA_80, LV_PART_MAIN);
     lv_obj_set_style_border_color(bottom, lv_color_hex(COL_FRAME), LV_PART_MAIN);
@@ -685,11 +754,13 @@ static void build_cg(gal_ui_t *ui)
     lv_obj_remove_flag(bottom, LV_OBJ_FLAG_SCROLLABLE);
 
     ui->cg_name = mk_label(bottom, ui->font_small, COL_TEXT);
-    lv_obj_set_pos(ui->cg_name, 8, 8);
-    lv_obj_set_width(ui->cg_name, GAL_UI_W - 32);
+    lv_obj_set_pos(ui->cg_name, 8, 2);
+    lv_obj_set_size(ui->cg_name, GAL_UI_W - 32, 24);
+    lv_label_set_long_mode(ui->cg_name, LV_LABEL_LONG_MODE_DOTS);
     ui->cg_caption = mk_label(bottom, ui->font_small, COL_DIM);
-    lv_obj_set_pos(ui->cg_caption, 8, 32);
-    lv_obj_set_width(ui->cg_caption, GAL_UI_W - 32);
+    lv_obj_set_pos(ui->cg_caption, 8, 26);
+    lv_obj_set_size(ui->cg_caption, GAL_UI_W - 32, 24);
+    lv_label_set_long_mode(ui->cg_caption, LV_LABEL_LONG_MODE_DOTS);
 }
 
 static void build_modal(gal_ui_t *ui)
@@ -707,8 +778,8 @@ static void build_modal(gal_ui_t *ui)
 
     lv_obj_t *box = lv_obj_create(root);
     lv_obj_remove_style_all(box);
-    lv_obj_set_size(box, 206, 190);
-    lv_obj_set_pos(box, 17, 65);
+    lv_obj_set_size(box, 272, 216);
+    lv_obj_set_pos(box, 24, 12);
     lv_obj_set_style_bg_color(box, lv_color_hex(0x121A2A), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(box, LV_OPA_COVER, LV_PART_MAIN);
     lv_obj_set_style_border_color(box, lv_color_hex(COL_ACCENT), LV_PART_MAIN);
@@ -726,18 +797,19 @@ static void build_modal(gal_ui_t *ui)
     lv_obj_align(ui->modal_title, LV_ALIGN_TOP_MID, 0, 14);
 
     ui->modal_body = mk_label(box, ui->font_small, COL_DIM);
-    lv_obj_set_width(ui->modal_body, 182);
+    lv_obj_set_size(ui->modal_body, 248, 72);
     lv_label_set_long_mode(ui->modal_body, LV_LABEL_LONG_WRAP);
     lv_obj_set_style_text_align(ui->modal_body, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
     lv_obj_align(ui->modal_body, LV_ALIGN_TOP_MID, 0, 46);
 
     // 弹窗按钮:居中、可左右排列(这里纵向排列,三键操作更直观)。
-    list_create(ui, GAL_LIST_MODAL, box, box, "", 36, 106, 12, 206, false);
+    list_create(ui, GAL_LIST_MODAL, box, box, "", 34, 132, 12, 272, false);
 }
 
 bool gal_ui_create(gal_ui_t *ui, const lv_font_t *font_small, const lv_font_t *font_large)
 {
     if (!ui || !font_small || !font_large) return false;
+    if (!gal_art_init()) return false;
     memset(ui, 0, sizeof(*ui));
     ui->font_small = font_small;
     ui->font_large = font_large;
@@ -759,17 +831,23 @@ bool gal_ui_create(gal_ui_t *ui, const lv_font_t *font_small, const lv_font_t *f
 
     // 启动页与标题页的作品名(标题页显示,启动页隐藏)。
     ui->brand_title = mk_label(root, font_large, COL_TEXT);
-    lv_obj_align(ui->brand_title, LV_ALIGN_TOP_MID, 0, 56);
+    lv_obj_align(ui->brand_title, LV_ALIGN_TOP_LEFT, 16, 46);
+    lv_obj_set_size(ui->brand_title, 140, 30);
     ui->brand_sub = mk_label(root, font_small, COL_GOLD);
-    lv_obj_align(ui->brand_sub, LV_ALIGN_TOP_MID, 0, 88);
+    lv_obj_align(ui->brand_sub, LV_ALIGN_TOP_LEFT, 16, 86);
+
+    lv_obj_set_size(ui->brand_sub, 140, 56);
+    lv_label_set_long_mode(ui->brand_sub, LV_LABEL_LONG_WRAP);
 
     // 左上角章节、右上角电量、模式指示与提示。
     ui->chapter = mk_label(root, font_small, COL_DIM);
-    lv_obj_set_pos(ui->chapter, 9, 4);
+    lv_obj_set_pos(ui->chapter, 18, 6);
+    lv_obj_set_size(ui->chapter, 224, 24);
+    lv_label_set_long_mode(ui->chapter, LV_LABEL_LONG_MODE_DOTS);
 
     ui->battery = mk_label(root, font_small, COL_DIM);
     lv_label_set_text(ui->battery, "--%");
-    lv_obj_align(ui->battery, LV_ALIGN_TOP_RIGHT, -9, 4);
+    lv_obj_align(ui->battery, LV_ALIGN_TOP_RIGHT, -18, 6);
 
     // 自动阅读指示:只有文字,贴在对话框上沿外侧的右上角(位置在对话框建好后算)。
     ui->mode_auto = mk_label(root, font_small, COL_ACCENT);
@@ -777,7 +855,7 @@ bool gal_ui_create(gal_ui_t *ui, const lv_font_t *font_small, const lv_font_t *f
     lv_obj_add_flag(ui->mode_auto, LV_OBJ_FLAG_HIDDEN);
 
     ui->notice = mk_label(root, font_small, COL_ACCENT);
-    lv_obj_align(ui->notice, LV_ALIGN_TOP_MID, 0, 56);
+    lv_obj_align(ui->notice, LV_ALIGN_TOP_MID, 0, 32);
     lv_obj_add_flag(ui->notice, LV_OBJ_FLAG_HIDDEN);
 
     // 各逻辑屏(顺序与原型一致)。
@@ -804,10 +882,12 @@ bool gal_ui_create(gal_ui_t *ui, const lv_font_t *font_small, const lv_font_t *f
     build_dialogue(ui, GAL_PAGE_GAME);
 
     // 快进不显示文字;自动阅读指示贴在对话框上沿外侧的右上角。
-    lv_obj_align_to(ui->mode_auto, ui->panel, LV_ALIGN_OUT_TOP_RIGHT, -8, -2);
+    lv_obj_align(ui->mode_auto, LV_ALIGN_BOTTOM_RIGHT, -8, -(GAL_PANEL_H + 2));
 
     // 对话页是最后创建的,会盖住先建的对象;叠加层与顶部文字再提到最前:
     // 弹窗 → 游戏内菜单 → 自动指示 → 提示。
+    lv_obj_move_foreground(ui->chapter);
+    lv_obj_move_foreground(ui->battery);
     lv_obj_move_foreground(ui->pages[GAL_PAGE_MENU]);
     lv_obj_move_foreground(ui->pages[GAL_PAGE_MODAL]);
     lv_obj_move_foreground(ui->mode_auto);
@@ -873,6 +953,11 @@ void gal_ui_show_page(gal_ui_t *ui, gal_page_t page)
     if (!auto_hud) lv_obj_add_flag(ui->mode_auto, LV_OBJ_FLAG_HIDDEN);
 
     if (base != GAL_PAGE_GAME) typing_stop(ui);
+    // Main images and gallery thumbnails share a bounded arena. Restore the
+    // appropriate main picture after leaving another art-bearing page.
+    if (base == GAL_PAGE_TITLE) apply_image(ui->title_img, ui->title_source);
+    else if (base == GAL_PAGE_GAME) apply_image(ui->scene_img, ui->scene_source);
+    else if (base == GAL_PAGE_CG) apply_image(ui->cg_image, ui->cg_source);
 }
 
 void gal_ui_set_brand(gal_ui_t *ui, const char *title, const char *subtitle)
@@ -887,7 +972,9 @@ void gal_ui_set_choice(gal_ui_t *ui, const char *prompt, const gal_option_t *opt
 {
     if (!ui) return;
     // 选项页把分支前的最后一句台词留在底部对话框里。
-    gal_ui_set_text(ui, NULL, prompt, 0, NULL, NULL);
+    lv_label_set_text(ui->text, prompt ? prompt : "");
+    lv_obj_add_flag(ui->name, LV_OBJ_FLAG_HIDDEN);
+    typing_stop(ui);
     if (count > GAL_LIST_MAX_ROWS) count = GAL_LIST_MAX_ROWS;
     static const char *labels[GAL_LIST_MAX_ROWS];
     for (int i = 0; i < count; ++i) {
@@ -991,7 +1078,12 @@ void gal_ui_set_gallery(gal_ui_t *ui, const gal_cg_t *items, int count, int sele
             lv_obj_set_style_bg_grad_color(tile, lv_color_hex(COL_ROW), LV_PART_MAIN);
         }
         // 缩略图:解锁且有图才显示。
-        apply_image(ui->tile_img[i], (unlocked && items[i].image) ? items[i].image : NULL);
+        bool changed = false;
+        const lv_image_dsc_t *thumb = unlocked ? gal_art_thumb(i, items[i].image, &changed) : NULL;
+        if (thumb) {
+            if (changed || lv_image_get_src(ui->tile_img[i]) != thumb) lv_image_set_src(ui->tile_img[i], thumb);
+            lv_obj_remove_flag(ui->tile_img[i], LV_OBJ_FLAG_HIDDEN);
+        } else lv_obj_add_flag(ui->tile_img[i], LV_OBJ_FLAG_HIDDEN);
         const bool on = filled && i == selected;
         lv_obj_set_style_border_color(tile, lv_color_hex(COL_ACCENT), LV_PART_MAIN);
         lv_obj_set_style_border_width(tile, on ? 2 : 1, LV_PART_MAIN);
@@ -1002,6 +1094,7 @@ void gal_ui_set_cg(gal_ui_t *ui, const char *index_text, const char *name,
                    const char *caption, const void *image)
 {
     if (!ui) return;
+    ui->cg_source = image;
     lv_label_set_text(ui->cg_index, index_text ? index_text : "");
     lv_label_set_text(ui->cg_name, name ? name : "");
     lv_label_set_text(ui->cg_caption, caption ? caption : "");
@@ -1011,6 +1104,7 @@ void gal_ui_set_cg(gal_ui_t *ui, const char *index_text, const char *name,
 void gal_ui_set_title_image(gal_ui_t *ui, const void *image)
 {
     if (!ui) return;
+    ui->title_source = image;
     apply_image(ui->title_img, image);
 }
 
@@ -1057,16 +1151,17 @@ void gal_ui_show_modal(gal_ui_t *ui, gal_modal_t kind, const char *title, const 
     lv_label_set_text(ui->modal_body, body ? body : "");
 
     const bool empty = kind == GAL_MODAL_EMPTY;
+    lv_obj_set_height(ui->modal_body, empty ? 48 : 72);
     if (empty) {
         lv_obj_remove_flag(ui->modal_mark, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_align(ui->modal_title, LV_ALIGN_TOP_MID, 0, 68);
-        lv_obj_align(ui->modal_body, LV_ALIGN_TOP_MID, 0, 98);
-        ui->lists[GAL_LIST_MODAL].top = 140;
+        lv_obj_align(ui->modal_title, LV_ALIGN_TOP_MID, 0, 42);
+        lv_obj_align(ui->modal_body, LV_ALIGN_TOP_MID, 0, 72);
+        ui->lists[GAL_LIST_MODAL].top = 132;
     } else {
         lv_obj_add_flag(ui->modal_mark, LV_OBJ_FLAG_HIDDEN);
         lv_obj_align(ui->modal_title, LV_ALIGN_TOP_MID, 0, 14);
         lv_obj_align(ui->modal_body, LV_ALIGN_TOP_MID, 0, 46);
-        ui->lists[GAL_LIST_MODAL].top = 106;
+        ui->lists[GAL_LIST_MODAL].top = 132;
     }
     // 行位置在创建时确定:清掉旧行,让新位置的按钮重新创建。
     gal_list_ui_t *list = &ui->lists[GAL_LIST_MODAL];

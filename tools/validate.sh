@@ -20,6 +20,7 @@ run_static_checks() {
     fi
 
     python3 tools/check_repo.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_yakata_content.py
 
     actionlint_bin="${ACTIONLINT_BIN:-}"
     if [[ -z "${actionlint_bin}" ]]; then

@@ -1,9 +1,9 @@
-// main/gal/gal_ui.h —— 框架骨架的 LVGL 界面层（竖屏 240x320）。
+// main/gal/gal_ui.h —— 框架骨架的 LVGL 界面层（横屏 320x240）。
 //
-// 版面(框架规范,与原型 240x320 竖屏一致):
-//   画面区      y 0..209   :程序绘制的渐变背景
+// 版面(框架规范,与原型 320x240 横屏一致):
+//   画面区      y 0..159   :程序绘制的渐变背景
 //   名牌        对话框面板上沿外侧、左对齐
-//   对话框面板  y 210..319 :正文(贴底、可调透明度)
+//   对话框面板  y 160..239 :正文(贴底、可调透明度)
 // 全屏页面盖住整屏;启动页、标题页、对话页与过场、结局共用同一层背景。
 //
 // 本模块只负责“把给定的内容画出来”,页面切换与按键语义在 gal_app.c。
@@ -15,18 +15,18 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define GAL_UI_W 240
-#define GAL_UI_H 320
+#define GAL_UI_W 320
+#define GAL_UI_H 240
 
-// 对话框面板:贴底 110px(框架竖屏规范:16px 档 5 行 / 20px 档 4 行)。
-#define GAL_PANEL_H 110
+// 对话框面板:贴底 80px(两档字体均为 3 行)。
+#define GAL_PANEL_H 80
 #define GAL_PANEL_Y (GAL_UI_H - GAL_PANEL_H)
 #define GAL_TEXT_X 10
 #define GAL_TEXT_W (GAL_UI_W - 2 * GAL_TEXT_X)
 #define GAL_LINE_H_SMALL 20
 #define GAL_LINE_H_LARGE 24
-#define GAL_TEXT_LINES_SMALL 5
-#define GAL_TEXT_LINES_LARGE 4
+#define GAL_TEXT_LINES_SMALL 3
+#define GAL_TEXT_LINES_LARGE 3
 #define GAL_LIST_MAX_ROWS 32   // 大作品(章节 / 回想列表)需要更长
 #define GAL_TEXT_CAPACITY 1024
 #define GAL_CG_TILES 8
@@ -116,6 +116,9 @@ typedef struct {
     lv_obj_t *title_img;      // 标题封面(可为空)
     lv_obj_t *cg_image;       // CG 全屏图
     lv_obj_t *tile_img[GAL_CG_TILES];   // 鉴赏室缩略图
+    const void *scene_source;
+    const void *title_source;
+    const void *cg_source;
 
     lv_obj_t *panel;          // 对话框面板
     lv_obj_t *name;           // 说话人名牌(面板上沿外侧)
@@ -184,6 +187,7 @@ void gal_ui_set_brand(gal_ui_t *ui, const char *title, const char *subtitle);
 // 正文页与选项页。
 void gal_ui_set_text(gal_ui_t *ui, const char *speaker, const char *page_text,
                      uint32_t ms_per_char, const void *image, const void *body);
+int gal_ui_text_pages(gal_ui_t *ui, const char *text, uint32_t *offsets, int max_offsets);
 void gal_ui_show_full_text(gal_ui_t *ui);
 bool gal_ui_typing(const gal_ui_t *ui);
 void gal_ui_set_choice(gal_ui_t *ui, const char *prompt, const gal_option_t *options,

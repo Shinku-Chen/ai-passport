@@ -1,0 +1,56 @@
+{
+  "source_commit": "76bba0bb0bfcc066ce6a35883d76c5b19981e0cb",
+  "scenes": 198,
+  "chapters": 99,
+  "lines": 17409,
+  "choices": 11,
+  "events": 17717,
+  "cg_groups": 56,
+  "cg_variants": 311,
+  "jpeg_images": 877,
+  "jpeg_bytes": 5109188,
+  "variables": [
+    "mia_point",
+    "spot_s303_1_2H_through",
+    "spot_s406_1_1H_through",
+    "spot_s512_1_1_through",
+    "spot_s512_3_1_through"
+  ],
+  "source_exits": [
+    "n_s303_1",
+    "n_s303_2",
+    "n_s303_1_1",
+    "n_s304_1",
+    "n_s405_1",
+    "n_s405_1h_2",
+    "n_s512_1",
+    "n_s512_1_3_1",
+    "n_s512_2h_0_b1",
+    "n_s512_3_3h_0",
+    "n_s601_1",
+    "n_s601_1_1",
+    "n_s601_2_1",
+    "n_s601_2_2",
+    "n_s601_2_1h_1",
+    "n_s601_2_2_1",
+    "n_s601_2_3h_0_b2",
+    "n_s602_1",
+    "n_s602_1_2",
+    "n_s602_1h2_0_b1",
+    "n_s602_2_1"
+  ],
+  "quality": 24,
+  "screen": [
+    320,
+    240
+  ],
+  "background": [
+    320,
+    180
+  ],
+  "sprite_baseline": 196,
+  "thumbnail": [
+    64,
+    40
+  ]
+}

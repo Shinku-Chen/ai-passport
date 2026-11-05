@@ -50,6 +50,7 @@ typedef struct {
 // ---------------------------------------------------------------- 剧情事件
 // 骨架的剧情就是一条占位事件序列:顺序读下来即是一个完整流程。
 typedef enum {
+    GAL_EV_FLOW = 4,
     GAL_EV_LINE = 0,     // index = gal_lines 下标
     GAL_EV_CHOICE,       // index = gal_choices 下标
     GAL_EV_TRANSITION,   // index = gal_transitions 下标(章节过场)
@@ -120,10 +121,10 @@ typedef struct {
 } gal_track_t;
 
 // 作品信息(由作品配置替换)。
-#define GAL_CONTENT_TITLE    "未定作品"
-#define GAL_CONTENT_SUBTITLE "一段尚未写完的旅程"
-#define GAL_CONTENT_LOGO_SUB "GALGAME FRAMEWORK"
-#define GAL_CONTENT_VERSION  "v0.1.0"
+#define GAL_CONTENT_TITLE    "死馆"
+#define GAL_CONTENT_SUBTITLE "RW5 移植 · 离线阅读"
+#define GAL_CONTENT_LOGO_SUB "SHINUYAKATA / RW5 PORT"
+#define GAL_CONTENT_VERSION  "v0.1.3-shinuyakata"
 
 // 标题页封面(可为 NULL)。
 extern const void *gal_content_title_image;
@@ -195,17 +196,11 @@ enum {
     GAL_MENU_TITLE,
 };
 
-// 关于页正文(在页头标题栏下方滚动)。
+// About the pinned source port and known limitations.
 #define GAL_CONTENT_ABOUT \
-    "本固件是 GalGame 框架的骨架,不含任何具体作品内容:\n" \
-    "启动页、标题页、对话页、选项、菜单、存档、设置、\n" \
-    "历史、鉴赏室、章节、过场、结局与关于页都已经就位。\n" \
-    "\n" \
-    "剧情锁:台词与选项按剧情标记出现或可选,CG 与章节\n" \
-    "随剧情推进解锁,解锁记录与标记跨存档保存。\n" \
-    "\n" \
-    "排版按框架规范:对话框贴底、每页固定行数、字号两档\n" \
-    "(16px / 20px),对话框透明度可在设置里调节。\n" \
-    "\n" \
-    "接入真实作品时,替换 main/gal/gal_content.c 即可,\n" \
-    "界面与交互保持不变."
+    "原作：BUG SYSTEM。源移植：xuanyide。\n" \
+    "本作含成人、暴力与惊悚内容。\n" \
+    "三键离线图文阅读；语音、BGM、OP 未提供。\n" \
+    "源版 n_s601_2_2 标记为未解析出口，本版保留该终止点。\n" \
+    "原作素材版权归原权利人；源移植代码为 MIT。\n" \
+    "仅供个人学习交流，请支持正版。"

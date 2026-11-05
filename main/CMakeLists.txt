@@ -5,6 +5,7 @@ idf_component_register(
     SRCS "main.c"
          "gal/gal_text.c"
          "gal/gal_content.c"
+         "gal/yakata_flow.c"
          "gal/gal_settings.c"
          "gal/gal_save.c"
          "gal/gal_unlock.c"
@@ -12,6 +13,7 @@ idf_component_register(
          "gal/gal_tone.c"
          "gal/gal_music.c"
          "gal/gal_ui.c"
+         "gal/gal_art.c"
          "gal/gal_app.c"
     INCLUDE_DIRS "." "gal"
     REQUIRES bsp lvgl esp_timer nvs_flash esp_hw_support
@@ -22,3 +24,5 @@ target_sources(${COMPONENT_LIB} PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/../assets/fonts/gal_cjk_16.c"
     "${CMAKE_CURRENT_LIST_DIR}/../assets/fonts/gal_cjk_20.c"
 )
+
+target_add_binary_data(${COMPONENT_LIB} "yakata_data/yakata_art.bin" BINARY)

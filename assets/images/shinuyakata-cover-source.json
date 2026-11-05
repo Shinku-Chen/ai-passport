@@ -1,0 +1,20 @@
+{
+  "source_page": "http://bug-system.com/product/02_si/top.html",
+  "retail_page": "https://dlsoft.dmm.co.jp/detail/clear_0016",
+  "image_url": "https://pics.dmm.co.jp/digital/pcgame/clear_0016/clear_0016pl.jpg",
+  "downloaded": "2026-11-05",
+  "original_file": "shinuyakata-official-package.jpg",
+  "original_size": [
+    411,
+    560
+  ],
+  "original_sha256": "6bdf0669fbcbc1d5e9287c9c04f65c13c69add043f2b43f5c32ff1eba94a282a",
+  "cover_file": "shinuyakata-cover.png",
+  "cover_size": [
+    420,
+    560
+  ],
+  "cover_sha256": "4e65cf7f90553d8cf472ee4554012bda5306ec4c32a11cf38e1f1faf0c5b0760",
+  "transformation": "No scaling or cropping; 4 px left and 5 px right padding. Original pixels retained.",
+  "copyright": "CLEARRAVE / BUG SYSTEM. Original artwork rights remain with the rights holders."
+}

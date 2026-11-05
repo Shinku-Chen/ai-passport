@@ -1,0 +1,1 @@
+[{"id":"n_s512_1:choice","type":"choice","items":[{"text":"相信女仆","scene":"n_s512_1_0","changes":[]},{"text":"只靠自己执行","scene":"n_s512_2_0","changes":[]},{"text":"接受客人的提议","scene":"n_s512_3_0","changes":[]}],"background":"black","portrait":"","pw":320,"ph":254}]

@@ -1,0 +1,1 @@
+[{"id":"n_s601_1:choice","type":"choice","items":[{"text":"留在原地等待","scene":"n_s601_1_0","changes":[]},{"text":"采取行动","scene":"n_s601_2_0","changes":[]}],"background":"black","portrait":"","pw":320,"ph":254}]

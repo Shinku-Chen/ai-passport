@@ -1,0 +1,1 @@
+[{"id":"n_s304_1:choice","type":"choice","items":[{"text":"闭上眼睛选择一个人","scene":"n_s304_1_0","changes":[]},{"text":"提出由自己代替","scene":"n_s304_2h_0","changes":[]}],"background":"black","portrait":"","pw":320,"ph":254}]

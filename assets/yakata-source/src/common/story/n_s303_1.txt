@@ -1,0 +1,1 @@
+[{"id":"n_s303_1:choice","type":"choice","items":[{"text":"对沉睡的男人动手","scene":"n_s303_1_0","changes":[]},{"text":"说服夏花：这样杀不了他","scene":"n_s303_2_0","changes":[]}],"background":"black","portrait":"","pw":320,"ph":254}]

@@ -1,0 +1,1 @@
+[{"id":"n_s602_1_2:end-notice","type":"text","speaker":"流程说明","text":"已到达原作脚本的结局返回点。\n全剧情已收录，此处为原作返回标题的出口。","background":"black","portrait":""}]

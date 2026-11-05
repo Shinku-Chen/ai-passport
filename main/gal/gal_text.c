@@ -4,6 +4,30 @@
 #include <stdbool.h>
 #include <string.h>
 
+int gal_text_pages_by_line(const char *text, int lines_per_page,
+                          gal_text_next_line_t next_line, void *context,
+                          uint32_t *offsets, int max_offsets)
+{
+    if (!text) text = "";
+    if (!next_line || lines_per_page < 1 || (offsets && max_offsets < 2)) return 0;
+    size_t length = strlen(text), position = 0;
+    int pages = 1, lines = 0;
+    if (offsets) offsets[0] = 0;
+    while (position < length) {
+        size_t step = next_line(text + position, length - position, context);
+        if (!step || step > length - position) return 0;
+        position += step;
+        if (++lines == lines_per_page && position < length) {
+            if (offsets && pages + 1 >= max_offsets) return 0;
+            if (offsets) offsets[pages] = (uint32_t)position;
+            ++pages;
+            lines = 0;
+        }
+    }
+    if (offsets) offsets[pages] = (uint32_t)length;
+    return pages;
+}
+
 // 判断 UTF-8 字符是否为“半角”：ASCII 与半角片假名（U+FF61..U+FF9F）。其余按全角算。
 static bool codepoint_half_width(uint32_t cp)
 {

@@ -4,7 +4,7 @@
 //   启动页     短按确定进入标题页
 //   标题菜单   上/下 移动光标,确定 进入,长按确定 返回
 //   对话页     短按(确定/上/下)= 下一句(打字中先全显);长按确定=游戏内菜单;
-//              长按上=快进,松手停;长按下=自动阅读开关(任意键停)
+//              长按上=立即快进并跨章,松手/选项/结局停;长按下=自动阅读开关(任意键停)
 //   选项/菜单  上/下 移动,确定 执行,长按确定 返回
 //   列表页     上/下 移动,确定 执行(存档/读档/鉴赏室/章节/结局),长按确定 返回
 //   关于页     上/下 滚动正文,长按确定 返回
@@ -51,6 +51,8 @@ typedef struct {
     int load_sel;
     int history_sel;
     int gallery_sel;                // 鉴赏室分类光标
+    int cg_variant;
+    int32_t variables[YAKATA_VAR_COUNT];
     int cg_sel;                     // CG 鉴赏网格光标
     int recall_sel;                 // CG 回想光标
     int music_sel;                  // 音乐鉴赏光标
@@ -65,7 +67,6 @@ typedef struct {
     int shown_page;
 
     bool fast_forward;
-    uint32_t ff_accum_ms;
     bool auto_mode;
     uint32_t auto_accum_ms;
 

@@ -55,3 +55,9 @@ BSP 在 `components/bsp/src/bsp_battery.c` 中嵌入这 80 字节，主机检查
 `fa7365671093ef449c5bdcfb4adb279e3d275f888109f50b6b2f21e9b96220d5`。
 这是电量计参数，不是充电配置，也不能通用于所有 500 mAh 电芯；详见
 [硬件指南](../docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.zh_CN.md#9-cw2017-电池计)。
+
+## 死馆运行素材
+
+`yakata-source/` 保留固定版本 RW5 的运行目录、剧情 JSON、图片、立绘及上游许可证，原作素材版权仍归各权利人。[阅读器说明](../docs/assets/shinuyakata.zh_CN.md) 记录来源提交、转换、布局及限制。`fonts/gal_cjk_16.c`、`gal_cjk_20.c` 和 `gal_cjk_symbols.txt` 为 `tools/gal_font.py` 生成的 Noto Sans SC 子集，使用 SIL Open Font License。
+
+封面原图 `images/shinuyakata-official-package.jpg` 来自原作官网所链接的 FANZA 发行渠道官方图片服务器。`images/shinuyakata-cover.png` 保留原图 411×560 像素，左补 4、右补 5 像素成为精确 420×560（3:4）。`images/shinuyakata-cover-source.json` 记录来源及摘要。版权仍归 CLEARRAVE / BUG SYSTEM；图片为官方原图。

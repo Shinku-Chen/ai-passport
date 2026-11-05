@@ -1,0 +1,1 @@
+[{"id":"n_s601_2_1:choice","type":"choice","items":[{"text":"与爱梦交谈","scene":"n_s601_2_1h_0","changes":[]},{"text":"与公馆的男人决一死战","scene":"n_s601_2_2_0","changes":[]}],"background":"black","portrait":"","pw":320,"ph":254}]

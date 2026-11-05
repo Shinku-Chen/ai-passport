@@ -18,8 +18,8 @@
 #define GAL_EVENT_NONE 0xFFFF
 
 typedef struct {
-    uint32_t cg;
-    uint32_t chapter;
+    uint32_t cg[8];
+    uint32_t chapter[8];
     uint32_t flag;
     uint32_t ending;
 } gal_unlock_t;

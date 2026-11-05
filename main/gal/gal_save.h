@@ -6,12 +6,14 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "yakata_flow.h"
 
 #define GAL_SAVE_SLOTS 3
 #define GAL_SAVE_CHAPTER_LEN 28
 
 typedef struct {
     uint8_t occupied;
+    int32_t variables[YAKATA_VAR_COUNT];
     uint16_t event_index;                  // 事件下标
     uint16_t page_index;                   // 事件内的页
     char chapter[GAL_SAVE_CHAPTER_LEN];    // 章节名(槽位里显示)

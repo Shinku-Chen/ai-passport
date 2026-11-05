@@ -5,6 +5,19 @@
 
 #include "gal/gal_text.h"
 
+static size_t delimited_line(const char *text, size_t remaining, void *context)
+{
+    (void)context;
+    const char *end = memchr(text, '|', remaining);
+    return end ? (size_t)(end - text) + 1 : remaining;
+}
+
+static size_t broken_line(const char *text, size_t remaining, void *context)
+{
+    (void)text;
+    return context ? remaining + 1 : 0;
+}
+
 int main(void)
 {
     uint32_t offsets[GAL_TEXT_MAX_PAGES + 1];
@@ -31,6 +44,19 @@ int main(void)
     // 空文本算一页;NULL 偏移只取页数。
     assert(gal_text_pages("", 26, 5, offsets, GAL_TEXT_MAX_PAGES + 1) == 1);
     assert(gal_text_pages("中中中中", 2, 1, NULL, 0) == 4);
+
+    // Renderer-supplied boundaries preserve UTF-8 byte positions and explicit
+    // separators, without creating an empty page after the final newline.
+    const char *measured = "甲|乙|丙|丁|";
+    assert(gal_text_pages_by_line(measured, 2, delimited_line, NULL,
+                                  offsets, GAL_TEXT_MAX_PAGES + 1) == 2);
+    assert(offsets[0] == 0 && offsets[1] == 8 && offsets[2] == strlen(measured));
+    assert(gal_text_pages_by_line(measured, 2, delimited_line, NULL, NULL, 0) == 2);
+    assert(gal_text_pages_by_line("", 2, delimited_line, NULL, offsets, 2) == 1);
+    assert(offsets[0] == 0 && offsets[1] == 0);
+    assert(gal_text_pages_by_line(measured, 2, delimited_line, NULL, offsets, 2) == 0);
+    assert(gal_text_pages_by_line(measured, 2, broken_line, NULL, offsets, 9) == 0);
+    assert(gal_text_pages_by_line(measured, 2, broken_line, offsets, offsets, 9) == 0);
 
     puts("gal_text pagination: PASS");
     return 0;

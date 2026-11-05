@@ -499,7 +499,7 @@ def generate(args) -> int:
         text = emit_font(name, size, codepoints, glyphs, line_height, base_line)
         path = os.path.join(args.out_dir, name + ".c")
         with open(path, "w", encoding="utf-8", newline="\n") as fh:
-            fh.write(text)
+            fh.write("\n".join(line.rstrip() for line in text.splitlines()) + "\n")
         log(f"    {path} ({os.path.getsize(path) / 1024:.0f} KB 源码)")
         rc |= verify(path, codepoints, glyphs)
     rc |= check(args.out_dir, codepoints)

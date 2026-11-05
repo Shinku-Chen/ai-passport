@@ -1,0 +1,1 @@
+[{"id":"n_s405_1h_2:choice","type":"choice","items":[{"text":"留在这个房间","scene":"n_s406_1_1h_0","changes":[{"key":"spot_s406_1_1H_through","value":true}]},{"text":"躲进厨房","scene":"n_s406_1_2_0","changes":[]}],"background":"black","portrait":"","pw":320,"ph":254}]

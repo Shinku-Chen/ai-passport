@@ -5,6 +5,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 
 // 单次排版最多支持多少页（超出按需要调大）。
 #define GAL_TEXT_MAX_PAGES 8
@@ -14,3 +15,11 @@
 // 返回页数（至少 1）。offsets 可为 NULL（只要页数）。
 int gal_text_pages(const char *utf8, int units_per_line, int lines_per_page,
                    uint32_t *offsets, int max_offsets);
+
+// Compose pages from a renderer-supplied line iterator without depending on
+// LVGL. The iterator returns the next line's byte length, including its newline.
+// Returns 0 for an invalid iterator or insufficient offset capacity.
+typedef size_t (*gal_text_next_line_t)(const char *text, size_t remaining, void *context);
+int gal_text_pages_by_line(const char *text, int lines_per_page,
+                          gal_text_next_line_t next_line, void *context,
+                          uint32_t *offsets, int max_offsets);

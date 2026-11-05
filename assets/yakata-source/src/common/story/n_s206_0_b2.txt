@@ -1,0 +1,1 @@
+[{"id":"s206.txt:start:256","type":"text","speaker":"","text":"刹那间――――","background":"stage_館_美亜の部屋_夜","portrait":"p_上位種の男_正面_服_通常","pw":141,"ph":254,"art":"","artMissing":false,"sourceStart":256,"sourceEnd":256}]

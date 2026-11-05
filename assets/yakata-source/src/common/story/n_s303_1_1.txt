@@ -1,0 +1,1 @@
+[{"id":"n_s303_1_1:choice","type":"choice","items":[{"text":"寻找米亚","scene":"n_s303_1_1h_0","changes":[]},{"text":"与夏花一起逃离","scene":"n_s303_1_2h_0","changes":[{"key":"spot_s303_1_2H_through","value":true}]}],"background":"black","portrait":"","pw":320,"ph":254}]

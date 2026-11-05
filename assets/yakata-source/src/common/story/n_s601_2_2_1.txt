@@ -1,0 +1,1 @@
+[{"id":"n_s601_2_2_1:choice","type":"choice","items":[{"text":"前往食材储藏室","scene":"n_s601_2_3h_0","changes":[]},{"text":"寻找爱梦的房间","scene":"n_s601_2_4_0","changes":[]}],"background":"black","portrait":"","pw":320,"ph":254}]
