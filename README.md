@@ -54,6 +54,12 @@ python -m esptool --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 \
 - 内容覆盖范围与取舍见 [docs/reference/shinku-chen/nianniang/](docs/reference/shinku-chen/nianniang/)。
 - 本作实际是**竖屏 240×320**；分支名里的 `-landscape` 是历史命名，不代表方向。
 
+## 上游与来源
+
+- 上游移植仓库：[hrk666666/NianNiang-MiBand-10](https://github.com/hrk666666/NianNiang-MiBand-10)（其上游为 hrk666666/Senren-Banka-MiBand-10）
+- 应用基线：[`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport) 的 `feature/galgame-framework`
+- 原作品：《男娘恋爱物语》；剧本、美术与字库版权归原权利方，上游项目未声明许可，本移植仅供个人、非商业使用
+
 ## 移植经验
 
 十二部作品共用的阅读器契约、真机踩坑与验收清单：[`docs/reference/shinku-chen/galgame-port/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/galgame-framework/docs/reference/shinku-chen/galgame-port)。

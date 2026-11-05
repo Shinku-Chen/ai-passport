@@ -56,6 +56,12 @@ Board: ESP32-C3, 8 MB flash, no PSRAM. Flashing and stored-data rules: [`docs/de
 - Content coverage and the trade-offs behind it: [docs/reference/shinku-chen/nianniang/](docs/reference/shinku-chen/nianniang/).
 - This title is **240x320 portrait**; the shared `-landscape` branch suffix is historical and does not describe the layout.
 
+## Upstream and provenance
+
+- Upstream port repository: [hrk666666/NianNiang-MiBand-10](https://github.com/hrk666666/NianNiang-MiBand-10) (itself derived from hrk666666/Senren-Banka-MiBand-10)
+- Application baseline: [`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport) at `feature/galgame-framework`
+- Original work: *NianNiang Love Story*; script, art and fonts remain with their rights holders, the upstream projects declare no licence, and this port is for personal, non-commercial use
+
 ## Porting notes
 
 The reader contract, hardware traps and acceptance checklist shared by all twelve ports: [`docs/reference/shinku-chen/galgame-port/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/galgame-framework/docs/reference/shinku-chen/galgame-port).
