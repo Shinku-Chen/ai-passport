@@ -13,6 +13,18 @@
 - 源快照：`manosaba-rw5 @ a309a3614837b555741e5d8fd7cfe2b9428e2e49`
 - 语言：简体中文；16px 完备字库（2,999 字形，0 缺字）
 
+## 发布
+
+- **版本**：tag [`v1.0.0-manosaba`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-manosaba)，
+  分支 [`feature/port-manosaba-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-manosaba-landscape)；合并固件
+  `FoloToy-AI-Passport-full.bin`（app 7,763,280 B / full 7,959,888 B，版本 `1.0.0`）。
+- **方向**：320×240 横屏。
+- **三键**：正文 UP 推进 / 长按 UP 快进，DOWN 历史 / 长按 DOWN 自动阅读，OK 推进 / 长按 OK 菜单；
+  列表与选项 UP/DOWN 移动、OK 确认、长按 OK 返回。
+- **功能**：多槽存档 + 自动档、读档、CG 鉴赏、章节列表、历史回看、自动阅读、快进瞬显。
+- **空闲**：60 s 调暗、300 s 熄屏、1800 s 深睡，任意键唤醒并回到原进度；自动阅读与快进期间不休眠。
+- **已知限制**：分区占用 94.77%，余量 428,720 B；改动时仍需确认 Flash 预算。
+
 ## 已实现
 
 - **全部 458 个源剧本文件 / 424 个场景 / 90,243 条指令**打包成一份只读 Flash 包，

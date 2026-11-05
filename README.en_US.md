@@ -14,6 +14,17 @@ application, not a reskin of the upstream demo menu.
 - Source snapshot: `manosaba-rw5 @ a309a3614837b555741e5d8fd7cfe2b9428e2e49`
 - Language: Simplified Chinese; complete 16px subset (2,999 glyphs, 0 missing)
 
+## Release
+
+- **Version**: tag [`v1.0.0-manosaba`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-manosaba),
+  branch [`feature/port-manosaba-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-manosaba-landscape); merged image
+  `FoloToy-AI-Passport-full.bin` (app 7,763,280 B / full 7,959,888 B, version `1.0.0`).
+- **Layout**: 320x240 landscape.
+- **Three keys**: reading - UP advances, hold UP fast-forwards, DOWN opens history, hold DOWN toggles auto-read, OK advances, hold OK opens the menu; in lists and choices UP/DOWN move, OK confirms and hold OK goes back.
+- **Features**: multi-slot saves plus an automatic slot, load, CG gallery, chapter list, scrollable history, auto-read and instant fast-forward.
+- **Idle**: dim after 60 s, screen off after 300 s, deep sleep after 1800 s; any key wakes the device and resumes the session. Auto-read and fast-forward never idle out.
+- **Known limits**: flash use is 94.77% with 428,720 B free; still confirm the budget before changing content.
+
 ## Implemented
 
 - **All 458 source script files / 424 scenes / 90,243 commands** are packed into
