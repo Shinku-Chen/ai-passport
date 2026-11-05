@@ -283,9 +283,9 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 - **没有语音生成** —— 当前版本不接 TTS：回答只以文字上屏（设备屏 + App），设备不会念出来。
 
 
-### 《Stella of the End》横屏阅读器
+### 《星之终途》横屏阅读器（Stella of the End）
 
-把《Stella of the End》做成 AI Passport 上的视觉小说阅读器：全部剧本、背景、立绘与事件 CG 打包进应用分区，离线可读。
+把《星之终途》（Stella of the End）做成 AI Passport 上的视觉小说阅读器：全部剧本、背景、立绘与事件 CG 打包进应用分区，离线可读。
 
 - **发布**：tag [`v1.0.0-stella`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-stella)，
   分支 [`feature/port-stella-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-stella-landscape)；合并固件
