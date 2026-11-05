@@ -98,3 +98,14 @@ the advance rules and the pagination.
 - **Release**: [`v0.1.0-asunabi`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-asunabi) — merged image `FoloToy-AI-Passport-full.bin`, 7,917,142 bytes; also submitted to the AI Passport community market.
 - **Upstream work**: [`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) — the Xiaomi Band quick-app release this port is based on. No license is declared there; its artwork and chapter scripts are committed under `assets/gal-source/` with the upstream project credited as the source.
 - Asset pipeline: [`tools/gal/README.md`](tools/gal/README.md)
+
+## This project: Asunabi
+
+A **portrait** visual-novel reader ported from the Asunabi watch quick-app: the whole story is built
+into the firmware, boots straight to the title screen and needs no network or side-loaded files.
+Scale: **30 chapters, 4,649 lines of dialogue, about 94,000 characters, a single ending**.
+Three-key reading: **UP/DOWN** step through lines, holding **UP** fast-forwards, holding **DOWN**
+starts auto-read, and **OK** opens the menu (start/continue, chapter select, settings, six save
+slots, text speed and font size). Release: **v0.1.0-asunabi**.
+Known limits: portrait 240x320 only; content and art come from the original port, personal
+non-commercial use.

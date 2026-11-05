@@ -80,3 +80,11 @@ python -m pip install Pillow                                       # Linux/macOS
 - **发布**：[`v0.1.0-asunabi`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-asunabi) —— 合并镜像 `FoloToy-AI-Passport-full.bin`，7,917,142 字节；并已投稿到 AI Passport 社区市场。
 - **上游作品**：[`liuyuze61/Asunabi-miband`](https://github.com/liuyuze61/Asunabi-miband) —— 本次移植所依据的小米手环快应用版本。该仓库未声明许可；美术与章节剧本已提交在 `assets/gal-source/`，并以上游项目作为来源标注。
 - 素材工具链：[`tools/gal/README.md`](tools/gal/README.md)
+
+## 本项目：飞鸟会长不肯认输（Asunabi）
+
+从《飞鸟会长不肯认输》的手环快应用移植而来的**竖屏**视觉小说阅读器：整部故事打进固件，
+开机直接进入标题，无需联网、不用往设备里拷文件。规模为 **30 章、4,649 句对白、约 9.4 万字、单一结局**。
+三个按键即可阅读：**UP/DOWN 逐句翻**，长按 **UP** 快进，长按 **DOWN** 自动阅读，**OK** 打开菜单
+（开始/继续、选章、设置、六个存档位、文字速度与字号）。发布版本：**v0.1.0-asunabi**。
+已知限制：仅竖屏 240×320；内容与美术来自原移植版，个人非商业使用。
