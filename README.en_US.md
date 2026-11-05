@@ -4,9 +4,9 @@
 
 # Stella of the End - AI Passport 320x240 landscape visual-novel reader
 
-The *Stella of the End* main story as an AI Passport visual-novel reader: the script, backgrounds, sprites and event CGs of the 21-chapter main route are packed into the application partition and read offline.
+The *Stella of the End* visual-novel reader on the AI Passport: the **21-chapter main story plus nine after-story chapters** (10,975 lines in total) ship with their script, backgrounds, sprites and event CGs inside the application partition and read offline.
 
-> Scope: **the 21-chapter main story only (9,425 lines)**. Upstream also ships nine after-story chapters (`story/101`-`109`, 1,550 lines, about 229 KB); they are **not included** because of the 8 MB partition limit - adding them needs roughly 70 KB of compressed text headroom.
+> After-story entry: the title screen's after-story item, unlocked by clearing the main story; it starts at `story/101`.
 
 ## Controls
 
