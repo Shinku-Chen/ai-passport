@@ -12,6 +12,10 @@ receiver (no demo menu).
 
 This is the application built on the `feature/dlna-receiver` branch.
 
+## This build: DLNA Audio Receiver
+
+This branch turns the AI Passport into a **networked speaker**: the firmware is a DLNA/UPnP audio casting receiver that advertises itself on your Wi-Fi, accepts music pushed from a DLNA phone app or Xiaomi MiPlay, decodes the stream on board and plays it through the I2S speaker. The firmware boots straight into the receiver with no main menu. **UP / DOWN** move between the status and provisioning pages, **OK** enters or confirms, and a **long press on OK within the first 10 seconds after boot** clears the stored Wi-Fi configuration and returns to provisioning.
+
 ## What it does
 
 - **DLNA media renderer** — a `custom_dlna` stack (SSDP discovery + SOAP control
