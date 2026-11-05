@@ -49,6 +49,12 @@ Board: ESP32-C3, 8 MB flash, no PSRAM. Flashing and stored-data rules: [`docs/de
 - Only **173,056 B** of flash is free (97.92% used); any change must start with a flash budget check.
 - Content coverage and the trade-offs behind it: [docs/reference/shinku-chen/clannad/](docs/reference/shinku-chen/clannad/).
 
+## Upstream and provenance
+
+- Upstream port repository: [xuanyide01/clannad-rw5](https://github.com/xuanyide01/clannad-rw5) (snapshot `2c67720807db`)
+- Application baseline: [`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport) at `feature/galgame-framework`
+- Original work: *CLANNAD*; script, art and fonts remain with their rights holders, the upstream projects declare no licence, and this port is for personal, non-commercial use
+
 ## Porting notes
 
 The reader contract, hardware traps and acceptance checklist shared by all twelve ports: [`docs/reference/shinku-chen/galgame-port/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/galgame-framework/docs/reference/shinku-chen/galgame-port).
