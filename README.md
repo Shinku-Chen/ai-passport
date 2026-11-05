@@ -344,6 +344,16 @@ main/esp_timer/event 9,472 + NVS 约 8,400 + 堆元数据约 2,000 = **150,432 B
 idle 栈 1,536 B 是 FreeRTOS 静态栈（已在 MAP），不重复计。系统任务、NVS 与碎片未实测，
 **不视为内存已通过**。
 
+- **发布**：tag [`v1.0.0-parquet`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-parquet)，
+  分支 [`feature/port-parquet-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-parquet-landscape)；合并固件
+  `FoloToy-AI-Passport-full.bin`（app 7,181,616 B / full 7,247,152 B，版本 `1.0.0`）。
+- **方向**：320×240 横屏。
+- **三键**：正文 UP 推进 / 长按 UP 快进，DOWN 历史 / 长按 DOWN 自动阅读，OK 推进 / 长按 OK 菜单；
+  列表与选项 UP/DOWN 移动、OK 确认、长按 OK 返回。
+- **功能**：多槽存档 + 自动档、读档、CG 鉴赏、章节列表、历史回看、自动阅读、快进瞬显。
+- **空闲**：60 s 调暗、300 s 熄屏、1800 s 深睡，任意键唤醒并回到原进度；自动阅读与快进期间不休眠。
+- **已知限制**：分区占用 86.29%，余量 1,141,456 B；改动时仍需确认 Flash 预算。
+
 
 ## 说明
 

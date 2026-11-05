@@ -508,6 +508,15 @@ stack 7,168 + main/esp_timer/event 9,472 + NVS ~8,400 + heap metadata ~2,000 =
 already inside the MAP and is not counted twice. System tasks, NVS and fragmentation
 are not measured; **this is not a memory pass**.
 
+- **Release**: tag [`v1.0.0-parquet`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-parquet),
+  branch [`feature/port-parquet-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-parquet-landscape); merged image
+  `FoloToy-AI-Passport-full.bin` (app 7,181,616 B / full 7,247,152 B, version `1.0.0`).
+- **Layout**: 320x240 landscape.
+- **Three keys**: reading - UP advances, hold UP fast-forwards, DOWN opens history, hold DOWN toggles auto-read, OK advances, hold OK opens the menu; in lists and choices UP/DOWN move, OK confirms and hold OK goes back.
+- **Features**: multi-slot saves plus an automatic slot, load, CG gallery, chapter list, scrollable history, auto-read and instant fast-forward.
+- **Idle**: dim after 60 s, screen off after 300 s, deep sleep after 1800 s; any key wakes the device and resumes the session. Auto-read and fast-forward never idle out.
+- **Known limits**: flash use is 86.29% with 1,141,456 B free; still confirm the budget before changing content.
+
 
 ## Notes
 
