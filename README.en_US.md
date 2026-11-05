@@ -44,6 +44,16 @@ time, so the screen stays lit while they run.
 - **Serial debugging channel** — `SANOBAPAGE [title | <scenario> <step>]` captures a frame from the LVGL flush path and streams it back as raw RGB565; `SANOBASHOT`, `SANOBAJUMP` and `SANOBAAUTO` cover scene renders, scene jumps and auto-read checks.
 - **No character art and no event CGs** — the upstream port ships neither, so a speaker appears as a name plate and scenes are carried by backgrounds plus chibi SD illustrations; the script, its branches and all five endings are complete.
 
+## This project: Sanoba Witch
+
+A **portrait** visual-novel reader that brings the Sanoba Witch watch port to the AI Passport:
+**101 chapters, 53,190 lines of dialogue, about 1.1 million characters and five routes with five
+endings**, fully offline, with an automatic save on every scene change.
+Three-key reading: **UP/DOWN** advance the dialogue, holding **UP** fast-forwards, holding **DOWN**
+toggles auto-read, and **OK** opens the menu (save, load, jump to the next choice, auto-play).
+Release: **v0.1.0-sanoba-witch** (merged image `FoloToy-AI-Passport-full.bin`).
+Known limits: portrait only; personal, non-commercial port.
+
 ## Notes
 
 - This branch carries one application. A `feature/*` branch README describes only
