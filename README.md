@@ -51,6 +51,12 @@ python -m esptool --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 \
 - 分区余量仅 **66,992 B**（占用 99.20%），任何改动前先做 Flash 预算。
 - 内容覆盖范围与取舍见 [docs/reference/shinku-chen/stella/](docs/reference/shinku-chen/stella/)。
 
+## 上游与来源
+
+- 上游移植仓库：[xuanyide01/stella-rw5](https://github.com/xuanyide01/stella-rw5)（快照 `4fa1e7b5534a`）
+- 应用基线：[`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport) 的 `feature/galgame-framework`
+- 原作品：《星之终途》；剧本、美术与字库版权归原权利方，上游项目未声明许可，本移植仅供个人、非商业使用
+
 ## 移植经验
 
 十二部作品共用的阅读器契约、真机踩坑与验收清单：[`docs/reference/shinku-chen/galgame-port/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/galgame-framework/docs/reference/shinku-chen/galgame-port)。

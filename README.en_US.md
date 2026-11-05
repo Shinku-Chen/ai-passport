@@ -51,6 +51,12 @@ Board: ESP32-C3, 8 MB flash, no PSRAM. Flashing and stored-data rules: [`docs/de
 - Only **66,992 B** of flash is free (99.20% used); any change must start with a flash budget check.
 - Content coverage and the trade-offs behind it: [docs/reference/shinku-chen/stella/](docs/reference/shinku-chen/stella/).
 
+## Upstream and provenance
+
+- Upstream port repository: [xuanyide01/stella-rw5](https://github.com/xuanyide01/stella-rw5) (snapshot `4fa1e7b5534a`)
+- Application baseline: [`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport) at `feature/galgame-framework`
+- Original work: *Stella of the End*; script, art and fonts remain with their rights holders, the upstream projects declare no licence, and this port is for personal, non-commercial use
+
 ## Porting notes
 
 The reader contract, hardware traps and acceptance checklist shared by all twelve ports: [`docs/reference/shinku-chen/galgame-port/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/galgame-framework/docs/reference/shinku-chen/galgame-port).
