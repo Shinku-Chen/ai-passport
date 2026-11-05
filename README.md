@@ -351,3 +351,14 @@ idle 任务栈 1,536 B 属 IDF 静态栈、已计入 MAP，若作保守预留则
 余约 24–25 KB；到 SOC 上限 `0x3fce0000` 的 186,000 B 只是乐观上界，两者相差的 14,576 B
 **不算已取得的堆**。系统任务、队列控制块、驱动、NVS 与碎片均未实测，**不视为内存通过**。
 
+- **发布**：tag [`v1.0.0-paper`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-paper)，
+  分支 [`feature/port-paper-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-paper-landscape)；合并固件
+  `FoloToy-AI-Passport-full.bin`（app 6,289,312 B / full 6,354,848 B，版本 `1.0.0`）。
+- **方向**：240×320 竖屏（分支名虽带 `-landscape`，本作实际是竖屏）。
+- **三键**：正文 UP 推进 / 长按 UP 快进，DOWN 历史 / 长按 DOWN 自动阅读，OK 推进 / 长按 OK 菜单；
+  列表与选项 UP/DOWN 移动、OK 确认、长按 OK 返回。
+- **功能**：多槽存档 + 自动档、读档、CG 鉴赏、章节列表、历史回看、自动阅读、快进瞬显。
+- **空闲**：60 s 调暗、300 s 熄屏、1800 s 深睡，任意键唤醒并回到原进度；自动阅读与快进期间不休眠。
+- **已知限制**：分区占用 75.56%，余量 2,033,760 B；改动时仍需确认 Flash 预算。
+
+

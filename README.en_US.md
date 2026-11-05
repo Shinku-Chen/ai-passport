@@ -509,3 +509,13 @@ that leaves roughly 24–25 KB; the 186,000 B span to the SOC limit `0x3fce0000`
 upper bound, and the 14,576 B difference **must not be counted as obtained heap**. System tasks, queue
 control blocks, drivers, NVS and fragmentation are not measured, so **memory is not claimed as passed**.
 
+- **Release**: tag [`v1.0.0-paper`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-paper),
+  branch [`feature/port-paper-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-paper-landscape); merged image
+  `FoloToy-AI-Passport-full.bin` (app 6,289,312 B / full 6,354,848 B, version `1.0.0`).
+- **Layout**: 240x320 portrait (the branch name says `-landscape`, but this title is portrait).
+- **Three keys**: reading - UP advances, hold UP fast-forwards, DOWN opens history, hold DOWN toggles auto-read, OK advances, hold OK opens the menu; in lists and choices UP/DOWN move, OK confirms and hold OK goes back.
+- **Features**: multi-slot saves plus an automatic slot, load, CG gallery, chapter list, scrollable history, auto-read and instant fast-forward.
+- **Idle**: dim after 60 s, screen off after 300 s, deep sleep after 1800 s; any key wakes the device and resumes the session. Auto-read and fast-forward never idle out.
+- **Known limits**: flash use is 75.56% with 2,033,760 B free; still confirm the budget before changing content.
+
+
