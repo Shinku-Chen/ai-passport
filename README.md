@@ -2,9 +2,9 @@
   <strong>简体中文</strong> · <a href="README.en_US.md">English</a>
 </p>
 
-# 《纸上的魔法使（Paper no Mahou Tsukai）》· AI Passport 240×320 竖屏阅读器
+# 《纸上的魔法使（Paper no Mahou Tsukai）》· AI Passport 320×240 横屏阅读器
 
-把《纸上的魔法使》（紙の上の魔法使い / paper-rw5 手表移植）做成 AI Passport 的**竖屏 240×320**
+把《纸上的魔法使》（紙の上の魔法使い / paper-rw5 手表移植）做成 AI Passport 的**横屏 320×240**
 视觉小说阅读器：**47 个场景脚本 / 56,634 条指令 / 44,521 句对白、4 处选项、6 个结局、
 80 组 415 张事件 CG、341 张立绘（163 整块 + 178 个表情差分补丁）**，全程离线。
 
@@ -49,7 +49,6 @@ python -m esptool --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 \
 ## 已知限制
 
 - 分区占用 75.56%，余量 2,033,760 B；改动内容前仍需确认 Flash 预算。
-- 本作实际是**竖屏 240×320**；分支名里的 `-landscape` 是历史命名，不代表方向。
 
 ## 移植经验
 

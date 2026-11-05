@@ -2,7 +2,7 @@
   <a href="README.md">简体中文</a> · <strong>English</strong>
 </p>
 
-# Paper no Mahou Tsukai - AI Passport 240x320 portrait visual-novel reader
+# Paper no Mahou Tsukai - AI Passport 320x240 landscape visual-novel reader
 
 A **landscape 320×240** visual-novel reader for AI Passport, ported from the paper-rw5 watch port:
 **47 scene scripts / 56,634 ops / 44,521 lines of dialogue, 4 choices, 6 endings, 80 CG groups with
@@ -49,7 +49,6 @@ Board: ESP32-C3, 8 MB flash, no PSRAM. Flashing and stored-data rules: [`docs/de
 ## Known limits
 
 - Flash use is 75.56% with 2,033,760 B free; confirm the budget before changing content.
-- This title is **240x320 portrait**; the shared `-landscape` branch suffix is historical and does not describe the layout.
 
 ## Porting notes
 
