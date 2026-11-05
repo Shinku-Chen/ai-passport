@@ -285,6 +285,17 @@ AI Passport 上的横屏四子棋：**棋盘 10 列 × 7 行**，可与电脑对
 - **整个作品装得下** —— 资源包 622,892 B，合并镜像 1.80 MB（8 MB Flash 的 22%），
   1,437 字形中文子集覆盖界面文案与全部剧本，16px/20px 两档分页。
 
+- **发布**：tag [`v1.0.0-nianniang`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-nianniang)，
+  分支 [`feature/port-nianniang-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-nianniang-landscape)；合并固件
+  `FoloToy-AI-Passport-full.bin`（app 1,748,528 B / full 1,814,064 B，版本 `1.0.0`）。
+- **方向**：240×320 竖屏（分支名虽带 `-landscape`，本作实际是竖屏）。
+- **三键**：正文 UP 推进 / 长按 UP 快进，DOWN 历史 / 长按 DOWN 自动阅读，OK 推进 / 长按 OK 菜单；
+  列表与选项 UP/DOWN 移动、OK 确认、长按 OK 返回。
+- **功能**：多槽存档 + 自动档、读档、CG 鉴赏、章节列表、历史回看、自动阅读、快进瞬显。
+- **空闲**：60 s 调暗、300 s 熄屏、1800 s 深睡，任意键唤醒并回到原进度；自动阅读与快进期间不休眠。
+- **已知限制**：分区占用 21.01%，余量 6,574,544 B；改动时仍需确认 Flash 预算。
+
+
 ### AI Passport 随身AI对讲机（Pocket Intercom）
 
 把 AI Passport 变成一台随身 AI 对讲机：**按住 OK 说话 → 手机端 App 作为中介，把你的话交给

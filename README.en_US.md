@@ -441,6 +441,16 @@ is held sideways the physical UP key is on the right edge.
   the 8 MB flash), a 1,437-glyph Chinese subset covering the UI and the entire
   script, and two pagination tiers (16 px / 20 px).
 
+- **Release**: tag [`v1.0.0-nianniang`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v1.0.0-nianniang),
+  branch [`feature/port-nianniang-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-nianniang-landscape); merged image
+  `FoloToy-AI-Passport-full.bin` (app 1,748,528 B / full 1,814,064 B, version `1.0.0`).
+- **Layout**: 240x320 portrait (the branch name says `-landscape`, but this title is portrait).
+- **Three keys**: reading - UP advances, hold UP fast-forwards, DOWN opens history, hold DOWN toggles auto-read, OK advances, hold OK opens the menu; in lists and choices UP/DOWN move, OK confirms and hold OK goes back.
+- **Features**: multi-slot saves plus an automatic slot, load, CG gallery, chapter list, scrollable history, auto-read and instant fast-forward.
+- **Idle**: dim after 60 s, screen off after 300 s, deep sleep after 1800 s; any key wakes the device and resumes the session. Auto-read and fast-forward never idle out.
+- **Known limits**: flash use is 21.01% with 6,574,544 B free; still confirm the budget before changing content.
+
+
 ### AI Passport Pocket Intercom
 
 Turn the AI Passport into a pocket AI intercom: **hold OK to speak → the phone app acts as the
