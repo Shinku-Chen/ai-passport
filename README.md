@@ -64,7 +64,7 @@ python -m esptool --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 \
 
 ## 上游与来源
 
-- 上游移植仓库：`manosaba-rw5`（快照 `a309a3614837`；仓库地址上游未公开，此处记录快照提交）
+- 上游移植仓库：[manosaba-rw5](https://github.com/xuanyide01/manosaba-rw5)（快照 `a309a3614837`）
 - 应用基线：[`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport) 的 `feature/galgame-framework`
 - 原作品：《魔法少女的魔女审判》；剧本、美术与字库版权归原权利方，上游项目未声明许可，本移植仅供个人、非商业使用
 

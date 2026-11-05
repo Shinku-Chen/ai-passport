@@ -72,7 +72,7 @@ Board: ESP32-C3, 8 MB flash, no PSRAM. Flashing and stored-data rules: [`docs/de
 
 ## Upstream and provenance
 
-- Upstream port repository: `manosaba-rw5` (snapshot `a309a3614837`; the upstream repository URL is not published; the snapshot commit is recorded here)
+- Upstream port repository: [manosaba-rw5](https://github.com/xuanyide01/manosaba-rw5) (snapshot `a309a3614837`)
 - Application baseline: [`FoloToy/ai-passport`](https://github.com/FoloToy/ai-passport) at `feature/galgame-framework`
 - Original work: *Mahou Shojo no Majo Saiban*; script, art and fonts remain with their rights holders, the upstream projects declare no licence, and this port is for personal, non-commercial use
 
