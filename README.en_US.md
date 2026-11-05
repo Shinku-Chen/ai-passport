@@ -15,6 +15,10 @@ the BSP, and the development workflow come from upstream — see
 [`docs/contribution/`](docs/contribution/). Released firmware for each project is
 attached to this repository's [Releases](https://github.com/Shinku-Chen/ai-passport/releases).
 
+## This build: Pocket Intercom
+
+This branch turns the AI Passport into a **pocket AI intercom**: **hold OK to talk**, a companion Android app relays your speech to a backend AI, and the answer comes back to both the device screen and the phone. The screen turns red the moment you press and green when the gateway is ready (you can start talking); releasing sends. **A short OK press** only wakes the screen, **UP / DOWN** scroll message history, and a **long press on UP** opens settings (brightness, volume, mic gain, device info, re-pair). The device itself stays offline: audio travels only over Bluetooth between the unit and the phone. It needs the companion Android app (separate repository `Shinku-Chen/ai-passport-openclaw-android`) plus either OpenClaw or an OpenAI-compatible backend such as Hermes. Release tag: `v1.8.0-intercom`.
+
 ## Projects
 
 ### Voice Keychain
