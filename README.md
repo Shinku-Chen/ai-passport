@@ -4,7 +4,7 @@
 
 # 音效钥匙扣（Voice Keychain）
 
-AI Passport 上的**横屏**音效钥匙扣：开机直接进入播放界面，播放来自几十个角色包的数百条中文语音片段。
+AI Passport 上的随身音效钥匙扣：开机直接进入播放界面，播放来自几十个角色包的数百条中文语音片段。
 
 ## 操作
 
@@ -13,7 +13,8 @@ AI Passport 上的**横屏**音效钥匙扣：开机直接进入播放界面，�
 ## 功能
 
 - **角色目录** —— 可滚动列表浏览所有角色包，进入后查看片段名。
-- **一键播放** —— 内置解码播放 8 kHz 单声道 IMA-ADPCM 音频。
+- **一键播放** —— 内置解码播放 16 kHz 单声道 Opus 音频，连续切换片段复用解码器。
+- **流畅浏览** —— 长名称稳定横向滚动；长按上下键连续选择，松手后不再补滚。
 - **设置页** —— 显示电量百分比与电压，可调播放音量。
 - **自包含固件** —— `voicefs` 数据分区打进同一个 8 MB 镜像。
 
@@ -24,14 +25,13 @@ AI Passport 上的**横屏**音效钥匙扣：开机直接进入播放界面，�
 ## 构建与刷写
 
 ```bash
-idf.py set-target esp32c3 && idf.py build
-idf.py merge-bin
-esptool.py --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 build/merged-binary.bin
+./tools/validate.sh --firmware
+esptool.py --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 build/FoloToy-AI-Passport-full.bin
 ```
 
 ## 发布
 
-tag `v1.15-voice-keychain`，release 附带自包含的 `FoloToy-AI-Passport-full.bin`。
+tag `v1.15.1-voice-keychain`，release 附带已通过真机验收的自包含固件 `FoloToy-AI-Passport-full.bin`。
 
 ## 已知限制
 

@@ -10,6 +10,10 @@
 // 送 bsp_audio_write() 播放。遵循硬件指南: 阻塞的 codec I/O 不放按键回调/LVGL 任务。
 // 裸包流格式见 tools/encode_opus.py: 每个包 = 2字节小端长度 + Opus 帧。
 #include "voice_app.h"
+#include "voice_list_view.h"
+#include "voice_marquee.h"
+#include "voice_repeat.h"
+#include "voice_decoder.h"
 
 #include "bsp_audio.h"
 #include "bsp_battery.h"
@@ -23,9 +27,11 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
+#include "freertos/queue.h"
 #include "esp_log.h"
 #include "esp_err.h"
 #include "esp_system.h"    // esp_get_free_heap_size
+#include "esp_heap_caps.h"
 #include "esp_sleep.h"     // deep sleep + GPIO 唤醒
 #include "esp_timer.h"     // 空闲计时器
 #include "driver/gpio.h"   // GPIO0 唤醒配置
@@ -43,7 +49,7 @@ static const char *TAG = "voice_app";
 #define VOICE_FS_MOUNT      "/voices"
 
 // ---- 播放 ----
-#define AUDIO_SAMPLE_RATE 16000
+#define AUDIO_SAMPLE_RATE VOICE_DECODER_SAMPLE_RATE
 // Opus 单包最大可含 60ms 音频; @16kHz = 960 采样。用上界避免任意帧长溢出。
 #define OPUS_FRAME_SAMPLES 960     // 最大采样数(60ms 帧 @16kHz)
 #define OPUS_MAX_PACKET 1500       // 单包最大字节(8kbps 帧很小, 1.5KB 安全余量)
@@ -72,6 +78,28 @@ typedef enum { VIEW_DIR = 0, VIEW_LIST, VIEW_SETTINGS, VIEW_COUNT } view_t;
 // ---- 全局状态(单例应用) ----
 static view_t        s_view;
 static bool          s_fs_mounted;
+
+// Button callbacks run in esp_timer context. Only enqueue there; rendering and
+// codec I/O run below the audio task's priority in this application worker.
+typedef struct {
+    bsp_btn_t btn;
+    bsp_btn_ev_t ev;
+    uint32_t generation; // Only HOLD uses this token; discrete clicks retain FIFO.
+} voice_key_t;
+#define KEY_QUEUE_LENGTH 16
+static QueueHandle_t s_key_queue;
+static TaskHandle_t s_input_task;
+// Serializes input's codec I/O with stop/sleep; always acquire before LVGL.
+static SemaphoreHandle_t s_input_mutex;
+static bool s_input_enabled; // Protected by the LVGL lock, like the UI state.
+static voice_repeat_t s_repeats[BSP_BTN_OK + 1];
+static portMUX_TYPE s_key_lock = portMUX_INITIALIZER_UNLOCKED;
+
+static void cancel_pending_repeats(void) {
+    portENTER_CRITICAL(&s_key_lock);
+    for (unsigned i = 0; i <= BSP_BTN_OK; ++i) voice_repeat_cancel(&s_repeats[i]);
+    portEXIT_CRITICAL(&s_key_lock);
+}
 
 // 目录页
 static lv_obj_t     *s_dir_scr;
@@ -109,6 +137,9 @@ typedef struct {
 } play_job_t;
 
 static play_job_t    *s_job;           // 当前活跃播放 job(单播放, 指向最新一个)
+// Input runs below the player: protect pointer lifetime across preemption.
+// Never allocate, free, decode, or perform I/O inside this critical section.
+static portMUX_TYPE s_job_lock = portMUX_INITIALIZER_UNLOCKED;
 static SemaphoreHandle_t s_job_sem;    // 常驻播放 worker 的唤醒信号(有新 job 时 give)
 static TaskHandle_t      s_player;     // 常驻播放任务句柄(xTaskCreateStatic 创建, 静态栈)
 #define PLAYER_STACK_BYTES 16384       // Opus SILK 单帧解码栈需求大, 用静态栈避免每次播放重复 16KB 堆分配
@@ -150,7 +181,9 @@ static void player_worker(void *arg) {
     (void)arg;
     while (1) {
         xSemaphoreTake(s_job_sem, portMAX_DELAY);   // 等一个播放请求
+        portENTER_CRITICAL(&s_job_lock);
         play_job_t *job = s_job;
+        portEXIT_CRITICAL(&s_job_lock);
         if (!job) continue;
 
         const voice_file_t *f = job->f;
@@ -159,20 +192,18 @@ static void player_worker(void *arg) {
 
         FILE *fp = NULL;
         OpusDecoder *dec = NULL;
-        int dec_err = 0;
+        int64_t last_submit_us = 0, last_write_done_us = 0;
+        int64_t max_submit_gap_us = 0, max_prepare_gap_us = 0;
+        unsigned frames = 0, write_errors = 0;
+
+        dec = voice_decoder_begin();
+        if (!dec) { ESP_LOGE(TAG, "常驻 Opus 解码器未就绪"); goto done; }
 
         fp = fopen(fullpath, "rb");
         if (!fp) { ESP_LOGE(TAG, "无法打开 %s", fullpath); goto done; }
 
         if (bsp_audio_set_format(AUDIO_SAMPLE_RATE, 16, 1) != ESP_OK) {
             ESP_LOGE(TAG, "audio format 失败");
-            goto done;
-        }
-
-        // 创建 Opus 解码器(16kHz 单声道, 无状态跨包复用)
-        dec = opus_decoder_create(AUDIO_SAMPLE_RATE, 1, &dec_err);
-        if (!dec) {
-            ESP_LOGE(TAG, "opus_decoder_create 失败: %d", dec_err);
             goto done;
         }
 
@@ -198,15 +229,32 @@ static void player_worker(void *arg) {
                 ESP_LOGW(TAG, "opus_decode 错误 %d", nsamp);
                 break;
             }
-            bsp_audio_write(pcm, (size_t)nsamp * 2u);   // int16 采样 -> 字节 = nsamp*2
+            // Two timestamps per frame, one summary per clip: no per-frame log
+            // or allocation. Submission gaps include I2S backpressure; prepare
+            // gaps isolate reading/decoding/scheduling after the previous write.
+            int64_t submit_us = esp_timer_get_time();
+            if (last_submit_us && submit_us - last_submit_us > max_submit_gap_us)
+                max_submit_gap_us = submit_us - last_submit_us;
+            if (last_write_done_us && submit_us - last_write_done_us > max_prepare_gap_us)
+                max_prepare_gap_us = submit_us - last_write_done_us;
+            if (bsp_audio_write(pcm, (size_t)nsamp * 2u) != ESP_OK) ++write_errors;
+            last_submit_us = submit_us;
+            last_write_done_us = esp_timer_get_time();
+            ++frames;
         }
         ESP_LOGI(TAG, "播放结束: %s", f->name);
 
 done:
-        if (dec) opus_decoder_destroy(dec);
+        if (frames) ESP_LOGI(TAG, "Playback metrics: frames=%u max_submit_gap_us=%lld "
+                            "max_prepare_gap_us=%lld write_errors=%u",
+                            frames, (long long)max_submit_gap_us,
+                            (long long)max_prepare_gap_us, write_errors);
+        // The permanent worker retains its decoder; the next clip resets it.
         if (fp) fclose(fp);
         // 仅当自己仍是最新 job 才清 s_job(已被新 job 顶替则不动), 并释放本 job。
+        portENTER_CRITICAL(&s_job_lock);
         if (s_job == job) s_job = NULL;
+        portEXIT_CRITICAL(&s_job_lock);
         free(job);
     }
 }
@@ -214,7 +262,7 @@ done:
 // 请求播放一个文件: 先停当前(若有), 再让常驻 worker 播新的。worker 用静态栈, 不每次
 // 从堆上申请 16KB —— 堆不足/碎片化曾导致"只停不播"(xTaskCreate 16KB 栈失败)。
 static void play_file(const voice_file_t *f) {
-    if (s_job) s_job->stop = true;              // 停掉正在播的
+    stop_playback();                           // 停掉正在播的
     if (!f) return;
     if (!s_fs_mounted) { ESP_LOGE(TAG, "SPIFFS 未挂载"); return; }
     if (!s_job_sem || !s_player) { ESP_LOGE(TAG, "播放器未就绪"); return; }
@@ -222,14 +270,18 @@ static void play_file(const voice_file_t *f) {
     if (!job) { ESP_LOGE(TAG, "播放 job 分配失败"); return; }
     job->f = f;
     job->stop = false;
+    portENTER_CRITICAL(&s_job_lock);
     s_job = job;
+    portEXIT_CRITICAL(&s_job_lock);
     if (xSemaphoreGive(s_job_sem) != pdTRUE) {  // 唤醒常驻 worker 播新 job
         ESP_LOGW(TAG, "唤醒播放 worker 失败");
     }
 }
 
 static void stop_playback(void) {
+    portENTER_CRITICAL(&s_job_lock);
     if (s_job) s_job->stop = true;   // 请求当前播放停止(worker 循环退出后自清 s_job)
+    portEXIT_CRITICAL(&s_job_lock);
 }
 
 // ---------------------------------------------------------------------------
@@ -242,6 +294,22 @@ static esp_timer_handle_t s_sleep_timer;
 
 static void do_deep_sleep(void) {
     ESP_LOGI(TAG, "5 分钟无操作, 进入深度休眠(按键唤醒)");
+
+    // Join the whole input operation, including codec I/O outside the UI lock.
+    // Retain the mutex until reboot so no queued action can restart playback.
+    if (s_input_mutex && xSemaphoreTake(s_input_mutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
+        ESP_LOGE(TAG, "深睡前无法停止输入任务, 重启恢复外设");
+        esp_restart();
+    }
+    if (!bsp_lvgl_lock(1000)) {
+        ESP_LOGE(TAG, "深睡前无法禁用输入, 重启恢复外设");
+        esp_restart();
+    }
+    s_input_enabled = false;
+    if (s_key_queue) xQueueReset(s_key_queue);
+    cancel_pending_repeats();
+    if (s_batt_timer) lv_timer_pause(s_batt_timer);
+    bsp_lvgl_unlock();
 
     // 先停掉会访问外设/UI 的活动: 让常驻播放 worker 不再写 I2S。
     stop_playback();
@@ -294,6 +362,7 @@ static void sleep_timer_cb(void *arg) {
 
 // 任意按键事件重排 5 分钟空闲计时; 计时到即休眠。
 static void reset_idle_sleep(void) {
+    if (!s_sleep_timer) return;
     esp_timer_stop(s_sleep_timer);
     esp_timer_start_once(s_sleep_timer, IDLE_SLEEP_US);
 }
@@ -405,18 +474,9 @@ static lv_obj_t *make_screen(const char *title, const char *hint) {
     lv_obj_set_style_bg_color(top, COL_TOP, 0);   // 顶栏用专属色, 不与选中行同色
     lv_obj_set_style_border_width(top, 0, 0);
     lv_obj_set_style_pad_all(top, 0, 0);
-    lv_obj_t *tt = lv_label_create(top);
-    lv_label_set_text(tt, title);
-    lv_obj_set_style_text_font(tt, &voice_ttf, 0);
-    lv_obj_set_style_text_color(tt, COL_TEXT, 0);
-    lv_obj_set_style_pad_all(tt, 0, 0);
-    // 顶栏标题确定性定位: 左上, 宽 = 顶栏宽, 高度 = 顶栏高(垂直居中由内容)
-    lv_obj_set_pos(tt, 8, 0);
-    // 宽 = 屏宽 - 左右边距(8+8) - 右侧电量区46px, 避免标题与电量重叠
-    lv_obj_set_size(tt, UI_W - 16 - 46, UI_TOP_H);
-    // 顶栏标题过长则水平循环滚到最右显示完整(放慢速度); CIRCULAR=纯水平, 不垂直滚
-    lv_obj_set_style_anim_duration(tt, 2000, 0);
-    lv_label_set_long_mode(tt, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    // 标题仅在文字行区域内刷新；右侧继续为电量保留 46px。
+    voice_marquee_create(top, 8, 0, UI_W - 16 - 46, title,
+                         &voice_ttf, COL_TEXT, true);
 
     // 删除了底部提示条: 列表区延伸到屏幕最底, 不再渲染 hint 小字。
 
@@ -443,20 +503,9 @@ static lv_obj_t *make_row(lv_obj_t *scr, int idx, const char *text, row_state_t 
     lv_obj_set_size(ind, 3, UI_ROW_H);
     lv_obj_set_style_bg_color(ind, st == ROW_UNSEL ? COL_MUTED : lv_color_hex(0xFFFFFF), 0);
     lv_obj_set_style_border_width(ind, 0, 0);
-    // 行内文字(lv_label + 中文字库): 确定性 set_pos(左上), 垂直居中用行内 y
-    lv_obj_t *lbl = lv_label_create(row);
-    lv_label_set_text(lbl, text);
-    lv_obj_set_style_text_font(lbl, &voice_ttf, 0);
-    lv_obj_set_style_text_color(lbl, COL_TEXT, 0);
-    lv_obj_set_style_pad_all(lbl, 0, 0);
-    lv_obj_set_pos(lbl, UI_ROW_INDENT, 1);            // 行内左上, 顶部留1px
-    lv_obj_set_size(lbl, UI_ROW_W - UI_ROW_INDENT, UI_ROW_H);
-    lv_obj_set_style_text_align(lbl, LV_TEXT_ALIGN_LEFT, 0);
-    // 默认静止(只显示左段); 光标选中行在刷新时用 SCROLL 滚到最右显示完整
-    lv_label_set_long_mode(lbl, LV_LABEL_LONG_CLIP);
-    // 放慢横向滚动速度(值越低越慢)
-    lv_obj_set_style_anim_duration(lbl, 2000, 0);
-    *txt = lbl;
+    // 高亮仍覆盖整行，横向滚动仅使文字视口变脏。
+    *txt = voice_marquee_create(row, UI_ROW_INDENT, 1, UI_ROW_W - UI_ROW_INDENT,
+                                text, &voice_ttf, COL_TEXT, st == ROW_SEL);
     return row;
 }
 
@@ -524,12 +573,13 @@ static void dir_build(void) {
     refresh_dir_batt();
     s_dir_count = VOICE_DIR_TOTAL;
     if (s_dir_sel >= (int)s_dir_count) s_dir_sel = 0;
-    s_dir_top = 0;
     s_dir_window = s_dir_count < MAX_ROWS ? s_dir_count : MAX_ROWS;
+    s_dir_top = voice_list_plan((int)s_dir_count, (int)s_dir_window, 0,
+                               -1, s_dir_sel).top;
     for (unsigned i = 0; i < s_dir_window; i++) {
         s_dir_rows[i] = make_row(s_dir_scr, (int)i,
-                                 VOICE_DIRS[dir_view_to_index(i)].name,
-                                 ((int)i == s_dir_sel) ? ROW_SEL : ROW_UNSEL, &s_dir_txts[i]);
+                                 VOICE_DIRS[dir_view_to_index((unsigned)s_dir_top + i)].name,
+                                 (s_dir_top + (int)i == s_dir_sel) ? ROW_SEL : ROW_UNSEL, &s_dir_txts[i]);
     }
     // 诊断: 打印实际列表几何(起点/行高/行数/最后行底 vs 屏高), 定位底部空白
     ESP_LOGI(TAG, "GEOM dir: UI_TOP=%d ROW_H=%d win=%u last_bot=%d UI_H=%d gap=%d",
@@ -540,14 +590,16 @@ static void dir_build(void) {
 }
 
 // 重绘目录页可见窗口(文本+选中)。选中项滚出窗口时移动窗口起点。
-static void refresh_dir_selection(void) {
-    if (s_dir_sel < s_dir_top) s_dir_top = s_dir_sel;
-    if (s_dir_sel >= (int)(s_dir_top + s_dir_window)) s_dir_top = s_dir_sel - (int)s_dir_window + 1;
-    if (s_dir_top < 0) s_dir_top = 0;
+static void refresh_dir_selection(int previous) {
+    voice_list_update_t update = voice_list_plan((int)s_dir_count, (int)s_dir_window,
+                                                s_dir_top, previous, s_dir_sel);
+    s_dir_top = update.top;
     for (unsigned i = 0; i < s_dir_window; i++) {
+        if (!voice_list_row_dirty(&update, (int)i)) continue;
         int idx = s_dir_top + (int)i;
         if (idx >= 0 && idx < (int)s_dir_count) {
-            lv_label_set_text(s_dir_txts[i], VOICE_DIRS[dir_view_to_index((unsigned)idx)].name);
+            if (update.rebind)
+                lv_label_set_text_static(s_dir_txts[i], VOICE_DIRS[dir_view_to_index((unsigned)idx)].name);
             bool sel = (idx == s_dir_sel);
             // SCROLL_CIRCULAR: 纯水平循环滚动(绝不垂直滚), 消除"单行文字上下滚动"。
             // 防抖: 仅当 long_mode 变化才 set_long_mode, 避免长按翻页重复重置滚动偏移。
@@ -573,11 +625,12 @@ static void list_build(int diridx) {
 
     s_list_scr = make_screen(d->name, "OK播放 长按返回");
     s_list_count = (unsigned)n;
-    s_list_top = 0;
     s_list_window = s_list_count < MAX_ROWS ? s_list_count : MAX_ROWS;
+    s_list_top = voice_list_plan((int)s_list_count, (int)s_list_window, 0,
+                                -1, s_list_sel).top;
     for (unsigned i = 0; i < s_list_window; i++) {
-        s_list_rows[i] = make_row(s_list_scr, (int)i, d->files[i].name,
-                                  ((int)i == s_list_sel) ? ROW_SEL : ROW_UNSEL, &s_list_txts[i]);
+        s_list_rows[i] = make_row(s_list_scr, (int)i, d->files[s_list_top + (int)i].name,
+                                  (s_list_top + (int)i == s_list_sel) ? ROW_SEL : ROW_UNSEL, &s_list_txts[i]);
     }
     // 诊断: 列表页实际几何(定位底部空白)
     ESP_LOGI(TAG, "GEOM list: UI_TOP=%d ROW_H=%d win=%u n=%d last_bot=%d UI_H=%d gap=%d",
@@ -587,15 +640,17 @@ static void list_build(int diridx) {
     lv_screen_load(s_list_scr);
 }
 
-static void refresh_list_selection(void) {
-    if (s_list_sel < s_list_top) s_list_top = s_list_sel;
-    if (s_list_sel >= (int)(s_list_top + s_list_window)) s_list_top = s_list_sel - (int)s_list_window + 1;
-    if (s_list_top < 0) s_list_top = 0;
+static void refresh_list_selection(int previous) {
+    voice_list_update_t update = voice_list_plan((int)s_list_count, (int)s_list_window,
+                                                s_list_top, previous, s_list_sel);
+    s_list_top = update.top;
     const voice_dir_t *d = &VOICE_DIRS[s_list_dir];
     for (unsigned i = 0; i < s_list_window; i++) {
+        if (!voice_list_row_dirty(&update, (int)i)) continue;
         int idx = s_list_top + (int)i;
         if (idx >= 0 && idx < (int)s_list_count && idx < (int)d->count) {
-            lv_label_set_text(s_list_txts[i], d->files[idx].name);
+            if (update.rebind)
+                lv_label_set_text_static(s_list_txts[i], d->files[idx].name);
             // 只有光标选中行滚动(到最右停), 其余静止; 选中高亮。
             // SCROLL_CIRCULAR: 纯水平循环滚动(绝不垂直滚), 消除单行文字上下滚动。
             // 防抖: 仅当 long_mode 变化才 set_long_mode(内部会把滚动偏移重置为0)。
@@ -612,6 +667,11 @@ static void refresh_list_selection(void) {
 // 设置页
 // ---------------------------------------------------------------------------
 static void refresh_settings(void);   // 前向声明(settings_build 会调用)
+static void refresh_volume(void) {
+    char buf[32];
+    snprintf(buf, sizeof(buf), "音量 %d%%", (int)s_vol);
+    lv_label_set_text(s_set_vol_img, buf);
+}
 
 static void settings_build(void) {
     // 进入新页前删除旧屏, 避免 LVGL 对象/RAM 跨屏累积
@@ -661,25 +721,35 @@ static void refresh_settings(void) {
     char buf[64];
     snprintf(buf, sizeof(buf), "电量 %d%%  %dmV", soc < 0 ? 0 : soc, mv < 0 ? 0 : mv);
     lv_label_set_text(s_set_batt_img, buf);
-    snprintf(buf, sizeof(buf), "音量 %d%%", (int)s_vol);
-    lv_label_set_text(s_set_vol_img, buf);
+    refresh_volume();
 }
 
 // ---------------------------------------------------------------------------
 // 按键处理
 // ---------------------------------------------------------------------------
-void voice_app_on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user) {
-    (void)user;
+static void handle_key(const voice_key_t *key) {
+    bsp_btn_t btn = key->btn;
+    bsp_btn_ev_t ev = key->ev;
     if (!bsp_lvgl_lock(500)) return;
+    if (!s_input_enabled) { bsp_lvgl_unlock(); return; }
+    if (ev == BSP_BTN_LONG_HOLD) {
+        // Recheck after acquiring LVGL: a dequeued repeat may have waited for
+        // a slow refresh while the physical key was already released.
+        portENTER_CRITICAL(&s_key_lock);
+        bool valid = voice_repeat_valid(&s_repeats[btn], key->generation);
+        portEXIT_CRITICAL(&s_key_lock);
+        if (!valid) { bsp_lvgl_unlock(); return; }
+    }
+    bool volume_changed = false;
     reset_idle_sleep();   // 任意按键事件都重置 5 分钟空闲休眠计时
 
     switch (s_view) {
     case VIEW_DIR:
         // 短按逐行 + 长按连续滚动; 到顶/底钳位, 不回绕。
         if (btn == BSP_BTN_UP && (ev == BSP_BTN_CLICK || ev == BSP_BTN_LONG_HOLD)) {
-            if (s_dir_sel > 0) { s_dir_sel--; refresh_dir_selection(); }
+            if (s_dir_sel > 0) { int previous = s_dir_sel--; refresh_dir_selection(previous); }
         } else if (btn == BSP_BTN_DOWN && (ev == BSP_BTN_CLICK || ev == BSP_BTN_LONG_HOLD)) {
-            if (s_dir_sel < (int)VOICE_DIR_TOTAL - 1) { s_dir_sel++; refresh_dir_selection(); }
+            if (s_dir_sel < (int)VOICE_DIR_TOTAL - 1) { int previous = s_dir_sel++; refresh_dir_selection(previous); }
         } else if (btn == BSP_BTN_OK && ev == BSP_BTN_CLICK) {
             s_list_sel = 0;
             list_build((int)dir_view_to_index((unsigned)s_dir_sel));
@@ -697,9 +767,9 @@ void voice_app_on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user) {
             // 短按逐行 + 长按(HOLD)连续滚动。到顶/底钳位, 不回绕。
             // 上下选择不打断播放; OK 短按停止当前播放并播当前选中项。
             if (btn == BSP_BTN_UP && (ev == BSP_BTN_CLICK || ev == BSP_BTN_LONG_HOLD)) {
-                if (s_list_sel > 0) { s_list_sel--; refresh_list_selection(); }
+                if (s_list_sel > 0) { int previous = s_list_sel--; refresh_list_selection(previous); }
             } else if (btn == BSP_BTN_DOWN && (ev == BSP_BTN_CLICK || ev == BSP_BTN_LONG_HOLD)) {
-                if (s_list_sel < n - 1) { s_list_sel++; refresh_list_selection(); }
+                if (s_list_sel < n - 1) { int previous = s_list_sel++; refresh_list_selection(previous); }
             } else if (btn == BSP_BTN_OK && ev == BSP_BTN_CLICK) {
                 play_file(&d->files[s_list_sel]);     // 内部先停旧播, 重新开始
             } else if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG) {
@@ -714,13 +784,17 @@ void voice_app_on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user) {
     case VIEW_SETTINGS:
         // 设置页: UP/DOWN 直接调音量(HOLD 连续调); OK 短按/长按 退出返回目录。
         if (btn == BSP_BTN_UP && (ev == BSP_BTN_CLICK || ev == BSP_BTN_LONG_HOLD)) {
-            if (s_vol < 100) s_vol = (uint8_t)(s_vol + 5);
-            bsp_audio_set_volume(s_vol);
-            refresh_settings();
+            if (s_vol < 100) {
+                s_vol = (uint8_t)(s_vol + 5);
+                volume_changed = true;
+                refresh_volume();
+            }
         } else if (btn == BSP_BTN_DOWN && (ev == BSP_BTN_CLICK || ev == BSP_BTN_LONG_HOLD)) {
-            if (s_vol >= 5) s_vol = (uint8_t)(s_vol - 5);
-            bsp_audio_set_volume(s_vol);
-            refresh_settings();
+            if (s_vol >= 5) {
+                s_vol = (uint8_t)(s_vol - 5);
+                volume_changed = true;
+                refresh_volume();
+            }
         } else if (btn == BSP_BTN_OK && (ev == BSP_BTN_CLICK || ev == BSP_BTN_LONG)) {
             dir_build();
             s_view = VIEW_DIR;
@@ -731,13 +805,68 @@ void voice_app_on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user) {
         break;
     }
 
+    uint8_t volume = s_vol;
     bsp_lvgl_unlock();
+    // Codec I2C must not extend the UI critical section or esp_timer callback.
+    if (volume_changed) bsp_audio_set_volume(volume);
+}
+
+static void input_worker(void *arg) {
+    (void)arg;
+    voice_key_t key;
+    for (;;) {
+        if (xQueueReceive(s_key_queue, &key, portMAX_DELAY) == pdTRUE) {
+            xSemaphoreTake(s_input_mutex, portMAX_DELAY);
+            handle_key(&key);
+            if (key.ev == BSP_BTN_LONG_HOLD) {
+                portENTER_CRITICAL(&s_key_lock);
+                voice_repeat_done(&s_repeats[key.btn], key.generation);
+                portEXIT_CRITICAL(&s_key_lock);
+            }
+            xSemaphoreGive(s_input_mutex);
+        }
+    }
+}
+
+void voice_app_on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user) {
+    (void)user;
+    if (!s_key_queue || btn < BSP_BTN_UP || btn > BSP_BTN_OK) return;
+    voice_key_t key = { .btn = btn, .ev = ev };
+    if (ev == BSP_BTN_PRESS) {
+        // The ADC ladder has one physical key active at a time. Changing key
+        // also cancels repeats from the previous direction.
+        cancel_pending_repeats();
+    } else if (ev == BSP_BTN_RELEASE) {
+        // Do not queue release behind stale work: invalidate it synchronously.
+        portENTER_CRITICAL(&s_key_lock);
+        voice_repeat_cancel(&s_repeats[btn]);
+        portEXIT_CRITICAL(&s_key_lock);
+        return;
+    } else if (ev == BSP_BTN_LONG_HOLD) {
+        portENTER_CRITICAL(&s_key_lock);
+        bool offered = voice_repeat_offer(&s_repeats[btn], &key.generation);
+        portEXIT_CRITICAL(&s_key_lock);
+        if (!offered) return;
+    }
+    // Never wait in the shared timer task. On overflow drop the newest event;
+    // events already accepted retain FIFO ordering.
+    if (xQueueSend(s_key_queue, &key, 0) != pdTRUE && ev == BSP_BTN_LONG_HOLD) {
+        portENTER_CRITICAL(&s_key_lock);
+        voice_repeat_done(&s_repeats[btn], key.generation);
+        portEXIT_CRITICAL(&s_key_lock);
+    }
 }
 
 // ---------------------------------------------------------------------------
 // 应用生命周期
 // ---------------------------------------------------------------------------
 void voice_app_start(void) {
+    int decoder_error = voice_decoder_init();
+    ESP_LOGI(TAG, "Decoder reserve: result=%d bytes=%d heap_free=%u largest_block=%u",
+             decoder_error, opus_decoder_get_size(1),
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_8BIT),
+             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+    if (decoder_error != OPUS_OK) ESP_LOGE(TAG, "常驻 Opus 解码器初始化失败: %d", decoder_error);
     if (!fs_mount()) ESP_LOGE(TAG, "SPIFFS 挂载失败, 音效应用无法工作");
 
     s_dir_sel = 0; s_list_sel = 0; s_list_dir = 0;
@@ -747,15 +876,18 @@ void voice_app_start(void) {
     bsp_audio_set_format(AUDIO_SAMPLE_RATE, 16, 1);
     bsp_audio_set_volume(s_vol);   // 默认音量(否则 codec 可能无声)
 
-    if (bsp_lvgl_lock(1000)) { dir_build(); bsp_lvgl_unlock(); }
+    if (bsp_lvgl_lock(1000)) {
+        dir_build();
+        // Timer creation is also LVGL access and needs the same lock.
+        s_batt_timer = lv_timer_create(refresh_batt_periodic, 30000, NULL);
+        bsp_lvgl_unlock();
+    }
     ESP_LOGI(TAG, "音效钥匙扣启动, 目录数=%d", VOICE_DIR_TOTAL);
-
-    // 周期性刷新电量(顶栏 + 设置行): 开机只读一次的 SOC 会随电池状态失真。
-    s_batt_timer = lv_timer_create(refresh_batt_periodic, 30000, NULL);
 
     // 社区发布/截图协议: 在控制台(USB-Serial/JTAG)监听 FAP_SCREENSHOT_V1 并回传屏幕。
     // ⚠ 栈要够大: 抓屏用 lv_snapshot_take 做全屏渲染(类似 LVGL 任务), 2KB 会溢栈崩。
-    xTaskCreate(fap_screenshot_task, "fap_shot", 16384, NULL, 3, NULL);
+    if (xTaskCreate(fap_screenshot_task, "fap_shot", 16384, NULL, 3, NULL) != pdPASS)
+        ESP_LOGE(TAG, "截图监听任务创建失败");
 
     // 常驻播放任务(静态栈) + 唤醒信号量: 只在启动时创建一次。之前每次 OK 播放都
     // xTaskCreate 一个 16KB 栈任务, 会因堆不足/碎片而失败, 导致"OK 只停不播"。
@@ -770,15 +902,38 @@ void voice_app_start(void) {
     // 空闲休眠: 5 分钟无按键操作 → 深度休眠; 按键(GPIO0)低电平唤醒。
     const esp_timer_create_args_t sleep_args = { .callback = sleep_timer_cb, .name = "idle_sleep" };
     if (esp_timer_create(&sleep_args, &s_sleep_timer) == ESP_OK) reset_idle_sleep();
+
+    if (!s_key_queue) s_key_queue = xQueueCreate(KEY_QUEUE_LENGTH, sizeof(voice_key_t));
+    if (!s_input_mutex) s_input_mutex = xSemaphoreCreateMutex();
+    if (s_key_queue && s_input_mutex && !s_input_task &&
+        xTaskCreate(input_worker, "voice_input", 4096, NULL, 3, &s_input_task) != pdPASS) {
+        ESP_LOGE(TAG, "输入任务创建失败");
+    }
+    if (bsp_lvgl_lock(1000)) {
+        s_input_enabled = s_input_task != NULL;
+        bsp_lvgl_unlock();
+    }
+    ESP_LOGI(TAG, "App ready: input=%d player=%d heap_free=%u largest_block=%u",
+             s_input_task != NULL, s_player != NULL,
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_8BIT),
+             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
 }
 
 void voice_app_stop(void) {
-    stop_playback();
-    if (s_batt_timer) { lv_timer_delete(s_batt_timer); s_batt_timer = NULL; }
+    if (s_input_mutex && xSemaphoreTake(s_input_mutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
+        ESP_LOGE(TAG, "无法停止输入任务，保留页面");
+        return;
+    }
     if (bsp_lvgl_lock(1000)) {
+        s_input_enabled = false;
+        if (s_key_queue) xQueueReset(s_key_queue);
+        cancel_pending_repeats();
+        stop_playback();
+        if (s_batt_timer) { lv_timer_delete(s_batt_timer); s_batt_timer = NULL; }
         if (s_dir_scr) { lv_obj_delete(s_dir_scr); s_dir_scr = NULL; }
         if (s_list_scr) { lv_obj_delete(s_list_scr); s_list_scr = NULL; }
         if (s_set_scr) { lv_obj_delete(s_set_scr); s_set_scr = NULL; }
         bsp_lvgl_unlock();
     }
+    if (s_input_mutex) xSemaphoreGive(s_input_mutex);
 }

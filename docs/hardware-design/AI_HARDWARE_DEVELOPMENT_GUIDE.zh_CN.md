@@ -174,7 +174,7 @@ LVGL 非线程安全：
 - ADC 衰减为 `ADC_ATTEN_DB_12`，必须与依赖的 button 组件内部配置保持一致。升级组件后要重新核对。
 - ADC 校准句柄创建失败不影响按键事件，但 `bsp_button_read_mv()` 返回 `-1`。
 - 回调来自 button 组件使用的共享 `esp_timer` 任务，只能入队或执行同等级的有界操作，不能阻塞、录音、播放或访问 UI。
-- 事件包括 PRESS、CLICK、DOUBLE、LONG。应用菜单主要消费 CLICK；页面中的 OK LONG 被全局拦截用于返回。
+- 事件包括 PRESS、CLICK、DOUBLE、LONG、LONG_HOLD、RELEASE。RELEASE 来自 button 组件消抖后的 `BUTTON_PRESS_UP`，覆盖短按、双击及长按后的松开；追加枚举以保持原有事件编号。应用可在此有界回调内立即取消旧的长按重复任务，不必等待 UI 队列清空。
 
 重标阈值时，在 Button 页逐个长按按键记录稳定电压，采集多块板、不同电量和合理温度范围的数据，再把相邻分布之间留裕量设置为边界。不要只用理论分压值。
 

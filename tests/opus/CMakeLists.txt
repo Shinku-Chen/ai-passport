@@ -1,0 +1,22 @@
+cmake_minimum_required(VERSION 3.16)
+project(voice_decoder_test C)
+# Reuse the production component's exact source list and fixed-point options.
+function(idf_component_register)
+    cmake_parse_arguments(COMP "" "" "SRCS;INCLUDE_DIRS;REQUIRES" ${ARGN})
+    add_library(voice_test_opus STATIC ${COMP_SRCS})
+    target_include_directories(voice_test_opus PUBLIC ${COMP_INCLUDE_DIRS})
+    set(COMPONENT_LIB voice_test_opus PARENT_SCOPE)
+endfunction()
+add_subdirectory(../../components/opus opus)
+target_compile_definitions(voice_test_opus PRIVATE CUSTOM_SUPPORT)
+target_include_directories(voice_test_opus PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+add_executable(test_voice_decoder test_voice_decoder.c ../../main/voice_decoder.c)
+target_include_directories(test_voice_decoder PRIVATE ../../main)
+target_link_libraries(test_voice_decoder PRIVATE voice_test_opus)
+if(NOT MSVC)
+    target_link_libraries(test_voice_decoder PRIVATE m)
+endif()
+enable_testing()
+add_test(NAME voice_decoder COMMAND test_voice_decoder
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../assets/audio/dir00/clip00.opus"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../assets/audio/dir00/clip01.opus")

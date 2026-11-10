@@ -18,6 +18,7 @@ typedef enum {
     BSP_BTN_DOUBLE,      // 双击
     BSP_BTN_LONG,        // 长按(按下并保持, 触发一次)
     BSP_BTN_LONG_HOLD,   // 按住期间重复触发(用于连续滚动/翻页)
+    BSP_BTN_RELEASE,     // 松开瞬间；追加枚举以保持既有事件编号不变
 } bsp_btn_ev_t;
 
 // 按键事件回调。运行于 button 组件使用的共享 esp_timer 任务,只能入队或执行同等级

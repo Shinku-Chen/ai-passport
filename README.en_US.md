@@ -4,7 +4,7 @@
 
 # Voice Keychain
 
-A **landscape** sound keychain for the AI Passport: it boots straight into the player and plays hundreds of Chinese voice clips from dozens of character packs.
+A pocket sound keychain for the AI Passport: it boots straight into the player and plays hundreds of Chinese voice clips from dozens of character packs.
 
 ## Controls
 
@@ -13,7 +13,8 @@ A **landscape** sound keychain for the AI Passport: it boots straight into the p
 ## Features
 
 - **Character catalogue** — a scrollable list of every character pack, with its clip names one level down.
-- **One-key playback** — built-in 8 kHz mono IMA-ADPCM decoding.
+- **One-key playback** — built-in 16 kHz mono Opus decoding, with the decoder reused across clip changes.
+- **Smooth browsing** — long names scroll at a steady speed; hold UP/DOWN to browse continuously and release to stop without queued movements.
 - **Settings page** — battery percentage and voltage, plus playback volume.
 - **Self-contained image** — the `voicefs` data partition is bundled into the same 8 MB image.
 
@@ -24,14 +25,13 @@ A **landscape** sound keychain for the AI Passport: it boots straight into the p
 ## Build and flash
 
 ```bash
-idf.py set-target esp32c3 && idf.py build
-idf.py merge-bin
-esptool.py --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 build/merged-binary.bin
+./tools/validate.sh --firmware
+esptool.py --chip esp32c3 -p <PORT> -b 460800 write_flash 0x0 build/FoloToy-AI-Passport-full.bin
 ```
 
 ## Release
 
-Tag `v1.15-voice-keychain`; the release ships the self-contained `FoloToy-AI-Passport-full.bin`.
+Tag `v1.15.1-voice-keychain`; the release ships the device-tested, self-contained `FoloToy-AI-Passport-full.bin`.
 
 ## Known limitations
 

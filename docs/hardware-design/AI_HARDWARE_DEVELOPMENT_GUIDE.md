@@ -132,6 +132,12 @@ GPIO0 has an external 10 kΩ pull-up to 3.3 V. UP, DOWN, and OK connect it to gr
 
 Do not replace the external resistor with the inaccurate internal pull-up. The BSP creates one ADC1 oneshot unit and shares it with all button devices and voltage reads. Attenuation is `ADC_ATTEN_DB_12`. Callbacks originate in the button component's shared `esp_timer` task and must only enqueue work or perform similarly bounded operations.
 
+The BSP reports PRESS, CLICK, DOUBLE, LONG, LONG_HOLD, and RELEASE. RELEASE
+comes from the button component's debounced `BUTTON_PRESS_UP` for short,
+double, and long-held releases. It is appended to preserve existing event
+numbers. Applications can cancel stale repeat work immediately in this bounded
+callback without waiting for their UI queue to drain.
+
 Calibrate thresholds using multiple boards, charge levels, and reasonable temperatures; leave margin between measured distributions rather than relying only on divider theory.
 
 ## 7. Shared I2C

@@ -12,8 +12,8 @@ extern "C" {
 // 返回 ESP_OK 成功; 其余为失败(如 littlefs 挂载失败)。
 void voice_app_start(void);
 
-// 按键回调(由 main.c 的 bsp_button_init 注册)。运行于 button 组件任务,
-// 内部会用 bsp_lvgl_lock() 保护 LVGL 访问, 禁止阻塞做重活。
+// 按键回调(由 main.c 的 bsp_button_init 注册)。只做非阻塞入队；应用 worker
+// 加锁更新 UI，并在锁外调节 codec 音量，不阻塞共享 esp_timer 任务。
 void voice_app_on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user);
 
 // 停止播放任务并释放资源(退出前调用, 防止悬挂访问 UI 的任务)。

@@ -10,6 +10,15 @@
 > with `CHANGELOG.zh_CN.md`. The entries currently under `Unreleased` are pending
 > review for the next release; they are not a finalized release history.
 
+## v1.15.1-voice-keychain — 2026-11-10
+
+- Reduce list-navigation work to the previous and next selected rows; only rebind names when the visible window moves.
+- Constrain scrolling names and titles to their text viewports and use a stable horizontal speed for long names.
+- Cancel outstanding held-key repeats on release, including repeats waiting for the display lock, while retaining ordinary click ordering.
+- Reserve and reuse the Opus decoder at startup to fix silent playback when a fresh decoder cannot obtain a contiguous heap block.
+- Move input handling out of the shared timer callback and avoid battery reads during volume changes.
+- Add focused input-state, real-renderer, and real-codec regressions. Device acceptance confirmed repeated playback and immediate stop after releasing held navigation keys.
+
 ## Unreleased
 
 - Added the supplied 80-byte CW2017 profile for the specified 520 mAh cell, including content/update-flag checks, verified writes, the required restart sequence, and bounded SOC-readiness polling.

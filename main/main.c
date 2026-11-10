@@ -33,7 +33,7 @@ void app_main(void) {
     }
     bsp_display_backlight(100);
 
-    // 按键: 直接绑定 voice_app 回调。运行于 button 组件任务, voice_app 内部加锁。
+    // 按键: 回调只向 voice_app 输入队列投递事件，不在共享 timer 任务里绘制 UI。
     esp_err_t btn_err = bsp_button_init(voice_app_on_key, NULL);
     if (btn_err != ESP_OK) {
         ESP_LOGE(TAG, "按键初始化失败: %s", esp_err_to_name(btn_err));
