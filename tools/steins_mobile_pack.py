@@ -423,7 +423,7 @@ def build_windows(src, node_index, pool):
                                 node_index.get(spec.get("go"), 0) & 0xFFFF,
                                 int(spec.get("limit", 0)) & 0xFFFF,
                                 int(spec.get("after", 0)) & 0xFFFF,
-                                int(spec.get("sent", 0)) & 0xFFFF,
+                                int(spec.get("sent", 0xFFFF)) & 0xFFFF,
                                 pool.add(str(spec.get("source") or "")), 0)
     return {"WINDOW": bytes(win), "WINOPT": bytes(wopt), "KEYPHONE": bytes(keyphone)}
 

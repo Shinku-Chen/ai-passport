@@ -267,6 +267,24 @@ static bool pk_keyphone(void *u, uint16_t node, steins_mobile_keyphone_t *out)
     out->limit = kp.limit;
     out->after = kp.after;
     out->sent = kp.sent;
+    // Older packs encoded an absent sent field as zero. Plain telephone
+    // choices do not send mail; preserve zero as a valid id for D-Mail choices.
+    if (out->sent == 0) {
+        steins_node_t root;
+        steins_choice_t choice;
+        if (!steins_pack_node(c->pack, node, &root) ||
+            !steins_pack_choice(c->pack, root.choice, &choice)) return false;
+        bool call = false, send = false;
+        for (uint8_t i = 0; i < choice.count; ++i) {
+            steins_citem_t item;
+            uint8_t action;
+            if (!steins_pack_citem(c->pack, (uint16_t)(choice.first_item + i), &item) ||
+                !steins_mobile_pack_legacy_action(item.action, &action)) return false;
+            call |= action == STEINS_MOB_ACT_CALL;
+            send |= action == STEINS_MOB_ACT_SEND;
+        }
+        if (call && !send) out->sent = 0xFFFFu;
+    }
     return true;
 }
 

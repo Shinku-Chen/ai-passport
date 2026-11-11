@@ -840,7 +840,12 @@ static bool render_current(steins_app_t *app, bool autosave)
     steins_node_t node;
     if (!node_of(app, app->pos.node, &node)) return false;
     if (!mobile_sync_at(app, app->pos.node, app->pos.cursor)) return false;
-    if (app->pos.cursor < node.count) {
+    // The graph materializes the initial phone choices, but their skipped
+    // branches do not contain the source's final key-phone prompt.
+    steins_mobile_frame_t boundary;
+    const bool keyphone = app->mobile_ready &&
+        steins_mobile_keyphone_boundary(&app->mobile, &app->chk, &boundary);
+    if (!keyphone && app->pos.cursor < node.count) {
         if (!load_frame_at(app, app->pos.node, app->pos.cursor)) return false;
         if (autosave) {
             app->progress_dirty = true;
@@ -848,10 +853,13 @@ static bool render_current(steins_app_t *app, bool autosave)
         }
         return true;
     }
-    if (node.choice != STEINS_NONE) {
+    steins_node_t choice_node = node;
+    if (keyphone && !node_of(app, boundary.node, &choice_node)) return false;
+    const uint16_t choice_record = choice_node.choice;
+    if (choice_record != STEINS_NONE) {
         steins_choice_t choice;
-        if (!steins_pack_choice(&app->pack, node.choice, &choice)) return false;
-        app->choice_record = node.choice;
+        if (!steins_pack_choice(&app->pack, choice_record, &choice)) return false;
+        app->choice_record = choice_record;
         app->choice_kind = choice.kind;
         app->choice_count = choice.count > STEINS_CHOICE_MAX ? STEINS_CHOICE_MAX : choice.count;
         if (app->choice_sel >= app->choice_count) app->choice_sel = 0;
@@ -1090,7 +1098,8 @@ static void fill_phone_home(steins_app_t *app)
     copy_text(app->list_main[2], STEINS_LIST_TEXT, "联系人");
     copy_text(app->list_sub[2], sizeof(app->list_sub[2]), "按剧情开放");
     copy_text(app->list_main[3], STEINS_LIST_TEXT, "当前电话/发信");
-    if (app->chk.call_present) copy_text(app->list_sub[3], sizeof(app->list_sub[3]), "有来电");
+    if (app->chk.keyphone_present) copy_text(app->list_sub[3], sizeof(app->list_sub[3]), "有可操作项");
+    else if (app->chk.call_present) copy_text(app->list_sub[3], sizeof(app->list_sub[3]), "有来电");
     else if (app->chk.pres_count) copy_text(app->list_sub[3], sizeof(app->list_sub[3]), "有手机屏演示");
     else copy_text(app->list_sub[3], sizeof(app->list_sub[3]), "本段没有可操作项");
 }
@@ -1338,11 +1347,47 @@ static void send_phone_reply(steins_app_t *app, uint16_t child)
     open_phone_detail(app, child, true);
 }
 
+// Source keyPhoneActions exposes only call/send while the decision is pending.
+// Keep the original item indices so both phone entry points use the same answer.
+static uint8_t keyphone_calls(steins_app_t *app, uint8_t *indices, uint8_t cap)
+{
+    if (!app->mobile_ready || !app->chk.keyphone_present ||
+        !app->mobile_content.choice_items) return 0;
+    steins_mobile_choice_item_t items[STEINS_CHOICE_MAX];
+    const uint8_t count = app->mobile_content.choice_items(app->mobile_user,
+        app->chk.keyphone_root, items, STEINS_CHOICE_MAX);
+    uint8_t found = 0;
+    for (uint8_t i = 0; i < count && i < STEINS_CHOICE_MAX && found < cap; ++i) {
+        if (items[i].action == STEINS_MOB_ACT_CALL ||
+            items[i].action == STEINS_MOB_ACT_SEND) indices[found++] = i;
+    }
+    return found;
+}
+
 static void fill_phone_calls(steins_app_t *app)
 {
     list_clear(app);
     int count = 0;
-    if (app->chk.call_present) {
+    uint8_t indices[STEINS_CHOICE_MAX];
+    const uint8_t key_count = keyphone_calls(app, indices, STEINS_CHOICE_MAX);
+    if (key_count > 0) {
+        steins_node_t root;
+        steins_choice_t choice;
+        if (node_of(app, app->chk.keyphone_root, &root) &&
+            steins_pack_choice(&app->pack, root.choice, &choice)) {
+            for (uint8_t i = 0; i < key_count && count < STEINS_UI_LIST_ROWS; ++i) {
+                steins_citem_t item;
+                if (!steins_pack_citem(&app->pack,
+                    (uint16_t)(choice.first_item + indices[i]), &item)) continue;
+                if (steins_pack_str_utf8(&app->pack, item.label,
+                    app->list_main[count], STEINS_LIST_TEXT) <= 0) {
+                    (void)steins_pack_str_utf8(&app->pack, item.text,
+                        app->list_main[count], STEINS_LIST_TEXT);
+                }
+                ++count;
+            }
+        }
+    } else if (app->chk.call_present) {
         steins_callsite_t site;
         if (steins_pack_call_site(&app->pack, app->chk.call_site, &site)) {
             for (uint8_t i = 0; i < site.item_count && count < STEINS_UI_LIST_ROWS; ++i) {
@@ -2064,8 +2109,15 @@ static void choice_key(steins_app_t *app, const steins_key_t *key)
         steins_pos_t pos;
         if (app->mobile_ready) {
             steins_mobile_pos_t land;
-            if (!steins_mobile_choose(&app->mobile, &app->chk, app->pos.node,
-                                      (uint8_t)app->choice_sel, 0, &land)) {
+            steins_mobile_frame_t boundary;
+            const bool keyphone = steins_mobile_keyphone_boundary(
+                &app->mobile, &app->chk, &boundary);
+            const bool chosen = keyphone
+                ? steins_mobile_answer_key_phone(&app->mobile, &app->chk,
+                    (uint8_t)app->choice_sel, &land)
+                : steins_mobile_choose(&app->mobile, &app->chk, app->pos.node,
+                    (uint8_t)app->choice_sel, 0, &land);
+            if (!chosen) {
                 set_notice_text(app, "手机选择状态无效，未推进");
                 return;
             }
@@ -2140,6 +2192,22 @@ static void list_key(steins_app_t *app, const steins_key_t *key)
         if (app->sel < app->phone_reply_count) send_phone_reply(app, app->phone_reply_ids[app->sel]);
         break;
     case STEINS_PAGE_PHONE_CALLS: {
+        uint8_t indices[STEINS_CHOICE_MAX];
+        const uint8_t key_count = keyphone_calls(app, indices, STEINS_CHOICE_MAX);
+        if (key_count > 0) {
+            steins_mobile_pos_t land;
+            if (app->sel < 0 || app->sel >= key_count ||
+                !steins_mobile_answer_key_phone(&app->mobile, &app->chk,
+                    indices[app->sel], &land)) {
+                set_notice_text(app, "手机选择状态无效，未推进");
+                render_list(app);
+                break;
+            }
+            const steins_pos_t pos = { land.node, land.cursor, app->pos.mode, 0 };
+            if (!apply_position(app, &pos)) ESP_LOGE(TAG, "选项落点无效");
+            app->progress_dirty = true;
+            break;
+        }
         uint16_t site = 0;
         uint8_t count = 0;
         if (!app->mobile_ready ||

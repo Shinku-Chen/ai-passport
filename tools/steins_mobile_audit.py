@@ -565,10 +565,15 @@ class Audit:
                 self.kp_src_empty += 1
             elif p.str_(src_str) != src.get("source", ""):
                 self.check(f"keyphone.source.{nid}", False, f"{p.str_(src_str)} vs {src.get('source')}")
-            if (self.node_id(skip), self.node_id(go), limit, after, sent) !=                (src["skip"], src["go"], src["limit"], src["after"], src.get("sent", 0)):
+            expected_sent = src.get("sent", 0xFFFF)
+            # Old packs encoded an absent sent as zero; explicit source mail 0
+            # must still compare exactly. Accept both absent encodings only.
+            sent_matches = sent == expected_sent or ("sent" not in src and sent == 0)
+            if (self.node_id(skip), self.node_id(go), limit, after) != (
+                    src["skip"], src["go"], src["limit"], src["after"]) or not sent_matches:
                 self.check(f"keyphone.fields.{nid}", False,
                            f"{self.node_id(skip)}/{self.node_id(go)}/{limit}/{after}/{sent} vs "
-                           f"{src['skip']}/{src['go']}/{src['limit']}/{src['after']}/{src.get('sent',0)}")
+                           f"{src['skip']}/{src['go']}/{src['limit']}/{src['after']}/{expected_sent}")
         self.check("keyphone.source_filled", self.kp_src_empty == 0,
                    f"源有 source，包内空(0xFFFF)：{self.kp_src_empty}/24")
 

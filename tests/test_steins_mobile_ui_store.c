@@ -721,6 +721,135 @@ static void test_30_slots_auto_and_failure(void)
 
 }
 
+static void load_slot_zero(const steins_checkpoint_t *checkpoint)
+{
+    uint8_t data[STEINS_CHK_MAX_BYTES];
+    const size_t size = steins_checkpoint_save_encode(checkpoint, data, sizeof(data));
+    CHECK(size > 0 && write_key("sv00v2", data, size), "write key-phone save");
+    long_press(BTN_OK);
+    click(BTN_DOWN);
+    click(BTN_DOWN);
+    click(BTN_OK);
+    click(BTN_OK);
+}
+
+static void test_keyphone_story_branches(void)
+{
+    // Fixed source key-phone windows: postponing a D-Mail must allow sending
+    // it from the phone before the deadline, or at the final prompt. These are
+    // the real pack's Suzuha, Faris and Luka branch decisions, not a fake graph.
+    const uint16_t roots[] = { 3, 9, 19 };
+    const uint16_t skips[] = { 10, 20, 33 };
+    const uint16_t goes[] = { 9, 19, 32 };
+    const uint32_t limits[] = { 22, 16, 8 };
+    for (size_t i = 0; i < sizeof(roots) / sizeof(roots[0]); ++i) {
+        for (int action = 0; action < 3; ++action) {
+            nvs_stub_reset();
+            boot();
+            start_story();
+            uint16_t root = 0, skip = 0, go = 0;
+            CHECK(steins_mobile_pack_index_of_source(&s_app.pack, roots[i], &root), "root");
+            CHECK(steins_mobile_pack_index_of_source(&s_app.pack, skips[i], &skip), "skip");
+            CHECK(steins_mobile_pack_index_of_source(&s_app.pack, goes[i], &go), "go");
+            steins_node_t node;
+            CHECK(steins_pack_node(&s_app.pack, root, &node), "root node");
+            steins_checkpoint_t saved;
+            steins_checkpoint_init(&saved);
+            saved.node = root;
+            saved.cursor = node.count;
+            saved.last_node = root;
+            saved.last_at = node.count;
+            load_slot_zero(&saved);
+            CHECK(s_app.page == STEINS_PAGE_CHOICE, "initial key-phone choice");
+            click(BTN_DOWN);
+            click(BTN_OK); // Postpone, preserving the source's pending decision.
+            tick_ms(5000);
+            CHECK(s_app.pos.node == skip && s_app.chk.keyphone_present,
+                  "n%u postpone lost key-phone", roots[i]);
+            if (action == 0) {
+                open_phone_from_game();
+                CHECK(strstr(s_app.list_sub[3], "本段没有") == NULL,
+                      "phone hides the pending decision");
+                for (int row = 0; row < 3; ++row) click(BTN_DOWN);
+                click(BTN_OK);
+                CHECK(s_app.page == STEINS_PAGE_PHONE_CALLS && s_app.list_count == 1,
+                      "pending D-Mail not in phone");
+                CHECK(strstr(s_app.list_main[0], roots[i] == 19 ? "拨打电话" : "发送") != NULL,
+                      "phone action must use its readable UI label, not PUA story text");
+                click(BTN_OK);
+            } else {
+                for (int guard = 0; guard < 1000 && s_app.pos.cursor < limits[i]; ++guard) {
+                    click(BTN_OK);
+                    tick_ms(5000);
+                }
+                CHECK(s_app.page == STEINS_PAGE_CHOICE && s_app.pos.cursor == limits[i],
+                      "n%u missing final prompt at %u", roots[i], (unsigned)limits[i]);
+                // The prompt must survive a real checkpoint codec + app load.
+                saved = s_app.chk;
+                load_slot_zero(&saved);
+                CHECK(s_app.page == STEINS_PAGE_CHOICE && s_app.chk.keyphone_present,
+                      "pending key-phone lost on load");
+                if (action == 2) click(BTN_DOWN);
+                click(BTN_OK);
+            }
+            tick_ms(5000); // A changed chapter may show its normal title card.
+            CHECK(!s_app.chk.keyphone_present, "answered key-phone still pending");
+            CHECK(s_app.page == STEINS_PAGE_GAME, "answer did not resume story");
+            if (action < 2) {
+                CHECK(s_app.pos.node == go && s_app.pos.cursor == 1,
+                      "n%u send landed at node %u cursor %u", roots[i],
+                      s_app.pos.node, (unsigned)s_app.pos.cursor);
+            } else {
+                CHECK(s_app.pos.node == skip && s_app.pos.cursor == limits[i],
+                      "closing key-phone changed story position");
+                for (int guard = 0; guard < 2000 && s_app.page != STEINS_PAGE_ENDING; ++guard) {
+                    tick_ms(5000);
+                    click(BTN_OK);
+                }
+                CHECK(s_app.page == STEINS_PAGE_ENDING && s_app.pos.node == skip,
+                      "n%u decline lost the heroine ending", roots[i]);
+            }
+        }
+    }
+}
+
+static void test_keyphone_telephone_sent(void)
+{
+    nvs_stub_reset();
+    boot();
+    unsigned calls = 0;
+    const uint32_t count = steins_pack_count(&s_app.pack, STEINS_SEC_KEYPHONE);
+    for (uint32_t i = 0; i < count; ++i) {
+        steins_keyphone_t raw;
+        CHECK(steins_pack_keyphone(&s_app.pack, (uint16_t)i, &raw), "key-phone record");
+        steins_mobile_keyphone_t window;
+        CHECK(s_app.mobile_content.keyphone(s_app.mobile_user, raw.node, &window),
+              "key-phone provider");
+        steins_mobile_choice_item_t items[STEINS_CHOICE_MAX];
+        const uint8_t choices = s_app.mobile_content.choice_items(
+            s_app.mobile_user, raw.node, items, STEINS_CHOICE_MAX);
+        bool telephone = false;
+        for (uint8_t j = 0; j < choices; ++j) telephone |= items[j].action == STEINS_MOB_ACT_CALL;
+        if (!telephone) {
+            CHECK(window.sent == raw.sent, "D-Mail sent id changed");
+            continue;
+        }
+        ++calls;
+        CHECK(window.sent == 0xFFFFu, "plain telephone has phantom sent mail 0");
+        steins_checkpoint_t chk;
+        steins_checkpoint_init(&chk);
+        chk.node = raw.node;
+        CHECK(steins_mobile_enter(&s_app.mobile, &s_app.mobile_content,
+              s_app.mobile_user, raw.node), "bind telephone events");
+        CHECK(steins_mobile_defer_key_phone(&s_app.mobile, &chk, 0), "defer telephone");
+        CHECK(steins_mobile_answer_key_phone(&s_app.mobile, &chk, 0, NULL),
+              "answer telephone");
+        CHECK(chk.sent_count == 0, "telephone added mail to sent list");
+    }
+    CHECK(count == 24 && calls == 6, "key-phone coverage %u windows / %u calls",
+          (unsigned)count, calls);
+}
+
 static void test_nvs_capacity_model(void)
 {
     // Conservative NVS witness: successful-save hard cap 4096 B (not a source
@@ -750,7 +879,7 @@ static void test_nvs_capacity_model(void)
 
 int main(int argc, char **argv)
 {
-    const char *path = argc > 1 ? argv[1] : "build/mobile-pack-cand-3/steins_pack.bin";
+    const char *path = argc > 1 ? argv[1] : "assets/steins/steins_pack.bin";
     uint32_t size = 0;
     uint8_t *blob = load_file(path, &size);
     if (!blob) {
@@ -769,6 +898,8 @@ int main(int argc, char **argv)
     test_presentation_page();
     test_v1_migration();
     test_30_slots_auto_and_failure();
+    test_keyphone_story_branches();
+    test_keyphone_telephone_sent();
     test_nvs_capacity_model();
 
     free(blob);

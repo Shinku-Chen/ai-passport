@@ -258,6 +258,9 @@ run_static_checks() {
     fi
     if [[ -z "${mobile_pack}" ]]; then
         mobile_pack="${repo_root}/build/mobile-pack-cand-3/steins_pack.bin"
+        if [[ ! -f "${mobile_pack}" ]]; then
+            mobile_pack="${repo_root}/assets/steins/steins_pack.bin"
+        fi
     fi
     if [[ -f "${mobile_pack}" ]]; then
         c_case steins_mobile_ui_store \
@@ -342,6 +345,8 @@ run_static_checks() {
     done
 
     # ---- 工具与固件脚本的单元测试
+    python_case steins_mobile_pack_builder \
+        env PYTHONDONTWRITEBYTECODE=1 python3 tests/test_steins_mobile_pack_builder.py
     python_case deep_sleep_contract \
         env PYTHONDONTWRITEBYTECODE=1 python3 tests/test_deep_sleep_contract.py
     python_case key_wake_contract \
