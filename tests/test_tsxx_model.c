@@ -63,9 +63,19 @@ static const tsxx_layout_t LAYOUT_16 = { .units_per_line = 13, .lines_per_page =
 
 static void test_pack_structure(const tsxx_pack_t *pack)
 {
+    const uintptr_t begin = (uintptr_t)pack->branch_buf;
+    const uintptr_t end = begin + sizeof(pack->branch_buf);
+    const uint8_t *branches[] = { pack->end_names, pack->ends, pack->nexts,
+        pack->backs, pack->gates, pack->rules, pack->conds };
+    for (size_t i = 0; i < sizeof(branches) / sizeof(branches[0]); ++i) {
+        CHECK((uintptr_t)branches[i] >= begin && (uintptr_t)branches[i] < end,
+              "分支表 %u 未绑定到资源包自己的缓冲区", (unsigned)i);
+    }
     CHECK(tsxx_pack_pages(pack) == 61436u, "页数 %u != 61436", (unsigned)tsxx_pack_pages(pack));
-    CHECK(tsxx_pack_bg_count(pack) == 90u, "背景 %u 张", (unsigned)tsxx_pack_bg_count(pack));
-    CHECK(tsxx_pack_sprite_count(pack) == 156u, "立绘 %u 张",
+    // The committed pack includes the title background and merges sprite poses.
+    // tsxx_pack.py --verify-source checks all 61,436 pages against the source.
+    CHECK(tsxx_pack_bg_count(pack) == 91u, "背景 %u 张", (unsigned)tsxx_pack_bg_count(pack));
+    CHECK(tsxx_pack_sprite_count(pack) == 66u, "立绘 %u 张",
           (unsigned)tsxx_pack_sprite_count(pack));
     CHECK(tsxx_pack_cg_count(pack) == 295u, "事件整帧 %u 张",
           (unsigned)tsxx_pack_cg_count(pack));
@@ -77,12 +87,14 @@ static void test_pack_structure(const tsxx_pack_t *pack)
     CHECK(tsxx_pack_name(pack, TSXX_TABLE_SPEAKER, 0, name, sizeof(name)) > 0,
           "说话人名表空");
 
-    // 第一页的正文必须与源数据一致。
+    // Source page 0 sets the scene without dialogue; page 1 starts the text.
     tsxx_page_t page;
     CHECK(tsxx_pack_page(pack, 0, &page), "第 0 页读不出来");
+    CHECK(page.text_len == 0, "源第 0 页应无正文");
+    CHECK(tsxx_pack_page(pack, 1, &page), "第 1 页读不出来");
     char text[TSXX_TEXT_BUFFER];
     tsxx_pack_text(pack, &page, 0, 0, text, sizeof(text));
-    CHECK(strcmp(text, "在伸手不见五指的黑暗中。") == 0, "第 0 页正文是 %s", text);
+    CHECK(strcmp(text, "在伸手不见五指的黑暗中。") == 0, "第 1 页正文是 %s", text);
 
     // 超出范围的页必须被拒绝。
     CHECK(!tsxx_pack_page(pack, tsxx_pack_pages(pack), &page), "越界页没被拒绝");
@@ -106,6 +118,7 @@ static void test_full_walk(const tsxx_pack_t *pack)
     // 整张页表逐页过一遍:分屏数、正文可解码、选项目标合法。
     // 推进路线由下面的分支测试覆盖,这里只看"每一页单独拿出来是不是自洽的"。
     tsxx_player_t player;
+    tsxx_player_reset(&player);
     char text[TSXX_TEXT_BUFFER];
     uint32_t screens_seen = 0;
     uint32_t choice_stops = 0;
@@ -264,6 +277,18 @@ static void test_branch_tables(const tsxx_pack_t *pack)
 
 // 6 条女主线各一份指定选择序列(页号 0-based、选项号 1-based,与
 // tests/test_tsxx_branch.py 的 HEROINE_ROUTES 一致)。
+static const tsxx_choice_t ROUTE_NOA[] = {
+    { 2028u, 2u }, { 2962u, 1u }, { 3611u, 1u }, { 5247u, 1u }, { 6001u, 1u },
+    { 7929u, 1u }, { 8390u, 2u }, { 9095u, 1u }, { 9205u, 1u }, { 17694u, 2u },
+};
+static const tsxx_choice_t ROUTE_KAGUYA[] = {
+    { 2028u, 2u }, { 2962u, 1u }, { 3611u, 1u }, { 5247u, 2u }, { 6001u, 1u },
+    { 7929u, 1u }, { 8390u, 2u }, { 9095u, 3u }, { 9205u, 1u }, { 9440u, 1u },
+};
+static const tsxx_choice_t ROUTE_KURUMI[] = {
+    { 2028u, 2u }, { 2962u, 1u }, { 3611u, 2u }, { 5247u, 2u }, { 6001u, 1u },
+    { 7929u, 1u }, { 8390u, 2u }, { 9095u, 2u }, { 9204u, 1u }, { 9440u, 2u },
+};
 static const tsxx_choice_t ROUTE_FUMIKA[] = {
     { 2028u, 2u }, { 2962u, 3u }, { 3611u, 1u }, { 5247u, 2u }, { 6001u, 1u },
     { 7929u, 1u }, { 8390u, 1u }, { 9095u, 1u }, { 9205u, 1u }, { 9440u, 1u },
@@ -324,6 +349,12 @@ static void test_heroine_routes(const tsxx_pack_t *pack)
     CHECK(stop == 10558u, "默认路线停在第 %u 页", (unsigned)stop);
 
     // 6 条女主线不能有一条走不进去 —— 这正是移植版原先完全缺失的部分。
+    check_route(pack, "Noa end", ROUTE_NOA,
+                (uint8_t)(sizeof(ROUTE_NOA) / sizeof(ROUTE_NOA[0])), 19582u, "Noa end");
+    check_route(pack, "Kaguya end", ROUTE_KAGUYA,
+                (uint8_t)(sizeof(ROUTE_KAGUYA) / sizeof(ROUTE_KAGUYA[0])), 49530u, "Kaguya end");
+    check_route(pack, "Kurumi end", ROUTE_KURUMI,
+                (uint8_t)(sizeof(ROUTE_KURUMI) / sizeof(ROUTE_KURUMI[0])), 40351u, "Kurumi end");
     check_route(pack, "Fumika end", ROUTE_FUMIKA,
                 (uint8_t)(sizeof(ROUTE_FUMIKA) / sizeof(ROUTE_FUMIKA[0])), 60803u,
                 "Fumika end");
@@ -360,6 +391,7 @@ static void test_ending_stops_the_walk(const tsxx_pack_t *pack)
 static void test_jump_and_save(const tsxx_pack_t *pack)
 {
     tsxx_player_t player;
+    tsxx_player_reset(&player);
     CHECK(tsxx_player_jump(&player, pack, 61435u, &LAYOUT_16), "跳到末页失败");
     CHECK(player.page == 61435u && !player.ended, "跳转后状态不对");
 
@@ -423,6 +455,7 @@ static void test_jump_and_save(const tsxx_pack_t *pack)
 
     // 回退:有 no_back 走它,没有就退回上一页。
     tsxx_player_t backwards;
+    tsxx_player_reset(&backwards);
     CHECK(tsxx_player_jump(&backwards, pack, 10071u, &LAYOUT_16), "跳到 no_back 页失败");
     CHECK(tsxx_player_back(&backwards, pack, &LAYOUT_16), "回退失败");
     CHECK(backwards.page == 2028u, "回退到第 %u 页,期望第 2029 页",
@@ -483,10 +516,11 @@ static void test_pagination(void)
 
     // 屏数上限:超长文本必须把剩余内容并进最后一屏,不能丢字。
     char long_text[512];
-    for (size_t i = 0; i + 1 < sizeof(long_text); i += 3) {
-        memcpy(long_text + i, "字", 3);
+    size_t length = 0;
+    for (; length + 3 < sizeof(long_text); length += 3) {
+        memcpy(long_text + length, "字", 3);
     }
-    long_text[sizeof(long_text) - 1] = '\0';
+    long_text[length] = '\0';
     screens = tsxx_text_screens(long_text, &narrow, offsets, 3);
     CHECK(screens == 3, "受上限约束的屏数应为 3,实际 %d", screens);
     CHECK(offsets[screens] == (uint32_t)strlen(long_text), "截断时丢了尾部的字");
@@ -507,7 +541,7 @@ int main(int argc, char **argv)
         return 2;
     }
     printf("资源包 %s: %u 字节\n", path, (unsigned)size);
-    printf("META:\n%s", tsxx_pack_meta(&pack));
+    printf("META:\n%.*s", (int)pack.meta_size, tsxx_pack_meta(&pack));
 
     test_pack_structure(&pack);
     test_chapters(&pack);

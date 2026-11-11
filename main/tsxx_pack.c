@@ -472,7 +472,10 @@ bool tsxx_pack_open(tsxx_pack_t *pack, const uint8_t *data, uint32_t size)
     }
 
     *pack = view;
-    return true;
+    // branch_load binds pointers into its destination's inline buffer. The
+    // copied pointers still address the local view, so bind the owned buffer
+    // again before returning the validated pack.
+    return branch_load(pack, data, NULL);
 }
 
 // 分区模式:把包内 [off, off+len) 放进滑动窗口,返回窗口内的指针。
