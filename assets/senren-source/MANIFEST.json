@@ -4011,7 +4011,8 @@
   "scn/chunk017.txt": {
    "path": "src/common/scn/chunk017.txt",
    "bytes": 47660,
-   "sha256": "60db4f188ad1662cee49fc88d714020403c6cbaaaf00bf011d106c6bd43740cc"
+   "sha256": "1e222990e1c3e8f630085346bc9cae968d8e8d8f70ec50bf4442747fe3756cf5",
+   "ref": "9644883f44033a9c5a27e48cdd91d3894f3ca472"
   },
   "scn/chunk018.txt": {
    "path": "src/common/scn/chunk018.txt",
@@ -4240,8 +4241,9 @@
   },
   "scn/chunk063.txt": {
    "path": "src/common/scn/chunk063.txt",
-   "bytes": 43951,
-   "sha256": "2f4c96a20b93f828b8803607fc13e4411605cb8b873458811b8974ce51ca4f57"
+   "bytes": 43937,
+   "sha256": "3b0100e0dd52a16cdf3846d6cca5cfa587232b6c4616a127114aabd36f7e2b34",
+   "ref": "9644883f44033a9c5a27e48cdd91d3894f3ca472"
   },
   "scn/chunk064.txt": {
    "path": "src/common/scn/chunk064.txt",
@@ -4325,8 +4327,9 @@
   },
   "scn/chunk080.txt": {
    "path": "src/common/scn/chunk080.txt",
-   "bytes": 48843,
-   "sha256": "b80280d29ad7554a7c7c0a4da89a72c89ba90dfeeb396dd835f0ac23491ad7c6"
+   "bytes": 48857,
+   "sha256": "a890cb43d3e50de8bb79176539c83f00ab73b8abb12b513a0dcb8f3af6ea1439",
+   "ref": "9644883f44033a9c5a27e48cdd91d3894f3ca472"
   },
   "scn/chunk081.txt": {
    "path": "src/common/scn/chunk081.txt",
@@ -4488,5 +4491,16 @@
    "bytes": 41031,
    "sha256": "33860143d38aae334108ee2342ac2216bf7eb9e9e607e8d325856b20d4e8f581"
   }
+ },
+ "route_fix": {
+  "repo": "hrk666666/Senren-Banka-MiBand-10",
+  "commit": "fcc16a017038ba61030b871f661f3e8e67312a87",
+  "verified_ref": "9644883f44033a9c5a27e48cdd91d3894f3ca472",
+  "files": [
+   "scn/chunk012.txt",
+   "scn/chunk017.txt",
+   "scn/chunk063.txt",
+   "scn/chunk080.txt"
+  ]
  }
 }

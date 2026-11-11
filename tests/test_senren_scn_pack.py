@@ -13,6 +13,10 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
+import re
+import shlex
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -78,6 +82,34 @@ class SenrenScriptPackTest(unittest.TestCase):
         # 每块表里的 node_count 必须与解出来的记录数一致
         for index, info in enumerate(self.pack.chunks):
             self.assertEqual(len(self.pack.records(index)), info.node_count)
+
+    def test_production_runtime_routes_and_all_choices(self) -> None:
+        # Source positions are an independent oracle for the C reader/player.
+        labels = [{node[1]: i for i, node in enumerate(nodes) if node[0] == 0}
+                  for nodes in self.source]
+        cases: list[str] = []
+        for chunk, nodes in enumerate(self.source):
+            for position, node in enumerate(nodes):
+                if node[0] != 4:
+                    continue
+                for option, item in enumerate(node[1]):
+                    match = re.fullmatch(r"(?:(\d+)@)?(\*p\d+)", item[1])
+                    self.assertIsNotNone(match, item[1])
+                    assert match is not None
+                    target = int(match[1]) - 1 if match[1] else chunk
+                    cases.append(f"{chunk} {position} {option} {target} "
+                                 f"{labels[target][match[2]]}\n")
+        fixture = Path(self.temporary.name) / "choice-targets.tsv"
+        fixture.write_text("".join(cases), encoding="utf-8")
+        binary = Path(self.temporary.name) / "senren-routes"
+        subprocess.run([
+            *shlex.split(os.environ.get("CC", "cc")), "-std=c11", "-O2",
+            "-Wall", "-Wextra", "-Werror", "-Imain",
+            "tests/test_senren_routes.c", "main/senren_model.c", "main/senren_inflate.c",
+            "-o", str(binary),
+        ], cwd=ROOT, check=True)
+        subprocess.run([str(binary), str(ROOT / "main/senren_data/senren_scn.bin"),
+                        str(fixture)], cwd=ROOT, check=True)
 
     def test_round_trip_is_node_by_node_identical(self) -> None:
         mismatches: list[str] = []
