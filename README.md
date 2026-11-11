@@ -59,7 +59,7 @@ fork 在此之上承载了**多个独立应用**：每个应用一个 `feature/*
 - **DRACU-RIOT!** —— [`feature/dracu-riot`](https://github.com/Shinku-Chen/ai-passport/tree/feature/dracu-riot)，`v0.1.0-dracu-riot`
   竖屏；五条女主线含后日谈与结局，62 个章节节点、244 张事件 CG、85 张背景；
   来源为小米手环同人移植工程，素材与版权归属上游。
-- **limelight lemonade jam（聚光灯柠檬果酱）** —— [`cindy/curious-babbage`](https://github.com/Shinku-Chen/ai-passport/tree/cindy/curious-babbage)，`v0.1.0-limelight`
+- **limelight lemonade jam（聚光灯柠檬果酱）** —— [`feature/curious-babbage`](https://github.com/Shinku-Chen/ai-passport/tree/feature/curious-babbage)，`v0.1.0-limelight`
   竖屏；230 个章节点、68,229 句、991 张图像、8 个选项分支；4.49 + 1.81 MiB 两段
   内容包，3,449 个字形码位。上游未声明许可，仅个人非商业。
 - **Sanoba Witch（魔女的夜宴）** —— [`feature/sanoba-witch`](https://github.com/Shinku-Chen/ai-passport/tree/feature/sanoba-witch)，`v0.1.0-sanoba-witch`

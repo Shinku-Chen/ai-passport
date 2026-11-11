@@ -65,7 +65,7 @@ partition limit, `clannad` has 173,056 B free — check the budget before touchi
 - **DRACU-RIOT!** — [`feature/dracu-riot`](https://github.com/Shinku-Chen/ai-passport/tree/feature/dracu-riot), `v0.1.0-dracu-riot`
   Portrait; five heroine routes with after-stories and endings, 62 chapter nodes,
   244 event CGs, 85 backgrounds. Ported from a Mi Band fan port; assets belong upstream.
-- **limelight lemonade jam** — [`cindy/curious-babbage`](https://github.com/Shinku-Chen/ai-passport/tree/cindy/curious-babbage), `v0.1.0-limelight`
+- **limelight lemonade jam** — [`feature/curious-babbage`](https://github.com/Shinku-Chen/ai-passport/tree/feature/curious-babbage), `v0.1.0-limelight`
   Portrait; 230 chapter points, 68,229 lines, 991 images, 8 choices; two content packs
   (4.49 + 1.81 MiB) and 3,449 glyph codepoints. Upstream declares no license; personal,
   non-commercial use only.
