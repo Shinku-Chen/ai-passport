@@ -64,16 +64,30 @@ static bool consume_events(const sg0_pack_t *pack, sg0_state_t *state, const sg0
         state->event_node = state->node;
         state->event_cursor = 0;
     }
+    // Source events() makes read-without-reply and the default message
+    // mutually exclusive for each (at, base). Events are ordered by at, and
+    // one consume call processes an entire timestamp before returning.
+    uint16_t fallback_at = 0;
+    uint16_t fallback_bases = 0;
     while (state->event_cursor < node->event_count) {
         sg0_event_t ev;
         const uint16_t index = (uint16_t)(node->event_first + state->event_cursor);
         if (!sg0_pack_event(pack, index, &ev)) return false;
         if (ev.at > state->cursor) break;
         ++state->event_cursor;
+        if (ev.at != fallback_at) {
+            fallback_at = ev.at;
+            fallback_bases = 0;
+        }
         if (ev.type == SG0_EVENT_CLOSE_CHOICE) {
             state->rine.pending_valid = 0;
         } else if (ev.type == SG0_EVENT_MESSAGE) {
-            rine_add(pack, state, ev.data);
+            sg0_rine_msg_t msg;
+            if (!sg0_pack_rine_msg(pack, ev.data, &msg)) return false;
+            const int bit = base_bit(pack, msg.base);
+            if (bit < 0 || (fallback_bases & (1u << bit)) == 0) {
+                rine_add(pack, state, ev.data);
+            }
         } else if (ev.type == SG0_EVENT_RINE_RESET) {
             state->rine.windows = 0;
             if ((ev.flags & 1u) == 0) {
@@ -97,6 +111,7 @@ static bool consume_events(const sg0_pack_t *pack, sg0_state_t *state, const sg0
                     }
                 }
                 if (read) {
+                    fallback_bases |= (uint16_t)(1u << bit);
                     for (uint16_t i = 0; i < ev.b; ++i) {
                         rine_add(pack, state, (uint16_t)(ev.data + i));
                     }

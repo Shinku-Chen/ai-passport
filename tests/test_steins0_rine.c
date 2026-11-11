@@ -249,6 +249,41 @@ static void test_r9_fallback(void)
     }
 }
 
+static void test_expiry_message_branches(void)
+{
+    const uint16_t cases[][5] = {
+        // node, cursor, thread base, read-without-reply id, unread default id
+        { 0, 270, 2304, 19, 19 },
+        { 0, 596, 2560, 10, 13 },
+        { 0, 842, 3072, 15, 9 },
+        { 31, 739, 5376, 15, 9 },
+    };
+    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i) {
+        for (int variant = 0; variant < 3; ++variant) {
+            sg0_state_t state;
+            load_events(&state, (uint8_t)cases[i][0], cases[i][1] - 1);
+            if (variant != 2) sg0_engine_mark_read(&state);
+            const int bit = base_bit(cases[i][2]);
+            CHECK(bit >= 0, "expiry thread base");
+            if (variant == 1 && bit >= 0) state.rine.replied |= (uint16_t)(1u << bit);
+            const uint16_t before = state.rine.count;
+            state.cursor = cases[i][1];
+            CHECK(sg0_engine_locate(&s_pack, &state, NULL) == SG0_PLACE_TEXT,
+                  "expiry story position");
+            const uint16_t added = state.rine.count - before;
+            CHECK(added == (variant == 1 ? 0 : 1),
+                  "n%u@%u variant %d added %u messages", cases[i][0], cases[i][1], variant, added);
+            if (added == 1) {
+                sg0_rine_msg_t msg;
+                CHECK(sg0_pack_rine_msg(&s_pack, state.rine.refs[before], &msg), "expiry message");
+                CHECK(msg.id == cases[i][variant == 0 ? 3 : 4] && msg.base == cases[i][2],
+                      "expiry picked wrong conditional message");
+                CHECK(state.rine.read[before] == 0, "new expiry message must be unread");
+            }
+        }
+    }
+}
+
 static void test_endings_normalize(void)
 {
     sg0_state_t state;
@@ -278,6 +313,7 @@ int main(void)
     test_r5_close_choice();
     test_r7_restore_and_r8();
     test_r9_fallback();
+    test_expiry_message_branches();
     test_endings_normalize();
     free(blob);
     if (failures) {
