@@ -865,6 +865,9 @@ bool senren_chapter_label(const char *title, char *out, size_t capacity)
 static bool find_label(senren_player_t *player, const senren_scn_t *scn, uint16_t chunk, uint32_t page,
                        uint32_t *node_out)
 {
+    if (chunk >= scn->chunk_count) {
+        return false;
+    }
     const uint16_t first = chunk_first_block(scn, chunk);
     const uint16_t count = chunk_blocks(scn, chunk);
     for (uint16_t step = 0; step < count; step++) {
@@ -1138,7 +1141,8 @@ senren_step_t senren_player_advance(senren_player_t *player, const senren_scn_t 
                 player->ending_index = (uint16_t)record.target_page;
                 return SENREN_STEP_ENDING;
             }
-            uint16_t target_chunk = record.target_kind == SENREN_TARGET_CROSS ? record.target_chunk
+            // 包内跨块编号从 1 开始,player->chunk 和块表下标从 0 开始。
+            uint16_t target_chunk = record.target_kind == SENREN_TARGET_CROSS ? record.target_chunk - 1u
                                                                               : player->chunk;
             uint32_t target_node = 0;
             if (!find_label(player, scn, target_chunk, record.target_page, &target_node)) {
@@ -1167,7 +1171,7 @@ bool senren_player_choose(senren_player_t *player, const senren_scn_t *scn, uint
         player->flags[player->choice_flag[index]] = player->choice_value[index];
     }
     uint16_t target_chunk = player->choice_target_kind[index] == SENREN_TARGET_CROSS
-                                ? player->choice_chunk[index]
+                                ? player->choice_chunk[index] - 1u
                                 : player->chunk;
     uint32_t target_node = 0;
     if (!find_label(player, scn, target_chunk, player->choice_page[index], &target_node)) {

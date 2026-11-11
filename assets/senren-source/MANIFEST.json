@@ -3985,8 +3985,8 @@
   },
   "scn/chunk012.txt": {
    "path": "src/common/scn/chunk012.txt",
-   "bytes": 50832,
-   "sha256": "3070d8fb6884f1173945d78516a42659bfed0c4739dfcf2514cb6b4af386aea2"
+   "bytes": 50815,
+   "sha256": "6d15d6bc402f29d0285f3496823c50d09549a75fc8f5b8c65785ee27c4ac7c31"
   },
   "scn/chunk013.txt": {
    "path": "src/common/scn/chunk013.txt",

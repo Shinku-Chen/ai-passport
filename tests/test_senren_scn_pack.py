@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Round-trip contract for the Senren * Banka script pack (SENRSCN1).
 
-CI has no third-party source material, so the pack tests skip unless the
-script chunks have been fetched:
+Use the bundled script chunks when available, otherwise fetch them with:
 
   python tools/senren_fetch_source.py --dest build/senren-source --chunks
   python3 tests/test_senren_scn_pack.py
@@ -21,7 +20,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "build" / "senren-source"
+SOURCE = ROOT / "assets" / "senren-source"
+if not (SOURCE / "scn").is_dir():
+    SOURCE = ROOT / "build" / "senren-source"
 SCN_DIR = SOURCE / "scn"
 
 SPEC = importlib.util.spec_from_file_location(
@@ -32,7 +33,7 @@ PACK = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = PACK
 SPEC.loader.exec_module(PACK)
 
-EXPECTED_NODES = 74504
+EXPECTED_NODES = 74503
 
 
 def chunks() -> list[list]:

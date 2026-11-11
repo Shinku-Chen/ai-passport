@@ -50,10 +50,12 @@ static uint8_t *read_file(const char *path, uint32_t *size_out)
 
 static void test_pack(const senren_pack_t *pack)
 {
-    CHECK(pack->entry_count == 785, "图片包条目数 = %u,期望 785", (unsigned)pack->entry_count);
+    CHECK(pack->entry_count == 786, "图片包条目数 = %u,期望 786", (unsigned)pack->entry_count);
 
     // 三个名字空间都能按名字查到,且找不到的名字明确失败
     senren_asset_t asset;
+    CHECK(senren_pack_find(pack, SENREN_POOL_BG, SENREN_TITLE_ART_NAME, &asset), "找不到标题图");
+    CHECK(asset.kind == SENREN_KIND_BG && asset.w == 240 && asset.h == 320, "标题图格式或尺寸不符");
     CHECK(senren_pack_find(pack, SENREN_POOL_BG, "空_青空", &asset), "找不到背景 空_青空");
     CHECK(asset.kind == SENREN_KIND_BG, "空_青空 类型 = %u", (unsigned)asset.kind);
     CHECK(asset.w == 240 && asset.h == 320, "背景尺寸 = %ux%u", (unsigned)asset.w, (unsigned)asset.h);
@@ -71,7 +73,7 @@ static void test_pack(const senren_pack_t *pack)
 
     CHECK(!senren_pack_find(pack, SENREN_POOL_EV, "no_such_name", &asset), "不存在的名字应该查不到");
 
-    // 补丁条目的载荷必须能拆成掩码 + 像素两段
+    // 当前补丁使用掩码流 + 多个像素块,解压与像素计数由 pack_layout 测试覆盖。
     static const char *const patches[] = { "ev414c", "ev414d", "ev414e", "ev215a" };
     for (size_t index = 0; index < sizeof(patches) / sizeof(patches[0]); index++) {
         if (!senren_pack_find(pack, SENREN_POOL_EV, patches[index], &asset)) {
@@ -80,13 +82,7 @@ static void test_pack(const senren_pack_t *pack)
         if (asset.kind != SENREN_KIND_CG_DIFF) {
             continue;
         }
-        const uint8_t *mask = NULL;
-        const uint8_t *pixels = NULL;
-        uint32_t mask_len = 0;
-        uint32_t pixels_len = 0;
-        CHECK(senren_patch_parts(&asset, &mask, &mask_len, &pixels, &pixels_len),
-              "%s 补丁载荷拆不开", patches[index]);
-        CHECK(mask_len > 0 && pixels_len > 0, "%s 补丁某一段为空", patches[index]);
+        CHECK(asset.data != NULL && asset.data_len >= 12, "%s 补丁载荷为空", patches[index]);
         CHECK(asset.dw > 0 && asset.dh > 0, "%s 补丁矩形为空", patches[index]);
         CHECK(asset.dx + asset.dw <= 240 && asset.dy + asset.dh <= 320, "%s 补丁超出画布",
               patches[index]);
@@ -171,6 +167,58 @@ static void test_reading(const senren_scn_t *scn)
     CHECK(memcmp(restored.flags, saved.flags, sizeof(saved.flags)) == 0, "存档标志位不一致");
 }
 
+static bool next_choice(senren_player_t *player, const senren_scn_t *scn,
+                        const senren_layout_t *layout)
+{
+    for (unsigned step = 0; step < 100000; step++) {
+        senren_step_t result = senren_player_advance(player, scn, layout);
+        if (result == SENREN_STEP_CHOICE) {
+            return true;
+        }
+        if (result == SENREN_STEP_STUCK || result == SENREN_STEP_ENDING) {
+            CHECK(false, "到达下个选项前停止: %s", senren_get_error());
+            return false;
+        }
+    }
+    CHECK(false, "未能到达下个选项");
+    return false;
+}
+
+static void test_chapter_three_choices(const senren_scn_t *scn)
+{
+    const senren_layout_t layout = {26, 5};
+    // 从新开局走到野外活动,覆盖钓鱼的两支及挖野菜、单独行动。
+    const unsigned activities[] = {0, 0, 1, 2};
+    for (unsigned path = 0; path < 4; path++) {
+        senren_player_t player = {0};
+        CHECK(senren_player_start(&player, scn, 0, 0, 0, &layout), "开始路径失败");
+        for (unsigned choice = 0; choice < 4; choice++) {
+            if (!next_choice(&player, scn, &layout)) {
+                break;
+            }
+            unsigned selected = choice == 3 ? activities[path] : 0;
+            CHECK(senren_player_choose(&player, scn, selected, &layout),
+                  "路径 %u 的共通选项 %u 跳转失败", path, choice);
+        }
+        if (next_choice(&player, scn, &layout)) {
+            if (activities[path] == 0) {
+                CHECK(strcmp(player.choice[0], "就是不行") == 0 &&
+                      strcmp(player.choice[1], "既然你都这么说了……") == 0,
+                      "钓鱼后必须出现二选一,实际 '%s'", player.choice[0]);
+                CHECK(senren_player_choose(&player, scn, path, &layout), "钓鱼分支跳转失败");
+                CHECK(next_choice(&player, scn, &layout), "钓鱼后未能汇合");
+            }
+            CHECK(strcmp(player.choice[0], "用语言表达谢意") == 0,
+                  "活动结束应汇合到道谢选项,实际 '%s'", player.choice[0]);
+            CHECK(senren_player_choose(&player, scn, 0, &layout), "道谢选项跳转失败");
+            CHECK(next_choice(&player, scn, &layout), "跨块 NEXT 后未能继续");
+            CHECK(strcmp(player.choice[0], "感觉有点担心……") == 0,
+                  "跨块 NEXT 后应到达 3-4 选项,实际 '%s'", player.choice[0]);
+        }
+        senren_player_release(&player);
+    }
+}
+
 static void test_layout(void)
 {
     CHECK(senren_char_units('A') == 1, "半角宽度算错");
@@ -235,6 +283,7 @@ int main(void)
     test_pack(&pack);
     test_scn(&scn);
     test_reading(&scn);
+    test_chapter_three_choices(&scn);
     test_layout();
 
     free(pack_data);

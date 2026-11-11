@@ -4,14 +4,16 @@
 
 # 千恋＊万花（Senren \* Banka）
 
-移植自小米手环同人移植版《千恋＊万花》的竖屏视觉小说阅读器：源移植版的完整剧情，外加 **92 张背景、123 张立绘（含多套姿势）、570 张事件立绘** 及其附带内容，全程离线。剧本与美术来自 [`hrk666666/Senren-Banka-MiBand-10`](https://github.com/hrk666666/Senren-Banka-MiBand-10)（小米手环 9/10 快应用）；本分支在 ATRI 阅读器的 LVGL 页面系统上重写阅读引擎，改由三个按键操作。状态：**已发布** —— tag `v0.1.0-senren-banka`，并以 `community-07c775dc` 提交到 AI Passport 社区市场（审核中）。
+移植自小米手环同人移植版《千恋＊万花》的竖屏视觉小说阅读器：源移植版的完整剧情，外加 **92 张背景、123 张立绘（含多套姿势）、570 张事件立绘** 及其附带内容，全程离线。剧本与美术来自 [`hrk666666/Senren-Banka-MiBand-10`](https://github.com/hrk666666/Senren-Banka-MiBand-10)（小米手环 9/10 快应用）；本分支在 ATRI 阅读器的 LVGL 页面系统上重写阅读引擎，改由三个按键操作。发布 tag：`v0.1.1-senren-banka`；AI Passport 社区条目：`community-07c775dc`。
 
 - 分支：[`feature/senren-banka`](https://github.com/Shinku-Chen/ai-passport/tree/feature/senren-banka)
-- 发布：[`v0.1.0-senren-banka`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-senren-banka) —— 合并固件 `FoloToy-AI-Passport-full.bin`，7,997,648 字节（该镜像已在真机验证；CI 用同一份源码重建）
+- 发布：[`v0.1.1-senren-banka`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.1-senren-banka) —— 合并固件 `FoloToy-AI-Passport-full.bin`（本补丁的真机测试尚未执行）
 - 上游来源：[`hrk666666/Senren-Banka-MiBand-10`](https://github.com/hrk666666/Senren-Banka-MiBand-10) —— 本分支移植的来源项目，未声明许可证；其剧本与美术由 [`tools/senren_fetch_source.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/senren-banka/tools/senren_fetch_source.py) 拉取而不入库，打包进固件并署名来源。按应用首次启动的说明，本移植仅供个人学习交流。
-- 素材工具链：[`tools/senren_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/senren-banka/tools/senren_pack.py)（图片包 5,263,756 字节，输出到 `main/senren_data/`）、[`tools/senren_scn_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/senren-banka/tools/senren_scn_pack.py)（剧本包 1,432,148 字节）与 [`tools/senren_lvgl_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/senren-banka/tools/senren_lvgl_font.py)（16px 中文子集，3,492 个字形，按码点顺序供稀疏字体二分查找）
+- 素材工具链：[`tools/senren_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/senren-banka/tools/senren_pack.py)（图片包 5,263,756 字节，输出到 `main/senren_data/`）、[`tools/senren_scn_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/senren-banka/tools/senren_scn_pack.py)（剧本包 1,432,104 字节）与 [`tools/senren_lvgl_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/senren-banka/tools/senren_lvgl_font.py)（16px 中文子集，3,492 个字形，按码点顺序供稀疏字体二分查找）
 
 **操作（三键）：** 列表页上 / 下移动光标、**确定**进入。阅读时 **上 / 下** 推进一行（打字过程中按一下先补全，一行放不下会分页），**长按上**快进、松手即停，**长按下**切换自动阅读，**确定**（短按或长按）打开菜单 —— 继续、保存、读取、跳过章节、返回标题。选项用上 / 下 + 确定，选中即存档。短按阈值 180 ms、长按 500 ms，由 BSP 显式传给按键组件。
+
+**v0.1.1 剧情修复：** 修复第 3-2 章「钓鱼／挖野菜／单独行动」的跨剧本跳转，并恢复钓鱼后的「就是不行／既然你都这么说了……」二选一。两条钓鱼分支会在同一段剧情汇合。剧本包仍以从 1 开始的文件编号存储跳转，引擎在使用时转为从 0 开始的数组下标；存档格式和分区布局未变。本补丁不调整其他路线入口。
 
 **存档、章节与空闲：** 1 个自动存档位 + 5 个手动位，自动位在每次换章、每次选项和入睡前写入，标题页以「继续」入口呈现。每章进入时显示 `Chapter X-X` 卡片（章 + 节）。空闲策略：60 秒调暗背光、180 秒熄屏、420 秒进入 deep sleep，任意键唤醒；自动阅读与快进不计入空闲时间，因此长时间挂着不会自动变暗或休眠。
 
@@ -29,7 +31,7 @@ AI Passport 上的**竖屏**视觉小说阅读器，移植自《千恋＊万花�
 立绘与事件插图都装进固件，三个按键就能从序章一路读到结局。内置 **92 张背景、123 个可换姿势的
 立绘、570 张事件插图**；支持打字机正文与自动分页、章节过场卡、菜单跳章。三个按键：**UP/DOWN
 逐句翻**，长按 **UP** 快进，长按 **DOWN** 自动阅读，**OK** 打开菜单（存档/读档/跳章/回标题）。
-发布版本：**v0.1.0-senren-banka**。已知限制：仅竖屏 240×320；个人非商业移植。
+发布版本：**v0.1.1-senren-banka**。已知限制：仅竖屏 240×320；个人非商业移植。
 
 ## 说明
 

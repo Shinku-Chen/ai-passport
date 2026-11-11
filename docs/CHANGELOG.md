@@ -10,6 +10,14 @@
 > with `CHANGELOG.zh_CN.md`. The entries currently under `Unreleased` are pending
 > review for the next release; they are not a finalized release history.
 
+## v0.1.1-senren-banka — 2026-11-11
+
+- Fix one-based cross-script target resolution for both choices and conditional/unconditional jumps without changing the script-pack or save formats.
+- Restore the Chapter 3-2 fishing choice by removing the unconditional jump immediately before it, and rebuild the embedded script pack from the corrected bundled source.
+- Add reader regressions from a new game through both fishing branches, gathering vegetables and exploring alone, including their reunion and the next cross-script jump. Run pack round-trip checks against bundled scripts when present.
+- Align host image assertions with the shipped title art and chunked patch format, include the existing full pack-layout checks in the gate, and replace a literal NUL in the host inflate stub with an escaped character literal.
+- The bundled `chunk012.txt` contains the local fishing correction; rebuild this script pack with `--source assets/senren-source` instead of fetching an unpatched upstream copy.
+
 ## Unreleased
 
 - Added the supplied 80-byte CW2017 profile for the specified 520 mAh cell, including content/update-flag checks, verified writes, the required restart sequence, and bounded SOC-readiness polling.

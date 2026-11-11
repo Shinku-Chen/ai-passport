@@ -9,14 +9,13 @@ story of the source port plus **92 backgrounds, 123 sprites in several poses eac
 event illustrations** and the extras it carries, fully offline. The script and art come
 from [`hrk666666/Senren-Banka-MiBand-10`](https://github.com/hrk666666/Senren-Banka-MiBand-10)
 (a Mi Band 9/10 quick app); this branch re-implements the reader on the ATRI reader's LVGL
-page system and drives it with the three keys. Status: **released** — tag
-`v0.1.0-senren-banka`, and submitted to the AI Passport community market as
-`community-07c775dc` (under review).
+page system and drives it with the three keys. Release tag:
+`v0.1.1-senren-banka`; AI Passport community entry: `community-07c775dc`.
 
 - Branch: [`feature/senren-banka`](https://github.com/Shinku-Chen/ai-passport/tree/feature/senren-banka)
-- Release: [`v0.1.0-senren-banka`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.0-senren-banka) — merged image `FoloToy-AI-Passport-full.bin`, 7,997,648 bytes (the image validated on device; CI rebuilds the same sources)
+- Release: [`v0.1.1-senren-banka`](https://github.com/Shinku-Chen/ai-passport/releases/tag/v0.1.1-senren-banka) — merged image `FoloToy-AI-Passport-full.bin` (this patch has not been tested on a device)
 - Upstream work: [`hrk666666/Senren-Banka-MiBand-10`](https://github.com/hrk666666/Senren-Banka-MiBand-10) — the fan port this branch derives from. It declares no licence; its script and artwork are fetched with [`tools/senren_fetch_source.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/senren-banka/tools/senren_fetch_source.py) rather than committed, packed into the firmware, and the upstream project is credited. The port is shared for personal study and exchange only, as the app's first-run notice states.
-- Asset toolchain: [`tools/senren_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/senren-banka/tools/senren_pack.py) (image pack 5,263,756 bytes into `main/senren_data/`) and [`tools/senren_scn_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/senren-banka/tools/senren_scn_pack.py) (script pack 1,432,148 bytes) plus [`tools/senren_lvgl_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/senren-banka/tools/senren_lvgl_font.py) (16 px Chinese subset, 3,492 glyphs in code-point order for the sparse-font binary search)
+- Asset toolchain: [`tools/senren_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/senren-banka/tools/senren_pack.py) (image pack 5,263,756 bytes into `main/senren_data/`) and [`tools/senren_scn_pack.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/senren-banka/tools/senren_scn_pack.py) (script pack 1,432,104 bytes) plus [`tools/senren_lvgl_font.py`](https://github.com/Shinku-Chen/ai-passport/blob/feature/senren-banka/tools/senren_lvgl_font.py) (16 px Chinese subset, 3,492 glyphs in code-point order for the sparse-font binary search)
 
 **Controls (three keys):** on lists UP / DOWN move the cursor and **OK** selects. While
 reading, **UP / DOWN** advance a line (a press completes the typewriter first, and a line
@@ -25,6 +24,8 @@ that does not fit paginates), **UP (hold)** fast-forwards while held and stops o
 load, skip chapter, back to title. Choices use UP / DOWN + OK and save as soon as they are
 confirmed. Short presses register at 180 ms and long presses at 500 ms, passed to the button
 component explicitly by the BSP.
+
+**v0.1.1 story fixes:** repair the cross-script jumps for fishing, gathering vegetables and exploring alone in Chapter 3-2, and restore the two choices after choosing fishing. Both fishing branches rejoin the same story segment. The script pack retains one-based file numbers; the reader converts them to zero-based indices when resolving jumps. Save format and partition layout are unchanged. Other route entrances are outside this patch.
 
 **Saves, chapters and idle:** one automatic slot plus five manual slots, with the automatic
 one written on every chapter change, every choice and before sleeping, offered as
@@ -49,7 +50,7 @@ readable with three keys. It ships **92 backgrounds, 123 poseable character spri
 illustrations**, with typewriter text and automatic pagination, chapter cards and menu-based chapter
 skipping. Three keys: **UP/DOWN** step through lines, holding **UP** fast-forwards, holding **DOWN**
 starts auto-read, **OK** opens the menu (save/load/chapter skip/back to title).
-Release: **v0.1.0-senren-banka**. Known limits: portrait 240x320 only; personal, non-commercial port.
+Release: **v0.1.1-senren-banka**. Known limits: portrait 240x320 only; personal, non-commercial port.
 
 ## Notes
 
