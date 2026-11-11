@@ -42,7 +42,7 @@ the submission is recorded in the Chinese version of this page, `README.zh_CN.md
 - **Cover**: `comm_cover.png` (PNG, 1152 × 1536, 3:4) — the upstream key visual
   supplied by the fork owner, cropped to the required ratio and not otherwise
   altered. Publish metadata only; the image is not committed in this repository.
-- **Source**: <https://github.com/Shinku-Chen/ai-passport/tree/feature/curious-babbage>
+- **Source**: <https://github.com/Shinku-Chen/ai-passport/tree/cindy/curious-babbage>
 - **Release**: tag `v0.1.0-limelight` (`dc7154d`), merged image
   `FoloToy-AI-Passport-full.bin`, 7,897,824 bytes, built by the tag-triggered CI.
 - **Community submission**: project 680, revision 1444, slug
