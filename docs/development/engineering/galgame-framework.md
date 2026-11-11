@@ -241,6 +241,11 @@ ESP-IDF / LVGL, add a host test, and wire it into `tools/validate.sh`.
 
 ## 11. Delivery
 
+Story acceptance must cover every choice and character route:
+
+- Select and check every choice individually, confirming that it leads to the expected story branch.
+- Verify the entry to every character route, confirming that the corresponding choices and entry conditions lead to the intended route.
+
 Report firmware changes as separate fields, as required by the repository:
 
 ```text
