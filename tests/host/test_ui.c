@@ -158,12 +158,23 @@ static void test_reader_fast_forward_release(void)
 {
     click(BSP_BTN_OK);   // 开始游戏
     CHECK(s_app.page == GAL_PAGE_READER, "进入正文页（当前 %d）", (int)s_app.page);
-    // 阅读页四硬指标：名字在框外（<BOX_Y）、页码独占框内右上、正文末行不出框。
-    // 面板 152..240；名字在框外、页码在框外右上、正文贴面板顶 +4。
-    CHECK(s_app.lbl_name->y + 21 <= 152 && s_app.lbl_page != NULL &&
-              s_app.lbl_page->y + 18 <= 152 && s_app.lbl_text->y == 156,
-          "name above box / page outside box / text at panel_top+4");
-    CHECK(s_app.lbl_text->y + 4 * 19 <= 238, "last text line must stay above 238");
+    // Paper-specific reader contract: the panel is 176..240 (64 px) and the
+    // body uses three 19-px lines. Assert against the real box object instead
+    // of the generic 152/4-line framework values: name/page must sit above the
+    // panel, text starts at panel_top+4, and the last line stays inside both
+    // the panel and the 240-px screen.
+    CHECK(s_app.box != NULL && s_app.box->y == 176 && s_app.box->h == 64,
+          "reader panel must be 176..240/64 (y=%d h=%d)",
+          s_app.box ? s_app.box->y : -1, s_app.box ? s_app.box->h : -1);
+    CHECK(s_app.lbl_name != NULL && s_app.lbl_page != NULL &&
+              s_app.lbl_name->y + 21 <= s_app.box->y &&
+              s_app.lbl_page->y + 18 <= s_app.box->y,
+          "name/page must stay above the reader panel");
+    CHECK(s_app.lbl_text != NULL && s_app.lbl_text->y == s_app.box->y + 4,
+          "text must start at panel_top+4 (y=%d)", s_app.lbl_text ? s_app.lbl_text->y : -1);
+    CHECK(s_app.lbl_text != NULL && s_app.lbl_text->y + 3 * 19 <= s_app.box->y + s_app.box->h &&
+              s_app.lbl_text->y + 3 * 19 <= 240,
+          "three 19-px lines must stay inside the panel and screen");
     s_app.speed = GAL_SPEED_INSTANT;
 
     // 走到一句已显示完的对白
@@ -289,6 +300,9 @@ static void test_autosave_paths(void)
     click(BSP_BTN_DOWN);
     click(BSP_BTN_OK);
     CHECK(s_app.page == GAL_PAGE_READER, "继续阅读进入正文");
+    CHECK(s_app.box != NULL && s_app.lbl_text != NULL && s_app.lbl_name != NULL,
+          "Continue must rebuild reader box/labels (box=%p text=%p name=%p)",
+          (void *)s_app.box, (void *)s_app.lbl_text, (void *)s_app.lbl_name);
     CHECK(s_app.game.scene_id == auto_scene,
           "继续阅读场景应为自动档场景（%u/%u）", auto_scene, s_app.game.scene_id);
     CHECK(s_app.game.text_op >= 0 && (uint32_t)s_app.game.text_op == auto_cursor,
@@ -760,6 +774,73 @@ static void check_cg_color_order(void)
     CHECK(paper_gfx_test_swap(0x07E0) == 0x07E0, "green unchanged");
 }
 
+static void test_continue_roundtrip_repeated(void)
+{
+    goto_reader();
+    for (int round = 0; round < 2; ++round) {
+        long_press(BSP_BTN_OK);
+        CHECK(s_app.page == GAL_PAGE_MENU, "round %d: menu", round);
+        for (int i = 0; i < 9; ++i) click(BSP_BTN_DOWN);
+        click(BSP_BTN_OK);
+        CHECK(s_app.page == GAL_PAGE_TITLE, "round %d: title", round);
+        for (int i = 0; i < 8; ++i) click(BSP_BTN_UP);
+        click(BSP_BTN_DOWN);
+        click(BSP_BTN_OK);
+        CHECK(s_app.page == GAL_PAGE_READER, "round %d: continue -> reader", round);
+        CHECK(s_app.box && s_app.lbl_text && s_app.lbl_name,
+              "round %d: reader labels rebuilt", round);
+    }
+}
+
+static void test_manual_load_to_text(void)
+{
+    goto_reader();
+    long_press(BSP_BTN_OK);
+    click(BSP_BTN_DOWN);
+    click(BSP_BTN_OK);
+    CHECK(s_app.page == GAL_PAGE_SAVE, "manual save page");
+    click(BSP_BTN_OK);
+    CHECK(paper_game_slot_exists(0), "manual slot 0");
+    long_press(BSP_BTN_OK);
+    for (int i = 0; i < 9; ++i) click(BSP_BTN_DOWN);
+    click(BSP_BTN_OK);
+    CHECK(s_app.page == GAL_PAGE_TITLE, "back to title before manual load");
+    for (int i = 0; i < 8; ++i) click(BSP_BTN_UP);
+    click(BSP_BTN_DOWN);
+    click(BSP_BTN_DOWN);
+    click(BSP_BTN_OK);
+    CHECK(s_app.page == GAL_PAGE_LOAD, "load page");
+    click(BSP_BTN_OK);
+    CHECK(s_app.page == GAL_PAGE_READER, "manual load -> reader");
+    CHECK(s_app.box && s_app.lbl_text && s_app.lbl_name && s_app.text[0],
+          "manual load rebuilds text labels");
+}
+
+static void test_same_visual_object_reuse(void)
+{
+    goto_reader();
+    s_app.speed = GAL_SPEED_INSTANT;
+    const lv_obj_t *art = s_app.img_art;
+    const lv_obj_t *text = s_app.lbl_text;
+    uint16_t bg = s_app.cur_bg;
+    uint16_t sprites[3];
+    memcpy(sprites, s_app.cur_sprites, sizeof(sprites));
+    for (int i = 0; i < 200; ++i) {
+        click(BSP_BTN_OK);
+        if (s_app.page != GAL_PAGE_READER) return;
+        if (s_app.cur_bg == bg && memcmp(s_app.cur_sprites, sprites, sizeof(sprites)) == 0) {
+            CHECK(s_app.img_art == art && s_app.lbl_text == text,
+                  "same visual must reuse image/label objects");
+            return;
+        }
+        art = s_app.img_art;
+        text = s_app.lbl_text;
+        bg = s_app.cur_bg;
+        memcpy(sprites, s_app.cur_sprites, sizeof(sprites));
+    }
+    CHECK(false, "no same-visual consecutive line found");
+}
+
 int main(int argc, char **argv)
 {
     const char *img = argc > 1 ? argv[1] : "main/paper_data/paper_img.bin";
@@ -784,6 +865,9 @@ int main(int argc, char **argv)
     test_reader_fast_forward_release();
     test_autosave_paths();
     test_typewriter_utf8();
+    test_continue_roundtrip_repeated();
+    test_manual_load_to_text();
+    test_same_visual_object_reuse();
     test_return_matrix();
     test_all_choice_branches();
     test_choice_cursor_survives_menu();

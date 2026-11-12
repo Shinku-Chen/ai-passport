@@ -122,6 +122,18 @@ python3 tools/gal_font.py --check --out-dir assets/fonts   # 只检查
 - 对话底纹透明度 10%–55%（步进 5%，默认 30%），可在设置里调整。
 - 行距为 字体行高 + 1px（16px 档 20px、20px 档 24px），对齐上述“每页行数”。
 
+### Paper 的阅读器专用契约
+
+`feature/port-paper-landscape` 固定使用 `y=176` 的 64px 对话框和 `y=180` 起
+的 3 × 19px 正文档。Host 测试必须断言真实边界：`text_y == 180`、
+`text_y + 3 × 19 <= 240`，且名牌/页码在 `y=176` 之上。不要回滚到通用的
+152/4 行指标；Paper 的 64/3 面板是作品特定例外。
+
+`load_step()` 的 `same_visual` 快路径只有在阅读器对象仍存在时（`box` 与
+`lbl_text`，不只是 `img_art`）才能跳过重建。从标题页返回会清空 labels 但
+保留标题图到 `img_art`；只看图像相等会跳过 label 创建，打字机就没有可更新
+的目标标签。
+
 ## 6. 页面与导航
 
 ```

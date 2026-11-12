@@ -349,7 +349,13 @@ static void load_step(gal_app_t *app)
         if (st->kind == PAPER_STEP_TEXT) {
             // 画面（背景 + 立绘）没变时**不得** clear_root/重建对象/重解码：
             // 那是快进"每句之间明显停顿"的根源（每句都销毁 LVGL 对象 + 解一张背景）。
+            // Title -> Continue can leave img_art non-NULL while clear_root()
+            // removed the reader labels. Reusing the visual fast path in that
+            // state would skip rebuilding lbl_text/lbl_name, so the typewriter
+            // would have no label to update. The fast path is only valid when
+            // every required reader object still exists.
             const bool same_visual = app->img_art != NULL &&
+                                     app->box != NULL && app->lbl_text != NULL &&
                                      app->cur_bg == st->background &&
                                      memcmp(app->cur_sprites, st->sprites,
                                             sizeof(app->cur_sprites)) == 0;

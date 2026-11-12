@@ -4,6 +4,12 @@ set -euo pipefail
 mode="${1:---all}"
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# macOS ld does not understand GNU --gc-sections; dead_strip is its equivalent.
+GC_LDFLAGS=(-Wl,--gc-sections)
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    GC_LDFLAGS=(-Wl,-dead_strip)
+fi
+
 usage() {
     echo "Usage: $0 [--all|--static|--firmware]" >&2
 }
@@ -75,7 +81,7 @@ run_static_checks() {
     for demo in audio low_power ble wifi; do
         "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
             -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \
-            "tests/test_demo_${demo}_runtime.c" -Wl,--gc-sections \
+            "tests/test_demo_${demo}_runtime.c" "${GC_LDFLAGS[@]}" \
             -o "${test_dir}/test_demo_${demo}_runtime"
         "${test_dir}/test_demo_${demo}_runtime"
     done

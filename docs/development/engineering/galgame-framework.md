@@ -125,6 +125,20 @@ While auto-play is on, **any key first exits auto-play**; that key press is cons
 - Panel transparency is 10%–55% (5% steps, default 30%) and configurable in settings.
 - Line spacing is the font line height plus 1px (20px at the 16px tier, 24px at the 20px tier).
 
+### Paper-specific reader contract
+
+`feature/port-paper-landscape` keeps a 64 px dialogue panel at `y=176` with a
+3 × 19 px text tier starting at `y=180`. Its host tests must assert the real
+boundaries: `text_y == 180`, `text_y + 3 × 19 <= 240`, and the name/page labels
+above `y=176`. Do not restore the generic 152/4-line metrics; Paper's 64/3
+panel is an intentional title-specific exception.
+
+The `same_visual` fast path in `load_step()` may only skip rebuilding when the
+reader objects still exist (`box` and `lbl_text`, not just `img_art`). Returning
+from the title screen clears the labels while leaving the title image in
+`img_art`; image-only equality would skip label creation and leave the
+typewriter with no target label.
+
 ## 6. Pages and navigation
 
 ```
