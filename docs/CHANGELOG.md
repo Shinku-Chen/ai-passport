@@ -56,3 +56,9 @@
 - Updated software-design and project README references for the new documentation structure.
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
+
+## v1.0.1-anemoi - 2026-11-12
+
+- Expand the existing public/common port from 71 to 80 scenes and 61,257 ops: full entry-0 ranges for scenes 26/27/28, scene 90, and scenes 167..174.
+- Add the scene-28 entry-0 prefix, the Koyomi eight play-item path, and the Rikka qualification boundary, using the reviewed A-q24 pack and 16px/3,079-glyph font.
+- Add the tracked exact binary audit and negative tests for scene/range/target/entry coverage; no overlay or source flag injection is used.

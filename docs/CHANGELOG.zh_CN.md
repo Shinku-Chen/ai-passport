@@ -53,3 +53,9 @@
 - 同步更新索引：`docs/software-design/README.md`、`README.en_US.md` / `README.zh_CN.md` 的 `docs/` 目录说明。
 - 参考 cindy 仓库文档组织完善索引：新增 `docs/README.md` 根总索引；AGENTS.md 规则索引按触发场景改写（附触发条件）；`docs/contribution/` 与 `docs/development/` 的 README 补充收录标准。
 - 引入社区治理文档（参照 cindy 改写，放仓库根目录）：新增 `CONTRIBUTING.md` / `.zh_CN.md`（贡献指南，针对 ESP-IDF/AI agent/fork 场景改写）、`CODE_OF_CONDUCT.md` / `.zh_CN.md`（贡献者公约）、`SECURITY.md` / `.zh_CN.md`（安全报告流程）、`SUPPORT.md` / `.zh_CN.md`（支持渠道）；AGENTS.md 与 docs/README.md 同步引用。
+
+## v1.0.1-anemoi - 2026-11-12
+
+- 在现有公共篇上把范围从 71 场景扩到 80 场景/61,257 ops：补全 26/27/28 的 entry-0、scene 90，以及 167..174 八个场景。
+- 补上 scene-28 entry-0 前缀、小詠 8 个 play item 路径和六花资格边界；使用已审阅的 A-q24 pack 与 16px/3,079 字形字库。
+- 新增 tracked 精确 binary audit 和 scene/range/target/entry 负例；不注入 source flag、不使用 overlay。
