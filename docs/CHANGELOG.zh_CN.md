@@ -54,6 +54,13 @@
 - 参考 cindy 仓库文档组织完善索引：新增 `docs/README.md` 根总索引；AGENTS.md 规则索引按触发场景改写（附触发条件）；`docs/contribution/` 与 `docs/development/` 的 README 补充收录标准。
 - 引入社区治理文档（参照 cindy 改写，放仓库根目录）：新增 `CONTRIBUTING.md` / `.zh_CN.md`（贡献指南，针对 ESP-IDF/AI agent/fork 场景改写）、`CODE_OF_CONDUCT.md` / `.zh_CN.md`（贡献者公约）、`SECURITY.md` / `.zh_CN.md`（安全报告流程）、`SUPPORT.md` / `.zh_CN.md`（支持渠道）；AGENTS.md 与 docs/README.md 同步引用。
 
+## v1.0.2-anemoi - 2026-11-12
+
+- 恢复三张源标题图并按解锁等级选择；END 获得的等级在重载后保留，New Game/Continue 不会覆盖已有解锁。
+- 修复立绘透明背景：使用有界调色板 alpha 分桶，同时保留真实黑色像素。
+- 按源 contain 语义在纸色底上绘制场景/CG，修正 JPEG 尺寸，不再出现边缘复制拉伸或黑边。
+- 新增图像 alpha/stride、生产像素布局和标题持久化 host 回归。基础真机验收已确认标题图、指定风场景、立绘透明和存读档；完整路线真机测试仍不在本轮范围。
+
 ## v1.0.1-anemoi - 2026-11-12
 
 - 在现有公共篇上把范围从 71 场景扩到 80 场景/61,257 ops：补全 26/27/28 的 entry-0、scene 90，以及 167..174 八个场景。

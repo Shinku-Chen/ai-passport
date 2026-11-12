@@ -57,6 +57,13 @@
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
 
+## v1.0.2-anemoi - 2026-11-12
+
+- Restore the three source title backgrounds and select them by unlock level; persist END-earned levels across reload and preserve existing unlocks through New Game and Continue.
+- Fix transparent sprite backgrounds with bounded palette alpha buckets while preserving genuine black pixels.
+- Render scene and CG images with source contain geometry on the paper background, with correct JPEG dimensions and no edge-column stretch or black padding.
+- Add host regressions for image alpha/stride, production pixel layout, and title persistence. Basic device acceptance passed for title artwork, the specified wind scene, sprite transparency, and save/title/load; full-route device testing remains out of scope.
+
 ## v1.0.1-anemoi - 2026-11-12
 
 - Expand the existing public/common port from 71 to 80 scenes and 61,257 ops: full entry-0 ranges for scenes 26/27/28, scene 90, and scenes 167..174.
