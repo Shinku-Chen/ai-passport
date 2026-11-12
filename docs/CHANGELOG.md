@@ -56,3 +56,10 @@
 - Updated software-design and project README references for the new documentation structure.
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
+
+## v1.0.1-steins0 - 2026-11-12
+
+- Keep RINE expiry branches exclusive: one expiry path cannot merge or overwrite another during event consumption.
+- Suppress a read-unreplied message's default fallback per (at, base) and process one timestamp per consume call.
+- Preserve the distinction between an empty readMessages array and an absent field via an explicit event flag; pack validation accepts only known flag bits.
+- Retain the existing six-ending and accept/ignore branch coverage; no new story routes are added.
