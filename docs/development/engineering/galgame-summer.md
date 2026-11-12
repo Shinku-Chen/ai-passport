@@ -369,3 +369,30 @@ PowerShell build is the **PASS** result above.
   story mode writes ending progress.
 - The source assets are the rights holder's; this branch is local technical
   validation and does not distribute the pack or a community release.
+
+## 9. Source boundaries and non-goals
+
+This port keeps the range of the RW5 source snapshot. It does not add PC-only
+minigames, and it does not invent new story or ending branches.
+
+- **Table tennis (scenes 280/414).** The source tags both scenes as
+  table-tennis scenarios (`90_...` / `RB90_...`); `previewMap()` excludes those sources
+  and the pack/production map filter carries the same `flags&2` exclusion.
+  The ten choice groups (146-151, 178-181) are therefore not normal map
+  destinations. The C reader retains the route-11 chapter entry after Pocket
+  clear for the dialogue-only sections, but this is a chapter entry, not a
+  normal story/map route. Groups 148/149 and 178-181 additionally depend on
+  the missing native table-tennis producer/state. No native game, no fixed
+  victory result and no save v3 are added.
+- **Empty map.** If every destination of a map stage has already been visited,
+  the source `renderMap()` shows its documented empty-map error page.
+  The C reader shows the same error page (`app_enter_map` ->
+  `APP_PAGE_ERROR`) and returns to the title. It does not auto-pick a
+  destination and does not treat the empty map as an ending. In the audited
+  495-item inventory this is the `SOURCE_EMPTY_MAP` state of group 47 item 1
+  (the "do not take" choice); it is an actual failure state, not a pass.
+- **Manosaba CommonBad.** The converted source has no reachable producer for
+  `CommonBad13`: `System_Subroutine` op111/op112 have no caller and there is no
+  time-out consumer. The real failure path is trial HP reaching zero
+  (`trialFail`), which the port already reproduces. The port does not inject a
+  `commonBadEndId` or fabricate that branch.
