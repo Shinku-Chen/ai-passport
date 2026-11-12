@@ -8,6 +8,7 @@ idf_component_register(
          "senren_model.c"
          "senren_inflate.c"
          "senren_save.c"
+         "senren_afterstory.c"
          "atri_image.c"
          "atri_ui.c"
          "atri_app.c"

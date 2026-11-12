@@ -1,5 +1,6 @@
 // main/atri_app.c —— 应用状态机实现(《千恋＊万花》阅读器,数据层接到 senren 模型/存档)。
 #include "atri_app.h"
+#include "senren_afterstory.h"
 
 #include "bsp_battery.h"
 #include "bsp_button.h"
@@ -18,10 +19,12 @@ static const char *TAG = "atri_app";
 #define ATRI_FASTFORWARD_MS 110u
 // 自动阅读:打字机打完之后再等这么久翻到下一句(与旧应用一致)。
 #define ATRI_AUTO_MS 900u
+// 通关位写入 NVS 失败时的有界重试间隔。
+#define ATRI_CLEARS_RETRY_MS 5000u
 // 一次推进里最多连跳多少个"不是章节卡"的 CHAPTER 标记(CHAPTERshow/hide),防坏数据死循环。
 #define ATRI_CHAPTER_MARK_MAX 64
-// 标题页固定 4 行:开始阅读 / 继续阅读 / 读取进度 / 系统设置。
-#define ATRI_TITLE_ROWS 4
+// 标题页 5 行:开始阅读 / 继续阅读 / 读取进度 / 后日谈 / 系统设置。
+#define ATRI_TITLE_ROWS 5
 // 存档页:自动存档 + 5 个手动存档 + 返回。
 #define ATRI_SLOT_ROWS (SENREN_SAVE_SLOTS + 2)
 
@@ -53,6 +56,7 @@ static uint32_t speed_ms(const atri_app_t *app)
 // 页面切换(定义在后面,推进流程里会用到)
 static void show_title(atri_app_t *app);
 static void show_ending(atri_app_t *app);
+static void key_list_move(atri_app_t *app, int *selected, int count, int delta);
 
 // 存档/列表里的"第几章":0 表示还没进第一章(存档在序章开头),按第 1 章显示。
 static uint16_t chapter_display(uint16_t chapter)
@@ -163,6 +167,17 @@ static void auto_save(atri_app_t *app)
     if (senren_auto_store(&save)) {
         app->have_auto = true;
     }
+}
+
+// 后日谈通关位先保留在内存;只有 NVS set+commit 成功才清 dirty。
+// 失败由回标题、睡前和 tick 再次尝试,避免一次 NVS 错误永久丢掉解锁。
+static bool flush_clears(atri_app_t *app)
+{
+    if (!app || !app->clears_dirty) return true;
+    if (!senren_clears_store(app->clears)) return false;
+    app->clears_dirty = false;
+    app->clears_retry_ms = 0;
+    return true;
 }
 
 // ---------------------------------------------------------------- 阅读推进
@@ -327,9 +342,85 @@ static void open_slots(atri_app_t *app, bool saving, atri_page_t from)
     set_page(app, ATRI_PAGE_SLOTS);
 }
 
+static void afterstory_refresh(atri_app_t *app)
+{
+    static const char *labels[ATRI_UI_MAX_ROWS];
+    static const char *value_ptrs[ATRI_UI_MAX_ROWS];
+    int n = 0;
+    for (int i = 0; i < SENREN_AFTERSTORY_COUNT; ++i) {
+        const senren_afterstory_t *story = senren_afterstory_get(i);
+        labels[n] = story ? story->name : "?";
+        value_ptrs[n] = senren_afterstory_unlocked(app->clears, i) ? "已解锁" : "未解锁";
+        ++n;
+    }
+    labels[n] = "返回";
+    value_ptrs[n] = NULL;
+    ++n;
+    if (app->after_sel < 0 || app->after_sel >= n) app->after_sel = 0;
+    atri_ui_set_list(&app->ui, ATRI_LIST_AFTER, "后日谈",
+                     "上/下选择 · 确定进入 · 长按确定返回", labels, value_ptrs, n,
+                     app->after_sel);
+}
+
+static void open_afterstory(atri_app_t *app)
+{
+    app->after_sel = 0;
+    for (int i = 0; i < SENREN_AFTERSTORY_COUNT; ++i) {
+        if (senren_afterstory_unlocked(app->clears, i)) {
+            app->after_sel = i;
+            break;
+        }
+    }
+    afterstory_refresh(app);
+    set_page(app, ATRI_PAGE_AFTER);
+}
+
+static bool start_afterstory(atri_app_t *app, int index)
+{
+    const senren_afterstory_t *story = senren_afterstory_get(index);
+    if (!story || !senren_afterstory_unlocked(app->clears, index)) return false;
+    if (!senren_player_start(&app->player, &app->scn, app->player.chapter, story->chunk,
+                             story->node, &app->layout_hint)) {
+        notify(app, "剧本数据异常");
+        return false;
+    }
+    app->afterstory_start_chunk = story->chunk;
+    app->afterstory_start_node = story->node;
+    app->started = true;
+    app->at_choice = false;
+    app->ended = false;
+    app->transition_pending = false;
+    app->rendered_valid = false;
+    set_page(app, ATRI_PAGE_GAME);
+    advance_reading(app, false);
+    auto_save(app);
+    return true;
+}
+
+static void key_after(atri_app_t *app, const atri_key_t *key)
+{
+    const int count = SENREN_AFTERSTORY_COUNT + 1;
+    if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_UP) {
+        key_list_move(app, &app->after_sel, count, -1);
+    } else if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_DOWN) {
+        key_list_move(app, &app->after_sel, count, 1);
+    } else if (key->btn == BSP_BTN_OK && key->ev == BSP_BTN_CLICK) {
+        if (app->after_sel >= SENREN_AFTERSTORY_COUNT) {
+            show_title(app);
+        } else if (!senren_afterstory_unlocked(app->clears, app->after_sel)) {
+            notify(app, "尚未通关该线路");
+        } else {
+            (void)start_afterstory(app, app->after_sel);
+        }
+    } else if (key->btn == BSP_BTN_OK && key->ev == BSP_BTN_LONG) {
+        show_title(app);
+    }
+}
+
 static void title_refresh(atri_app_t *app)
 {
     static char auto_value[24];
+    static char after_value[24];
     static const char *value_ptrs[ATRI_UI_MAX_ROWS];
     static const char *labels[ATRI_UI_MAX_ROWS];
     int n = 0;
@@ -355,6 +446,21 @@ static void title_refresh(atri_app_t *app)
     labels[n] = "读取进度";
     value_ptrs[n] = NULL;
     ++n;
+
+    int unlocked = 0;
+    for (int i = 0; i < SENREN_AFTERSTORY_COUNT; ++i) {
+        if (senren_afterstory_unlocked(app->clears, i)) ++unlocked;
+    }
+    if (unlocked > 0) {
+        snprintf(after_value, sizeof(after_value), "已解锁 %d/%d", unlocked,
+                 SENREN_AFTERSTORY_COUNT);
+    } else {
+        snprintf(after_value, sizeof(after_value), "未解锁");
+    }
+    labels[n] = "后日谈";
+    value_ptrs[n] = after_value;
+    ++n;
+
     labels[n] = "系统设置";
     value_ptrs[n] = NULL;
     ++n;
@@ -376,6 +482,7 @@ static void show_title(atri_app_t *app)
     render_title_art(app);
     title_refresh(app);
     set_page(app, ATRI_PAGE_TITLE);
+    if (!flush_clears(app)) notify(app, "通关记录未保存");
 }
 
 static bool start_reading(atri_app_t *app)
@@ -413,6 +520,21 @@ static bool load_save(atri_app_t *app, const senren_save_t *save)
 static void show_ending(atri_app_t *app)
 {
     ESP_LOGI(TAG, "走到结局 %u", (unsigned)app->player.ending_index);
+    char ending[SENREN_NAME_MAX] = { 0 };
+    (void)senren_scn_ending(&app->scn, app->player.ending_index, ending, sizeof(ending));
+    const int story = senren_afterstory_index_for_ending(ending);
+    if (story >= 0) {
+        const uint8_t next = senren_afterstory_set_clear(app->clears, story);
+        if (next != app->clears) {
+            app->clears = next;
+            app->clears_dirty = true;
+        }
+        if (app->clears_dirty && !flush_clears(app)) {
+            ESP_LOGW(TAG, "后日谈通关位写入失败,保留 dirty 等待重试");
+            notify(app, "通关记录未保存");
+        }
+        ESP_LOGI(TAG, "解锁后日谈: %s (%s)", senren_afterstory_get(story)->name, ending);
+    }
     app->ended = true;
     atri_ui_hide_choices(&app->ui);
     atri_ui_set_ending(&app->ui, "全剧终", "感谢阅读", "按确定返回标题");
@@ -434,6 +556,7 @@ static void key_list_move(atri_app_t *app, int *selected, int count, int delta)
     if (selected == &app->menu_sel) id = ATRI_LIST_MENU;
     else if (selected == &app->settings_sel) id = ATRI_LIST_SETTINGS;
     else if (selected == &app->slots_sel) id = ATRI_LIST_SLOTS;
+    else if (selected == &app->after_sel) id = ATRI_LIST_AFTER;
     atri_ui_set_list_selected(&app->ui, id, *selected);
 }
 
@@ -468,6 +591,9 @@ static void title_select(atri_app_t *app)
     }
     case 2:   // 读取进度
         open_slots(app, false, ATRI_PAGE_TITLE);
+        return;
+    case 3:   // 后日谈:按角色通关位解锁
+        open_afterstory(app);
         return;
     default:   // 系统设置
         open_settings(app, ATRI_PAGE_TITLE);
@@ -700,6 +826,7 @@ bool atri_app_init(atri_app_t *app, const uint8_t *pack_data, uint32_t pack_size
     } else {
         senren_settings_default(&app->settings);
         (void)senren_settings_load(&app->settings);
+        (void)senren_clears_load(&app->clears);
     }
     if (app->settings.text_speed > 2) app->settings.text_speed = ATRI_SPEED_DEFAULT;
 
@@ -769,6 +896,7 @@ void atri_app_key(atri_app_t *app, const atri_key_t *key)
     case ATRI_PAGE_MENU: key_menu(app, key); break;
     case ATRI_PAGE_SETTINGS: key_settings(app, key); break;
     case ATRI_PAGE_SLOTS: key_slots(app, key); break;
+    case ATRI_PAGE_AFTER: key_after(app, key); break;
     case ATRI_PAGE_ENDING:
         if (key->ev == BSP_BTN_CLICK) show_title(app);
         break;
@@ -789,6 +917,13 @@ void atri_app_key(atri_app_t *app, const atri_key_t *key)
 void atri_app_tick(atri_app_t *app, uint32_t elapsed_ms)
 {
     if (!app) return;
+    if (app->clears_dirty) {
+        app->clears_retry_ms += elapsed_ms;
+        if (app->clears_retry_ms >= ATRI_CLEARS_RETRY_MS) {
+            app->clears_retry_ms = 0;
+            if (!flush_clears(app)) ESP_LOGW(TAG, "通关位后台重试仍失败");
+        }
+    }
     // 自动阅读/快进是应用自己在推进画面,玩家不需要碰机器,这段时间不能算空闲 ——
     // 否则会读到一半自己变暗、熄屏甚至休眠。停在选项或结局上时两者都已停下,
     // 照旧按时限熄灭。
@@ -867,6 +1002,7 @@ void atri_app_before_sleep(atri_app_t *app)
 {
     if (!app) return;
     if (app->page == ATRI_PAGE_GAME) auto_save(app);
+    if (!flush_clears(app)) ESP_LOGW(TAG, "睡前通关位仍未写入");
     (void)senren_settings_store(&app->settings);
 }
 
@@ -997,3 +1133,55 @@ bool atri_app_take_sleep_request(atri_app_t *app)
     app->sleep_requested = false;
     return true;
 }
+
+#ifdef SENREN_APP_TEST_HOOKS
+const senren_player_t *atri_app_test_player(const atri_app_t *app)
+{
+    return app ? &app->player : NULL;
+}
+
+atri_page_t atri_app_test_page(const atri_app_t *app)
+{
+    return app ? app->page : ATRI_PAGE_WARNING;
+}
+
+uint8_t atri_app_test_clears(const atri_app_t *app)
+{
+    return app ? app->clears : 0;
+}
+
+bool atri_app_test_clears_dirty(const atri_app_t *app)
+{
+    return app ? app->clears_dirty : false;
+}
+
+bool atri_app_test_at_choice(const atri_app_t *app)
+{
+    return app ? app->at_choice : false;
+}
+
+int atri_app_test_title_sel(const atri_app_t *app)
+{
+    return app ? app->title_sel : 0;
+}
+
+int atri_app_test_after_sel(const atri_app_t *app)
+{
+    return app ? app->after_sel : 0;
+}
+
+uint16_t atri_app_test_afterstory_chunk(const atri_app_t *app)
+{
+    return app ? app->afterstory_start_chunk : 0;
+}
+
+uint32_t atri_app_test_afterstory_node(const atri_app_t *app)
+{
+    return app ? app->afterstory_start_node : 0;
+}
+
+const senren_settings_t *atri_app_test_settings(const atri_app_t *app)
+{
+    return app ? &app->settings : NULL;
+}
+#endif

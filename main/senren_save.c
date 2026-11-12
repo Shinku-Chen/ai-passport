@@ -9,6 +9,7 @@ static const char *TAG = "senren_save";
 #define SENREN_NVS_NAMESPACE "senren"
 #define KEY_AUTO "auto"
 #define KEY_CFG "cfg"
+#define KEY_CLEARS "clr"
 #define CFG_MAGIC 0x53u
 #define CFG_VERSION 1u
 // 存档 blob 上限:10 字节头 + 64 字节标志位 + 2 字节立绘状态 + 4 个带长度前缀的名字(每个最多 64 + 1),
@@ -69,6 +70,23 @@ bool senren_settings_store(const senren_settings_t *settings)
     const uint8_t blob[5] = { CFG_MAGIC, CFG_VERSION, settings->text_speed,
                               settings->font_large, settings->seen_tips };
     if (nvs_set_blob(s_handle, KEY_CFG, blob, sizeof(blob)) != ESP_OK) return false;
+    return nvs_commit(s_handle) == ESP_OK;
+}
+
+bool senren_clears_load(uint8_t *out)
+{
+    if (out) *out = 0;
+    if (!out || !s_ready) return false;
+    uint8_t clears = 0;
+    if (nvs_get_u8(s_handle, KEY_CLEARS, &clears) != ESP_OK) return false;
+    *out = (uint8_t)(clears & 0x3Fu);
+    return true;
+}
+
+bool senren_clears_store(uint8_t clears)
+{
+    if (!s_ready) return false;
+    if (nvs_set_u8(s_handle, KEY_CLEARS, (uint8_t)(clears & 0x3Fu)) != ESP_OK) return false;
     return nvs_commit(s_handle) == ESP_OK;
 }
 

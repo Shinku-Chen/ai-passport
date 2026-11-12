@@ -40,6 +40,7 @@ typedef enum {
     ATRI_PAGE_MENU,
     ATRI_PAGE_SETTINGS,
     ATRI_PAGE_SLOTS,
+    ATRI_PAGE_AFTER,
     ATRI_PAGE_ENDING,
     ATRI_PAGE_ABOUT,
 } atri_page_t;
@@ -49,6 +50,7 @@ typedef enum {
     ATRI_LIST_MENU,
     ATRI_LIST_SETTINGS,
     ATRI_LIST_SLOTS,
+    ATRI_LIST_AFTER,
     ATRI_LIST_COUNT,
 } atri_list_id_t;
 
@@ -89,6 +91,7 @@ typedef struct {
     struct _lv_obj_t *page_game;
     struct _lv_obj_t *page_settings;
     struct _lv_obj_t *page_slots;
+    struct _lv_obj_t *page_after;
     struct _lv_obj_t *page_ending;
     struct _lv_obj_t *page_about;
 

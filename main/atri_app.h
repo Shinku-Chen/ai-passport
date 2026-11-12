@@ -40,6 +40,9 @@ typedef struct {
     int menu_sel;
     int settings_sel;
     int slots_sel;
+    int after_sel;
+    uint16_t afterstory_start_chunk;
+    uint32_t afterstory_start_node;
 
     senren_layout_t layout_hint;   // 分页参数(16px 字、26 单位 x 5 行)
 
@@ -67,6 +70,9 @@ typedef struct {
     char notice[32];
     uint32_t notice_ms;
     bool have_auto;
+    uint8_t clears;           // 后日谈通关位:6 bit 位图
+    bool clears_dirty;        // 内存已解锁但 NVS 尚未确认写入
+    uint32_t clears_retry_ms; // 下一次后台重试的累计时间
     bool started;             // 已经开始/继续过阅读
     bool sleep_requested;     // "关机"或标题页长按:请 main 进入 deep sleep
 } atri_app_t;
@@ -123,3 +129,17 @@ bool atri_app_debug_load(atri_app_t *app, int slot);
 
 // 调试:把当前阅读位置写成一行文本,串口命令 SENRENINFO 用。
 int atri_app_debug_info(atri_app_t *app, char *out, size_t capacity);
+
+#ifdef SENREN_APP_TEST_HOOKS
+// 宿主机 UI/持久化回归专用只读/驱动钩子；固件构建不定义该宏。
+const senren_player_t *atri_app_test_player(const atri_app_t *app);
+atri_page_t atri_app_test_page(const atri_app_t *app);
+uint8_t atri_app_test_clears(const atri_app_t *app);
+bool atri_app_test_clears_dirty(const atri_app_t *app);
+bool atri_app_test_at_choice(const atri_app_t *app);
+int atri_app_test_title_sel(const atri_app_t *app);
+int atri_app_test_after_sel(const atri_app_t *app);
+uint16_t atri_app_test_afterstory_chunk(const atri_app_t *app);
+uint32_t atri_app_test_afterstory_node(const atri_app_t *app);
+const senren_settings_t *atri_app_test_settings(const atri_app_t *app);
+#endif

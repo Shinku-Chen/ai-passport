@@ -27,6 +27,8 @@ component explicitly by the BSP.
 
 **v0.1.1 story fixes:** repair the cross-script jumps for fishing, gathering vegetables and exploring alone in Chapter 3-2, and restore the two choices after choosing fishing. Both fishing branches rejoin the same story segment. The script pack retains one-based file numbers; the reader converts them to zero-based indices when resolving jumps. Save format and partition layout are unchanged. Other route entrances are outside this patch.
 
+**After-stories (candidate fix):** when each of the six heroine routes reaches its normal END, the clear bit is written to a separate NVS key (the legacy `settings` blob keeps its version and byte layout). The title screen gains an "After Stories" entry that unlocks per cleared heroine and shows the cleared count; selecting one starts at the source `AFTER_STORIES` `(scn, from)` entry, with no chapter jump and no injected flags. The six segments contain 20 after-story choices in total and all reach `gameend_end`; the six main routes' save/auto-save/fast-forward behaviour is unchanged.
+
 **Saves, chapters and idle:** one automatic slot plus five manual slots, with the automatic
 one written on every chapter change, every choice and before sleeping, offered as
 "continue" on the title screen. Each chapter announces itself as a `Chapter X-X` card

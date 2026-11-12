@@ -106,6 +106,7 @@ class SenrenScriptPackTest(unittest.TestCase):
             *shlex.split(os.environ.get("CC", "cc")), "-std=c11", "-O2",
             "-Wall", "-Wextra", "-Werror", "-Imain",
             "tests/test_senren_routes.c", "main/senren_model.c", "main/senren_inflate.c",
+            "main/senren_afterstory.c",
             "-o", str(binary),
         ], cwd=ROOT, check=True)
         subprocess.run([str(binary), str(ROOT / "main/senren_data/senren_scn.bin"),

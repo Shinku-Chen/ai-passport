@@ -25,6 +25,11 @@ bool senren_save_init(void);
 bool senren_settings_load(senren_settings_t *out);
 bool senren_settings_store(const senren_settings_t *settings);
 
+// 后日谈通关位(6 bit 位图)。与旧 settings blob 分开存,旧 settings 版本不改。
+// load 在键不存在时把 *out 置 0 并返回 false,调用方可把 false 当作“尚无通关”。
+bool senren_clears_load(uint8_t *out);
+bool senren_clears_store(uint8_t clears);
+
 bool senren_slot_load(uint8_t slot, senren_save_t *out);
 bool senren_slot_store(uint8_t slot, const senren_save_t *save);
 bool senren_slot_clear(uint8_t slot);

@@ -4,6 +4,12 @@ set -euo pipefail
 mode="${1:---all}"
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# macOS ld does not understand GNU --gc-sections; dead_strip is its equivalent.
+GC_LDFLAGS=(-Wl,--gc-sections)
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    GC_LDFLAGS=(-Wl,-dead_strip)
+fi
+
 usage() {
     echo "Usage: $0 [--all|--static|--firmware]" >&2
 }
@@ -57,7 +63,7 @@ run_static_checks() {
     for demo in audio low_power ble wifi; do
         "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
             -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \
-            "tests/test_demo_${demo}_runtime.c" -Wl,--gc-sections \
+            "tests/test_demo_${demo}_runtime.c" "${GC_LDFLAGS[@]}" \
             -o "${test_dir}/test_demo_${demo}_runtime"
         "${test_dir}/test_demo_${demo}_runtime"
     done
@@ -66,7 +72,22 @@ run_static_checks() {
         main/senren_pack.c -lz \
         -o "${test_dir}/test_senren_model"
     "${test_dir}/test_senren_model"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
+        tests/test_senren_afterstory.c main/senren_afterstory.c \
+        -o "${test_dir}/test_senren_afterstory"
+    "${test_dir}/test_senren_afterstory"
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_senren_scn_pack.py
+    # Production app + real player/pack + in-memory NVS: main routes, clear persistence,
+    # retry after injected NVS failure, rebuild, title afterstory menu, 20 option branches.
+    "${CC:-cc}" -std=c11 -O2 -Wall -Wextra -Werror -DSENREN_APP_TEST_HOOKS \
+        -Itests/senren_app_stubs -Imain \
+        tests/test_senren_app.c main/atri_app.c main/senren_save.c \
+        main/senren_model.c main/senren_pack.c main/senren_afterstory.c \
+        tests/senren_inflate_host.c tests/senren_app_stubs/fake_ui.c \
+        tests/senren_app_stubs/fake_nvs.c -lz \
+        -o "${test_dir}/test_senren_app"
+    "${test_dir}/test_senren_app" main/senren_data/senren_pack.bin \
+        main/senren_data/senren_scn.bin
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_senren_pack_layout.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_senren_font.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_deep_sleep_contract.py

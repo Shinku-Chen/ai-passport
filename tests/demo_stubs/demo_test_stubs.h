@@ -48,7 +48,7 @@ BaseType_t xSemaphoreTake(SemaphoreHandle_t sem, TickType_t ticks);
 void vSemaphoreDelete(SemaphoreHandle_t sem);
 
 typedef enum { BSP_BTN_UP, BSP_BTN_DOWN, BSP_BTN_OK } bsp_btn_t;
-typedef enum { BSP_BTN_PRESS, BSP_BTN_CLICK, BSP_BTN_DOUBLE, BSP_BTN_LONG } bsp_btn_ev_t;
+typedef enum { BSP_BTN_PRESS, BSP_BTN_CLICK, BSP_BTN_DOUBLE, BSP_BTN_LONG, BSP_BTN_RELEASE } bsp_btn_ev_t;
 esp_err_t bsp_audio_set_format(uint32_t hz, uint8_t bits, uint8_t channels);
 void bsp_audio_set_volume(uint8_t percent);
 esp_err_t bsp_audio_read(void *pcm, size_t bytes);
@@ -57,6 +57,7 @@ esp_err_t bsp_audio_sleep(void);
 esp_err_t bsp_audio_wake(void);
 esp_err_t bsp_audio_prepare_deep_sleep(void);
 esp_err_t bsp_battery_sleep(void);
+int bsp_battery_soc(void);
 esp_err_t bsp_i2c_prepare_deep_sleep(void);
 esp_err_t bsp_display_prepare_deep_sleep(void);
 void bsp_display_backlight(uint8_t percent);

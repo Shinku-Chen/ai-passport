@@ -12,6 +12,15 @@ static int fail_adc, fail_channel, fail_cal, fail_read, fail_convert, fail_delet
 static int raw_mv, reads, events;
 static int64_t clock_us;
 
+esp_err_t gpio_set_direction(gpio_num_t pin, gpio_mode_t mode) {
+    (void)pin; (void)mode; return ESP_OK;
+}
+esp_err_t gpio_set_pull_mode(gpio_num_t pin, gpio_pull_mode_t pull) {
+    (void)pin; (void)pull; return ESP_OK;
+}
+int gpio_get_level(gpio_num_t pin) { (void)pin; return 1; }
+void vTaskDelay(TickType_t ticks) { (void)ticks; }
+
 esp_err_t adc_oneshot_new_unit(const adc_oneshot_unit_init_cfg_t *cfg, adc_oneshot_unit_handle_t *h) {
     assert(cfg->unit_id == BSP_BTN_ADC_UNIT && !adc_live);
     if (fail_adc) return ESP_ERR_NO_MEM;
@@ -93,10 +102,26 @@ static void retry_success(void) {
 static void check_voltage(int mv, int expected) {
     raw_mv = mv; clock_us += 2000;
     const int before = reads;
+    // The production BSP has a two-phase key lock: a new window must remain
+    // stable for CONFIRM, a changed/released state for SWITCH. Poll once to
+    // establish the candidate, then advance past SWITCH and assert the locked
+    // result. This exercises the real lock rather than the old immediate-hit
+    // assumption.
     for (int i = 0; i < BSP_BTN_COUNT; ++i) {
-        assert(s_drivers[i].base.get_key_level(&s_drivers[i].base) == (i == expected));
+        (void)s_drivers[i].base.get_key_level(&s_drivers[i].base);
     }
-    assert(reads - before == CONFIG_ADC_BUTTON_SAMPLE_TIMES);
+    clock_us += BSP_BTN_LOCK_SWITCH_US + 1000;
+    // The call that confirms the new lock still reports INACTIVE; poll again
+    // after the confirmation to observe the active key.
+    for (int i = 0; i < BSP_BTN_COUNT; ++i) {
+        (void)s_drivers[i].base.get_key_level(&s_drivers[i].base);
+    }
+    clock_us += 2000;
+    for (int i = 0; i < BSP_BTN_COUNT; ++i) {
+        const int actual = s_drivers[i].base.get_key_level(&s_drivers[i].base);
+        assert(actual == (i == expected));
+    }
+    assert(reads - before == 3 * CONFIG_ADC_BUTTON_SAMPLE_TIMES);
 }
 int main(void) {
     for (int i = 1; i <= BSP_BTN_COUNT; ++i) {

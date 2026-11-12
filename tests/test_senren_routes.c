@@ -1,5 +1,6 @@
 // Real script regression: normal choices from New Game must reach six heroines.
 #include "senren_model.h"
+#include "senren_afterstory.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -107,6 +108,68 @@ static void test_choice_targets(const senren_scn_t *scn, const char *path)
     printf("source choice targets: %u checked\n", count);
 }
 
+// Walk one afterstory from its source AFTER_STORIES (scn, from) entry.
+// flip_ordinal < 0 keeps option 0 everywhere; otherwise choose option 1 at
+// that SELECT ordinal. Every branch has to reach the generic gameend_end.
+static bool walk_afterstory(const senren_scn_t *scn, const senren_afterstory_t *story,
+                            int flip_ordinal, unsigned *selects)
+{
+    senren_player_t player = {0};
+    CHECK(senren_player_start(&player, scn, 0, story->chunk, story->node, &layout));
+    unsigned ordinal = 0;
+    for (unsigned guard = 0; guard < 400000; guard++) {
+        senren_step_t step = senren_player_advance(&player, scn, &layout);
+        if (step == SENREN_STEP_CHOICE) {
+            if (player.choice_count < 2) {
+                CHECK(false);
+                senren_player_release(&player);
+                return false;
+            }
+            const uint8_t pick = flip_ordinal == (int)ordinal ? 1 : 0;
+            if (!senren_player_choose(&player, scn, pick, &layout)) {
+                CHECK(false);
+                senren_player_release(&player);
+                return false;
+            }
+            ++ordinal;
+        } else if (step == SENREN_STEP_ENDING) {
+            char ending[SENREN_NAME_MAX];
+            senren_scn_ending(scn, player.ending_index, ending, sizeof(ending));
+            *selects = ordinal;
+            senren_player_release(&player);
+            return strcmp(ending, "gameend_end") == 0;
+        } else if (step == SENREN_STEP_STUCK) {
+            fprintf(stderr, "afterstory %s: %s\n", story->name, senren_get_error());
+            CHECK(false);
+            senren_player_release(&player);
+            return false;
+        }
+    }
+    CHECK(false);
+    senren_player_release(&player);
+    return false;
+}
+
+static void test_afterstories(const senren_scn_t *scn)
+{
+    CHECK(senren_afterstory_count() == 6);
+    for (int i = 0; i < senren_afterstory_count(); ++i) {
+        const senren_afterstory_t *story = senren_afterstory_get(i);
+        CHECK(story != NULL);
+        if (!story) continue;
+        unsigned selects = 0;
+        CHECK(walk_afterstory(scn, story, -1, &selects));
+        CHECK(selects == story->selects);
+        for (unsigned ordinal = 0; ordinal < selects; ++ordinal) {
+            unsigned branch_selects = 0;
+            CHECK(walk_afterstory(scn, story, (int)ordinal, &branch_selects));
+            CHECK(branch_selects == selects);
+        }
+        printf("afterstory %s: %u selects, %u option branches -> gameend_end\n",
+               story->name, selects, selects * 2);
+    }
+}
+
 int main(int argc, char **argv)
 {
     const char *path = argc > 1 ? argv[1] : "main/senren_data/senren_scn.bin";
@@ -123,6 +186,7 @@ int main(int argc, char **argv)
     senren_scn_t scn;
     if (!senren_scn_open(&scn, data, (uint32_t)length)) { free(data); return 2; }
     test_routes(&scn);
+    test_afterstories(&scn);
     if (argc > 2) test_choice_targets(&scn, argv[2]);
     free(data);
     printf("senren_routes: %s (%d failures)\n", failures ? "FAIL" : "PASS", failures);

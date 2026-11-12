@@ -27,7 +27,7 @@ static lv_obj_t *new_box(lv_obj_t *parent, int x, int y, int w, int h, lv_color_
     lv_obj_set_pos(obj, x, y);
     lv_obj_set_style_bg_color(obj, bg, 0);
     lv_obj_set_style_bg_opa(obj, opa, 0);
-    lv_obj_set_scrollable(obj, false);
+    lv_obj_clear_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
     return obj;
 }
 
@@ -44,7 +44,8 @@ static lv_obj_t *new_label(lv_obj_t *parent, const lv_font_t *font, lv_color_t c
 static void set_hidden(lv_obj_t *obj, bool hidden)
 {
     if (!obj) return;
-    lv_obj_set_hidden(obj, hidden);
+    if (hidden) lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_clear_flag(obj, LV_OBJ_FLAG_HIDDEN);
 }
 
 static void row_apply_style(lv_obj_t *row, bool selected)
@@ -242,7 +243,9 @@ static void build_pages(atri_ui_t *ui, lv_obj_t *screen)
     // 标题页:标题图整屏铺底(在画布层),这里是叠在下方那条正文带上的菜单。
     ui->page_title = new_box(screen, 0, ATRI_BOX_Y, ATRI_UI_W, ATRI_BOX_H, COL_BOX_BG,
                              LV_OPA_TRANSP);
-    list_build(ui, &ui->lists[ATRI_LIST_TITLE], ui->page_title, 20, 6);
+    list_build(ui, &ui->lists[ATRI_LIST_TITLE], ui->page_title, 19, 4);
+    // 标题现在有 5 行(开始/继续/读取/后日谈/设置);19 px 行高 + 2 px 间隔
+    // 在 110 px 的底部正文带内放得下。
     set_hidden(ui->lists[ATRI_LIST_TITLE].title, true);
     set_hidden(ui->lists[ATRI_LIST_TITLE].hint, true);
 
@@ -256,9 +259,12 @@ static void build_pages(atri_ui_t *ui, lv_obj_t *screen)
 
     ui->page_slots = new_box(screen, 0, 0, ATRI_UI_W, ATRI_UI_H, COL_PAGE_BG, LV_OPA_COVER);
     list_build(ui, &ui->lists[ATRI_LIST_SLOTS], ui->page_slots, 30, 44);
+    // 后日谈菜单:六位角色 + 返回,一行一个,用现有列表组件。
+    ui->page_after = new_box(screen, 0, 0, ATRI_UI_W, ATRI_UI_H, COL_PAGE_BG, LV_OPA_COVER);
+    list_build(ui, &ui->lists[ATRI_LIST_AFTER], ui->page_after, 30, 48);
     // 关于页:内容比一屏长,靠按键滚动(三键设备没有触摸滑屏)。
     ui->page_about = new_box(screen, 0, 0, ATRI_UI_W, ATRI_UI_H, COL_PAGE_BG, LV_OPA_COVER);
-    lv_obj_set_scrollable(ui->page_about, true);
+    lv_obj_add_flag(ui->page_about, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_scroll_dir(ui->page_about, LV_DIR_VER);
     lv_obj_set_style_pad_all(ui->page_about, 0, 0);
     ui->about_body = new_label(ui->page_about, ui->font_cjk, COL_TEXT, "");
@@ -334,6 +340,7 @@ void atri_ui_show_page(atri_ui_t *ui, atri_page_t page)
     set_hidden(ui->page_settings, page != ATRI_PAGE_SETTINGS);
     set_hidden(ui->lists[ATRI_LIST_MENU].page, page != ATRI_PAGE_MENU);
     set_hidden(ui->page_slots, page != ATRI_PAGE_SLOTS);
+    set_hidden(ui->page_after, page != ATRI_PAGE_AFTER);
     set_hidden(ui->page_ending, page != ATRI_PAGE_ENDING);
     set_hidden(ui->page_about, page != ATRI_PAGE_ABOUT);
 
@@ -349,6 +356,7 @@ void atri_ui_show_page(atri_ui_t *ui, atri_page_t page)
     case ATRI_PAGE_MENU: front = ui->lists[ATRI_LIST_MENU].page; break;
     case ATRI_PAGE_SETTINGS: front = ui->page_settings; break;
     case ATRI_PAGE_SLOTS: front = ui->page_slots; break;
+    case ATRI_PAGE_AFTER: front = ui->page_after; break;
     case ATRI_PAGE_ENDING: front = ui->page_ending; break;
     case ATRI_PAGE_ABOUT: front = ui->page_about; break;
     case ATRI_PAGE_GAME: break;
