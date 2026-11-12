@@ -56,3 +56,9 @@
 - Updated software-design and project README references for the new documentation structure.
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
+
+## v1.0.1-paper - 2026-11-12
+
+- Title -> Continue now rebuilds reader labels; the visual fast path only reuses when box, lbl_text and lbl_name still exist, not just img_art.
+- Add repeated Continue/manual-load and same-visual object-reuse regression coverage.
+- Keep Paper's intentional 64px dialogue panel and three 19px text lines; do not restore the generic 152/4-line metrics.

@@ -53,3 +53,9 @@
 - 同步更新索引：`docs/software-design/README.md`、`README.en_US.md` / `README.zh_CN.md` 的 `docs/` 目录说明。
 - 参考 cindy 仓库文档组织完善索引：新增 `docs/README.md` 根总索引；AGENTS.md 规则索引按触发场景改写（附触发条件）；`docs/contribution/` 与 `docs/development/` 的 README 补充收录标准。
 - 引入社区治理文档（参照 cindy 改写，放仓库根目录）：新增 `CONTRIBUTING.md` / `.zh_CN.md`（贡献指南，针对 ESP-IDF/AI agent/fork 场景改写）、`CODE_OF_CONDUCT.md` / `.zh_CN.md`（贡献者公约）、`SECURITY.md` / `.zh_CN.md`（安全报告流程）、`SUPPORT.md` / `.zh_CN.md`（支持渠道）；AGENTS.md 与 docs/README.md 同步引用。
+
+## v1.0.1-paper - 2026-11-12
+
+- 标题页 -> Continue 返回正文时会重建阅读标签；visual fast path 只有在 box、lbl_text、lbl_name 都存在时才复用，不再只比较 img_art。
+- 补充重复 Continue、手动读档和同画面对象复用的回归覆盖。
+- 保留 Paper 有意使用的 64px 对话框和 3 行 19px 正文排版，不恢复通用 152/4 行指标。
