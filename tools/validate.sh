@@ -21,9 +21,16 @@ usage() {
 run_static_checks() {
     local actionlint_bin
     local test_dir
+    local dead_strip_flag
     local c_fail=0
     local c_suites=20
     local source_status="SKIP"
+
+    # Apple ld does not accept --gc-sections; -dead_strip is the equivalent.
+    dead_strip_flag="-Wl,--gc-sections"
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        dead_strip_flag="-Wl,-dead_strip"
+    fi
 
     python3 tools/check_repo.py
 
@@ -114,7 +121,7 @@ run_static_checks() {
     for demo in audio low_power ble wifi; do
         "${host_cc[@]}" -std=c11 -Wall -Wextra -Werror \
             -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \
-            "tests/test_demo_${demo}_runtime.c" tests/demo_stubs/lvgl_link_stubs.c -Wl,--gc-sections \
+            "tests/test_demo_${demo}_runtime.c" tests/demo_stubs/lvgl_link_stubs.c "${dead_strip_flag}" \
             -o "${test_dir}/test_demo_${demo}_runtime"
         "${test_dir}/test_demo_${demo}_runtime"
     done
@@ -126,8 +133,8 @@ run_static_checks() {
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_install_passport_skills.py
     # Keep the unique host test directory; never delete build evidence.
     local skips runs passed c_pass status
-    skips="$(grep -oE 'skipped=[0-9]+' "${host_log}" | cut -d= -f2 | awk '{s+=$1} END{print s+0}')"
-    runs="$(grep -oE 'Ran [0-9]+ tests?' "${host_log}" | awk '{s+=$2} END{print s+0}')"
+    skips="$((grep -oE 'skipped=[0-9]+' "${host_log}" || true) | cut -d= -f2 | awk '{s+=$1} END{print s+0}')"
+    runs="$((grep -oE 'Ran [0-9]+ tests?' "${host_log}" || true) | awk '{s+=$2} END{print s+0}')"
     passed=$((runs - skips))
     c_pass=$((c_suites - c_fail))
     if [[ "${c_fail}" -gt 0 ]]; then
