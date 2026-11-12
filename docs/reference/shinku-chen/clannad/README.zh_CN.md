@@ -117,6 +117,11 @@ JPEG 由组件 TJpgDec 逐 MCU 回调直接写入 320x168 RGB565 画布；没有
   并留出垃圾回收空间。栏位区分 EMPTY/VALID/CORRUPT/IO_ERROR：读取失败不显示为空，
   SAVE 会先重新读取；只有证实的空槽才免确认保存，有效槽必须走默认取消的覆盖确认。
   NVS 写入失败时保留旧栏位和当前状态并提示失败；固件从不自动擦除 NVS。
+- 容量有界扩容（2026-11-12）：VM 变量表为 512 槽、3/4 探测上限；49g + 74-choice
+  witness 峰值为 195 个活变量。存档原始预算为 3 KiB（最大实测 1,415 字节；真结局
+  checkpoint 1,069 字节）。进度 codec 上限 128 条 g[] / 1 KiB（67 条真结局记录
+  414 字节；旧 64 条 blob 仍可读）。零值条目是显式覆盖，不会被省略。上面的 30 槽
+  实测压缩存档仍是普通存档口径；更大预算不表示 128/512 条能容纳所有理论状态。
 - 全局 `g[]` 进度独立存放（`clannad/prog`），读档时覆盖到存档之上，旧档不能回退
   光玉或 After Story 标志。章节入口会应用已存 `g[]`（源 `selectBrowse` 调用
   `withProgress(newState(id), progress)`），但 `progress_sync` 仍只在 story 模式
@@ -125,12 +130,12 @@ JPEG 由组件 TJpgDec 逐 MCU 回调直接写入 320x168 RGB565 画布；没有
 
 ## RAM（同次 MAP 证据）
 
-`tools/clannad_mem_budget.py` 读取本次 ELF 的 MAP：DRAM data+BSS 静态 282,800 字节；
-BSS 之后的堆区 99,760 字节。可用末尾取同一 IDF 的
+`tools/clannad_mem_budget.py` 读取本次 ELF 的 MAP：DRAM data+BSS 静态 290,992 字节；
+BSS 之后的堆区 91,568 字节。可用末尾取同一 IDF 的
 `SOC_ROM_STACK_START - SOC_ROM_STACK_SIZE`，不是乐观的 `0x3fce0000`；运行期
 free/largest 与碎片未测量。刷屏缓冲按面板物理宽度计算：240 x 40 行 x 2 字节 =
 19,200 字节（单缓冲，不是 LVGL 横屏逻辑宽度 320）。命名的动态项为 19,200 字节刷屏
-缓冲、31,488 字节堆上的任务栈和约 1,600 字节队列/TCB 估算，剩余 47,472 字节供
+缓冲、31,488 字节堆上的任务栈和约 1,600 字节队列/TCB 估算，剩余 39,280 字节供
 SPI/面板/I2C/NVS 驱动分配与碎片使用。LVGL port 任务栈为 7,168 字节；idle 任务栈已在 MAP 中静态计入，不重复扣减。
 静态命名缓冲包括 107,520 字节的 320x168 画布、28,672 字节剧情 scratch、约 14,584
 字节 VM、1,040 字节 app 列表行 scratch 和 32,768 字节 LVGL 池。这是链接期证据，

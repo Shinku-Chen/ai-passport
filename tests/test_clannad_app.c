@@ -532,6 +532,8 @@ int main(int argc, char **argv)
     CHECK(app2.light_count == 13, "global light count loaded");
     CHECK(app2.true_ending, "true ending flag loaded");
     CHECK(app2.after_unlocked, "after story unlocked from global flags");
+    CHECK(app2.page == CLAN_PAGE_TITLE && app2.title_art_for_ending,
+          "restarted title displays the true-ending art");
 
     // 标题 → CG 鉴赏 → 全屏 CG → 返回；图片失败提示
     {

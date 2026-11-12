@@ -11,6 +11,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+_Static_assert(CLAN_VM_VAR_SLOTS == 512, "variable table capacity");
+_Static_assert(CLAN_VM_PROGRESS_MAX >= 12 + CLAN_VM_PROGRESS_ENTRIES_MAX * 6,
+               "progress buffer covers the bounded entry count");
+
 static int failures;
 static int checks;
 
@@ -461,6 +465,157 @@ static void test_deflate(void)
            "stored roundtrip");
 }
 
+
+static void test_capacity_and_progress_bounds(void)
+{
+    // 191 live variables: the old 256-slot table failed at 191 because of the
+    // 3/4 probe ceiling. The new table must store and round-trip them.
+    EXPECT(clannad_vm_new(&vm, 414, CLAN_MODE_STORY), "capacity story start");
+    clannad_frame_t f = clannad_vm_run(&vm);
+    EXPECT(f.type == CLAN_FRAME_TEXT, "capacity reaches first text");
+    for (int i = 0; i < 191; ++i) {
+        EXPECT(clannad_vm_var_set_int(&vm, 1, (uint32_t)i, i + 1),
+               "capacity inserts 191 variables");
+    }
+    const uint16_t expected_count = vm.var_count;
+    EXPECT(expected_count >= 191, "capacity var_count >=191");
+    uint8_t save[CLAN_VM_SAVE_RAW_MAX];
+    const size_t save_len = clannad_vm_save_encode(&vm, 0, 0, 1, "capacity",
+                                                  save, sizeof(save));
+    EXPECT(save_len > 0 && save_len < CLAN_VM_SAVE_RAW_MAX,
+           "191-variable save fits raw budget");
+    EXPECT(clannad_vm_save_validate(&vm, save, save_len, NULL),
+           "191-variable save validates");
+    static clannad_vm_t restored;
+    char why[128] = {0};
+    EXPECT(clannad_vm_init(&restored, pack_data, (uint32_t)vm.pack.size, raw,
+                           sizeof(raw), why, sizeof(why)), "capacity restore VM init");
+    EXPECT(clannad_vm_save_apply(&restored, save, save_len),
+           "191-variable save applies");
+    EXPECT(restored.var_count == expected_count, "191-variable save restores count");
+    int32_t restored_value = 0;
+    EXPECT(clannad_vm_var_int(&restored, 1, 190, &restored_value) &&
+               restored_value == 191,
+           "191-variable save restores last value");
+
+    // 67 g entries (the true-ending blob is 414 bytes), including zero-valued
+    // overlays that must still be written over an existing nonzero value.
+    EXPECT(clannad_vm_new(&vm, 414, CLAN_MODE_STORY), "progress 67 start");
+    for (int i = 0; i < 67; ++i) {
+        EXPECT(clannad_vm_var_set_int(&vm, 1, (uint32_t)i, i % 7 == 0 ? 0 : i + 1),
+               "progress 67 set");
+    }
+    EXPECT(clannad_vm_var_set_int(&vm, 1, 45, 1), "progress 67 g45");
+    uint8_t prog[CLAN_VM_PROGRESS_MAX];
+    const size_t p67 = clannad_vm_progress_encode(&vm, prog, sizeof(prog));
+    EXPECT(p67 == 414, "67-entry progress is 414 bytes");
+    EXPECT(clannad_vm_progress_validate(prog, p67), "67-entry progress validates");
+    EXPECT(clannad_progress_true_ending(prog, p67), "67-entry true ending");
+    static clannad_vm_t overlay;
+    EXPECT(clannad_vm_init(&overlay, pack_data, (uint32_t)vm.pack.size, raw,
+                           sizeof(raw), why, sizeof(why)), "overlay VM init");
+    EXPECT(clannad_vm_new(&overlay, 414, CLAN_MODE_STORY), "overlay story start");
+    for (int i = 0; i < 67; ++i) {
+        EXPECT(clannad_vm_var_set_int(&overlay, 1, (uint32_t)i, 99),
+               "overlay prefill");
+    }
+    EXPECT(clannad_vm_progress_apply(&overlay, prog, p67), "67-entry overlay applies");
+    for (int i = 0; i < 67; ++i) {
+        int32_t value = -1;
+        EXPECT(clannad_vm_var_int(&overlay, 1, (uint32_t)i, &value) &&
+                   value == (i == 45 ? 1 : (i % 7 == 0 ? 0 : i + 1)),
+               "zero/nonzero progress overlays old value");
+    }
+
+    // 128 entries is the bounded codec maximum: 780 bytes at the current
+    // 6-byte entry format. The next entry must fail cleanly.
+    for (int i = 67; i < 128; ++i) {
+        EXPECT(clannad_vm_var_set_int(&vm, 1, (uint32_t)i, i + 1),
+               "progress 128 set");
+    }
+    const size_t p128 = clannad_vm_progress_encode(&vm, prog, sizeof(prog));
+    EXPECT(p128 == 780, "128-entry progress is 780 bytes");
+    EXPECT(clannad_vm_progress_validate(prog, p128), "128-entry progress validates");
+    EXPECT(clannad_vm_var_set_int(&vm, 1, 128, 129), "progress 129 set");
+    EXPECT(clannad_vm_progress_encode(&vm, prog, sizeof(prog)) == 0,
+           "129-entry progress encode refused");
+
+    // Existing overlay keys do not consume capacity; the same 128-entry blob
+    // applies cleanly when every key is already present.
+    static clannad_vm_t overlap;
+    EXPECT(clannad_vm_init(&overlap, pack_data, (uint32_t)vm.pack.size, raw,
+                           sizeof(raw), why, sizeof(why)), "overlap VM init");
+    EXPECT(clannad_vm_new(&overlap, 414, CLAN_MODE_STORY), "overlap story start");
+    for (int i = 0; i < 128; ++i) {
+        EXPECT(clannad_vm_var_set_int(&overlap, 1, (uint32_t)i, 77),
+               "overlap prefill");
+    }
+    EXPECT(clannad_vm_progress_apply(&overlap, prog, p128),
+           "overlapping progress applies without capacity rejection");
+    int32_t overlap_value = -1;
+    EXPECT(clannad_vm_var_int(&overlap, 1, 127, &overlap_value) &&
+               overlap_value == 128,
+           "overlapping progress overwrites existing values");
+
+    // Duplicate entries for the same absent key consume one capacity slot and
+    // the later value wins. At 382 live variables a two-entry blob for one new
+    // key still fits; counting both copies would reject it as 384/512.
+    static clannad_vm_t duplicate;
+    EXPECT(clannad_vm_init(&duplicate, pack_data, (uint32_t)vm.pack.size, raw,
+                           sizeof(raw), why, sizeof(why)), "duplicate VM init");
+    EXPECT(clannad_vm_new(&duplicate, 414, CLAN_MODE_STORY), "duplicate story start");
+    while (duplicate.var_count < 382) {
+        EXPECT(clannad_vm_var_set_int(&duplicate, 2, duplicate.var_count, 1),
+               "duplicate prefill to 382");
+    }
+    uint8_t duplicate_progress[24] = { 0 };
+    memcpy(duplicate_progress, "CLPG", 4);
+    duplicate_progress[4] = 1;
+    test_w16(duplicate_progress + 6, 2);
+    test_w16(duplicate_progress + 8, 0);
+    test_w32(duplicate_progress + 10, 5);
+    test_w16(duplicate_progress + 14, 0);
+    test_w32(duplicate_progress + 16, 7);
+    test_w32(duplicate_progress + 20, test_crc32(duplicate_progress, 20));
+    EXPECT(clannad_vm_progress_validate(duplicate_progress, sizeof(duplicate_progress)),
+           "duplicate progress validates");
+    EXPECT(clannad_vm_progress_apply(&duplicate, duplicate_progress,
+                                     sizeof(duplicate_progress)),
+           "duplicate progress applies at 382 live variables");
+    int32_t duplicate_value = -1;
+    EXPECT(clannad_vm_var_int(&duplicate, 1, 0, &duplicate_value) &&
+               duplicate_value == 7,
+           "duplicate progress last value wins");
+    EXPECT(duplicate.var_count == 383, "duplicate key counted once");
+
+    // A valid-looking 128-entry blob must not partially mutate a table whose
+    // genuinely new keys cannot fit.
+    static clannad_vm_t bounded;
+    EXPECT(clannad_vm_init(&bounded, pack_data, (uint32_t)vm.pack.size, raw,
+                           sizeof(raw), why, sizeof(why)), "bounded VM init");
+    EXPECT(clannad_vm_new(&bounded, 414, CLAN_MODE_STORY), "bounded story start");
+    for (int i = 0; i < 300; ++i) {
+        EXPECT(clannad_vm_var_set_int(&bounded, 1, (uint32_t)(300 + i), i + 1),
+               "bounded prefill 300 non-overlapping");
+    }
+    const fingerprint_t before = fingerprint(&bounded);
+    EXPECT(!clannad_vm_progress_apply(&bounded, prog, p128),
+           "oversized apply rejected before mutation");
+    const fingerprint_t after = fingerprint(&bounded);
+    EXPECT(memcmp(&before, &after, sizeof(before)) == 0,
+           "rejected progress apply leaves state unchanged");
+
+    // Version-1 64-entry blobs remain valid and readable.
+    EXPECT(clannad_vm_new(&vm, 414, CLAN_MODE_STORY), "legacy 64 start");
+    for (int i = 0; i < 64; ++i) {
+        EXPECT(clannad_vm_var_set_int(&vm, 1, (uint32_t)i, i + 1),
+               "legacy 64 set");
+    }
+    const size_t p64 = clannad_vm_progress_encode(&vm, prog, sizeof(prog));
+    EXPECT(p64 == 396, "64-entry legacy progress is 396 bytes");
+    EXPECT(clannad_vm_progress_validate(prog, p64), "64-entry legacy progress validates");
+}
+
 int main(int argc, char **argv)
 {
     const char *pack_path = argc > 1 ? argv[1] : "assets/clannad/clannad_pack.bin";
@@ -904,6 +1059,9 @@ int main(int argc, char **argv)
         prog[0] = 'X';
         EXPECT(!clannad_vm_progress_validate(prog, len2), "bad progress rejected");
     }
+
+    // 容量、旧格式和零值 overlay 边界
+    test_capacity_and_progress_bounds();
 
     // 两种策略无法到达的 7 个终止点：显式选择路径
     test_paths();

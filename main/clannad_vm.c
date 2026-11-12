@@ -153,7 +153,7 @@ static uint32_t var_key(uint8_t kind, uint32_t index)
 static uint32_t var_hash(uint32_t key)
 {
     key *= 2654435761u;
-    return (key >> 24) & (CLAN_VM_VAR_SLOTS - 1u);
+    return (key >> 23) & (CLAN_VM_VAR_SLOTS - 1u);
 }
 
 static clannad_var_t *var_find(clannad_vm_t *vm, uint32_t key, bool create)
@@ -1821,6 +1821,7 @@ size_t clannad_vm_progress_encode(const clannad_vm_t *vm, uint8_t *out, size_t c
         const uint32_t key = vm->vars[i].key - 1u;
         if ((uint8_t)(key >> 20) == 1) count++;
     }
+    if (count > CLAN_VM_PROGRESS_ENTRIES_MAX) return 0;
     w_u16(&w, count);
     for (uint16_t i = 0; i < CLAN_VM_VAR_SLOTS; ++i) {
         if (!vm->vars[i].key) continue;
@@ -1847,7 +1848,7 @@ bool clannad_vm_progress_validate(const uint8_t *blob, size_t len)
     if (r_u8(&r) != 1) return false;
     (void)r_u8(&r);
     const uint16_t count = r_u16(&r);
-    if (count > 64) return false;
+    if (count > CLAN_VM_PROGRESS_ENTRIES_MAX) return false;
     for (uint16_t i = 0; i < count; ++i) {
         (void)r_u16(&r);
         (void)r_u32(&r);
@@ -1863,6 +1864,28 @@ bool clannad_vm_progress_apply(clannad_vm_t *vm, const uint8_t *blob, size_t len
     (void)r_u8(&r);
     (void)r_u8(&r);
     const uint16_t count = r_u16(&r);
+    if (count > CLAN_VM_PROGRESS_ENTRIES_MAX) return false;
+    // Preflight only the keys that are actually absent. Existing g[] keys are
+    // overlays and must not consume capacity; duplicate progress keys count
+    // once (last value wins, matching the old apply order).
+    reader_t pre = r;
+    uint16_t new_keys[CLAN_VM_PROGRESS_ENTRIES_MAX];
+    uint16_t new_count = 0;
+    for (uint16_t i = 0; i < count; ++i) {
+        const uint16_t index = r_u16(&pre);
+        (void)r_u32(&pre);
+        if (!pre.ok) return false;
+        const uint32_t key = (1u << 20) | index;
+        if (var_find(vm, key, false)) continue;
+        bool duplicate = false;
+        for (uint16_t j = 0; j < new_count; ++j) {
+            if (new_keys[j] == index) { duplicate = true; break; }
+        }
+        if (!duplicate) new_keys[new_count++] = index;
+    }
+    if (vm->var_count + new_count >= CLAN_VM_VAR_SLOTS * 3u / 4u) {
+        return false;
+    }
     for (uint16_t i = 0; i < count; ++i) {
         const uint16_t index = r_u16(&r);
         const int32_t value = (int32_t)r_u32(&r);

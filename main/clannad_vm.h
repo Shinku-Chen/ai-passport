@@ -11,7 +11,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define CLAN_VM_VAR_SLOTS 256
+// Worst observed source state is 195 live variables. 512 power-of-two slots
+// keep the 3/4 probe ceiling at 384 while preserving mask-based hashing.
+#define CLAN_VM_VAR_SLOTS 512
 #define CLAN_VM_STRING_POOL 4096
 #define CLAN_VM_STACK_MAX 24
 #define CLAN_VM_COUNTERS 8
@@ -19,9 +21,14 @@
 #define CLAN_VM_CHOICE_TEXT 224
 #define CLAN_VM_PREVIEW 96
 #define CLAN_VM_NAME 64
-#define CLAN_VM_SAVE_RAW_MAX 2048
+// The 195-variable capacity witness needs 1,415 raw bytes. 3 KiB leaves a
+// bounded margin for longer strings; snapshots use the same compiled bound.
+#define CLAN_VM_SAVE_RAW_MAX 3072
 #define CLAN_VM_SAVE_PACKED_MAX 2048
-#define CLAN_VM_PROGRESS_MAX 512
+// 128 g[] entries * 6 bytes + 12-byte header = 780 bytes. 1 KiB is the
+// explicit codec bound; the observed 67-entry true-ending blob is 414 bytes.
+#define CLAN_VM_PROGRESS_MAX 1024
+#define CLAN_VM_PROGRESS_ENTRIES_MAX 128
 #define CLAN_VM_ERROR 96
 
 enum { CLAN_MODE_STORY = 0, CLAN_MODE_CHAPTER = 1 };

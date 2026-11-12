@@ -137,6 +137,15 @@ returned; a failed later title/CG component cannot leave a half frame visible.
   valid slot always opens the cancel-default confirm. A failed NVS write keeps
   the previous slot and the current state and reports the failure; the firmware
   never erases NVS automatically.
+- Bounded capacity expansion (2026-11-12): the VM table is 512 slots with
+  a 3/4 probe ceiling; the 49-g + 74-choice witness peaks at 195 live variables.
+  The save raw budget is 3 KiB (worst observed 1,415 bytes; true-ending
+  checkpoint 1,069 bytes). The progress codec is bounded at 128 g[] entries /
+  1 KiB (67-entry true-ending record 414 bytes; old 64-entry blobs remain
+  readable). Zero-valued entries are explicit overlays, not omissions. The
+  30-slot measured compressed saves above remain the ordinary save case; the
+  larger bounds are not a claim that 128/512 entries fit every theoretical
+  state.
 - Global `g[]` progress is stored separately (`clannad/prog`) and applied over a
   loaded save so old saves cannot roll back light orbs or After Story flags.
   Chapter browsing applies the saved `g[]` values on entry (the source's
@@ -149,14 +158,14 @@ returned; a failed later title/CG component cannot leave a half frame visible.
 ## RAM (same-build MAP evidence)
 
 `tools/clannad_mem_budget.py` reads the MAP of this exact ELF:
-static DRAM data+BSS is 282,800 bytes; the post-BSS heap region is 99,760
+static DRAM data+BSS is 290,992 bytes; the post-BSS heap region is 91,568
 bytes. The usable end is IDF's `SOC_ROM_STACK_START - SOC_ROM_STACK_SIZE`
 (the same IDF used for the build), not the optimistic `0x3fce0000`; runtime
 free/largest and fragmentation are not measured. The display draw buffer is sized from the panel's physical width:
 240 x 40 lines x 2 bytes = 19,200 bytes (single buffer; not the 320-pixel LVGL
 landscape width). Named dynamic items are that 19,200-byte draw buffer, 31,488
 bytes of heap task stacks and ~1,600 bytes of queue/TCB estimates, leaving
-47,472 bytes before unmeasured SPI/panel/I2C/NVS driver allocations and
+39,280 bytes before unmeasured SPI/panel/I2C/NVS driver allocations and
 fragmentation. The LVGL port task stack is 7,168 bytes; the idle task stack is
 already static in the MAP and is not subtracted again.
 Static named buffers include the 107,520-byte 320x168 canvas, 28,672-byte story

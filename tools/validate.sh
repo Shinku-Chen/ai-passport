@@ -237,7 +237,7 @@ run_static_checks() {
             '"$CC" -std=c11 -Wall -Wextra -Werror \
              -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \
              "tests/test_demo_${1}_runtime.c" tests/demo_stubs/lvgl_link_stubs.c \
-             -Wl,--gc-sections -o "$STAGE/test_demo_${1}_runtime" && \
+             -o "$STAGE/test_demo_${1}_runtime" && \
              "$STAGE/test_demo_${1}_runtime"' _ "${demo}"
     done
 
