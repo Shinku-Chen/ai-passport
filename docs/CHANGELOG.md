@@ -64,3 +64,9 @@
 - Updated software-design and project README references for the new documentation structure.
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
+
+## v0.1.2-senren-banka - 2026-11-12
+
+- Restore the Rena route entry from the pinned source correction: chunk017 condition 1 now targets the 080 entry at p39501 (source 9644883, matching upstream fcc16a0), not the old 063 entry.
+- The v0.1.1 chapter 3-2 script-branch restoration remains included.
+- Old saves made at the incorrect 063/080 branch may be one line off; already-committed wrong paths are not auto-migrated. No original-clear gate is added.
