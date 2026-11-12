@@ -454,7 +454,22 @@ bool sg0_pack_event(const sg0_pack_t *pack, uint16_t index, sg0_event_t *out)
     out->c = rd16(p + 8);
     out->d = rd16(p + 10);
     out->data = rd16(p + 12);
-    return out->type <= SG0_EVENT_EXPIRE_RINE;
+    switch (out->type) {
+    case 0:  // closeChoice
+    case SG0_EVENT_RINE_REPLY:
+        return out->flags == 0;
+    case SG0_EVENT_MESSAGE:
+        // bit0 outgoing, bit1 stamp
+        return (out->flags & (uint8_t)~3u) == 0;
+    case SG0_EVENT_RINE_RESET:
+        // bit0 display-scope reset
+        return (out->flags & (uint8_t)~1u) == 0;
+    case SG0_EVENT_EXPIRE_RINE:
+        // bit1 readMessages present (empty array included)
+        return (out->flags & (uint8_t)~SG0_EVENT_FLAG_READ_MESSAGES_PRESENT) == 0;
+    default:
+        return false;
+    }
 }
 
 bool sg0_pack_start(const sg0_pack_t *pack, uint16_t index, sg0_start_t *out)

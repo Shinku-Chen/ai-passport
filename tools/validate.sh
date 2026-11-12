@@ -35,6 +35,13 @@ run_static_checks() {
     local c_fail=0
     local c_skips=0
     local source_status="SKIP"
+    local dead_strip_flag
+
+    # Apple ld does not accept --gc-sections; -dead_strip is the equivalent.
+    dead_strip_flag="-Wl,--gc-sections"
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        dead_strip_flag="-Wl,-dead_strip"
+    fi
 
     cd "${repo_root}"
     detect_host_cc || return 1
@@ -127,7 +134,7 @@ run_static_checks() {
         if ! "${HOST_CC[@]}" -std=c11 -Wall -Wextra -Werror \
                 -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \
                 "tests/test_demo_${demo}_runtime.c" tests/demo_stubs/lvgl_link_stubs.c \
-                -Wl,--gc-sections \
+                "${dead_strip_flag}" \
                 -o "${test_dir}/test_demo_${demo}_runtime" \
                 > "${test_dir}/test_demo_${demo}.log" 2>&1 ||
            ! "${test_dir}/test_demo_${demo}_runtime" >> "${test_dir}/test_demo_${demo}.log" 2>&1; then
@@ -160,6 +167,8 @@ run_static_checks() {
 
     compile_and_run test_steins0_rine -std=c11 -Wall -Wextra -Werror -Imain \
         main/steins0_engine.c main/steins0_pack.c main/steins0_text.c
+    compile_and_run test_steins0_read_messages -std=c11 -Wall -Wextra -Werror -Imain \
+        main/steins0_engine.c main/steins0_pack.c
     compile_and_run test_steins0_all_open -std=c11 -Wall -Wextra -Werror \
         -Itests/lvgl_ui_stubs -Itests/steins0_host_stubs -Imain \
         main/steins0_app.c main/steins0_pack.c main/steins0_text.c \
@@ -178,7 +187,7 @@ run_static_checks() {
 
     # Real TJpgDec image regression + tracked gate negative test.
     c_suites=$((c_suites + 1))
-    if ! tests/steins0_image_gate.sh "${HOST_CC[*]}" "${test_dir}/image" \
+    if ! bash tests/steins0_image_gate.sh "${HOST_CC[*]}" "${test_dir}/image" \
             > "${test_dir}/image_gate.log" 2>&1; then
         echo "FAIL | real image/TJpgDec host regression"
         tail -n 8 "${test_dir}/image_gate.log" || true
@@ -221,6 +230,16 @@ run_static_checks() {
             source_status="FAIL"
             c_fail=$((c_fail + 1))
             tail -n 12 "${test_dir}/source_audit.log" || true
+        fi
+        c_suites=$((c_suites + 1))
+        if PYTHONDONTWRITEBYTECODE=1 python3 tests/test_steins0_audit_negative.py \
+                "${STEINS0_SOURCE}" assets/steins0/steins0_pack.bin \
+                > "${test_dir}/audit_unknown_flags.log" 2>&1; then
+            echo "PASS | audit unknown expireRine flags"
+        else
+            echo "FAIL | audit unknown expireRine flags"
+            tail -n 8 "${test_dir}/audit_unknown_flags.log" || true
+            c_fail=$((c_fail + 1))
         fi
     else
         echo "SKIP | independent source audit | set STEINS0_SOURCE to the steins0-rw5 checkout"

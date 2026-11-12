@@ -10,7 +10,7 @@ if [[ -z "${cc}" ]]; then
     if command -v cc >/dev/null 2>&1; then cc="cc"; else cc="python -m ziglang cc"; fi
 fi
 
-if "${root}/tests/steins0_image_gate.sh" "${cc}" "${work}/broken" \
+if bash "${root}/tests/steins0_image_gate.sh" "${cc}" "${work}/broken" \
         "${root}/tests/fixtures/steins0_image_broken.c" >"${work}/broken.log" 2>&1; then
     echo "FAIL | gate negative test | broken image source was accepted"
     cat "${work}/broken.log" || true
@@ -21,7 +21,7 @@ if ! grep -q "compile failed" "${work}/broken.log"; then
     cat "${work}/broken.log" || true
     exit 1
 fi
-if ! "${root}/tests/steins0_image_gate.sh" "${cc}" "${work}/good" \
+if ! bash "${root}/tests/steins0_image_gate.sh" "${cc}" "${work}/good" \
         "${root}/tests/test_steins0_image.c" >"${work}/good.log" 2>&1; then
     echo "FAIL | gate negative test | real image source failed"
     cat "${work}/good.log" || true

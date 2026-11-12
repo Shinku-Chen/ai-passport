@@ -467,8 +467,14 @@ class Packer:
             asset = len(self.asset_rows)
             self.stamp_assets[stamp_id] = asset
             self.asset_rows.append((part, 1, KIND_SPRITE, self.string(f"stamp_{stamp_id}")))
-        for path in sorted((self.common / "chapter-cards").glob("*.jpg"),
-                           key=lambda p: int(p.stem)):
+        card_paths = sorted((self.common / "chapter-cards").glob("*.jpg"),
+                            key=lambda p: int(p.stem))
+        if not card_paths:
+            raise SystemExit(
+                "missing tracked chapter cards: " +
+                str(self.common / "chapter-cards") +
+                " (the pack would contain invalid NONE card assets)")
+        for path in card_paths:
             rel = f"src/common/chapter-cards/{path.name}"
             part = self._part_from_photo_scaled(rel, 46, 320, 180, "card")
             asset = len(self.asset_rows)
@@ -787,7 +793,10 @@ class Packer:
             count = len(ev.get("readMessages", []))
             first = (self.rine_msg_index[f"f:{node_id}:{event_index}:0"]
                      if count else 0xFFFF)
-            return EVENT.pack(at, 4, 0, 0, count,
+            # JS truthiness: an empty `readMessages` array still suppresses the
+            # default message, so presence is recorded independently of count.
+            flags = 2 if "readMessages" in ev else 0
+            return EVENT.pack(at, 4, flags, 0, count,
                               int(ev.get("base", 0)) & 0xFFFF, 0, first, 0)
         raise SystemExit(f"unknown event type {kind}")
 

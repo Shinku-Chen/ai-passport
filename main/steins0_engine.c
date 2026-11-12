@@ -100,7 +100,8 @@ static bool consume_events(const sg0_pack_t *pack, sg0_state_t *state, const sg0
         } else if (ev.type == SG0_EVENT_EXPIRE_RINE) {
             const int bit = base_bit(pack, ev.c);
             if (bit >= 0) state->rine.windows &= (uint16_t)~(1u << bit);
-            if (bit >= 0 && (state->rine.replied & (1u << bit)) == 0 && ev.b > 0) {
+            if (bit >= 0 && (state->rine.replied & (1u << bit)) == 0 &&
+                ((ev.flags & SG0_EVENT_FLAG_READ_MESSAGES_PRESENT) != 0 || ev.b > 0)) {
                 bool read = false;
                 for (uint16_t i = 0; i < state->rine.count; ++i) {
                     sg0_rine_msg_t msg;

@@ -402,6 +402,19 @@ class Pack:
             } for i in range(self.blob[off + 6])],
         }
 
+    def event(self, idx):
+        off = self.entry(SEC_EVENT, idx, 16)
+        return {
+            "at": u16(self.blob, off),
+            "type": self.blob[off + 2],
+            "flags": self.blob[off + 3],
+            "a": u16(self.blob, off + 4),
+            "b": u16(self.blob, off + 6),
+            "c": u16(self.blob, off + 8),
+            "d": u16(self.blob, off + 10),
+            "data": u16(self.blob, off + 12),
+        }
+
     def condition(self, idx):
         off = self.entry(SEC_COND, idx, 4)
         return {"flag": self.blob[off], "yes": self.blob[off + 1], "no": self.blob[off + 2]}
@@ -847,6 +860,46 @@ class Audit:
             node = nodes[node_id]
             pnode = pack.node(node_index[node_id])
             eq(f"{node_id}.chunk_count", pnode["chunk_count"], len(node["chunks"]))
+            source_events = node.get("events", [])
+            eq(f"{node_id}.event_count", pnode["event_count"], len(source_events))
+            for ei, ev in enumerate(source_events):
+                if ei >= pnode["event_count"]:
+                    break
+                pe = pack.event(pnode["event_first"] + ei)
+                kind = {"closeChoice": 0, "message": 1, "rineReset": 2,
+                        "rineReply": 3, "expireRine": 4}.get(ev.get("type"), -1)
+                eq(f"{node_id}.event[{ei}].type", pe["type"], kind)
+                eq(f"{node_id}.event[{ei}].at", pe["at"], ev.get("at", 0))
+                if kind == 1:
+                    flags = (1 if ev.get("outgoing") else 0) | (2 if ev.get("stamp") else 0)
+                    eq(f"{node_id}.event[{ei}].flags", pe["flags"], flags)
+                    eq(f"{node_id}.event[{ei}].base", pe["c"], int(ev.get("base", 0)))
+                elif kind == 2:
+                    eq(f"{node_id}.event[{ei}].flags", pe["flags"],
+                       1 if ev.get("scope") == "display" else 0)
+                elif kind == 4:
+                    eq(f"{node_id}.event[{ei}].base", pe["c"], int(ev.get("base", 0)))
+                    # expireRine 只定义了 bit1=readMessages present；未知位
+                    # (例如 0x80) 会被 C reader 拒绝，审计不能放过。
+                    eq(f"{node_id}.event[{ei}].unknown_flags",
+                       pe["flags"] & ~2, 0)
+                    present = "readMessages" in ev
+                    count = len(ev.get("readMessages", []))
+                    eq(f"{node_id}.event[{ei}].count", pe["b"], count)
+                    if not present:
+                        # Missing is falsy: no presence bit, no fallback.
+                        eq(f"{node_id}.event[{ei}].read_messages_present",
+                           bool(pe["flags"] & 2), False)
+                    elif count == 0:
+                        # A present empty array is truthy and must not collapse
+                        # into the legacy b=0 encoding.
+                        eq(f"{node_id}.event[{ei}].read_messages_present",
+                           bool(pe["flags"] & 2), True)
+                    # Non-empty legacy packs (flags=0) and new packs (flags=2)
+                    # are both semantically complete because b>0 already marks
+                    # the fallback; the reader accepts both encodings.
+                else:
+                    eq(f"{node_id}.event[{ei}].flags", pe["flags"], 0)
             pchunks = range(pnode["chunk_first"], pnode["chunk_first"] + pnode["chunk_count"])
             for part, pci in zip(node["chunks"], pchunks):
                 data = src.chunk(part["file"])

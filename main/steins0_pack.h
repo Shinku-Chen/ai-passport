@@ -62,6 +62,11 @@ enum {
 #define SG0_EVENT_RINE_REPLY 3u
 #define SG0_EVENT_EXPIRE_RINE 4u
 
+// expireRine.flags: source `readMessages` exists (even when the array is empty).
+// Missing `readMessages` must stay distinguishable from an empty array because
+// the source treats a missing property as falsy and an empty array as truthy.
+#define SG0_EVENT_FLAG_READ_MESSAGES_PRESENT 2u
+
 #define SG0_FLAG_PR_COMPLETE 0u   // 唯一的源条件:结局 0 通关(盟誓的文艺复兴链)
 
 typedef struct {
