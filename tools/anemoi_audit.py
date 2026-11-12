@@ -22,10 +22,12 @@ from __future__ import annotations
 import argparse
 import collections
 import glob
+import hashlib
 import json
 import os
 import re
 import struct
+import subprocess
 import sys
 
 SEC_TEXT, SEC_TXIDX, SEC_OPS, SEC_SCENE, SEC_SCNID, SEC_ENTRY, SEC_CHAP, SEC_VAR = range(8)
@@ -53,8 +55,15 @@ def log(msg):
 
 
 class Source:
-    def __init__(self, root):
+    def __init__(self, root, overlay_path=None):
         self.root = root
+        try:
+            self.source_commit = subprocess.check_output(
+                ["git", "-C", root, "rev-parse", "HEAD"],
+                stderr=subprocess.DEVNULL, text=True).strip()
+        except (OSError, subprocess.CalledProcessError):
+            self.source_commit = ""
+        self.overlay_info = None
         catalog_src = self.read("src/common/catalog.js")
         start = catalog_src.index("{", catalog_src.index("export const catalog="))
         self.catalog = json.loads(catalog_src[start:catalog_src.rindex("}") + 1])
@@ -65,6 +74,34 @@ class Source:
             self.portraits.update(json.load(open(path, encoding="utf-8")))
         helpers_src = self.read("src/common/helpers.js")
         self.helpers = json.loads(re.search(r"export const helpers=(\{.*\});", helpers_src, re.S).group(1))
+        if overlay_path:
+            raw = open(overlay_path, "rb").read()
+            doc = json.loads(raw.decode("utf-8"))
+            expected = str(doc.get("source_commit") or "")
+            if expected and self.source_commit and expected != self.source_commit:
+                raise SystemExit("source overlay commit mismatch: %s != %s" %
+                                 (expected, self.source_commit))
+            applied = []
+            for patch in doc.get("patches") or []:
+                helper = str(patch.get("helper") or "")
+                index = int(patch.get("op", -1))
+                field = str(patch.get("field") or "condition")
+                if helper not in self.helpers:
+                    raise SystemExit("source overlay helper missing: %s" % helper)
+                ops = self.helpers[helper].get("ops") or []
+                if index < 0 or index >= len(ops):
+                    raise SystemExit("source overlay op out of range: %s[%d]" % (helper, index))
+                if ops[index].get(field) != patch.get("before"):
+                    raise SystemExit("source overlay before mismatch: %s[%d].%s" %
+                                     (helper, index, field))
+                ops[index][field] = patch.get("after")
+                applied.append({"helper": helper, "op": index, "field": field})
+            self.overlay_info = {
+                "path": os.path.abspath(overlay_path),
+                "sha256": hashlib.sha256(raw).hexdigest(),
+                "source_commit": expected,
+                "patches": applied,
+            }
         self.labels = json.loads(self.read("src/common/story-labels.txt"))
         self.requests = json.loads(self.read("resources/request-texts.json"))
         self.gallery = json.loads(self.read("src/common/gallery.txt"))
@@ -165,12 +202,13 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--source", required=True)
+    ap.add_argument("--source-overlay", default="")
     ap.add_argument("--pack", default="main/anemoi_data/anemoi_pack.bin")
     ap.add_argument("--json", default="")
     ap.add_argument("--limit-errors", type=int, default=20)
     args = ap.parse_args()
 
-    src = Source(args.source)
+    src = Source(args.source, args.source_overlay or None)
     pack = PackView(args.pack)
     ops = pack.ops()
     errors = []
@@ -310,6 +348,8 @@ def main():
                 text_chars += length
     meta = pack.data(SEC_META).decode("utf-8")
     summary = {
+        "source_commit": src.source_commit,
+        "source_overlay": src.overlay_info,
         "source_scenes": len(src.catalog["scenes"]),
         "source_blocks": sum(len(v) for v in src.blocks.values()),
         "pack_scenes": len(scenes_in_pack),

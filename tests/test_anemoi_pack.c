@@ -12,7 +12,7 @@ static int check_real_pack(const uint8_t *blob, size_t size)
     anem_pack_t pack;
     ANEM_CHECK(anem_pack_open(&pack, blob, size));
     ANEM_CHECK(anem_pack_op_count(&pack) > 50000);
-    ANEM_CHECK(anem_pack_scene_count(&pack) == 71);
+    ANEM_CHECK(anem_pack_scene_count(&pack) == 80);
     ANEM_CHECK(anem_pack_image_count(&pack) > 1000);
     ANEM_CHECK(anem_pack_chapter_count(&pack) == 264);
     ANEM_CHECK(anem_pack_gallery_count(&pack) > 0);

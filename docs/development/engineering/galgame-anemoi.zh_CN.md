@@ -2,311 +2,229 @@
   <a href="galgame-anemoi.md">English</a> · <strong>简体中文</strong>
 </p>
 
-# anemoi — 横屏移植（部分内容技术原型）
+# anemoi — 横屏部分内容技术原型
 
-本分支把 Redmi Watch 5 版《anemoi》（`xuanyide01/anemoi-rw5`，快照
-`3e27714c50b860c674a86df90e3df3e4cf6dd254`）的**一部分**搬到 AI Passport 320×240 横屏：
-开机直接进作品标题，正文、选项、委托板、存档、鉴赏、章节都是本作品自己的界面。
+本分支把 Redmi Watch 5 版《anemoi》（`xuanyide01/anemoi-rw5`，固定快照
+`3e27714c50b860c674a86df90e3df3e4cf6dd254`）的**现有公共篇内容**搬到 AI
+Passport 320×240 横屏：开机直接进作品标题，正文、选项、委托板、存档、鉴赏和
+章节列表都使用本作品自己的界面。
 
-**先看状态。** 这份固件是**只覆盖源作品一部分的技术原型**，不是整作移植完成。它收录了
-264 个源场景中的 71 个（正文 764,847 / 3,088,939 UTF-8 字节，24.8%）。女主角路线正篇与
-After 线**没有**收录；流程走到那里会出现分卷边界页，并写出缺的是哪一章。这个原型的价值是
-在真机上跑通了真实解释器、身体+表情分层合成、JPEG/BLOCK 解码与存档/解锁路径——它**不能**
-被当作“整作无法移植”的证明。
+**状态。** 这是**只覆盖现有公共篇的技术原型**，不是整作移植完成。候选包为
+**80 个场景 / 61,257 条指令**：保留此前已交付的 71 场景原型，只补上正常流程
+已经能到达、但原包缺失的源范围。女主角路线正篇、After 篇以及 070/071/072/073
+书目仍未导入；越界跳转会显示分卷边界页。该原型用于验证解释器、渲染、存档和已
+检查的公共路线，不能作为“整作无法移植”的证明。
 
-被审产物是归档
-`build/firmware/bee2d1a2e32780a97511e3acba1dac4c36611619838bef86d2ac8f2c5d3a04a6`
-（app 8,191,504 B / full 8,257,040 B）。分卷只是**候选**的下一步；本分支没有任何地方把
-它当作已完成整作的交付。
+## 1. 取景 manifest
 
-## 1. 本卷内容（由打包器与独立审计实测）
+`main/anemoi_data/anemoi_scope.json` 是经过审阅的、纯数据的源范围 manifest。
+打包器会校验固定 source commit、场景存在性和范围边界，并拒绝重叠范围；它不能
+凭空加入文本、flag 或另一棵 source 树。
 
-| 项目 | 数值 |
+| 范围 | 为什么需要 |
 | --- | --- |
-| 源场景 / 区块 | 264 个场景 / 277 个区块 |
-| 收录场景 | **71**（共通篇 23 章 + story 调度场景 + 掲示板 + 予備 + 委托信/任务 + `arrive` 尾声） |
-| 收录指令 | **54,978**，独立审计逐 op 全部对上 |
-| 正文 | 764,847 UTF-8 字节（源全长 24.8%） |
-| 立绘 | 381 身体 + 1,292 表情（按屏幕像素预缩放，1:1 合成） |
-| 背景 / CG | 321 张 320×180 JPEG |
-| 章节元数据 | 264 个源场景全部列出；卷外章节有标注、不可进入 |
-| CG 鉴赏 | 61 组（本卷可达的 CG） |
-| 资源包 | 7,134,854 B，sha256 `c3f99005…5c292ed4` |
+| 场景 2、3、……及原 71 场景基座 | 此前已交付的公共篇原型范围，不新增文本 |
+| 场景 26 全段 `[0,len)` | scene 2 的 op145/153 调用 entry 0/10；原范围从 57 开始，没有 entry 0 |
+| 场景 27 全段 `[0,len)` | scene 2 的 op279/287 调用 entry 0/10；原范围从 44 开始 |
+| 场景 28 全段 `[0,len)` | scene 19/20/21 调用 entry 0；原范围从 143（entry 10）开始 |
+| 场景 90 全段 `[0,len)` | scene 2 的 op1030 调用 entry 0；原包没有该场景 |
+| 场景 167..174 全段 | scene 134/135/136 以 entry 0 调用全部 8 个 play 场景 |
+| 场景 125、131 的 `[0,160)` / `[0,149)` | 只保留原有路线章头；不导入整本 040_淡雪 |
+| 场景 133..138 的 `[1,len)` | 原有小詠 entry 范围；a13 增量在 134:622、135:442、136:483 仍被打包 |
+| 场景 175 的 `[128,476)` | 原有六花 entry 范围；不扩成未移植路线 |
 
-已收录场景没有删除任何台词、选项、CG 或表情。未逐字存储的姿势行只有 3 条
-（`bs2_ch11_01@7`、`ch11_01@7`、`ch12_01@7`），属于角色 `ch` 的 dress 7，而源里从未出现
-`$$set_bs_dress_type("ch", 7)`，运行时按文档化回退解析；只被这 3 条使用的 2 张身体因此不在
-包内（586/588），全量测量仍然编码了全部可达的 586 身体 / 2,375 表情变体。
+明确排除：场景 205（070 スピカzero）、206（071 同棲編）、262（073
+シルバー編），以及 193 个未移植路线章节。逐场景理由记录在 manifest 的
+`reasons` 表中。
 
-## 2. 全量编码实测（可复算）
+## 2. 容量（实际构建，不是估算）
 
-用与运行期相同的编码器做了两次完整 264 场景编码。它们是**测量**而不是可刷写的候选：
-全量单包的字符串数超过运行格式的 id 上限，因此这两次使用测量专用的 32 位文本 id 变体
-（`--wide-ids`，只改字段宽度，下文记录）。
+| 量 | 字节 | 说明 |
+| --- | ---: | --- |
+| `factory` app 分区 | 8,323,072 | `partitions.csv`，0x7f0000 |
+| 被审 app 镜像 | 8,049,104 | `build-anemoi-A-q24/FoloToy-AI-Passport.bin` |
+| 合并 full 镜像 | 8,114,640 | `build-anemoi-A-q24/FoloToy-AI-Passport-full.bin` |
+| app 内非包部分 | 1,094,302 | app 镜像减 6,954,802 B 的包 |
+| 包的资源上限 | 7,228,770 | 8,323,072 − 1,094,302 |
+| 候选包 | 6,954,802 | sha256 `634c01838d628f5ea2817c0c08c099beb8795f5134659ce186566adb5a770eef` |
+| app/flash 剩余 | 273,968 | app 分区的 3% |
 
-| 配置 | 包字节 | sha256 | header | 正文 | meta | 图像 | 表/指令 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| A：版面 0.52、32 色、JPEG q30 | **18,974,835 B（18.10 MiB）** | `d5cf4dca…25bcb49` | 412 | 3,083,657 | 729 | 12,250,003 | 3,640,034 / 210,101 条 |
-| B：版面 0.46、16 色、JPEG q25 | **16,697,716 B（15.92 MiB）** | `2449f64a…88ebabba` | 412 | 3,083,657 | 729 | 9,972,884 | 3,640,034 / 210,101 条 |
+合并 full 镜像为 8,114,640 B，8 MB flash 仍余 273,968 B。full 镜像 = app
+镜像 + 65,536 B 的 bootloader/分区表，因此用 app 分区和用整片 flash 算出的
+包上限相同。
 
-图像载荷数量：A = 586 身体 + 2,375 表情变体 + 1,025 场景图 + 3 纯色；
-B = 586 身体 + 2,540 表情变体 + 1,025 场景图 + 3 纯色。两种配置都保留全部可达表情与 CG，
-没有为了压字节删表情。
+## 3. 编码候选与视觉对照
 
-上面的两次运行用的是工具默认的时间戳目录（`build/measure-<UTC>-<config>-<scope>/`），等价显式写法是：
+三个候选都使用同一份 80 场景 manifest 和同一份 16px 字库。
 
-```text
-python tools/anemoi_pack.py --source <快照> --measure --scope all --wide-ids \
-    --out-dir build/measure-all-A --layout-scale 0.52 --palette-colors 32 --jpeg-quality 30
-python tools/anemoi_pack.py --source <快照> --measure --scope all --wide-ids \
-    --out-dir build/measure-all-B --layout-scale 0.46 --palette-colors 16 --jpeg-quality 25
-```
+| 候选 | 版面 / 调色板 / JPEG | 包字节 | 结果 |
+| --- | --- | ---: | --- |
+| A-q30 | 0.52 / 32 / q30 | 7,527,695 | 装不下：超过 7,228,770 B 上限 298,925 B |
+| **A-q24（选用）** | **0.52 / 32 / q24** | **6,954,802** | 可装，余 273,968 B；保持原版面和调色板 |
+| B | 0.46 / 16 / q25 | 6,470,206 | 可装，但只作为画质对照，不选用 |
 
-原始结果保留在 `build/measure-<UTC>-<config>-<scope>/`（`anemoi_pack.bin`、
-`anemoi_pack.json`、`measure.json`），日志为 `build/logs/measure-all-A.log` 与
-`build/logs/measure-all-B.log`。
+A-q24 只调整场景 JPEG 质量，不删除台词、选项、图片或表情，也不改变立绘版面/
+调色板。资源口径以二进制 SEC_IMAGE 行数为准：release 2,000 -> candidate
+2,065（+65）；kind 0 scene 行 +13（322 -> 335），kind 1 body/face 行
++52（1,676 -> 1,728），kind 2 solid 行不变（2）。65 个新正文字形是独立的
+字库口径。source image key 与二进制行不是 1:1，因此这里不用 source-key 计数
+代替行数。
 
-**怎么读。** 在这两种配置和这套运行格式下，整作单包是资源上限的 2.6× / 2.3×（见 §3）。
-这句话只针对“已测的编码与布局”，不是“任何技术方案都不可能”的证明。按卷拆包、更宽的 id
-运行格式、降低人物美术分辨率、把委托任务单独成卷等策略彼此组合都还没测，仍是候选。
+作为对照，B 候选也已实际构建：app 7,564,512 B / full 7,630,048 B，包 sha256
+`5320c42c2b91dbbc376189b0fb1eddf3022599f5afbe25e997af5e93d2206767`。
+它可以装下，但版面/调色板/JPEG 的画质回退更大，因此只保留为对照候选。
 
-B 相对 A 的质量代价：人物版面 0.52→0.46（立绘面积约 −22%）、调色板 32→16 色（渐变会有
-可见色带，线稿影响小）、背景 q30→q25（块效应更明显）。被审固件用的是配置 A。
+同一背景、立绘、脸部裁剪和对话页的 A/B 审计渲染在
+`audit/repairs/anemoi-screens/`。相对 A-q30 的 PSNR：A-q24 45.31 dB，
+B 37.67 dB。渲染器模拟当前游戏画布；生产 C 路径只绘制身体层，因此脸部裁剪
+是单独的视觉检查项。
 
-## 3. 容量口径（实测，不估算）
+## 4. 字体
 
-| 量 | 字节 | 来源 |
-| --- | --- | --- |
-| `factory` app 分区 | **8,323,072** | `partitions.csv`（0x7f0000） |
-| 应用镜像（被审） | 8,191,504 | `build-anemoi/FoloToy-AI-Passport.bin` |
-| 镜像里非包部分 | **1,056,650** | 镜像 − 嵌入的包（8,191,504 − 7,134,854）；含 IDF/LVGL/BSP 代码、3,009 字形字库与对齐 |
-| 资源上限（还能装下的最大包） | **7,266,422** | 8,323,072 − 1,056,650 |
-| 被审卷的包 | 7,134,854 | `main/anemoi_data/anemoi_pack.bin` |
-| app 剩余余量 | **131,568** | 8,323,072 − 8,191,504（= 7,266,422 − 7,134,854） |
+本作只编译 `gal_cjk_16.c`，本卷不提供 20px。生成的 16px 子集共
+**3,079** 个字形，覆盖包内正文和界面字面量，包括新增的 65 个正文字符。
+字体来源：
 
-8,323,072 B 是**整个 app 分区**，不是减掉代码字体后的素材额度。一卷的总量是
-**包 + 1,056,650 B**（保守：每卷字库子集都比现在这份 3,009 字形的小），必须低于
-8,323,072 B。
+- `assets/fonts/gal_cjk_16.c`：2,739,863 B，sha256
+  `f8553da2f50e00ed653d7184bd8b0f33b056c3ae251fc632bae6344c998b0e5b`
+- `assets/fonts/gal_cjk_symbols.txt`：9,200 B，sha256
+  `7699760f7cba84074d8c58205aca76327b6389ccba78e68c3a801fd2ebef0e18`
+- 源字体：Noto Sans CJK SC Regular OTF，sha256
+  `2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b`
+  （不提交）
 
-### 分卷实测表（两种配置都是实测，不是估算）
-
-每行都是该书目 264 场景子集的真实编码（`--scope book:NNN`）。“合计”加上实测的非包基线
-1,056,650 B。可玩的路线卷还需要共享调度场景与自己的字库子集，这两项不在这些包里。
-
-| 书目 | 场景 | A 包字节 | A 合计 | B 包字节 | B 合计 | A/B 可装 |
-| --- | --- | --- | --- | --- | --- | --- |
-| 010 共通 | 23 | 4,491,458 | 5,548,108 | 3,792,363 | 4,849,013 | 是 / 是 |
-| 020 朱比华 | 36 | 3,699,889 | 4,756,539 | 3,160,976 | 4,217,626 | 是 / 是 |
-| 030 爱乃 | 28 | 3,542,608 | 4,599,258 | 2,998,746 | 4,055,396 | 是 / 是 |
-| 040 淡雪 | 42 | 3,554,831 | 4,611,481 | 3,019,439 | 4,076,089 | 是 / 是 |
-| 050 小咏 | 43 | 4,222,769 | 5,279,419 | 3,510,496 | 4,567,146 | 是 / 是 |
-| 060 六花 | 30 | 4,476,399 | 5,533,049 | 3,870,222 | 4,926,872 | 是 / 是 |
-| 070 Spica zero | 1 | 1,247,524 | 2,304,174 | 1,017,808 | 2,074,458 | 是 / 是 |
-| 071 同棲編 | 34 | 3,806,632 | 4,863,282 | 3,238,358 | 4,295,008 | 是 / 是 |
-| 072 子育て編 | 22 | 2,952,498 | 4,009,148 | 2,503,863 | 3,560,513 | 是 / 是 |
-| 073 シルバー編 | 1 | 867,419 | 1,924,069 | 710,516 | 1,767,166 | 是 / 是 |
-
-这**不**等于“拆 10 卷就能发”。还需要实测两件事后才能说：(a) 既重播共通篇又进某条路线的卷
-需要共通与路线的**并集**，比任何单卷都大；(b) 每卷要加共享调度场景与自己的字库子集。
-这两项是下一步的测量，不是结论。
-
-## 4. 图像管线
-
-- **立绘**：每条 `POSE` 记录带身体图、表情图、表情在身体画布上的 x/y/w/h、原始尺寸与版面。
-  打包时按源 `portraitBox()` 几何把两层都烘焙到屏幕像素（版面 0.52，源 432×286 → 320×212）。
-  运行时 1:1 合成、不再缩放：小脸不会被放大成全身，469 张表情图集（同一批裁剪的重复拷贝）
-  完全不存。
-- **BLOCK 载荷**：调色板（≤32 色，含逐索引 alpha）+ 逐行 PNG 式滤波 + 每 16 行独立 zlib。
-  解码只需 `16×(w+1)` 块缓冲与 tinfl 状态；坏块、越界调色板下标在写画布前拒绝。
-- **背景 / CG**：320×180 q30 4:2:0 JPEG，TJpgDec 逐 MCU 写入画布，居中不裁切。**本仓库
-  配置的 TJpgDec R0.03 输出是 BGR565**（红 = 0x001F），回调统一换 R/B，由
-  `jpeg_split.jpg` 夹具逐像素钉住。
-- **已知视觉缺口**：源会用 `$$get_bg_time_control_name()` 把背景名解析成
-  “名字 + `_01.._05/_80`”（依 `$time_control`）。原型存的是剧本里的字面名并直接查表，
-  所以本卷 **226 个背景名里有 53 个**会显示基础图而不是对应时段变体。修法是运行期在
-  `OP_BG` 处理里套同一条后缀规则；被审二进制里没有这个修复。
-
-## 5. 存储与状态
-
-- 30 个手动槽 + 1 个独立自动档 + 1 份版本化全局解锁。
-- 每条记录带 magic、版本、长度、CRC32；解码校验字段范围，失败不改调用方状态。
-- `nvs_set_blob` 与 `nvs_commit` 都成功才报保存成功；失败时旧槽与列表不变。NVS 初始化失败
-  只降级为“本次运行内有效”，**不调用 `nvs_flash_erase()`**。
-
-## 6. 按键与界面
-
-| 场景 | 短按 | 长按 |
-| --- | --- | --- |
-| 正文 | UP / OK：推进（打字中先补全）；DOWN：历史 | UP：快进（松手停）；DOWN：自动播放开关；OK：菜单 |
-| 待选 | UP / DOWN 移动；OK：显式确认 | OK：菜单（返回后保留待选与光标） |
-| 列表 | UP / DOWN 移动；OK：进入 / 执行 | OK：返回来源页 |
-| CG | UP / DOWN 换图；OK：返回列表 | OK：返回列表 |
-
-状态机只在 CLICK（延迟确认）与 LONG 上动作，PRESS 不导航；长按后那次独立短按仍是独立
-CLICK。自动播放遇到选项停下。界面模型是纯 C（屏幕、行、矩形、选中项），宿主测试直接断言
-这个模型。
-
-## 7. RAM 账（同一次 MAP）
-
-| 区间 / 项 | 字节 | 说明 |
-| --- | --- | --- |
-| SRAM 别名窗口 | `0x3fc80000`..`0x3fce0000` | 384 KiB 总量，不全是堆 |
-| 静态 data+bss 区间 | 232,160 | `_data_start 0x3fc90e00` .. `_heap_start 0x3fcc98e0` |
-| `.dram0.bss` | 224,840 | 含画布、块缓冲、tinfl、应用状态、IDF/LVGL 静态区 |
-| 堆区 A | **77,360** | `_heap_start` .. `APP_USABLE_DRAM_END 0x3fcdc710` |
-| 堆区 B（ROM 保留尾） | **14,576** | `0x3fcdc710` .. `SOC_DIRAM_DRAM_HIGH 0x3fce0000`，初始化时作为最后一个堆块登记 |
-| 启动堆（A+B） | **91,936** | 从 `_heap_start` 算；用 `_bss_end` 会多算 8 B 对齐（91,944） |
-| LVGL 池 | 65,536 | `CONFIG_LV_MEM_SIZE_KILOBYTES=64`，静态 |
-| 画布 `s_pixels` 320×180×2 | 115,200 | 静态 `.bss`，不是 malloc |
-| 立绘块缓冲 | 8,224 | 16 行 × (255+1) |
-| tinfl 状态 | 10,992 | 静态 `.bss`（ROM miniz） |
-| 应用状态 | 17,752 | 解释器 + 存档元数据 + 视口 |
-
-**不**在静态区里预留的堆消费者：LVGL 绘制缓冲 `240×40×2 = 19,200`（`bsp_display_lvgl.c:89`，
-`BSP_LCD_W=240`）、LVGL port 任务栈 `7,168`（`esp_lvgl_port.h:68`）、应用输入任务 `6,144`，
-以及 NVS 页缓存与驱动初始化分配（本轮未测具体大小）。已知计划内堆占用约 32.5 KiB（不含
-NVS/驱动），即 91,936 B 里大约还剩 59 KiB。**真机 free/largest 与帧时间没有测**，这一节是
-静态账，不是 PASS。
-
-## 8. 本原型的已知缺口（不要读成“共通篇已完整跑通”）
-
-1. **脚本函数的返回值被丢掉。** 打包器把 helper 的 `return value` 载荷放在 micro 指令的
-   `c` 字段且 `flags = 0`（`tools/anemoi_pack.py:1259`），而 `run_helper()` 判的是
-   `op.flags & 1`（`main/anemoi/anemoi_script.c:1057`），所以所有带返回值的 helper
-   （`$$reverse_flag`、`$$get_record_flag`、`$$get_bg_time_control_name`、
-   `$$chop_bg_blur_name` 等）现在都返回 0。这正是 `dynamicChoice.enabled` 里
-   `$$reverse_flag` 条件全部为假的原因。修法是改一个条件（读 `c`，或让打包器置 flags），
-   **不在被审二进制里**——本轮只做证据。
-2. **背景时段后缀没有在运行期应用**（本卷 53/226 个名字，见 §4）。变体都在包里，缺的只是
-   解析步骤。
-3. **自动走路在第一个委托板就停（测试设计如此）**，不是共通篇已端到端跑通。
-   `tests/test_anemoi_script.c` 选第一项后就结束；本轮真正的大范围走动只有这个测试加
-   “23 章各自起始到一句正文”的扫描。之前看到的“290 万行循环”来自一个调试走法：它在
-   三选一的委托小关卡（场景 31 `020_スピカ0002`，源 op 212–411：唱歌/引诱/气味，各设
-   `a:125..127` 并回到 212，三项齐了才前进）里一直重选第 0 项——是走法策略的循环，
-   不是源里的死循环，也不在门禁里。
-4. **小游戏只有标志位。** 源里有 15 条 `skipGame`（rps 1、quiz 1、race 13）。
-   `story-game-flags.js` 把 rps 解析为 `a:409..411 = 10/0/0`、quiz 为 `a:412 = 10`，snake/
-   race 不动；解释器就实现这些，**没有小游戏界面**，与手表版“无小游戏”的设计一致。宿主
-   测试只断言“包内出现的 native 名字都有 C 分派”——那是名字覆盖，不是语义等价的证明；
-   本文不声称 native 语义完备。
-5. **真机未测**（无硬件授权）：运行期堆、帧时间、按键手感、真机 JPEG/BLOCK 解码速度都未验证。
-
-## 9. 构建、门禁与复现
+检查命令：
 
 ```text
-# 被审卷的资源包（只写 main/anemoi_data）
-ANEMOI_SOURCE=<快照> python tools/anemoi_pack.py --scope common \
-    --layout-scale 0.52 --palette-colors 32 --jpeg-quality 30
-
-# 测量（永远写独立目录；工具会拒绝 main/anemoi_data）
-ANEMOI_SOURCE=<快照> python tools/anemoi_pack.py --measure --scope all --wide-ids \
-    --out-dir build/measure-all-A \
-    --layout-scale 0.52 --palette-colors 32 --jpeg-quality 30
-
-# 本作门禁（宿主 C 测试 + 独立审计 + 负例）
-ANEMOI_SOURCE=<快照> bash tools/anemoi_gate.sh build/anemoi-gate
-
-# 固件（PowerShell；Git Bash 下 IDF 拒绝 MSYS 路径）
-idf.py -B build-anemoi -D SDKCONFIG=build-anemoi/sdkconfig build
-idf.py -B build-anemoi merge-bin -o <abs>/build-anemoi/FoloToy-AI-Passport-full.bin
-python tools/verify_firmware.py build-anemoi
-python tools/archive_firmware.py create build-anemoi --archive-root build/firmware
+python3 tools/gal_font.py --check --sizes 16 --out-dir assets/fonts
 ```
 
-`--measure` 不会写进 `main/anemoi_data`：默认输出到
-`build/measure-<UTC>-<config>-<scope>/`，打印该路径，若输出目录落在正式数据目录下直接
-报错退出。`tests/test_anemoi_artifacts.py` 会跑一次测量，并断言正式包、manifest、字库在
-测量前后逐字节一致。
+## 5. 正常路线证据
 
-本机 `tools/validate.sh --static` 需要 `CC=tools/cc-zig.sh`（没有系统 `cc`），随后会在
-**基线自带**的 demo runtime 链接上失败（`test_demo_audio_runtime` 缺 LVGL 符号），本分支
-没有改那些文件；本作自己的 5 组测试在 `tools/anemoi_gate.sh` 里全绿。
+以下都是正常 NewGame/选择运行，不是章节直达或 flag 注入；只有明确注明时才
+使用合法 progress 存档。
 
-## 10. 许可
+- **Spica 入口：** scene37 trace 已到达 `SCENE 28 cursor=21950`（entry 0），
+  之后返回 21；原来的 scene28 entry0 阻断已消失。该运行随后仍停在未移植的
+  爱乃边界，因此这是入口覆盖，不是完整 Spica 结局。
+- **小詠 8 个 play 选项：** `anemoi-134-natural-walk0..7.log` 走完 scene134
+  cursor 43186 的 8 个选项；item 7 还经过 scene174 cursor 50927。路径继续
+  穿过已打包的 167..174 范围，最后停在小詠路线边界。a13 增量 op
+  （134:622、135:442、136:483）都在打包范围内。
+- **六花边界：** `anemoi-normal-rikka-A-q24.log` 通过正常板选择到达六花
+  资格边界。
+- **82 个 normal menu item：** 把 release 包的已审 witness plan 按源 op
+  偏移翻译到 80 场景包（新增 entry 0 会移动绝对 cursor），再用生产 C
+  解释器重放。选项 label 与原 witness 日志一致，82 个目标 item 全部被消费，
+  每个 plan 都到达 `PLAN_CONSUMED target_hit=1`。部分旧 plan 原本停在边界，
+  新包会正确继续前进，因此这里是 item 覆盖，不是“终点不变”的声明。
 
-源移植版《anemoi》为个人同人作品；本分支只做本机技术验证，**不分发**生成的资源包，
-资源包与固件归档都不入库。内置 TJpgDec 许可见 `main/anemoi/tjpgd/LICENSE.txt`。
+## 6. 阳彩任务门禁：SOURCE_DEADLOCK
 
-## 11. v3 修复（本修订）与被审身份
+阳彩任务 3 的板项在 scene393 op26 由 `$$check_character_bbs_disp(3)` 门控。
+当 `a12==2` 时，helper op128 要求 `a2<=15 && a3==1 && a17>=2`。源中：
 
-独立审计 v1/v2（见 `build/review-independent/`）给出三个阻断缺陷，本修订已修，包与固件已重建；
-旧 `bee2d1a2…` 归档与全部测量/审核证据都保留。
+- `a17` 只有一个正 writer：scene93 op904 的 `a17 += 1`（任务 0003 完成）；
+- `a300` 只有一个 writer：scene93 op87 的 `a300 += 1`；
+- `a12` 由 scene91..98 增加；scene93 op903 是任务 3 完成时的增量；
+- 任务 0003 之前的正常状态是 `a12=2, a17=0, a300=0`。
 
-| 缺陷 | 根因 | 修法 |
-| --- | --- | --- |
-| 变量全部按名取失败 | `write()` 在序列化 `SEC_VAR` 前就冻结文本池，136 个变量名 id 落在文本表之外（`var[1]=17622:(null)`） | 变量名在冻结前统一入池；冻结后再加字符串直接报错；`anem_pack_open()` 校验所有跨段 id 并拒绝旧包 |
-| 第 4,532 帧后委托板分叉（scene 68 vs 源 62） | `$$set_date` 等 helpers.js 脚本函数从未被编译（打包器把 C 有兜底的名字一律跳过）；`a:1`/`$time_control` 也只被 native 使用而未进 VAR | 脚本函数优先于 native 兜底编译；native-only 变量与动态 `z:201..450` 显式注册；运行期生成的子串（left/right/mid/tostr）进 scratch 池，不再静默变成 id 0 |
-| 第 31 章只剩 1 个错误标签并死循环 | `run_helper()` 每条 micro 都重置 `arena_used`，覆盖调用方的 labels/enabled 数组 | helper 求值改为栈式所有权（进入记录、退出归还），嵌套调用不再重置；`["v","z",expr]` 动态键编译成真正的运行期查找 |
-| 板上出现源会丢弃的委托 | 源 `$$set_bbs_request_data` 只在 preview/scene 名字都属于 catalog 时才入板 | C 端按同名规则过滤 |
-| 时段背景永远 `_01` | `$time_control` 缺失；`exists_image` 把裸 base 别名当成存在 | 变量 schema 修复；名字表标记纯别名，`exists_image` 与源一致，`OP_BG` 按 base → base+后缀 解析 |
+scene393 的 `a12==2` 分支会设置请求 `040_淡雪0003`，但 helper 无法返回
+true，因为 `a17>=2` 只能由同一个任务完成时写入。`a17>=1` overlay 也不是
+修复：任务前 `a17=0` 仍然为 false，且该 overlay 已被
+`audit/repairs/anemoi-overlay-rejection.json` 否决。当前没有应用任何兼容
+overlay；包 manifest 的 `source_overlay` 为 null。因此阳彩任务 3+ 标记为
+**SOURCE_DEADLOCK**，不是 PASS。这是固定源的限制，不是 pack 范围缺失。
 
-修后验证（生产 C vs 源引擎同策略转录）：
+## 7. 可复现性与门禁
 
-- `build/anemoi-verify/20261102-043808/`：前 **6,521** 条可比行完全一致（走到第 13 天 / 第 7 块板），
-  之后到达**分卷边界**（委托信 entry-0 前缀未收录）；源在同一策略下 10,961 行到 `END`。这是
-  已记录的边界，不是“后续也修好”的声明。
-- `tests/test_anemoi_semantics.c`（已入门禁）：`$$reverse_flag` / `$$get_bg_time_control_name` /
-  `$$chop_bg_blur_name` / `$$set_date` 的值；第一块板 `a:1=7/a:2=12/a:3=1`、四项与源一致、
-  选择后进入 scene 62；第 31 章 3→2→1→`END` 且 `a:125..127=1`；`$time_control=2` 的背景解析为
-  `bg999_03`。
-- 被审产物：包 `7,163,111 B` sha256 `8df8f768…`（旧 `c3f99005…` / `5fa57cba…` 保留）；
-  app **8,223,536 B** sha256 `9006a8ab…`，full **8,289,072 B** sha256 `ab784f32…`，
-  ELF `6bdd7951…`，MAP `0347f467…`；归档
-  `build/firmware/ab784f3248c756c5921731ed5d2cd96b6d459cd1599d1073c2877b1049909ac8`（verify PASS），
-  app 余量 99,536 B。
-
-仍未解决（口径不变）：委托**信**（entry 10 前的十来个 op）未收录，板上选择落到任务本体、后续板
-到达分卷边界；小游戏仍只有标志位（15 条 `skipGame`：rps 1 / quiz 1 / race 13）；鉴赏 61 条目 /
-14 组（源 490 / 89）；不提供 20px；真机未测（NOT RUN）。
-
-### 修后 RAM（同次 MAP）
-
-`_heap_start = 0x3fccd3b0`，`.dram0.bss = 239,904 B`。可证明分配区 A
-（`_heap_start..APP_USABLE_DRAM_END 0x3fcdc710`）= **62,304 B**；ROM 启动栈尾 B
-（`0x3fcdc710..0x3fce0000`）= **14,576 B**，调度器启动后才并入。扣除已命名动态项 41,984 B，
-A 余 **20,320 B**、A+B 余 **34,896 B**，仍未扣 LVGL 对象/NVS/驱动/碎片；真机 free/largest 未测。
-
-### 变体 ≠ 重复（图像计数）
-
-本卷 381 身体 / 1,292 表情是**按屏幕尺寸烘焙的显示变体**，不是源图第二份拷贝：源是 588 个不同
-身体文件 + 2,221 个不同表情裁剪，每个裁剪按它配对身体的显示尺寸烘焙（同一表情在两种尺寸下会
-产生两份载荷）；469 张表情图集完全没有打进包。因此 body/face 计数不能直接与源文件数对比，
-审计按 (源 id, 几何) 回溯每份载荷。
-
-## 12. 共通篇闭包实测（委托信 + 全部任务 + 递归依赖）
-
-v3 候选（包 `8df8f768…`、固件 `ab784f32…`）**仍不是完整共通篇**：`compute_scope()` 把每个
-请求场景的 entry-10 任务段追加进 ranges 后没有再入队扫描，因此这些任务内部的
-`callScene`/`native` 依赖全部漏掉；委托**信**（`[0, entry10)` 前缀）也没有收录。把闭包做成
-真正的固定点（`common-full`：流程场景 + 全部委托信 + 全部 entry-10 任务 + 它们的场景/板
-preview，递归到不再出现新范围）后：
-
-| 范围 | 场景 | 指令 | 包体 | 相对上限 7,262,647 B |
-| --- | --- | --- | --- | --- |
-| v3 候选（`common`，有任务无闭包） | 71 | 55,049 | 7,163,111 B | 余 99,536 B |
-| 共通+任务，真闭包（`common`） | 133 | 115,930 | 11,502,736 B | **超 4,240,089 B** |
-| 共通+信+任务（`common-full`） | 133 | 116,064 | **11,505,505 B** | **超 4,242,858 B** |
-
-委托信很便宜（文本 +1,015 B、指令 +1,608 B），体积在任务及其依赖上。相对候选的分段增量：
-text +946,858、ops +732,180、blob +2,476,083、pose +34,584、namelist +21,860、expr +22,946、
-image +13,824，其余表合计约 +96 KB。
-
-无损去重救不了 4.24 MB：候选的 2,000 条图记录只对应 1,945 份不同载荷（5 份共享），闭包又新增
-864 份，没有逐字节相同的背景/身体。因此如实结论是：**当前 8 MB 分区、在已测的任何编码下，
-都放不下走到源 END 的完整共通篇**；§11 里那 6,521 行匹配只是**欠范围包**的前缀，不是接近完成。
-`X|朱比华` 也不是“分卷边界”，而是欠范围包可达内容的尽头。
-
-严格对照已做成常驻工具 `tools/anemoi_compare.py`：要求停点数相等、每个停点的类型/说话人/
-正文相等、板项数与每一项 `preview:scene:entry:lock` 相等、选项数与每个标签相等、两侧都以
-`E` 且 `lines/choices/boards` 相等；截断、改一字、错 END、多一个板项、改一个选项标签、
-用边界代替 END 六种变异都被拒绝（`--selftest`）。对当前候选它如实失败：
+打包器使用显式 manifest，而不是旧的启发式 common 闭包：
 
 ```text
-FAIL | terminator | C 侧没有源 END
-STATS | oracle_stops=11009 c_stops=6522 oracle_T=10961 c_T=6497 oracle_B=23 c_B=8 oracle_C=24 c_C=16
+python3 tools/anemoi_pack.py --source <固定 anemoi-rw5> \
+  --scope-manifest main/anemoi_data/anemoi_scope.json \
+  --layout-scale 0.52 --palette-colors 32 --jpeg-quality 24
 ```
 
-在约束允许的顺序里，能放下的做法只有：(1) 按卷拆分（§7 的每卷实测是候选，不是决定），
-(2) 降低美术预算（缩放/调色板/质量，属于改变已声明保真度），(3) 删内容（明确不允许）。
-以上都不是已宣布的方案，这些数字只是决策输入。
+受版本控制的 `main/anemoi_data/anemoi_pack.json` 记录包 hash/大小、source
+commit、scope manifest hash、打包参数、字库 hash、容量、分段表、
+`image_row_kinds`，以及 `scope_notes`（说明 `included_scenes`/
+`scope_manifest` 是权威范围、source image key 与二进制行不是 1:1）。
+`main/anemoi_data/anemoi_pack.bin` 仍是 release 产物（gitignore）。可选的
+`--source-overlay` 是显式、记录 hash 的兼容机制；本次**未使用**。
+
+### 二进制审计
+
+`tools/anemoi_binary_audit.py` 直接读取 source story JSON、scope manifest
+和二进制，不 import 打包器的 `Source`/`load_scope_manifest`。它强制 pack
+场景集合与 scope 集合相等、每个 scene 的范围长度与 source op 顺序精确一致，
+且 `checked == scope total == pack op count`；同时核对每个 static
+`if`/`goto`/`call` 重定位和每个 static 跨场景 entry 引用与 entry 表。
+仅允许 2 个 chapter-head 越界 return 和 1 个 `input_update` -> `ARRIVE`
+poll 的明确语义特例；3 个 dynamic jump entry 只计数，不伪称静态穷尽。
+
+当前 pack 报告 80 场景、61,257/61,257 ops、15,620 个 static branch target、
+333 个 static 跨场景 entry 引用。333 是引用检查，不是 641 行 ENTRY 表的全部
+条目。`tests/test_anemoi_binary_audit.py` 增加 6 个负例：范围少一 op、
+pack scene 缺失/多出、同 kind 跳转目标改值、跨场景 entry 值错误、scope
+source commit 错误、scope 范围越界；每个都必须以对应的 coverage/target/scope
+错误非零失败。
+
+本候选的门禁结果（完整输出在 `audit/repairs/`）：
+
+| 命令 | 结果 | 日志 |
+| --- | --- | --- |
+| `ANEMOI_SOURCE=... bash tools/validate.sh --static` | PASS | `audit/repairs/anemoi-full-static-final.log` |
+| `ANEMOI_SOURCE=... python3 tests/test_anemoi_scope.py` | PASS | `audit/repairs/anemoi-scope-final.log` |
+| `python3 tools/gal_font.py --check --sizes 16` | PASS | `build/anemoi-gate-static/font.log` |
+| `ANEMOI_SOURCE=... ANEMOI_RELEASE_PACK=... bash tools/anemoi_gate.sh build/anemoi-gate-final4` | PASS (26/0/0) | `audit/repairs/anemoi-gate-final4.log` |
+| `python3 tools/anemoi_binary_audit.py --source ... --baseline-pack ...` | PASS (61,257/61,257; 15,620 targets; 333 refs) | `audit/repairs/anemoi-binary-audit.log` |
+| `python3 tests/test_anemoi_binary_audit.py` | PASS (positive + 6 negatives) | `audit/repairs/anemoi-binary-audit-negatives.log` |
+| `idf.py -B build-anemoi-A-q24 build` | PASS | `audit/repairs/anemoi-idf-final-build2.log` |
+| `idf.py -B build-anemoi-A-q24 merge-bin` | PASS | `audit/repairs/anemoi-merge-final.log` |
+| `python3 tools/verify_firmware.py build-anemoi-A-q24` | PASS | `audit/repairs/anemoi-verify-final.log` |
+| `python3 tools/archive_firmware.py create build-anemoi-A-q24 --archive-root build/firmware` | PASS | `audit/repairs/anemoi-archive-create.log` |
+| `python3 tools/archive_firmware.py verify build/firmware/4000d07b...` | PASS | `audit/repairs/anemoi-archive-verify.log` |
+| 82-item 翻译后生产 C 重放 | PASS | `audit/repairs/anemoi-normal-items-translated/receipt.json` |
+
+真机测试为 **NOT RUN**：未进行 USB/烧录操作；运行时 free/largest block 和
+帧时间未在硬件上测量。
+
+共享 static 链现在会直接调用 `tools/anemoi_gate.sh`。未设置
+`ANEMOI_SOURCE` 或缺少 pack 都是硬失败，不是 skip。Darwin 上 host-only
+demo runtime 测试使用原生 `-dead_strip`，替代 GNU `--gc-sections`。
+
+## 8. RAM/heap 预算（最终 MAP）
+
+flash 余量不是 RAM。最终 ESP32-C3 MAP/ELF 报告：
+
+- `.dram0.data` 7,300 B；`.dram0.bss` 240,968 B。
+- 静态 bss 包括 canvas 115,200 B、LVGL pool 65,536 B、应用状态 32,832 B、
+  block buffer 8,224 B、tinfl 状态 10,992 B，以及 palette/行缓冲/LVGL global
+  2,208 B；其余 bss 约 5,976 B。
+- `_data_start = 0x3fc90e00`，`_heap_start = 0x3fccd7e0`；静态数据保留区
+  248,288 B。
+- Heap 区 A（`_heap_start..APP_USABLE_DRAM_END 0x3fcdc710`）为 61,232 B。
+- Heap 区 B（`0x3fcdc710..SOC_DIRAM_DRAM_HIGH 0x3fce0000`）为 14,576 B；
+  ROM 保留尾区在调度器启动后才并入。启动时 heap 合计 75,808 B（A+B）。
+- 已命名动态预留：LVGL draw buffer 19,200 B（240×40×2）、LVGL task stack
+  7,168 B、input task 6,144 B（分配失败时回退 4,096 B）、main task 8,192 B、
+timer task 3,584 B、event task 2,304 B = 46,592 B。
+- 源码锚点：draw buffer `components/bsp/src/bsp_display_lvgl.c:97`；
+  LVGL task `managed_components/espressif__esp_lvgl_port/include/esp_lvgl_port.h:68`；
+  input task `main/main.c:283-288`；main stack `sdkconfig.defaults:38`；
+  timer/event `build-anemoi-A-q24/config/sdkconfig.h:488,512`；
+  `APP_USABLE_DRAM_END` `components/heap/port/esp32c3/memory_layout.c`；
+  ROM stack `components/soc/esp32c3/include/soc/soc.h:205-206`。
+- 扣除后到 LVGL 对象/NVS/驱动/碎片之前：A 区余 14,640 B；A+B 余 29,216 B。
+  这是静态链接预算，不是运行期实测；真机 free/largest block 与帧时间
+  NOT RUN。
+
+## 9. 已知缺口
+
+1. 阳彩任务 3+ 是 source deadlock，不声称自然完成。
+2. 场景 205/206/262 和 193 个路线章节不在现有原型内；边界页是预期行为。
+3. Spica/小詠/六花的证据覆盖已打包的资格/play 范围和路线边界，不是未导入
+   整本的完整结局。
+4. 本卷不编译 20px 字体变体。
+5. 真机验收 NOT RUN。

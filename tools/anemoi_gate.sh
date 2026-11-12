@@ -65,6 +65,37 @@ run_test() {
 
 echo "== anemoi gate $(date '+%Y-%m-%d %H:%M:%S') ==" | tee "${out_dir}/gate.log"
 
+if python3 -m py_compile "${repo_root}/tools/anemoi_pack.py" \
+    "${repo_root}/tools/anemoi_audit.py" "${repo_root}/tools/anemoi_binary_audit.py" \
+    "${repo_root}/tools/anemoi_compare.py" \
+    "${repo_root}/tests/test_anemoi_artifacts.py" \
+    "${repo_root}/tests/test_anemoi_scope.py" \
+    "${repo_root}/tests/test_anemoi_binary_audit.py" >"${out_dir}/python-compile.log" 2>&1; then
+    echo "PASS | python-compile | ${out_dir}/python-compile.log"
+else
+    echo "FAIL | python-compile | ${out_dir}/python-compile.log"
+    tail -5 "${out_dir}/python-compile.log" | sed 's/^/    /'
+    status=1
+fi
+
+if python3 "${repo_root}/tests/test_anemoi_scope.py" >"${out_dir}/scope.log" 2>&1; then
+    echo "PASS | scope | ${out_dir}/scope.log"
+else
+    echo "FAIL | scope | ${out_dir}/scope.log"
+    tail -5 "${out_dir}/scope.log" | sed 's/^/    /'
+    status=1
+fi
+
+# 字体子集：本作只编译 16px；检查随包字库对正文 + 界面字符的覆盖。
+if python3 "${repo_root}/tools/gal_font.py" --check --sizes 16 \
+    --out-dir "${repo_root}/assets/fonts" >"${out_dir}/font.log" 2>&1; then
+    echo "PASS | font | 16px 字形覆盖/结构 | ${out_dir}/font.log"
+else
+    echo "FAIL | font | ${out_dir}/font.log"
+    tail -5 "${out_dir}/font.log" | sed 's/^/    /'
+    status=1
+fi
+
 run_build test_pack "${repo_root}/tests/test_anemoi_pack.c" \
     "${repo_root}/main/anemoi/anemoi_pack.c" && run_test test_pack "${pack}" || status=1
 
@@ -106,8 +137,57 @@ else
 fi
 
 if [[ -n "${ANEMOI_SOURCE:-}" ]]; then
-    if python "${repo_root}/tools/anemoi_audit.py" --source "${ANEMOI_SOURCE}" --pack "${pack}" \
-        --json "${out_dir}/audit.json" >"${out_dir}/audit.log" 2>&1; then
+    baseline_args=()
+    if [[ -n "${ANEMOI_RELEASE_PACK:-}" ]]; then
+        if [[ ! -f "${ANEMOI_RELEASE_PACK}" ]]; then
+            echo "FAIL | binary-audit | baseline pack 不存在: ${ANEMOI_RELEASE_PACK}"
+            status=1
+        else
+            baseline_args=(--baseline-pack "${ANEMOI_RELEASE_PACK}")
+        fi
+    fi
+    binary_cmd=(python3 "${repo_root}/tools/anemoi_binary_audit.py"
+                --source "${ANEMOI_SOURCE}"
+                --scope "${repo_root}/main/anemoi_data/anemoi_scope.json"
+                --pack "${pack}" --json "${out_dir}/binary-audit.json")
+    if [[ "${#baseline_args[@]}" -gt 0 ]]; then
+        binary_cmd+=("${baseline_args[@]}")
+    fi
+    if "${binary_cmd[@]}" >"${out_dir}/binary-audit.log" 2>&1; then
+        echo "PASS | binary-audit | exact coverage/targets | ${out_dir}/binary-audit.log"
+    else
+        echo "FAIL | binary-audit | ${out_dir}/binary-audit.log"
+        tail -5 "${out_dir}/binary-audit.log" | sed 's/^/    /'
+        status=1
+    fi
+    if ANEMOI_SOURCE="${ANEMOI_SOURCE}" ANEMOI_RELEASE_PACK="${ANEMOI_RELEASE_PACK:-}" \
+        python3 "${repo_root}/tests/test_anemoi_binary_audit.py" \
+        >"${out_dir}/binary-audit-negatives.log" 2>&1; then
+        echo "PASS | binary-audit-negatives | coverage/target/entry negatives | ${out_dir}/binary-audit-negatives.log"
+    else
+        echo "FAIL | binary-audit-negatives | ${out_dir}/binary-audit-negatives.log"
+        tail -5 "${out_dir}/binary-audit-negatives.log" | sed 's/^/    /'
+        status=1
+    fi
+    overlay_args=()
+    # Overlay 只用于已审阅的 source 兼容层；必须显式给出，不能凭目录里恰好有
+    # 一个同名文件就静默改变门禁语义。
+    if [[ -n "${ANEMOI_SOURCE_OVERLAY:-}" ]]; then
+        if [[ ! -f "${ANEMOI_SOURCE_OVERLAY}" ]]; then
+            echo "FAIL | source-overlay | 文件不存在: ${ANEMOI_SOURCE_OVERLAY}"
+            status=1
+        else
+            overlay_args=(--source-overlay "${ANEMOI_SOURCE_OVERLAY}")
+        fi
+    fi
+    if [[ "${#overlay_args[@]}" -gt 0 ]]; then
+        audit_cmd=(python3 "${repo_root}/tools/anemoi_audit.py" --source "${ANEMOI_SOURCE}"
+                   "${overlay_args[@]}" --pack "${pack}" --json "${out_dir}/audit.json")
+    else
+        audit_cmd=(python3 "${repo_root}/tools/anemoi_audit.py" --source "${ANEMOI_SOURCE}"
+                   --pack "${pack}" --json "${out_dir}/audit.json")
+    fi
+    if "${audit_cmd[@]}" >"${out_dir}/audit.log" 2>&1; then
         echo "PASS | source-audit | 独立源逐 op 审计 | ${out_dir}/audit.log"
     else
         echo "FAIL | source-audit | ${out_dir}/audit.log"
@@ -115,14 +195,11 @@ if [[ -n "${ANEMOI_SOURCE:-}" ]]; then
         status=1
     fi
 else
-    echo "SKIP | source-audit | 未设置 ANEMOI_SOURCE（缺源；汇总 PARTIAL，但已有 FAIL 优先）"
-    # FAIL 优先：缺源只能是 PARTIAL，不得覆盖先前的 FAIL(1)。
-    if [[ "${status}" -eq 0 ]]; then
-        status=2
-    fi
+    echo "FAIL | source-audit | 未设置 ANEMOI_SOURCE（ANEMOI gate 需要 pinned source）"
+    status=1
 fi
 
-if python "${repo_root}/tests/test_anemoi_artifacts.py" >"${out_dir}/artifacts.log" 2>&1; then
+if python3 "${repo_root}/tests/test_anemoi_artifacts.py" >"${out_dir}/artifacts.log" 2>&1; then
     echo "PASS | artifacts | 清单/哈希/负例 | ${out_dir}/artifacts.log"
 else
     echo "FAIL | artifacts | ${out_dir}/artifacts.log"

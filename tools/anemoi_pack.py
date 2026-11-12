@@ -25,8 +25,10 @@ import json
 import os
 import re
 import struct
+import subprocess
 import sys
 import time
+from typing import Optional
 import zlib
 
 # ---------------------------------------------------------------- 常量
@@ -132,6 +134,7 @@ LAYOUT_SCALE = 320.0 / 432.0  # 由 --layout-scale 覆盖
 LAYOUT_BASE_H = 286
 LAYOUT_SOURCE_H = 1260
 ROWS_PER_BLOCK = 16
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def log(msg: str) -> None:
@@ -141,8 +144,10 @@ def log(msg: str) -> None:
 # ---------------------------------------------------------------- 源快照
 
 class Source:
-    def __init__(self, root: str):
+    def __init__(self, root: str, overlay_path: Optional[str] = None):
         self.root = root
+        self.source_commit = self._git_commit(root)
+        self.overlay_info = None
         cat_src = self._read("src", "common", "catalog.js")
         start = cat_src.index("{", cat_src.index("export const catalog="))
         self.catalog = json.loads(cat_src[start:cat_src.rindex("}") + 1])
@@ -159,6 +164,8 @@ class Source:
         if not m:
             raise SystemExit("helpers.js 解析失败")
         self.helpers = json.loads(m.group(1))
+        if overlay_path:
+            self._apply_overlay(overlay_path)
         self.labels = json.loads(self._read("src", "common", "story-labels.txt"))
         self.requests = json.loads(self._read("resources", "request-texts.json"))
         self.gallery = json.loads(self._read("src", "common", "gallery.txt"))
@@ -174,6 +181,49 @@ class Source:
         for key in self._file_index:
             self._file_index[key].sort()
         self._ops_cache = {}
+
+    @staticmethod
+    def _git_commit(root: str) -> str:
+        try:
+            return subprocess.check_output(
+                ["git", "-C", root, "rev-parse", "HEAD"],
+                stderr=subprocess.DEVNULL, text=True).strip()
+        except (OSError, subprocess.CalledProcessError):
+            return ""
+
+    def _apply_overlay(self, path: str) -> None:
+        """Apply a traceable source compatibility overlay without editing the
+        pinned source tree. The overlay is recorded in the pack manifest."""
+        raw = open(path, "rb").read()
+        doc = json.loads(raw.decode("utf-8"))
+        expected = str(doc.get("source_commit") or "")
+        if expected and self.source_commit and expected != self.source_commit:
+            raise SystemExit("source overlay commit mismatch: %s != %s" %
+                             (expected, self.source_commit))
+        applied = []
+        for patch in doc.get("patches") or []:
+            helper = str(patch.get("helper") or "")
+            index = int(patch.get("op", -1))
+            field = str(patch.get("field") or "condition")
+            if helper not in self.helpers:
+                raise SystemExit("source overlay helper missing: %s" % helper)
+            ops = self.helpers[helper].get("ops") or []
+            if index < 0 or index >= len(ops):
+                raise SystemExit("source overlay op out of range: %s[%d]" % (helper, index))
+            before = patch.get("before")
+            after = patch.get("after")
+            if ops[index].get(field) != before:
+                raise SystemExit("source overlay before mismatch: %s[%d].%s" %
+                                 (helper, index, field))
+            ops[index][field] = after
+            applied.append({"helper": helper, "op": index, "field": field,
+                            "reason": patch.get("reason") or ""})
+        self.overlay_info = {
+            "path": os.path.relpath(os.path.abspath(path), REPO_ROOT),
+            "sha256": hashlib.sha256(raw).hexdigest(),
+            "source_commit": expected,
+            "patches": applied,
+        }
 
     def _read(self, *parts) -> str:
         return open(os.path.join(self.root, *parts), encoding="utf-8").read()
@@ -408,6 +458,56 @@ def compute_scope(src: Source, mode: str):
                 out.append([a, b])
         merged[sid] = [tuple(x) for x in out]
     return merged, boundary, {"boundary": detail}
+
+
+def load_scope_manifest(src: "Source", path: str):
+    """Load an explicit, reviewed source-range manifest.
+
+    This is intentionally data-only: it cannot add arbitrary source text or
+    flags, and every range is checked against the pinned source tree.
+    """
+    raw = open(path, "rb").read()
+    doc = json.loads(raw.decode("utf-8"))
+    expected = str(doc.get("source_commit") or "")
+    if expected and src.source_commit and expected != src.source_commit:
+        raise SystemExit("scope manifest source commit mismatch: %s != %s" %
+                         (expected, src.source_commit))
+    included = {}
+    for sid_text, ranges in (doc.get("ranges") or {}).items():
+        sid = int(sid_text)
+        if not src.scene(sid):
+            raise SystemExit("scope manifest scene missing: %d" % sid)
+        ops = src.ops(sid)
+        checked = []
+        for pair in ranges:
+            if not isinstance(pair, list) or len(pair) != 2:
+                raise SystemExit("scope manifest bad range: %s" % (pair,))
+            a, b = int(pair[0]), int(pair[1])
+            if a < 0 or b > len(ops) or b <= a:
+                raise SystemExit("scope manifest range out of bounds: %d [%d,%d), len=%d" %
+                                 (sid, a, b, len(ops)))
+            checked.append((a, b))
+        checked.sort()
+        for previous, current in zip(checked, checked[1:]):
+            if current[0] < previous[1]:
+                raise SystemExit("scope manifest ranges overlap: scene %d %s and %s" %
+                                 (sid, previous, current))
+        included[sid] = checked
+    if not included:
+        raise SystemExit("scope manifest has no ranges")
+    boundary = collections.Counter()
+    detail = list(doc.get("boundary_detail") or [])
+    for item in detail:
+        boundary[(item.get("scene"), item.get("kind"), item.get("reason"))] += 1
+    info = {
+        "path": os.path.relpath(os.path.abspath(path), REPO_ROOT),
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "source_commit": expected,
+        "schema": doc.get("schema"),
+        "name": doc.get("name"),
+        "boundary_detail": detail,
+    }
+    return included, boundary, {"boundary": detail}, info
 
 
 def normalize(expr):
@@ -1223,14 +1323,25 @@ class Packer:
             target = self.map_op(sid, int(op["to"]))
             if target is None:
                 self.boundary_jumps += 1
-                self.emit(OP_BOUNDARY, 0, self.text_id("branch"), 0)
+                # Preserve the shipped chapter-head boundary encoding: a
+                # chapter-head range ends with a return, not a new opcode that
+                # older audit tooling did not see.
+                chapter_head = any(
+                    item.get("scene") == sid and item.get("kind") == "chapter-head"
+                    for item in (self.boundary_detail.get("boundary") or []))
+                self.emit(OP_RETURN if chapter_head else OP_BOUNDARY,
+                          0, self.text_id("branch") if not chapter_head else 0, 0)
             else:
                 self.emit(OP_IF_FALSE if kind == "ifFalse" else OP_IF_TRUE, 0, cid, target)
         elif kind == "goto":
             target = self.map_op(sid, int(op["to"]))
             if target is None:
                 self.boundary_jumps += 1
-                self.emit(OP_BOUNDARY, 0, self.text_id("goto"), 0)
+                chapter_head = any(
+                    item.get("scene") == sid and item.get("kind") == "chapter-head"
+                    for item in (self.boundary_detail.get("boundary") or []))
+                self.emit(OP_RETURN if chapter_head else OP_BOUNDARY,
+                          0, self.text_id("goto") if not chapter_head else 0, 0)
             else:
                 self.emit(OP_GOTO, 0, 0, target)
         elif kind == "call":
@@ -1469,8 +1580,9 @@ class Packer:
         for code in (13, 10, 9):
             chars.discard(chr(code))
         path = os.path.join(self.args.out_dir, "anemoi_charset.txt")
+        self.charset_text = "".join(sorted(chars))
         with open(path, "w", encoding="utf-8", newline=chr(10)) as fh:
-            fh.write("".join(sorted(chars)))
+            fh.write(self.charset_text)
         return len(chars)
 
     def write(self):
@@ -1612,18 +1724,53 @@ class Packer:
         path = os.path.join(self.args.out_dir, "anemoi_pack.bin")
         with open(path, "wb") as fh:
             fh.write(blob)
+        font_paths = {
+            "gal_cjk_16.c": "assets/fonts/gal_cjk_16.c",
+            "gal_cjk_symbols.txt": "assets/fonts/gal_cjk_symbols.txt",
+        }
+        font_info = {}
+        for key, rel in font_paths.items():
+            full = os.path.join(REPO_ROOT, rel)
+            if os.path.exists(full):
+                data = open(full, "rb").read()
+                font_info[key] = {"bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+            else:
+                font_info[key] = None
+        image_row_kinds = collections.Counter()
+        for row in self.image_rows:
+            image_row_kinds[struct.unpack_from("<B", row, 12)[0]] += 1
         manifest = {
-            "path": os.path.abspath(path),
+            "path": os.path.relpath(os.path.abspath(path), REPO_ROOT),
             "bytes": len(blob),
             "sha256": hashlib.sha256(blob).hexdigest(),
             "crc32": "0x%08x" % crc,
-            "scope": self.args.scope,
+            "scope": ("manifest:" + self.args.scope_manifest
+                      if self.args.scope_manifest else self.args.scope),
+            "source_commit": getattr(self.src, "source_commit", ""),
+            "source_overlay": getattr(self.src, "overlay_info", None),
+            "scope_manifest": getattr(self, "scope_info", None),
+            "packer_args": vars(self.args),
+            "font": font_info,
+            "capacity": {
+                "factory_partition_bytes": 0x7F0000,
+                "pack_bytes": len(blob),
+            },
             "sections": {SECTION_NAMES[sec]: {"offset": off, "count": count, "size": size}
                          for sec, off, count, size in sections},
             "ops": len(self.ops),
             "scenes": len(self.scnid),
             "pose_rows": len(self.pose_rows),
             "images": dict(self.detail),
+            "image_row_kinds": {
+                "scene": image_row_kinds.get(0, 0),
+                "body_face": image_row_kinds.get(1, 0),
+                "solid": image_row_kinds.get(2, 0),
+            },
+            "scope_notes": (
+                "included_scenes and scope_manifest are authoritative; "
+                "sections.image.count is the SEC_IMAGE row count; source image "
+                "keys are not 1:1 with binary rows."
+            ),
             "text_bytes": len(self.text_blob),
             "natives": sorted(self.natives_used),
             "unknown_natives": sorted(self.unknown_natives),
@@ -1646,6 +1793,13 @@ class Packer:
             "title_image": title_image,
             "chars": self.write_charset(),
         }
+        manifest["artifacts"] = [
+            {"path": manifest["path"], "bytes": len(blob),
+             "sha256": manifest["sha256"]},
+            {"path": os.path.relpath(os.path.join(os.path.abspath(self.args.out_dir),
+                                                  "anemoi_charset.txt"), REPO_ROOT),
+             "bytes": len(self.charset_text.encode("utf-8")) if hasattr(self, "charset_text") else None},
+        ]
         with open(os.path.join(self.args.out_dir, "anemoi_pack.json"), "w",
                   encoding="utf-8", newline="\n") as fh:
             json.dump(manifest, fh, ensure_ascii=False, indent=1)
@@ -1671,6 +1825,10 @@ def main():
                     help="立绘版面缩放（源 432x286 版面 -> 屏幕；只缩不放）")
     ap.add_argument("--palette-colors", type=int, default=32,
                     help="立绘调色板颜色数（0 = 沿用源调色板）")
+    ap.add_argument("--scope-manifest", default="",
+                    help="显式 source-range manifest（替代 --scope 的闭包取景）")
+    ap.add_argument("--source-overlay", default="",
+                    help="可追溯的 source compatibility overlay JSON")
     ap.add_argument("--measure", action="store_true")
     ap.add_argument("--wide-ids", action="store_true",
                     help="测量专用的 32 位文本 id 变体（全量单包字符串数超过 u16 上限时用）")
@@ -1698,13 +1856,19 @@ def main():
         if not args.measure:
             raise SystemExit("--wide-ids 只用于测量（--measure）")
         IDC, ID_BYTES = "I", 4
-    src = Source(args.source)
-    included, boundary, detail = compute_scope(src, args.scope)
+    src = Source(args.source, args.source_overlay or None)
+    scope_info = None
+    if args.scope_manifest:
+        included, boundary, detail, scope_info = load_scope_manifest(src, args.scope_manifest)
+        log("取景: 使用 scope manifest %s" % args.scope_manifest)
+    else:
+        included, boundary, detail = compute_scope(src, args.scope)
     log("取景: %d 场景 / %d 段" % (len(included), sum(len(v) for v in included.values())))
     packer = Packer(src, args)
     packer.included = included
     packer.boundary = boundary
     packer.boundary_detail = detail
+    packer.scope_info = scope_info
     packer.helpers_needed = []
     # 预扫 native / helper 使用面
     for sid, ranges in included.items():

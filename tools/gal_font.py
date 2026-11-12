@@ -272,9 +272,13 @@ def emit_font(name: str, size: int, codepoints: list, glyphs: dict, line_height:
             continue
         w(f"static const uint16_t unicode_list_{idx}[] = {{\n    ")
         for i, off in enumerate(entry["offsets"]):
-            w(f"0x{off:x}, ")
-            if (i + 1) % 8 == 0 and i + 1 < len(entry["offsets"]):
-                w("\n    ")
+            w(f"0x{off:x}")
+            if i + 1 < len(entry["offsets"]):
+                w(",")
+                if (i + 1) % 8 == 0:
+                    w("\n    ")
+                else:
+                    w(" ")
         w("\n};\n\n")
 
     w("static const lv_font_fmt_txt_cmap_t cmaps[] = {\n")

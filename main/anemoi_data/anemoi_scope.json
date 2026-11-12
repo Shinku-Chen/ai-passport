@@ -1,0 +1,540 @@
+{
+ "schema": 1,
+ "name": "anemoi-common-required-71plus",
+ "source_commit": "3e27714c50b860c674a86df90e3df3e4cf6dd254",
+ "base": "current 71-scene prototype (release pack d4abdd59...)",
+ "notes": "Keep the shipped 71-scene prototype and add only flow-required entry0 ranges for 26/27/28, scene90 prelude, and 167..174 play scenes. Do not import 070/071/072/073 route/after-story books or 193 unwrapped route chapters.",
+ "reasons": {
+  "26": "scene2 op145/153 callScene 26 entry0/10; shipped range starts at 57 and omitted entry0",
+  "27": "scene2 op279/287 callScene 27 entry0/10; shipped range starts at 44 and omitted entry0",
+  "28": "scene19 op338, scene20 op340, scene21 op336 callScene 28 entry0; shipped range starts at 143",
+  "90": "scene2 op1030 callScene 90 entry0; scene was absent from the shipped pack",
+  "167": "scene134 op380, scene135 op195, scene136 op129 callScene play01 entry0",
+  "168": "scene134 op384, scene135 op199, scene136 op133 callScene play02 entry0",
+  "169": "scene134 op388, scene135 op203, scene136 op137 callScene play03 entry0",
+  "170": "scene134 op392, scene135 op207, scene136 op141 callScene play04 entry0",
+  "171": "scene134 op396, scene135 op211, scene136 op145 callScene play05 entry0",
+  "172": "scene134 op400, scene135 op215, scene136 op149 callScene play06 entry0",
+  "173": "scene134 op404, scene135 op219, scene136 op153 callScene play07 entry0",
+  "174": "scene134 op408, scene135 op223, scene136 op157 callScene play08 entry0",
+  "125": "route-chapter head only; keep the shipped 160-op boundary and do not import the full 040_淡雪 book",
+  "131": "route-chapter head only; keep the shipped 149-op boundary and do not import the full 040_淡雪 book",
+  "133..138": "existing 050_小詠 entry ranges [1,len); a13 increment remains at 134:622/135:442/136:483",
+  "175": "existing 060_六花 entry10 range [128,476); not expanded into an unported route"
+ },
+ "exclude_books": [
+  "070",
+  "071",
+  "072",
+  "073"
+ ],
+ "ranges": {
+  "2": [
+   [
+    0,
+    1092
+   ]
+  ],
+  "3": [
+   [
+    0,
+    510
+   ]
+  ],
+  "4": [
+   [
+    0,
+    2401
+   ]
+  ],
+  "5": [
+   [
+    0,
+    2787
+   ]
+  ],
+  "6": [
+   [
+    0,
+    3288
+   ]
+  ],
+  "7": [
+   [
+    0,
+    2787
+   ]
+  ],
+  "8": [
+   [
+    0,
+    515
+   ]
+  ],
+  "9": [
+   [
+    0,
+    1390
+   ]
+  ],
+  "10": [
+   [
+    0,
+    745
+   ]
+  ],
+  "11": [
+   [
+    0,
+    801
+   ]
+  ],
+  "12": [
+   [
+    0,
+    585
+   ]
+  ],
+  "13": [
+   [
+    0,
+    382
+   ]
+  ],
+  "14": [
+   [
+    0,
+    319
+   ]
+  ],
+  "15": [
+   [
+    0,
+    256
+   ]
+  ],
+  "16": [
+   [
+    0,
+    247
+   ]
+  ],
+  "17": [
+   [
+    0,
+    313
+   ]
+  ],
+  "18": [
+   [
+    0,
+    313
+   ]
+  ],
+  "19": [
+   [
+    0,
+    342
+   ]
+  ],
+  "20": [
+   [
+    0,
+    347
+   ]
+  ],
+  "21": [
+   [
+    0,
+    343
+   ]
+  ],
+  "22": [
+   [
+    0,
+    251
+   ]
+  ],
+  "23": [
+   [
+    0,
+    342
+   ]
+  ],
+  "24": [
+   [
+    0,
+    234
+   ]
+  ],
+  "25": [
+   [
+    0,
+    519
+   ]
+  ],
+  "26": [
+   [
+    0,
+    468
+   ]
+  ],
+  "27": [
+   [
+    0,
+    362
+   ]
+  ],
+  "28": [
+   [
+    0,
+    277
+   ]
+  ],
+  "30": [
+   [
+    0,
+    454
+   ]
+  ],
+  "31": [
+   [
+    0,
+    642
+   ]
+  ],
+  "32": [
+   [
+    0,
+    471
+   ]
+  ],
+  "33": [
+   [
+    0,
+    527
+   ]
+  ],
+  "34": [
+   [
+    0,
+    542
+   ]
+  ],
+  "35": [
+   [
+    0,
+    465
+   ]
+  ],
+  "36": [
+   [
+    0,
+    442
+   ]
+  ],
+  "37": [
+   [
+    0,
+    516
+   ]
+  ],
+  "38": [
+   [
+    0,
+    529
+   ]
+  ],
+  "62": [
+   [
+    0,
+    353
+   ]
+  ],
+  "63": [
+   [
+    0,
+    527
+   ]
+  ],
+  "64": [
+   [
+    0,
+    448
+   ]
+  ],
+  "65": [
+   [
+    0,
+    452
+   ]
+  ],
+  "66": [
+   [
+    0,
+    418
+   ]
+  ],
+  "67": [
+   [
+    0,
+    1368
+   ]
+  ],
+  "68": [
+   [
+    0,
+    614
+   ]
+  ],
+  "69": [
+   [
+    0,
+    526
+   ]
+  ],
+  "91": [
+   [
+    0,
+    1190
+   ]
+  ],
+  "92": [
+   [
+    0,
+    1336
+   ]
+  ],
+  "93": [
+   [
+    0,
+    907
+   ]
+  ],
+  "94": [
+   [
+    0,
+    1160
+   ]
+  ],
+  "95": [
+   [
+    0,
+    807
+   ]
+  ],
+  "96": [
+   [
+    0,
+    1517
+   ]
+  ],
+  "97": [
+   [
+    0,
+    782
+   ]
+  ],
+  "98": [
+   [
+    0,
+    1291
+   ]
+  ],
+  "125": [
+   [
+    0,
+    160
+   ]
+  ],
+  "131": [
+   [
+    0,
+    149
+   ]
+  ],
+  "132": [
+   [
+    0,
+    589
+   ]
+  ],
+  "133": [
+   [
+    1,
+    836
+   ]
+  ],
+  "134": [
+   [
+    1,
+    625
+   ]
+  ],
+  "135": [
+   [
+    1,
+    445
+   ]
+  ],
+  "136": [
+   [
+    1,
+    486
+   ]
+  ],
+  "137": [
+   [
+    1,
+    1284
+   ]
+  ],
+  "138": [
+   [
+    1,
+    526
+   ]
+  ],
+  "175": [
+   [
+    128,
+    476
+   ]
+  ],
+  "176": [
+   [
+    0,
+    318
+   ]
+  ],
+  "177": [
+   [
+    0,
+    819
+   ]
+  ],
+  "178": [
+   [
+    0,
+    846
+   ]
+  ],
+  "179": [
+   [
+    0,
+    1687
+   ]
+  ],
+  "180": [
+   [
+    0,
+    943
+   ]
+  ],
+  "181": [
+   [
+    0,
+    597
+   ]
+  ],
+  "367": [
+   [
+    0,
+    47
+   ]
+  ],
+  "393": [
+   [
+    0,
+    3947
+   ]
+  ],
+  "537": [
+   [
+    0,
+    147
+   ]
+  ],
+  "90": [
+   [
+    0,
+    576
+   ]
+  ],
+  "167": [
+   [
+    0,
+    693
+   ]
+  ],
+  "168": [
+   [
+    0,
+    495
+   ]
+  ],
+  "169": [
+   [
+    0,
+    571
+   ]
+  ],
+  "170": [
+   [
+    0,
+    528
+   ]
+  ],
+  "171": [
+   [
+    0,
+    896
+   ]
+  ],
+  "172": [
+   [
+    0,
+    471
+   ]
+  ],
+  "173": [
+   [
+    0,
+    668
+   ]
+  ],
+  "174": [
+   [
+    0,
+    1066
+   ]
+  ]
+ },
+ "boundary_detail": [
+  {
+   "scene": 125,
+   "kind": "chapter-head",
+   "reason": "route chapter 040_淡雪0833; keep existing 160-op chapter boundary only"
+  },
+  {
+   "scene": 131,
+   "kind": "chapter-head",
+   "reason": "route chapter 040_淡雪3816; keep existing 149-op chapter boundary only"
+  },
+  {
+   "scene": 205,
+   "kind": "out-of-scope-book",
+   "reason": "070_スピカzero not in current release"
+  },
+  {
+   "scene": 206,
+   "kind": "out-of-scope-book",
+   "reason": "071_同棲編 not in current release"
+  },
+  {
+   "scene": 262,
+   "kind": "out-of-scope-book",
+   "reason": "073_シルバー編 not in current release"
+  }
+ ]
+}

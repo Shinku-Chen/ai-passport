@@ -14,8 +14,10 @@ managed_components/
 
 # 《anemoi》本作构建目录与运行期生成物（资源包含版权素材，不入库）
 build-anemoi/
+build-anemoi-*/
 build-baseline/
 # 资源包由 tools/anemoi_pack.py 从只读源快照生成；不入库，构建前先生成。
 main/anemoi_data/anemoi_pack.bin
-main/anemoi_data/anemoi_pack.json
+# Pack bytes are release artifacts; the manifest is source-controlled so its
+# hash/size/sections and source/overlay provenance can be reviewed and diffed.
 main/anemoi_data/anemoi_charset.txt
