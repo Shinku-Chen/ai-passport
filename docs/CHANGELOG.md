@@ -57,6 +57,12 @@
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
 
+## v0.1.1-tsxx-reboot - 2026-11-12
+
+- Keep branch and gate tables backed by the owning pack buffer instead of copying their lifetime outside it.
+- Route decisions continue to read the same packed tables after a load, avoiding stale or out-of-scope storage.
+- No story or content change; the existing 61,436-page / 6-heroine route set remains the scope.
+
 ## v0.1.0-tsxx-reboot - 2026-09-27
 
 - Added the *Tenshi☆Sousou RE-BOOT!* portrait visual-novel reader on `feature/tsxx-reboot`. The whole 61,436-page script (61,289 dialogue lines, 1,165,911 characters, 45 chapter points, 13 choice points) runs offline from a dedicated `assets` partition, with title, body, choices, chapter jump, menu, settings, five manual save slots plus one automatic slot, and 15 ending points.

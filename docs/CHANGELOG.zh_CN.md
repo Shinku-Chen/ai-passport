@@ -54,6 +54,12 @@
 - 参考 cindy 仓库文档组织完善索引：新增 `docs/README.md` 根总索引；AGENTS.md 规则索引按触发场景改写（附触发条件）；`docs/contribution/` 与 `docs/development/` 的 README 补充收录标准。
 - 引入社区治理文档（参照 cindy 改写，放仓库根目录）：新增 `CONTRIBUTING.md` / `.zh_CN.md`（贡献指南，针对 ESP-IDF/AI agent/fork 场景改写）、`CODE_OF_CONDUCT.md` / `.zh_CN.md`（贡献者公约）、`SECURITY.md` / `.zh_CN.md`（安全报告流程）、`SUPPORT.md` / `.zh_CN.md`（支持渠道）；AGENTS.md 与 docs/README.md 同步引用。
 
+## v0.1.1-tsxx-reboot - 2026-11-12
+
+- 分支表和 gate 表改为指向所属 pack buffer，不再把生命周期复制到外部。
+- 读档后的路线决策继续读取同一份 packed table，避免 stale 或越界存储。
+- 不改剧情/内容；仍为现有 61,436 页、6 名女主角路线范围。
+
 ## v0.1.0-tsxx-reboot - 2026-09-27
 
 - 新增《天使☆騒々 RE-BOOT!》竖屏视觉小说阅读器（分支 `feature/tsxx-reboot`）。全部 61,436 页剧本（61,289 句对白 / 1,165,911 字 / 45 个章节点 / 13 个选择点）离线跑在独立的 `assets` 分区：标题页、正文页、选项、章节跳转、阅读菜单、设置、5 个手动存档位 + 1 个自动存档位，以及 15 个结局点。
