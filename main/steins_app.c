@@ -885,6 +885,21 @@ static bool render_current(steins_app_t *app, bool autosave)
                                      sizeof(app->choice_rows[i])) < 0) {
                 app->choice_rows[i][0] = '\0';
             }
+            // Source keyPhoneBoundary() rewrites the final no-call/no-send
+            // labels, while preserving every other item text verbatim.
+            if (keyphone && item.action == STEINS_ACT_NOSEND) {
+                copy_text(app->choice_rows[i], sizeof(app->choice_rows[i]),
+                          "确认不发送，继续剧情");
+            } else if (keyphone && item.action == STEINS_ACT_NOCALL) {
+                copy_text(app->choice_rows[i], sizeof(app->choice_rows[i]),
+                          "确认不拨打，继续剧情");
+            }
+        }
+        if (keyphone) {
+            copy_text(app->choice_heading, sizeof(app->choice_heading),
+                      "最后确认本段手机操作");
+            copy_text(app->choice_tag, sizeof(app->choice_tag),
+                      "即将超过电话操作时限");
         }
         app->auto_mode = false;
         app->fast_forward = false;

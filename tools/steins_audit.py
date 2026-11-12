@@ -21,6 +21,7 @@ import os
 import re
 import struct
 import sys
+import zlib
 
 # 包格式(与 main/steins_pack.h 一致;这里独立实现,便于交叉验证)
 MAGIC = b"STEINPK3"
@@ -35,6 +36,9 @@ SEC = {
     "MNODE": 26, "CALLSITE": 27, "CALLITEM": 28, "CLIP": 29, "CFRAME": 30,
     "WINDOW": 31, "WINOPT": 32, "KEYPHONE": 33, "MOBILE": 34, "MMAP": 35,
     "SEED": 36, "SEED_ID": 37, "CALLDESC": 38, "CALLDITEM": 39,
+    # v5:压缩 TXT + 块表 + presentation/choice 元数据。
+    "TXTBLK": 40, "TXTRAW": 41, "PRES": 42, "CHOICE_META": 43,
+    "CITEM_META": 44,
 }
 REC = {"STRT": 6, "NODE": 15, "CHUNKREF": 2, "CHUNK": 8, "FRAME": 10, "VIEW": 4,
        "LAYER": 12, "ASSET": 40, "CHOICE": 12, "CITEM": 9, "CHAPTER": 8, "GAL": 8,
@@ -42,7 +46,8 @@ REC = {"STRT": 6, "NODE": 15, "CHUNKREF": 2, "CHUNK": 8, "FRAME": 10, "VIEW": 4,
        "MAIL": 12, "MAIL_SUCC": 2, "MAIL_STAMP": 4, "MROW": 12, "MNODE": 6,
        "CALLSITE": 12, "CALLITEM": 10, "CLIP": 6, "CFRAME": 6, "WINDOW": 14,
        "WINOPT": 10, "KEYPHONE": 16, "MMAP": 6, "SEED": 4, "SEED_ID": 2,
-       "CALLDESC": 8, "CALLDITEM": 6}
+       "CALLDESC": 8, "CALLDITEM": 6, "TXTBLK": 8, "TXTRAW": 4,
+       "PRES": 10, "CHOICE_META": 8, "CITEM_META": 4}
 
 failures = []
 notes = []
@@ -82,6 +87,40 @@ class Pack:
                     continue
                 raise SystemExit("段 %s 长度与记录数不符: %d * %d != %d"
                                  % (name, count, REC.get(name, 0), size))
+        # v5 的 TXT 是每块 ≤2 KiB 的 raw DEFLATE；审计器先还原成连续
+        # UTF-16LE 字符串池，再走与 v4 相同的 string(index) 路径。
+        self.txt = None
+        if self.version >= 5:
+            self._load_v5_txt()
+
+    @staticmethod
+    def _crc16(data):
+        crc = 0xFFFF
+        for byte in data:
+            crc ^= byte << 8
+            for _ in range(8):
+                crc = ((crc << 1) ^ 0x1021) & 0xFFFF if crc & 0x8000 else (crc << 1) & 0xFFFF
+        return crc
+
+    def _load_v5_txt(self):
+        if "TXTBLK" not in self.sec or "TXTRAW" not in self.sec:
+            raise SystemExit("v5 包缺 TXTBLK/TXTRAW")
+        off, _count, _size = self.sec["TXTRAW"]
+        raw_len = rd32(self.data, off)
+        blocks = []
+        for i in range(self.sec["TXTBLK"][1]):
+            boff = self.sec["TXTBLK"][0] + i * 8
+            coff = rd32(self.data, boff)
+            clen = rd16(self.data, boff + 4)
+            crc = rd16(self.data, boff + 6)
+            start = self.sec["TXT"][0] + coff
+            raw = zlib.decompress(self.data[start:start + clen], -15)
+            if self._crc16(raw) != crc:
+                raise SystemExit("TXT 块 %d CRC 不符" % i)
+            blocks.append(raw)
+        self.txt = b"".join(blocks)
+        if len(self.txt) != raw_len:
+            raise SystemExit("TXT 解压长度 %d != TXTRAW %d" % (len(self.txt), raw_len))
 
     def rows(self, name):
         off, count, size = self.sec[name]
@@ -97,8 +136,11 @@ class Pack:
         if index >= count:
             return None
         soff, slen = struct.unpack_from("<IH", self.data, off + index * REC["STRT"])
-        toff, _, tsize = self.sec["TXT"]
-        raw = self.data[toff + soff: toff + soff + slen * 2]
+        if self.txt is not None:
+            raw = self.txt[soff:soff + slen * 2]
+        else:
+            toff, _, tsize = self.sec["TXT"]
+            raw = self.data[toff + soff: toff + soff + slen * 2]
         return raw.decode("utf-16-le", "strict")
 
     def meta(self, key):

@@ -144,6 +144,7 @@ const steins_adv_t steins_adv_table[] = {
     {0x534E, 256},
     {0x5355, 256},
     {0x5361, 256},
+    {0x5373, 256},
     {0x5386, 256},
     {0x539F, 256},
     {0x53D1, 256},
@@ -185,6 +186,7 @@ const steins_adv_t steins_adv_table[] = {
     {0x5BF8, 256},
     {0x5BF9, 256},
     {0x5C01, 256},
+    {0x5C06, 256},
     {0x5C18, 256},
     {0x5C1A, 256},
     {0x5C31, 256},
@@ -381,6 +383,7 @@ const steins_adv_t steins_adv_table[] = {
     {0x89C8, 256},
     {0x89E3, 256},
     {0x8BA1, 256},
+    {0x8BA4, 256},
     {0x8BB0, 256},
     {0x8BBE, 256},
     {0x8BCD, 256},
@@ -3867,4 +3870,4 @@ const steins_adv_t steins_adv_table[] = {
     {0xFF1F, 256},
 };
 
-const unsigned steins_adv_count = 3861;
+const unsigned steins_adv_count = 3864;

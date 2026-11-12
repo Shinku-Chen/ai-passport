@@ -1,0 +1,14 @@
+# miniz (vendored)
+
+This directory contains the upstream miniz sources used by the Steins host
+tests. It replaces the former `tests/vendor/miniz/up` gitlink, which could not
+be fetched reproducibly because the repository has no `.gitmodules` entry for
+it.
+
+- Upstream: https://github.com/richgel999/miniz
+- Tag: `3.1.0`
+- Commit: `174573d60290f447c13a2b1b3405de2b96e27d6c`
+- License: MIT (see `LICENSE` in this directory)
+
+`miniz_export.h` is the standard empty export-header shim generated for
+non-Windows builds of the upstream project.

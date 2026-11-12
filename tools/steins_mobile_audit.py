@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Steins v4 手机内容包独立审核（只读；不 import 作者打包器/审计器）。
+"""Steins v4/v5 手机内容包独立审核（只读；不 import 作者打包器/审计器）。
 
 - 自己解析 v4 头/段表/UTF-16 字符串池与全部手机段（MAIL/MROW/MEVT/CALLSITE/CLIP/
   WINDOW/WINOPT/KEYPHONE/SEED/CALLDESC/CALLDITEM/MMAP/MOBILE）。
@@ -187,7 +187,13 @@ class Audit:
     def c_structure(self):
         p = self.p
         self.check("header.version", p.version in (4, 5), f"version={p.version}")
-        self.check("header.sections", p.sections in (39, 41, 42), f"sections={p.sections}")
+        # v4 的合法布局是 39/41/42 段；当前 builder 写 v5 + 44 段。
+        # 不按“任意段数”放宽，而是把版本与真实布局绑定。
+        if p.version == 4:
+            self.check("header.sections", p.sections in (39, 41, 42),
+                       f"sections={p.sections}")
+        else:
+            self.check("header.sections", p.sections == 44, f"sections={p.sections}")
         ranges = sorted((off, off + size, t) for t, (off, _c, size) in p.sec.items())
         overlap = any(a2 < b1 for (a1, b1, _), (a2, _b2, _t) in zip(ranges, ranges[1:]))
         self.check("section.offsets", not overlap, "sections overlap")
@@ -620,7 +626,7 @@ class Audit:
         if not self.main_data:
             return
         p = Pack(self.main_data, "main")
-        if p.version != 3:
+        if p.version not in (3, 4, 5):
             self.check("choice.main_version", False, f"{p.version}")
             return
         choices = list(p.recs(11, "<HHHBB4x"))

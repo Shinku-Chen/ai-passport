@@ -159,6 +159,12 @@ run_static_checks() {
     printf 'gate dir: %s\n' "${gate_dir}"
     printf 'host cc: %s\n' "${host_cc[*]}"
 
+    # Apple ld does not accept --gc-sections; -dead_strip is the equivalent.
+    local dead_strip_flag="-Wl,--gc-sections"
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        dead_strip_flag="-Wl,-dead_strip"
+    fi
+
     # ---- 仓库自检
     python_case check_repo env PYTHONDONTWRITEBYTECODE=1 python3 tools/check_repo.py
 
@@ -249,45 +255,52 @@ run_static_checks() {
         tests/host_stubs/nvs_stub.c tests/host_stubs/bsp_battery_stub.c \
         tests/vendor/tjpgd/tjpgd.c
 
-    # 手机页面 + v2 checkpoint 接线（候选 v4 包；缺失时 SKIP，不伪造 PASS）。
+    # 手机页面 + v2 checkpoint 接线。v5 reader 已 landed；实际 adopted pack
+    # (assets/steins/steins_pack.bin, 当前 v5) 必须被真实执行，不能因为可选
+    # candidate 目录不存在而 SKIP。
+    # 路径优先级：显式 override > pack-ready 的 plain/pack > canonical assets。
+    # override 缺失/版本不支持是 FAIL，不静默 fallback。
     local mobile_pack="${STEINS_MOBILE_PACK:-}"
-    # pack-ready top may point at a v5 candidate whose reader is not landed yet;
-    # never feed a non-adoptable/schema-5 pack to this v4 test.
+    if [[ -n "${mobile_pack}" && ! -f "${mobile_pack}" ]]; then
+        record_fail "steins_mobile_pack_override" \
+            "STEINS_MOBILE_PACK missing: ${mobile_pack}" ""
+        mobile_pack=""
+    fi
     if [[ -z "${mobile_pack}" && -f "${repo_root}/build/mobile-integration/pack-ready.json" ]]; then
-        mobile_pack="$(python3 -c 'import json,struct,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); p=(d.get("plain") or {}).get("path") or d.get("pack"); b=open(p,"rb").read(16) if p else b""; print(p if p and struct.unpack_from("<I",b,8)[0] <= 4 else "")' "${repo_root}/build/mobile-integration/pack-ready.json" 2>/dev/null || true)"
+        mobile_pack="$(python3 -c 'import json,struct,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); p=(d.get("plain") or {}).get("path") or d.get("pack"); b=open(p,"rb").read(16) if p else b""; print(p if p and struct.unpack_from("<I",b,8)[0] in (4,5) else "")' "${repo_root}/build/mobile-integration/pack-ready.json" 2>/dev/null || true)"
     fi
     if [[ -z "${mobile_pack}" ]]; then
-        mobile_pack="${repo_root}/build/mobile-pack-cand-3/steins_pack.bin"
-        if [[ ! -f "${mobile_pack}" ]]; then
-            mobile_pack="${repo_root}/assets/steins/steins_pack.bin"
-        fi
+        mobile_pack="${repo_root}/assets/steins/steins_pack.bin"
     fi
+    local mobile_version=""
     if [[ -f "${mobile_pack}" ]]; then
-        c_case steins_mobile_ui_store \
+        mobile_version="$(python3 -c 'import struct,sys; b=open(sys.argv[1],"rb").read(16); print(struct.unpack_from("<I",b,8)[0])' "${mobile_pack}" 2>/dev/null || true)"
+    fi
+    if [[ ! -f "${mobile_pack}" ]]; then
+        record_fail "steins_mobile_ui_store" \
+            "adopted mobile pack missing: ${mobile_pack} (restore canonical pack or set STEINS_MOBILE_PACK)" ""
+    elif [[ "${mobile_version}" != "4" && "${mobile_version}" != "5" ]]; then
+        record_fail "steins_mobile_ui_store" \
+            "unsupported mobile pack version=${mobile_version:-unknown} path=${mobile_pack}" ""
+    else
+        host_compile steins_mobile_ui_store \
             "${host_cc[@]}" -std=c11 -Wall -Wextra -Werror \
             -Itests/host_stubs -Itests/image_stubs -Itests/vendor/tjpgd -Imain -Itests/vendor/miniz/up -Wno-unused-function \
             tests/test_steins_mobile_ui_store.c main/steins_app.c main/steins_ui.c \
             main/steins_image.c main/steins_pack.c tests/vendor/miniz/up/miniz.c tests/vendor/miniz/up/miniz_tdef.c tests/vendor/miniz/up/miniz_tinfl.c main/steins_model.c \
             main/steins_mobile.c main/steins_mobile_pack.c assets/fonts/steins_text_metrics.c \
             tests/host_stubs/lvgl_stub.c tests/host_stubs/nvs_stub.c \
-            tests/host_stubs/bsp_battery_stub.c tests/vendor/tjpgd/tjpgd.c
-        host_run steins_mobile_ui_store_run \
-            "${host_dir}/steins_mobile_ui_store" "${mobile_pack}"
-        local mobile_v5=""
-        if [[ -f "${repo_root}/build/mobile-integration/pack-ready.json" ]]; then
-            mobile_v5="$(python3 -c 'import json,struct,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); p=(d.get("v5") or {}).get("path") or d.get("pack"); b=open(p,"rb").read(16) if p else b""; print(p if p and struct.unpack_from("<I",b,8)[0] == 5 else "")' "${repo_root}/build/mobile-integration/pack-ready.json" 2>/dev/null || true)"
+            tests/host_stubs/bsp_battery_stub.c tests/vendor/tjpgd/tjpgd.c \
+            -o "${host_dir}/steins_mobile_ui_store" || true
+        if [[ -x "${host_dir}/steins_mobile_ui_store" ]]; then
+            if [[ "${mobile_version}" == "5" ]]; then
+                host_run steins_mobile_ui_store_v5_run \
+                    "${host_dir}/steins_mobile_ui_store" "${mobile_pack}"
+            else
+                host_run steins_mobile_ui_store_run \
+                    "${host_dir}/steins_mobile_ui_store" "${mobile_pack}"
+            fi
         fi
-        if [[ -z "${mobile_v5}" && -f "${repo_root}/build/mobile-pack-cand-4/steins_pack.bin" ]]; then
-            mobile_v5="${repo_root}/build/mobile-pack-cand-4/steins_pack.bin"
-        fi
-        if [[ -n "${mobile_v5}" && -f "${mobile_v5}" ]]; then
-            host_run steins_mobile_ui_store_v5_run                 "${host_dir}/steins_mobile_ui_store" "${mobile_v5}"
-        else
-            record_skip "steins_mobile_ui_store_v5" "v5 candidate not available" ""
-        fi
-    else
-        record_skip "steins_mobile_ui_store" \
-            "candidate pack missing: ${mobile_pack} (run pack owner / set STEINS_MOBILE_PACK)" ""
     fi
 
     # ---- 门禁负例:故意让图片测试编译失败,必须拿到非零退出码。
@@ -330,7 +343,7 @@ run_static_checks() {
         local clog="${host_dir}/${name}.compile.log"
         if ! "${host_cc[@]}" -std=c11 -Wall -Wextra -Werror \
                 -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain -Itests/vendor/miniz/up -Wno-unused-function \
-                "tests/test_demo_${demo}_runtime.c" main/ui_pixel.c -Wl,--gc-sections \
+                "tests/test_demo_${demo}_runtime.c" main/ui_pixel.c "${dead_strip_flag}" \
                 -o "${bin}" >"${clog}" 2>&1; then
             record_fail "${name}" \
                 "compile: $(first_error "${clog}")" "${clog}"

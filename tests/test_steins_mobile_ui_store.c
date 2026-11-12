@@ -761,6 +761,8 @@ static void test_keyphone_story_branches(void)
             saved.last_at = node.count;
             load_slot_zero(&saved);
             CHECK(s_app.page == STEINS_PAGE_CHOICE, "initial key-phone choice");
+            CHECK(strstr(s_app.choice_heading, "关键选项") != NULL,
+                  "initial key-phone heading was replaced");
             click(BTN_DOWN);
             click(BTN_OK); // Postpone, preserving the source's pending decision.
             tick_ms(5000);
@@ -784,6 +786,13 @@ static void test_keyphone_story_branches(void)
                 }
                 CHECK(s_app.page == STEINS_PAGE_CHOICE && s_app.pos.cursor == limits[i],
                       "n%u missing final prompt at %u", roots[i], (unsigned)limits[i]);
+                CHECK(strcmp(s_app.choice_heading, "最后确认本段手机操作") == 0,
+                      "n%u boundary heading mismatch: %s", roots[i], s_app.choice_heading);
+                CHECK(strcmp(s_app.choice_tag, "即将超过电话操作时限") == 0,
+                      "n%u boundary category mismatch: %s", roots[i], s_app.choice_tag);
+                CHECK(strstr(s_app.choice_rows[1], "确认不") != NULL,
+                      "n%u boundary no-call/no-send text: %s", roots[i],
+                      s_app.choice_rows[1]);
                 // The prompt must survive a real checkpoint codec + app load.
                 saved = s_app.chk;
                 load_slot_zero(&saved);

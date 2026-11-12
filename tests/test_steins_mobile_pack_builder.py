@@ -46,5 +46,22 @@ class KeyPhoneSentTest(unittest.TestCase):
                 self.assertEqual(all(check["ok"] for check in audit.checks), valid)
 
 
+class HeaderLayoutTest(unittest.TestCase):
+    @staticmethod
+    def _pack(version, sections):
+        sec = {t: (20 + t * 16, 0, 0) for t in range(1, sections + 1)}
+        return SimpleNamespace(version=version, sections=sections, sec=sec, total=1000000,
+                               count=lambda _t: 30000)
+
+    def test_version_is_bound_to_real_layout(self):
+        for version, sections, valid in ((4, 39, True), (4, 42, True),
+                                         (4, 44, False), (5, 44, True),
+                                         (5, 41, False), (5, 42, False)):
+            with self.subTest(version=version, sections=sections):
+                audit = auditor.Audit(SimpleNamespace(), self._pack(version, sections))
+                audit.c_structure()
+                self.assertEqual(all(check["ok"] for check in audit.checks), valid)
+
+
 if __name__ == "__main__":
     unittest.main()
