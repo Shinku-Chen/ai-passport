@@ -56,3 +56,10 @@
 - Updated software-design and project README references for the new documentation structure.
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
+
+## v1.0.1-steins - 2026-11-12
+
+- Restore the delayed key-phone decision at the source graph boundary instead of treating the first phone choices as the final route decision.
+- Expose only the call/send actions belonging to the pending prompt and use the same item indices from both phone entry points.
+- Treat a legacy plain-telephone sent==0 as absent for call-only choices, so it no longer writes a ghost D-Mail; legitimate D-Mail id 0 remains valid.
+- Prefer the packed item label for key-phone list rows, with text fallback, and refresh the 16px UI font for the new labels.
