@@ -48,7 +48,7 @@ static void test_char_units(void)
 static void test_pagination(void)
 {
     uint32_t offsets[LIME_MAX_PAGES + 1];
-    char line[128];
+    char line[256];
 
     // 13 个全角字正好一行
     int pages = lime_text_pages("一二三四五六七八九十百千万", 26, 5, offsets, 17);
@@ -61,7 +61,15 @@ static void test_pagination(void)
 
     // 6 行 -> 2 页(第 2 页 1 行)
     memset(line, 0, sizeof(line));
-    for (int i = 0; i < 6; i++) strcat(line, "一二三四五六七八九十百千万");
+    size_t used = 0;
+    for (int i = 0; i < 6; i++) {
+        const char *row = "一二三四五六七八九十百千万";
+        const size_t row_len = strlen(row);
+        CHECK(used + row_len < sizeof(line));
+        memcpy(line + used, row, row_len);
+        used += row_len;
+        line[used] = 0;
+    }
     pages = lime_text_pages(line, 26, 5, offsets, 17);
     CHECK(pages == 2);
     CHECK(offsets[1] == 13 * 3 * 5);            // 5 行 x 13 字 x 3 字节
