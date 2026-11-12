@@ -92,6 +92,11 @@ static int start_game(const uint8_t *pack, size_t size)
     anem_app_refresh_store(&s_app, s_now);
     anem_app_view(&s_app, &s_view);
     ANEM_CHECK(s_view.screen == ANEM_SCR_TITLE);
+    ANEM_CHECK(s_app.title_image_normal != ANEM_NONE16);
+    ANEM_CHECK(s_app.title_image_anemoi != ANEM_NONE16);
+    ANEM_CHECK(s_app.title_image_eternicle != ANEM_NONE16);
+    ANEM_CHECK(s_app.title_image == s_app.title_image_normal);
+    ANEM_CHECK(s_view.art_image == s_app.title_image);
     ANEM_CHECK(s_view.row_count == 6);
     ANEM_CHECK(strcmp(s_view.row[0].text, "开始游戏") == 0);
     ANEM_CHECK(s_view.row[0].selected);
@@ -104,6 +109,23 @@ static int start_game(const uint8_t *pack, size_t size)
     ANEM_CHECK(s_view.line_count > 0);
     ANEM_CHECK(s_view.header[0] != 0);
     ANEM_CHECK(s_view.pages >= 1);
+    return 0;
+}
+
+static int check_title_levels(void)
+{
+    s_app.screen = ANEM_SCR_TITLE;
+    s_app.progress_ready = true;
+    s_app.progress.level = 4;
+    anem_app_refresh_store(&s_app, s_now);
+    ANEM_CHECK(s_app.title_image == s_app.title_image_anemoi);
+    s_app.progress.level = 2;
+    anem_app_refresh_store(&s_app, s_now);
+    ANEM_CHECK(s_app.title_image == s_app.title_image_eternicle);
+    s_app.progress.level = 0;
+    anem_app_refresh_store(&s_app, s_now);
+    ANEM_CHECK(s_app.title_image == s_app.title_image_normal);
+    s_app.screen = ANEM_SCR_READ;
     return 0;
 }
 
@@ -266,6 +288,7 @@ int main(int argc, char **argv)
         return 77;
     }
     int rc = start_game(blob, size);
+    if (rc == 0) rc = check_title_levels();
     if (rc == 0) rc = check_key_semantics();
     if (rc == 0) rc = check_choice_and_menu();
     if (rc == 0) rc = check_save_failure();

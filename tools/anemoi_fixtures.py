@@ -33,6 +33,20 @@ def make_jpeg():
     return len(data)
 
 
+def make_odd_jpeg():
+    # 17x9: intentionally not a multiple of 8. Locks in "do not pad black
+    # and keep the old visible width" regression.
+    im = Image.new("RGB", (17, 9), (240, 20, 20))
+    for x in range(9, 17):
+        for y in range(9):
+            im.putpixel((x, y), (20, 210, 40))
+    buf = io.BytesIO()
+    im.save(buf, "JPEG", quality=95, subsampling=0)
+    data = buf.getvalue()
+    open(os.path.join(OUT, "jpeg_odd.jpg"), "wb").write(data)
+    return len(data)
+
+
 def make_block():
     # 4x4：调色板 [红, 绿, 蓝(半透明), 透明]，索引矩阵已知
     palette = [(255, 0, 0, 255), (0, 255, 0, 255), (0, 0, 255, 128), (0, 0, 0, 0)]
@@ -68,6 +82,22 @@ def make_block():
     }
     open(os.path.join(OUT, "block_4x4.json"), "w", encoding="utf-8").write(
         json.dumps(expect, indent=1) + "\n")
+    # transparent black and opaque black share RGB but differ in alpha:
+    # the transparent index must not paint the background black.
+    overlap_palette = [(255, 0, 0, 255), (0, 0, 0, 0), (0, 0, 0, 255)]
+    overlap_indices = [
+        [0, 1, 2, 1],
+        [1, 2, 1, 0],
+        [2, 1, 0, 1],
+        [1, 0, 1, 2],
+    ]
+    overlap_pal = b"".join(struct.pack("<H", rgb565(*p[:3])) for p in overlap_palette)
+    overlap_alpha = bytes(p[3] for p in overlap_palette)
+    overlap_raw = b"".join(bytes([0]) + bytes(row) for row in overlap_indices)
+    overlap_stream = zlib.compress(overlap_raw, 9)
+    overlap = (header.replace(struct.pack("<H", len(palette)), struct.pack("<H", len(overlap_palette))) +
+        overlap_pal + overlap_alpha + struct.pack("<I", len(overlap_stream)) + overlap_stream)
+    open(os.path.join(OUT, "block_alpha_overlap.bin"), "wb").write(overlap)
     return len(block)
 
 
@@ -78,6 +108,8 @@ def make_pack_with_images():
     block = open(os.path.join(OUT, "block_4x4.bin"), "rb").read()
     bad_jpeg = open(os.path.join(OUT, "jpeg_truncated.jpg"), "rb").read()
     bad_block = open(os.path.join(OUT, "block_bad_len.bin"), "rb").read()
+    odd_jpeg = open(os.path.join(OUT, "jpeg_odd.jpg"), "rb").read()
+    alpha_overlap = open(os.path.join(OUT, "block_alpha_overlap.bin"), "rb").read()
     blob = bytearray()
     images = []
 
@@ -92,6 +124,8 @@ def make_pack_with_images():
     add(bad_block, 4, 4, 1)   # 3 坏块
     blob.extend(struct.pack("<H", 0x1234))
     images.append(struct.pack("<IIHHBBH", len(blob) - 2, 2, 0, 0, 2, 0, 0))  # 4 纯色
+    add(odd_jpeg, 17, 9, 0)     # 5 non-multiple-of-8 JPEG
+    add(alpha_overlap, 4, 4, 1) # 6 transparent/opaque black overlap
     # 场景表必须存在（至少一个槽：scene id 1，区间 [0,0)）
     scene = struct.pack("<II", 0, 0)
     scnid = struct.pack("<H", 1)
@@ -100,7 +134,7 @@ def make_pack_with_images():
     payloads = {
         0: text, 1: txidx, 2: b"", 3: scene, 4: scnid, 16: b"".join(images), 17: bytes(blob),
     }
-    counts = {0: len(text), 1: 2, 2: 0, 3: 2, 4: 1, 16: 5, 17: len(blob)}
+    counts = {0: len(text), 1: 2, 2: 0, 3: 2, 4: 1, 16: 7, 17: len(blob)}
     offset = 28 + 16 * 24
     body = bytearray()
     sections = []
@@ -318,8 +352,7 @@ def build_helper_fixture():
     chap = struct.pack("<HHHHI", 900, ids["fixture"], 0, ids["900_scene"], 0)
     var_blob = b"".join(struct.pack("<H", ids[n]) for n in ["a:0", "a:1", "a:2", "a:3",
                                                             "cur_call.$x"])
-    meta = b"title=fixture
-"
+    meta = b"title=fixture" + bytes([10])
     payloads = {
         0: text_blob, 1: txidx_blob, 2: bytes(ops), 3: scene, 4: scnid, 5: entry,
         6: chap, 7: var_blob, 8: bytes(expr), 9: b"", 10: b"", 11: set_blob,
@@ -332,14 +365,14 @@ def build_helper_fixture():
     open(path, "wb").write(pack)
     expect = {"a0": 6, "a1": "hello", "a2": 0, "a3": 16}
     open(os.path.join(OUT, "helper_fixture.json"), "w", encoding="utf-8").write(
-        json.dumps(expect, indent=1) + "
-")
+        json.dumps(expect, indent=1) + chr(10))
     return len(pack)
 
 
 def main():
     os.makedirs(OUT, exist_ok=True)
     print("jpeg", make_jpeg())
+    print("odd jpeg", make_odd_jpeg())
     print("block", make_block())
     print("pack", make_pack_with_images())
     print("helper fixture", build_helper_fixture())

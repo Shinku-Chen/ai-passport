@@ -125,6 +125,9 @@ typedef struct {
     uint8_t signature_bodies;
     uint16_t flow_scene;
     uint16_t title_image;
+    uint16_t title_image_normal;
+    uint16_t title_image_anemoi;
+    uint16_t title_image_eternicle;
 
     // 鉴赏
     uint8_t cg_index;

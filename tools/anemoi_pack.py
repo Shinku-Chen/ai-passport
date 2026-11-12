@@ -675,20 +675,57 @@ def face_display_size(pose_row, body_screen):
 # ---------------------------------------------------------------- 图像编码
 
 def _quantize_rgba(im, dw, dh, colors):
-    """缩放后按目标颜色数量化（保留每个调色板项的 alpha 上限）。"""
+    """RGB quantise with bounded alpha buckets for partial edges.
+
+    A palette entry has one alpha value. A plain max-alpha per RGB index makes
+    every semi-transparent edge pixel opaque when the same RGB also occurs in
+    the opaque interior. Keep the clear index separate and split each RGB
+    index into opaque / low-partial / high-partial buckets. This is bounded by
+    1 + 3 * colors entries and requires no frame-sized RGBA buffer at runtime.
+    """
     rgba = im.convert("RGBA").resize((dw, dh), 1)
-    q = rgba.quantize(colors=colors, method=Image.FASTOCTREE, dither=Image.Dither.NONE)
-    pal = q.getpalette()[:colors * 3]
-    alpha = [0] * colors
-    raw_alpha = rgba.getchannel("A").tobytes()
-    data = list(q.getdata())
-    for idx, a in zip(data, raw_alpha):
-        if a > alpha[idx]:
-            alpha[idx] = a
+    raw = rgba.tobytes()
+    alphas = raw[3::4]
+    rgb = rgba.convert("RGB")
+    rgb_colors = max(1, colors)
+    q = rgb.quantize(colors=rgb_colors, method=Image.FASTOCTREE,
+                     dither=Image.Dither.NONE)
+    pal = q.getpalette()[:rgb_colors * 3]
+    pal += [0] * (rgb_colors * 3 - len(pal))
+    groups = {}
+    pixel_keys = []
+    for idx, a in zip(list(q.getdata()), alphas):
+        if a < 8:
+            pixel_keys.append(None)
+            continue
+        bucket = 0 if a >= 248 else (1 if a < 128 else 2)
+        key = (idx, bucket)
+        g = groups.get(key)
+        if g is None:
+            groups[key] = [a, 1]
+        else:
+            g[0] += a
+            g[1] += 1
+        pixel_keys.append(key)
+    keys = sorted(groups)
+    index_of = {key: i + 1 for i, key in enumerate(keys)}
+    pal_out = [0, 0, 0]
+    alpha_out = [0]
+    for key in keys:
+        idx, bucket = key
+        r, g, b = pal[idx * 3:idx * 3 + 3]
+        pal_out += [r, g, b]
+        if bucket == 0:
+            aout = 255
+        else:
+            aout = max(8, min(247, int(round(groups[key][0] / groups[key][1]))))
+        alpha_out.append(aout)
+    out_data = [0 if key is None else index_of[key] for key in pixel_keys]
+    pal_out += [0] * (768 - len(pal_out))
     out = Image.new("P", (dw, dh))
-    out.putpalette(pal + [0] * (768 - len(pal)))
-    out.putdata(data)
-    out.info["transparency"] = bytes(alpha)
+    out.putpalette(pal_out[:768])
+    out.putdata(out_data)
+    out.info["transparency"] = bytes(alpha_out)
     return out
 
 
@@ -769,7 +806,12 @@ def encode_block_sprite(im, dw, dh, colors=None):
         indices, pal = list(im.getdata()), palette_of(im)
     else:
         indices, pal = resize_to_palette(im, dw, dh)
-    pal_count = max(1, len(pal))
+    # PIL returns a fixed 256-entry palette even after quantize(colors=32);
+    # only write the entries actually referenced by the pixel indices. This
+    # keeps the advertised palette-32 size and the real binary rows in sync.
+    used = max(indices) + 1 if indices else 1
+    pal_count = max(1, min(len(pal), used))
+    pal = pal[:pal_count]
     out = bytearray()
     out += struct.pack("<HHHHHH", dw, dh, pal_count, ROWS_PER_BLOCK,
                        (dh + ROWS_PER_BLOCK - 1) // ROWS_PER_BLOCK, 0)
@@ -792,40 +834,11 @@ def encode_block_sprite(im, dw, dh, colors=None):
 from PIL import Image  # noqa: E402  (仅编码阶段需要 Pillow)
 
 
-# 这些场景图“不铺满”是设计的一部分（暗特效、标题画布），不做边缘延展。
-EDGE_PAD_WHITELIST = {"ef_story_image", "title_image"}
-
-
-def edge_pad(im, width, height):
-    """保持主体大小居中，用最外圈像素向外复制补齐到 width x height（不产生黑边）。"""
-    if im.size == (width, height):
-        return im
-    canvas = Image.new(im.mode, (width, height))
-    left = (width - im.width) // 2
-    top = (height - im.height) // 2
-    canvas.paste(im, (left, top))
-    col_l = im.crop((0, 0, 1, im.height)).resize((left, im.height)) if left > 0 else None
-    right = width - im.width - left
-    col_r = im.crop((im.width - 1, 0, im.width, im.height)).resize((right, im.height)) if right > 0 else None
-    if col_l is not None:
-        canvas.paste(col_l, (0, top))
-    if col_r is not None:
-        canvas.paste(col_r, (left + im.width, top))
-    if top > 0:
-        canvas.paste(canvas.crop((0, top, width, top + 1)).resize((width, top)), (0, 0))
-    bottom = height - im.height - top
-    if bottom > 0:
-        canvas.paste(canvas.crop((0, top + im.height - 1, width, top + im.height)).resize((width, bottom)),
-                     (0, top + im.height))
-    return canvas
-
-
 def encode_jpeg(im, quality):
+    # TJpgDec decodes arbitrary dimensions and reports partial MCU rectangles.
+    # Do not pad with black: the image row's w/h must match the encoded JPEG so
+    # the runtime centers the actual pixels instead of shifting a padded canvas.
     rgb = im.convert("RGB")
-    if rgb.width % 8 or rgb.height % 8:
-        pad = Image.new("RGB", ((rgb.width + 7) // 8 * 8, (rgb.height + 7) // 8 * 8), (0, 0, 0))
-        pad.paste(rgb, (0, 0))
-        rgb = pad
     buf = io.BytesIO()
     rgb.save(buf, "JPEG", quality=quality, optimize=True, subsampling=2)
     return buf.getvalue()
@@ -927,6 +940,7 @@ class Packer:
         self.name_index = {}
         self.image_rows = []
         self.image_index = {}
+        self.block_palette_max = 0
         self.blob = bytearray()
         self.ops = []
         self.op_scene = {}
@@ -1089,6 +1103,10 @@ class Packer:
         else:
             off = len(self.blob) - len(payload)
             length = len(payload)
+        if kind == 1 and len(payload) >= 6:
+            pal_count = struct.unpack_from("<H", payload, 4)[0]
+            if pal_count > self.block_palette_max:
+                self.block_palette_max = pal_count
         idx = len(self.image_rows)
         self.image_rows.append(struct.pack("<IIHHBBH", off, length, w, h, kind, 0, 0))
         return idx
@@ -1142,22 +1160,19 @@ class Packer:
             return 0xFFFF
         path = os.path.join(self.src.root, "src", "common", "images", rel)
         with Image.open(path) as im:
-            # contain 缩放保留美术，再用“边缘延展”补齐到恰好 320x180：
-            # 不裁主体、不放大，只把最外圈像素向外复制，避免运行时补黑边。
+            # Source UI is object-fit:contain on a #fcfaf0 art background.
+            # Keep the contained image size; the runtime centres it on paper.
             aw, ah = self.args.art_width, self.args.art_height
             scale = min(aw / im.width, ah / im.height, 1.0)
             size = (max(1, int(round(im.width * scale))), max(1, int(round(im.height * scale))))
             small = im.resize(size, 1) if size != im.size else im.copy()
-            if name in EDGE_PAD_WHITELIST:   # 暗特效/标题：保持原样（黑底是设计）
-                assert small.width <= aw and small.height <= ah
-            else:
-                small = edge_pad(small, aw, ah)
-                assert small.size == (aw, ah), small.size
+            assert small.width <= aw and small.height <= ah, small.size
             payload = encode_jpeg(small, self.args.jpeg_quality)
+            img_w, img_h = small.size
         off = len(self.blob)
         self.blob += payload
         idx = len(self.image_rows)
-        self.image_rows.append(struct.pack("<IIHHBBH", off, len(payload), size[0], size[1], 0, 0, 0))
+        self.image_rows.append(struct.pack("<IIHHBBH", off, len(payload), img_w, img_h, 0, 0, 0))
         self.image_index[key] = idx
         self.detail["scene"] += 1
         return idx
@@ -1557,20 +1572,50 @@ class Packer:
                 self.unknown_natives.add(name)
 
     # ------------------------------------------------------------ 写出
-    def title_image(self):
-        """标题画面：源 title-anemoi.jpg 等比缩到画面区，居中放置。"""
-        rel = os.path.join(self.src.root, "src", "common", "ui", "title-anemoi.jpg")
-        if not os.path.exists(rel):
-            return 0xFFFF
-        with Image.open(rel) as im:
-            scale = min(self.args.art_width / im.width, self.args.art_height / im.height)
-            size = (max(1, int(round(im.width * scale))), max(1, int(round(im.height * scale))))
+    def title_image(self, name):
+        """Pack one source title image for the requested unlock level."""
+        rel_map = {
+            "normal": "src/common/ui/title-bg.jpg",
+            "anemoi": "src/common/ui/title-anemoi.jpg",
+            "eternicle": "src/common/ui/title-eternicle.jpg",
+        }
+        if name not in rel_map:
+            raise SystemExit("unknown title image: %s" % name)
+        rel = rel_map[name]
+        full = os.path.join(self.src.root, *rel.split("/"))
+        raw = None
+        if os.path.exists(full):
+            with open(full, "rb") as fh:
+                raw = fh.read()
+        else:
+            ref = self.src.source_commit
+            if not ref:
+                raise SystemExit("title image unavailable: %s (no source commit)" % rel)
+            try:
+                raw = subprocess.check_output(
+                    ["git", "-C", self.src.root, "show", ref + ":" + rel],
+                    stderr=subprocess.DEVNULL)
+            except (OSError, subprocess.CalledProcessError) as exc:
+                raise SystemExit("title image unavailable at %s: %s" % (ref, rel)) from exc
+        with Image.open(io.BytesIO(raw)) as im:
+            src_w, src_h = im.size
+            scale = min(self.args.art_width / src_w, self.args.art_height / src_h)
+            size = (max(1, int(round(src_w * scale))), max(1, int(round(src_h * scale))))
             small = im.convert("RGB").resize(size, 1)
             payload = encode_jpeg(small, max(self.args.jpeg_quality, 60))
+            img_w, img_h = small.size
+        self.title_sources[name] = {
+            "path": rel,
+            "sha256": hashlib.sha256(raw).hexdigest(),
+            "source_width": src_w,
+            "source_height": src_h,
+            "packed_width": img_w,
+            "packed_height": img_h,
+        }
         off = len(self.blob)
         self.blob += payload
         idx = len(self.image_rows)
-        self.image_rows.append(struct.pack("<IIHHBBH", off, len(payload), size[0], size[1], 0, 1, 0))
+        self.image_rows.append(struct.pack("<IIHHBBH", off, len(payload), img_w, img_h, 0, 1, 0))
         return idx
 
     def write_charset(self):
@@ -1587,7 +1632,10 @@ class Packer:
 
     def write(self):
         helper_rows = self.build_helpers()
-        title_image = self.title_image()
+        self.title_sources = {}
+        title_images = {name: self.title_image(name)
+                        for name in ("normal", "anemoi", "eternicle")}
+        title_image = title_images["normal"]
         volume_names = set()
         for sid, ranges in self.included.items():
             ops = self.src.ops(sid)
@@ -1697,6 +1745,9 @@ class Packer:
             "scenes=%d" % len(self.scnid),
             "poses=%d" % len(self.pose_rows),
             "title_image=%d" % title_image,
+            "title_image_normal=%d" % title_images["normal"],
+            "title_image_anemoi=%d" % title_images["anemoi"],
+            "title_image_eternicle=%d" % title_images["eternicle"],
             "flow_scene=%d" % int(self.src.catalog["flowScene"]),
             "natives=%s" % ",".join(sorted(self.natives_used)),
             "unknown_natives=%s" % ",".join(sorted(self.unknown_natives)),
@@ -1766,6 +1817,11 @@ class Packer:
                 "body_face": image_row_kinds.get(1, 0),
                 "solid": image_row_kinds.get(2, 0),
             },
+            "block_palette": {
+                "rgb_colors": self.args.palette_colors,
+                "alpha_buckets": 3,
+                "max_entries": self.block_palette_max,
+            },
             "scope_notes": (
                 "included_scenes and scope_manifest are authoritative; "
                 "sections.image.count is the SEC_IMAGE row count; source image "
@@ -1791,6 +1847,9 @@ class Packer:
             "gallery_total": len(self.src.gallery),
             "gallery_included": len(gal_rows),
             "title_image": title_image,
+            "title_images": title_images,
+            "title_sources": self.title_sources,
+            "title_source": self.title_sources["normal"],
             "chars": self.write_charset(),
         }
         manifest["artifacts"] = [

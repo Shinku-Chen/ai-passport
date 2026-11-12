@@ -108,13 +108,17 @@ bool anem_image_probe_jpeg(const uint8_t *data, uint32_t len, uint16_t *w, uint1
 }
 
 static bool jpeg_decode(anem_image_ctx_t *ctx, anem_canvas_t *canvas, const uint8_t *data,
-                        uint32_t len, int dx, int dy)
+                        uint32_t len)
 {
     JDEC jd;
-    jpeg_src_t src = { .data = data, .len = len, .pos = 0, .canvas = canvas, .dx = dx, .dy = dy };
+    jpeg_src_t src = { .data = data, .len = len, .pos = 0, .canvas = canvas, .dx = 0, .dy = 0 };
     if (jd_prepare(&jd, jpeg_in, ctx->jpeg_pool, sizeof(ctx->jpeg_pool), &src) != JDR_OK) {
         return false;
     }
+    // Use the dimensions decoded from the JPEG itself. The pack row's w/h is
+    // still validated by tests, but centering must not depend on a stale row.
+    src.dx = (ANEM_CANVAS_W - (int)jd.width) / 2;
+    src.dy = (ANEM_CANVAS_H - (int)jd.height) / 2;
     return jd_decomp(&jd, jpeg_out, 0) == JDR_OK;
 }
 
@@ -154,10 +158,10 @@ bool anem_image_draw_scene(anem_image_ctx_t *ctx, anem_canvas_t *canvas, const a
     if (image.kind != ANEM_IMG_JPEG || !anem_image_probe_jpeg(data, image.len, NULL, NULL)) {
         return false;
     }
-    anem_canvas_fill(canvas, 0x0000);
-    const int dx = (ANEM_CANVAS_W - (int)image.w) / 2;
-    const int dy = (ANEM_CANVAS_H - (int)image.h) / 2;
-    return jpeg_decode(ctx, canvas, data, image.len, dx, dy);
+    // Source .art uses #fcfaf0 and object-fit:contain. Fill the letterbox
+    // with paper, then centre the decoded JPEG; no edge-column smear.
+    anem_canvas_fill(canvas, 0xFFDE);
+    return jpeg_decode(ctx, canvas, data, image.len);
 }
 
 bool anem_image_draw_solid(anem_canvas_t *canvas, const anem_pack_t *pack, uint16_t image_id)

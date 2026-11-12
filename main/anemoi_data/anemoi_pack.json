@@ -1,8 +1,8 @@
 {
  "path": "main/anemoi_data/anemoi_pack.bin",
- "bytes": 6954802,
- "sha256": "634c01838d628f5ea2817c0c08c099beb8795f5134659ce186566adb5a770eef",
- "crc32": "0x32f89fdb",
+ "bytes": 6301790,
+ "sha256": "68eec3ca5e332ea734cce94360a9c81609e9cc72a5ba3da57d7d2cfed1ec8160",
+ "crc32": "0x2dadbd3a",
  "scope": "manifest:main/anemoi_data/anemoi_scope.json",
  "source_commit": "3e27714c50b860c674a86df90e3df3e4cf6dd254",
  "source_overlay": null,
@@ -68,7 +68,7 @@
  },
  "capacity": {
   "factory_partition_bytes": 8323072,
-  "pack_bytes": 6954802
+  "pack_bytes": 6301790
  },
  "sections": {
   "text": {
@@ -153,43 +153,43 @@
   },
   "image": {
    "offset": 1831567,
-   "count": 2065,
-   "size": 33040
+   "count": 2068,
+   "size": 33088
   },
   "blob": {
-   "offset": 1864607,
-   "count": 5067868,
-   "size": 5067868
+   "offset": 1864655,
+   "count": 4414734,
+   "size": 4414734
   },
   "req": {
-   "offset": 6932475,
+   "offset": 6279389,
    "count": 40,
    "size": 320
   },
   "helper": {
-   "offset": 6932795,
+   "offset": 6279709,
    "count": 156,
    "size": 1872
   },
   "micro": {
-   "offset": 6934667,
+   "offset": 6281581,
    "count": 1463,
    "size": 17556
   },
   "gal": {
-   "offset": 6952223,
+   "offset": 6299137,
    "count": 66,
    "size": 528
   },
   "namemap": {
-   "offset": 6952751,
+   "offset": 6299665,
    "count": 337,
    "size": 1348
   },
   "meta": {
-   "offset": 6954099,
-   "count": 703,
-   "size": 703
+   "offset": 6301013,
+   "count": 777,
+   "size": 777
   }
  },
  "ops": 61257,
@@ -202,9 +202,14 @@
   "scene": 335
  },
  "image_row_kinds": {
-  "scene": 335,
+  "scene": 338,
   "body_face": 1728,
   "solid": 2
+ },
+ "block_palette": {
+  "rgb_colors": 32,
+  "alpha_buckets": 3,
+  "max_entries": 75
  },
  "scope_notes": "included_scenes and scope_manifest are authoritative; sections.image.count is the SEC_IMAGE row count; source image keys are not 1:1 with binary rows.",
  "text_bytes": 825759,
@@ -3830,13 +3835,52 @@
  },
  "gallery_total": 490,
  "gallery_included": 66,
- "title_image": 65535,
+ "title_image": 1962,
+ "title_images": {
+  "normal": 1962,
+  "anemoi": 1963,
+  "eternicle": 1964
+ },
+ "title_sources": {
+  "normal": {
+   "path": "src/common/ui/title-bg.jpg",
+   "sha256": "44ba039e08ab7cd9b42cebf46350a8a48dc180a7153059d2c0be9ec082ed3241",
+   "source_width": 432,
+   "source_height": 514,
+   "packed_width": 151,
+   "packed_height": 180
+  },
+  "anemoi": {
+   "path": "src/common/ui/title-anemoi.jpg",
+   "sha256": "2546fd25849e26d6e067dedb861616e50f768bb3e7452055d06a4814e085ad48",
+   "source_width": 432,
+   "source_height": 514,
+   "packed_width": 151,
+   "packed_height": 180
+  },
+  "eternicle": {
+   "path": "src/common/ui/title-eternicle.jpg",
+   "sha256": "1435a3df38dec5e0f439259382ace26b0ff8d0f043ac62192423b5e3863b5652",
+   "source_width": 432,
+   "source_height": 514,
+   "packed_width": 151,
+   "packed_height": 180
+  }
+ },
+ "title_source": {
+  "path": "src/common/ui/title-bg.jpg",
+  "sha256": "44ba039e08ab7cd9b42cebf46350a8a48dc180a7153059d2c0be9ec082ed3241",
+  "source_width": 432,
+  "source_height": 514,
+  "packed_width": 151,
+  "packed_height": 180
+ },
  "chars": 3037,
  "artifacts": [
   {
    "path": "main/anemoi_data/anemoi_pack.bin",
-   "bytes": 6954802,
-   "sha256": "634c01838d628f5ea2817c0c08c099beb8795f5134659ce186566adb5a770eef"
+   "bytes": 6301790,
+   "sha256": "68eec3ca5e332ea734cce94360a9c81609e9cc72a5ba3da57d7d2cfed1ec8160"
   },
   {
    "path": "main/anemoi_data/anemoi_charset.txt",

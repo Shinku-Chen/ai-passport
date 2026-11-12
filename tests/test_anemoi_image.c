@@ -44,7 +44,7 @@ int main(int argc, char **argv)
     anem_canvas_fill(&canvas, 0x0000);
     ANEM_CHECK(anem_image_draw_scene(&ctx, &canvas, &pack, 0));
     int r, g, b;
-    // 32x16 的图在画布上居中：dx = (320-32)/2 = 144, dy = (180-16)/2 = 82
+    // 32x16 的图在完整画布上居中：dx = (320-32)/2 = 144, dy = (240-16)/2 = 112
     const int dx = (ANEM_CANVAS_W - 32) / 2;
     const int dy = (ANEM_CANVAS_H - 16) / 2;
     decode_rgb(canvas.pixels[(dy + 4) * ANEM_CANVAS_W + dx + 4], &r, &g, &b);
@@ -63,6 +63,27 @@ int main(int argc, char **argv)
     decode_rgb(canvas.pixels[20 * ANEM_CANVAS_W + 12], &r, &g, &b);
     ANEM_CHECK_MSG(b > 8 && r == 0, "半透明蓝应留下蓝色分量，实际 r=%d g=%d b=%d", r, g, b);
     ANEM_CHECK(canvas.pixels[20 * ANEM_CANVAS_W + 13] == 0);
+
+    // 2b) 17x9 非 8 倍数 JPEG：runtime 必须按实际解码尺寸居中，不能按旧
+    // metadata 或补黑边后的尺寸偏移。
+    anem_canvas_fill(&canvas, rgb565(0, 0, 40));
+    ANEM_CHECK(anem_image_draw_scene(&ctx, &canvas, &pack, 5));
+    const int odd_dx = (ANEM_CANVAS_W - 17) / 2;
+    const int odd_dy = (ANEM_CANVAS_H - 9) / 2;
+    decode_rgb(canvas.pixels[(odd_dy + 4) * ANEM_CANVAS_W + odd_dx + 3], &r, &g, &b);
+    ANEM_CHECK_MSG(r > 24 && g < 8, "odd JPEG left should be red, got r=%d g=%d b=%d", r, g, b);
+    decode_rgb(canvas.pixels[(odd_dy + 4) * ANEM_CANVAS_W + odd_dx + 14], &r, &g, &b);
+    ANEM_CHECK_MSG(g > 40 && r < 8, "odd JPEG right should be green, got r=%d g=%d b=%d", r, g, b);
+
+    // 2c) 透明黑与不透明黑同 RGB、不同 alpha：透明像素保留底色，黑像素仍黑。
+    anem_canvas_fill(&canvas, rgb565(0, 0, 255));
+    ANEM_CHECK(anem_image_draw_sprite(&ctx, &canvas, &pack, 6, 10, 20));
+    decode_rgb(canvas.pixels[20 * ANEM_CANVAS_W + 10], &r, &g, &b);
+    ANEM_CHECK(r > 24 && g < 8);
+    ANEM_CHECK_MSG(canvas.pixels[20 * ANEM_CANVAS_W + 11] == rgb565(0, 0, 255),
+                   "transparent black index must preserve blue background");
+    ANEM_CHECK_MSG(canvas.pixels[20 * ANEM_CANVAS_W + 12] == 0,
+                   "opaque black index must remain black");
 
     // 3) 纯色
     ANEM_CHECK(anem_image_draw_scene(&ctx, &canvas, &pack, 4));

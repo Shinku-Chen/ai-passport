@@ -51,12 +51,12 @@ def main() -> int:
     assert report["set_dyn"] == 0
     assert report["boundary_returns"] == 0
     assert report["out_of_range_call"] == 0
-    assert report["image_rows"] == 2065
-    assert report["image_row_kinds"] == {0: 335, 1: 1728, 2: 2}
+    assert report["image_rows"] == 2068
+    assert report["image_row_kinds"] == {0: 338, 1: 1728, 2: 2}
     if baseline is not None:
         assert report["baseline_image_rows"] == 2000
-        assert report["image_row_delta"] == 65
-        assert report["image_row_kind_delta"] == {"0": 13, "1": 52, "2": 0}
+        assert report["image_row_delta"] == 68
+        assert report["image_row_kind_delta"] == {"0": 16, "1": 52, "2": 0}
     print("PASS positive: 80 scenes / 61257 ops / 15620 branch targets / "
           "333 static cross-scene entry refs / 3 dynamic entries / "
           "2 chapter-head returns / 1 arrive poll")

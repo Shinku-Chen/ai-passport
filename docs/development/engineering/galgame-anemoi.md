@@ -52,14 +52,14 @@ language check can enforce English prose.
 | Quantity | Bytes | Notes |
 | --- | ---: | --- |
 | `factory` app partition | 8,323,072 | `partitions.csv`, 0x7f0000 |
-| Reviewed app image | 8,049,104 | `build-anemoi-A-q24/FoloToy-AI-Passport.bin` |
-| Merged full image | 8,114,640 | `build-anemoi-A-q24/FoloToy-AI-Passport-full.bin` |
-| Non-pack part of the app | 1,094,302 | app image minus the 6,954,802-byte pack |
-| Resource ceiling for a pack | 7,228,770 | 8,323,072 − 1,094,302 |
-| Candidate pack | 6,954,802 | sha256 `634c01838d628f5ea2817c0c08c099beb8795f5134659ce186566adb5a770eef` |
-| Remaining app/flash headroom | 273,968 | 3% of the app partition |
+| Reviewed app image | 7,396,384 | `build-hotfix/FoloToy-AI-Passport.bin` |
+| Merged full image | 7,461,920 | `build-hotfix/FoloToy-AI-Passport-full.bin` |
+| Non-pack part of the app | 1,094,594 | app image minus the 6,301,790-byte pack |
+| Resource ceiling for a pack | 7,228,478 | 8,323,072 − 1,094,594 |
+| Candidate pack | 6,301,790 | sha256 `68eec3ca5e332ea734cce94360a9c81609e9cc72a5ba3da57d7d2cfed1ec8160` |
+| Remaining app/flash headroom | 926,688 | 11% of the app partition |
 
-The merged full image is 8,114,640 bytes, so the 8 MB flash still has 273,968
+The merged full image is 7,461,920 bytes, so the 8 MB flash still has 926,688
 bytes free. The full image is app image + 65,536 bytes of bootloader/partition
 table; the app partition and the flash therefore give the same pack ceiling.
 
@@ -69,17 +69,31 @@ All three candidates use the reviewed 80-scene manifest and the same 16px font.
 
 | Candidate | Layout / palette / JPEG | Pack bytes | Result |
 | --- | --- | ---: | --- |
-| A-q30 | 0.52 / 32 / q30 | 7,527,695 | Does not fit: 298,925 B over the 7,228,770 B ceiling |
-| **A-q24 (selected)** | **0.52 / 32 / q24** | **6,954,802** | Fits with 273,968 B headroom; keeps the shipped layout and palette |
+| A-q30 | 0.52 / 32 / q30 | 7,527,695 | Does not fit: 299,217 B over the 7,228,478 B ceiling |
+| **A-q24 (selected)** | **0.52 / 32 / q24** | **6,301,790** | Fits with 926,688 B headroom; keeps the shipped layout and palette |
 | B | 0.46 / 16 / q25 | 6,470,206 | Fits, but only as a quality comparison; not selected |
 
-A-q24 changes only the scene JPEG quality. It does not drop dialogue, choices,
-images or expressions, and it does not change the portrait layout/palette.
-The resource metric is the binary SEC_IMAGE row count: release 2,000 ->
-candidate 2,065 (+65); kind 0 scene rows +13 (322 -> 335), kind 1 body/face
+The hotfix pack keeps the reviewed 80-scene manifest, layout and JPEG quality.
+It implements the source rendering model: scene/CG images are scaled with
+object-fit:contain, stored with that visible size, and centred on paper
+#fcfaf0 (RGB565 0xFFDE); there is no edge-column smear and no black JPEG
+padding. Title selection follows title-buttons.js: fresh/normal uses
+title-bg.jpg, levels 1/2 use title-eternicle.jpg, and levels 3/4 use
+title-anemoi.jpg. Sprite quantisation reserves a clear index for alpha<8 and
+splits visible RGB entries into opaque/low-partial/high-partial alpha buckets
+(32 RGB colours, bounded at 97 entries, observed max 75), preserving
+semi-transparent edges (bucketised alpha) without a frame-sized RGBA buffer. Missing title source
+blobs fail the build and are read from the pinned source_commit. It does not
+drop dialogue, choices, images or expressions, and does not change the portrait
+layout. The resource metric is the binary SEC_IMAGE row count: release 2,000 ->
+candidate 2,068 (+68); kind 0 scene rows +16 (322 -> 338), kind 1 body/face
 rows +52 (1,676 -> 1,728), kind 2 solid rows unchanged (2). The 65 new
-dialogue glyphs are a separate font metric. Source image keys are not 1:1 with
-binary rows, so source-key counts are not used as row counts here.
+dialogue glyphs are a separate font metric. Title sources are the pinned
+title-bg.jpg (sha256 44ba039e08ab7cd9b42cebf46350a8a48dc180a7153059d2c0be9ec082ed3241),
+title-anemoi.jpg (sha256 2546fd25849e26d6e067dedb861616e50f768bb3e7452055d06a4814e085ad48)
+and title-eternicle.jpg (sha256 1435a3df38dec5e0f439259382ace26b0ff8d0f043ac62192423b5e3863b5652), all packed at 151x180 and not fabricated. On END, the progress flush now keeps the higher of the script-computed level and the previously loaded global level; END->flush->reload selects the earned title, and NewGame/Continue with older slot variables cannot lower an existing unlock. Source
+image keys are not 1:1 with binary rows, so source-key counts are not used as
+row counts here.
 
 For reference, the B candidate was also built: app 7,564,512 B / full
 7,630,048 B, pack sha256
@@ -176,6 +190,14 @@ that `included_scenes`/`scope_manifest` are authoritative and source image
 keys are not 1:1 with binary rows. `main/anemoi_data/anemoi_pack.bin` remains
 a release artifact (gitignored). The optional `--source-overlay` path is an
 explicit, hash-recorded compatibility mechanism; it is **unused** here.
+The source snapshot may be a sparse checkout without src/common/ui; the packer
+reads the pinned blob with git show using self.src.source_commit for
+title-bg.jpg, title-anemoi.jpg and title-eternicle.jpg, records each hash in
+manifest title_sources, and fails the build if a source blob is unavailable.
+The hotfix gate runs the image encoder/pack metadata test, a production-C pixel
+test for 1729/1739 bands, title gutters and sprite alpha, and an independent
+12-row source contain reference (band RMS <= 12). It does not use edge-column
+smear, cover, blur, or a frame-sized RGBA buffer.
 
 ### Binary audit
 
@@ -201,17 +223,21 @@ Gate results from this candidate (full output in `audit/repairs/`):
 
 | Command | Result | Log |
 | --- | --- | --- |
-| `ANEMOI_SOURCE=... bash tools/validate.sh --static` | PASS | `audit/repairs/anemoi-full-static-final.log` |
-| `ANEMOI_SOURCE=... python3 tests/test_anemoi_scope.py` | PASS | `audit/repairs/anemoi-scope-final.log` |
+| `ANEMOI_SOURCE=... bash tools/validate.sh --static` | PASS | `audit/repairs/anemoi-device-hotfix/logs/static-final.log` |
+| `ANEMOI_SOURCE=... python3 tests/test_anemoi_scope.py` | PASS | `audit/repairs/anemoi-device-hotfix/logs/scope-final.log` |
 | `python3 tools/gal_font.py --check --sizes 16` | PASS | `build/anemoi-gate-static/font.log` |
-| `ANEMOI_SOURCE=... ANEMOI_RELEASE_PACK=... bash tools/anemoi_gate.sh build/anemoi-gate-final4` | PASS (26/0/0) | `audit/repairs/anemoi-gate-final4.log` |
-| `python3 tools/anemoi_binary_audit.py --source ... --baseline-pack ...` | PASS (61,257/61,257; 15,620 targets; 333 refs) | `audit/repairs/anemoi-binary-audit.log` |
-| `python3 tests/test_anemoi_binary_audit.py` | PASS (positive + 6 negatives) | `audit/repairs/anemoi-binary-audit-negatives.log` |
-| `idf.py -B build-anemoi-A-q24 build` | PASS | `audit/repairs/anemoi-idf-final-build2.log` |
-| `idf.py -B build-anemoi-A-q24 merge-bin` | PASS | `audit/repairs/anemoi-merge-final.log` |
-| `python3 tools/verify_firmware.py build-anemoi-A-q24` | PASS | `audit/repairs/anemoi-verify-final.log` |
-| `python3 tools/archive_firmware.py create build-anemoi-A-q24 --archive-root build/firmware` | PASS | `audit/repairs/anemoi-archive-create.log` |
-| `python3 tools/archive_firmware.py verify build/firmware/4000d07b...` | PASS | `audit/repairs/anemoi-archive-verify.log` |
+| `ANEMOI_SOURCE=... bash tools/anemoi_gate.sh build/anemoi-gate-final` | PASS (31/0/0) | `audit/repairs/anemoi-device-hotfix/logs/gate-final.log` |
+| `python3 tools/anemoi_binary_audit.py --source ... --baseline-pack ...` | PASS (61,257/61,257; 15,620 targets; 333 refs) | `audit/repairs/anemoi-device-hotfix/logs/binary-audit-final.log` |
+| `python3 tests/test_anemoi_image_encoder.py` | PASS | `audit/repairs/anemoi-device-hotfix/logs/image-encoder-final.log` |
+| production-C pixel ref (1729/1739/title/alpha) | PASS | `audit/repairs/anemoi-device-hotfix/logs/pixel-ref-final.log` |
+| `python3 hotfix_scene_reference.py` (12 contain rows, band RMS <= 12) | PASS | `audit/repairs/anemoi-device-hotfix/logs/scene-reference-final.log` |
+| tracked app fake-NVS title persistence (END/flush/reload, levels 0/2/4, history, write retry) | PASS | `audit/repairs/anemoi-device-hotfix/logs/title-persist-final.log` |
+| `python3 tests/test_anemoi_binary_audit.py` | PASS (positive + 6 negatives) | `audit/repairs/anemoi-device-hotfix/logs/binary-audit-negatives-final.log` |
+| `idf.py -B build-hotfix build` | PASS | `audit/repairs/anemoi-device-hotfix/logs/build-title-persist.log` |
+| `idf.py -B build-hotfix merge-bin` | PASS | `audit/repairs/anemoi-device-hotfix/logs/merge-title-persist.log` |
+| `python3 tools/verify_firmware.py build-hotfix` | PASS | `audit/repairs/anemoi-device-hotfix/logs/verify-title-persist.log` |
+| `python3 tools/archive_firmware.py create build-hotfix --archive-root build/firmware` | PASS | `audit/repairs/anemoi-device-hotfix/logs/archive-title-persist.log` |
+| `python3 tools/archive_firmware.py verify build/firmware/381704e7...` | PASS | `audit/repairs/anemoi-device-hotfix/logs/archive-title-persist.log` |
 | 82-item translated production-C replay | PASS | `audit/repairs/anemoi-normal-items-translated/receipt.json` |
 
 Device tests are **NOT RUN**: no USB/flash operation was performed. Runtime
@@ -226,10 +252,10 @@ of GNU `--gc-sections`.
 
 Flash headroom is not RAM. The final ESP32-C3 MAP/ELF reports:
 
-- `.dram0.data` 7,300 B; `.dram0.bss` 240,968 B.
+- `.dram0.data` 7,300 B; `.dram0.bss` 240,976 B.
 - Static bss includes the canvas 115,200 B, LVGL pool 65,536 B, application
   state 32,832 B, block buffer 8,224 B, tinfl state 10,992 B, and
-  palette/row/LVGL-global storage 2,208 B; the remaining bss is about 5,976 B.
+  palette/row/LVGL-global storage 2,208 B; the remaining bss is about 5,984 B.
 - `_data_start = 0x3fc90e00`, `_heap_start = 0x3fccd7e0`; the reserved
   static-data region is 248,288 B.
 - Heap region A (`_heap_start..APP_USABLE_DRAM_END 0x3fcdc710`) is 61,232 B.
@@ -242,7 +268,7 @@ Flash headroom is not RAM. The final ESP32-C3 MAP/ELF reports:
 - Source anchors: draw buffer `components/bsp/src/bsp_display_lvgl.c:97`;
   LVGL task `managed_components/espressif__esp_lvgl_port/include/esp_lvgl_port.h:68`;
   input task `main/main.c:283-288`; main stack `sdkconfig.defaults:38`;
-  timer/event `build-anemoi-A-q24/config/sdkconfig.h:488,512`;
+  timer/event `build-hotfix/config/sdkconfig.h:488,512`;
   `APP_USABLE_DRAM_END` `components/heap/port/esp32c3/memory_layout.c`;
   ROM stack `components/soc/esp32c3/include/soc/soc.h:205-206`.
 - Remaining before LVGL objects, NVS, drivers and fragmentation: 14,640 B in
@@ -257,4 +283,8 @@ Flash headroom is not RAM. The final ESP32-C3 MAP/ELF reports:
 3. Spica/Koyomi/Rikka evidence covers the packed qualification/play ranges and
    route boundaries, not full endings of unimported books.
 4. The 20px font variant is not compiled in this volume.
-5. Device acceptance is NOT RUN.
+5. Device acceptance is NOT RUN for this hotfix candidate. The published
+   v1.0.1 build FAILED on real hardware: title artwork was absent, some sprites
+   had opaque black backgrounds, and an ef_avan_bg01 background showed
+   left-side stretch/stripes. This candidate implements the three fixes; host
+   pixel gates pass. It must be reflashed and retested before any Device PASS.

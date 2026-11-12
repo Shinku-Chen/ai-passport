@@ -68,6 +68,8 @@ echo "== anemoi gate $(date '+%Y-%m-%d %H:%M:%S') ==" | tee "${out_dir}/gate.log
 if python3 -m py_compile "${repo_root}/tools/anemoi_pack.py" \
     "${repo_root}/tools/anemoi_audit.py" "${repo_root}/tools/anemoi_binary_audit.py" \
     "${repo_root}/tools/anemoi_compare.py" \
+    "${repo_root}/tools/anemoi_fixtures.py" \
+    "${repo_root}/tests/test_anemoi_image_encoder.py" \
     "${repo_root}/tests/test_anemoi_artifacts.py" \
     "${repo_root}/tests/test_anemoi_scope.py" \
     "${repo_root}/tests/test_anemoi_binary_audit.py" >"${out_dir}/python-compile.log" 2>&1; then
@@ -109,6 +111,20 @@ run_build test_codec_neg "${repo_root}/tests/test_anemoi_codec_neg.c" "${src_com
 run_build test_store "${repo_root}/tests/test_anemoi_store.c" "${src_common[@]}" \
     && run_test test_store "${pack}" || status=1
 
+run_build test_title_persist "${repo_root}/tests/test_anemoi_title_persist.c" \
+    "${repo_root}/main/anemoi/anemoi_pack.c" "${repo_root}/main/anemoi/anemoi_script.c" \
+    "${repo_root}/main/anemoi/anemoi_store.c" "${repo_root}/main/anemoi/anemoi_ui.c" \
+    "${repo_root}/main/anemoi/anemoi_app.c" "${repo_root}/main/anemoi/anemoi_canvas.c" \
+    "${repo_root}/main/anemoi/anemoi_image.c" "${repo_root}/main/anemoi/tjpgd/tjpgd.c" \
+    "${repo_root}/tests/anemoi_stubs/tinfl_shim.c" \
+    && run_test test_title_persist "${pack}" || status=1
+
+run_build test_pixel_ref "${repo_root}/tests/test_anemoi_pixel_ref.c" \
+    "${repo_root}/main/anemoi/anemoi_canvas.c" "${repo_root}/main/anemoi/anemoi_image.c" \
+    "${repo_root}/main/anemoi/anemoi_pack.c" "${repo_root}/main/anemoi/tjpgd/tjpgd.c" \
+    "${repo_root}/tests/anemoi_stubs/tinfl_shim.c" \
+    && run_test test_pixel_ref "${pack}" || status=1
+
 run_build test_image "${repo_root}/tests/test_anemoi_image.c" \
     "${repo_root}/main/anemoi/anemoi_canvas.c" "${repo_root}/main/anemoi/anemoi_image.c" \
     "${repo_root}/main/anemoi/anemoi_pack.c" "${repo_root}/main/anemoi/anemoi_script.c" \
@@ -116,6 +132,14 @@ run_build test_image "${repo_root}/tests/test_anemoi_image.c" \
     && run_test test_image "${repo_root}/tests/anemoi/fixtures/images_pack.bin" || status=1
 
 run_build test_startup "${repo_root}/tests/test_anemoi_startup.c" "${repo_root}/main/anemoi/anemoi_startup.c" && run_test test_startup || status=1
+
+if python3 "${repo_root}/tests/test_anemoi_image_encoder.py" >"${out_dir}/image-encoder.log" 2>&1; then
+    echo "PASS | image-encoder | palette alpha / odd-size JPEG / real pack metadata | ${out_dir}/image-encoder.log"
+else
+    echo "FAIL | image-encoder | ${out_dir}/image-encoder.log"
+    tail -5 "${out_dir}/image-encoder.log" | sed 's/^/    /'
+    status=1
+fi
 run_build test_semantics "${repo_root}/tests/test_anemoi_semantics.c" "${src_common[@]}"     && run_test test_semantics "${pack}" || status=1
 
 run_build test_app "${repo_root}/tests/test_anemoi_app.c" "${src_common[@]}" \

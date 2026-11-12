@@ -15,6 +15,9 @@
 static const uint16_t k_type_delay_ms[] = { 0, 18, 34, 60 };
 static const uint16_t k_auto_wait_ms[] = { 0, 4200, 2600, 1400 };
 
+static uint16_t title_image_for_level(const anem_app_t *app, uint8_t level);
+static void apply_title_image(anem_app_t *app);
+
 static void set_notice(anem_app_t *app, uint8_t kind, const char *text, uint32_t now)
 {
     snprintf(app->notice, sizeof(app->notice), "%s", text ? text : "");
@@ -189,6 +192,11 @@ void anem_app_refresh_store(anem_app_t *app, uint32_t now_ms)
         app->progress_ready = true;
     }
     anem_store_workspace_release();
+    if (app->screen == ANEM_SCR_TITLE) {
+        app->title_level = app->progress_ready ? app->progress.level : 0;
+        apply_title_image(app);
+        app->art_dirty = true;
+    }
     anem_app_view(app, &(anem_view_t){ 0 });
 }
 
@@ -334,7 +342,13 @@ bool anem_app_flush_progress(anem_app_t *app)
         return false;
     }
     anem_progress_from_script(current, &app->script);
-    current->level = app->progress.level;
+    // Unlock level is global history. Keep the higher of the level computed
+    // from the current script and the previously loaded global level, so a
+    // stale level-0 value cannot erase an END-earned level and NewGame/
+    // Continue with older slot variables cannot lower existing unlocks.
+    if (app->progress.level > current->level) {
+        current->level = app->progress.level;
+    }
     memcpy(current->cg, app->progress.cg, sizeof(current->cg));
     memcpy(current->ending, app->progress.ending, sizeof(current->ending));
     if (!anem_store_save_progress(current)) {
@@ -507,6 +521,28 @@ static void open_list(anem_app_t *app, uint8_t screen)
     app->scroll[screen] = 0;
 }
 
+static uint16_t title_image_for_level(const anem_app_t *app, uint8_t level)
+{
+    // Source title-buttons.js: levels 1/2 use title-eternicle, levels 3/4
+    // use title-anemoi, and fresh/normal (0, 5+) use title-bg.
+    if (level == 1 || level == 2) {
+        return app->title_image_eternicle;
+    }
+    if (level == 3 || level == 4) {
+        return app->title_image_anemoi;
+    }
+    return app->title_image_normal;
+}
+
+static void apply_title_image(anem_app_t *app)
+{
+    const uint16_t selected = title_image_for_level(app, app->title_level);
+    if (selected != ANEM_NONE16) {
+        app->title_image = selected;
+        app->art_image = selected;
+    }
+}
+
 // 进入标题页：必须清掉上一局残留的立绘/场景图，否则标题上会盖着游戏里的立绘。
 static void enter_title(anem_app_t *app)
 {
@@ -515,9 +551,8 @@ static void enter_title(anem_app_t *app)
     app->ff_held = false;
     app->art_sprite_count = 0;
     app->art_cg = false;
-    if (app->title_image != ANEM_NONE16) {
-        app->art_image = app->title_image;
-    }
+    app->title_level = app->progress_ready ? app->progress.level : 0;
+    apply_title_image(app);
     app->art_dirty = true;
 }
 
@@ -681,8 +716,8 @@ static void key_menu(anem_app_t *app, uint8_t key, uint8_t event)
     default:
         (void)anem_app_flush_auto(app);
         (void)anem_app_flush_progress(app);
+        app->progress.level = anem_script_unlock_level(&app->script);
         enter_title(app);
-        app->title_level = anem_script_unlock_level(&app->script);
         break;
     }
 }
@@ -959,7 +994,6 @@ static void app_key_impl(anem_app_t *app, uint8_t key, uint8_t event, uint32_t n
             back_to(app, app->back_screen);
         } else {
             enter_title(app);
-            app->title_level = anem_script_unlock_level(&app->script);
         }
     }
 }
@@ -1256,7 +1290,7 @@ bool anem_app_draw(anem_app_t *app)
 {
     app->art_dirty = false;
     if (app->screen == ANEM_SCR_TITLE) {
-        anem_canvas_fill(&app->canvas, 0x18E3);   // 深灰底：标题竖图两侧不出现纯黑边
+        anem_canvas_fill(&app->canvas, 0xFFDE);   // 标题图两侧使用源纸色 #fcfaf0
     }
     if (!app->draw_art || app->art_image == ANEM_NONE16) {
         return true;
@@ -1398,7 +1432,16 @@ bool anem_app_init(anem_app_t *app, const void *pack_data, size_t pack_size)
     app->auto_speed = ANEM_AUTO_NORMAL;
     app->panel_alpha = 100;
     app->flow_scene = meta_u16(&app->pack, "flow_scene", 2);
-    app->title_image = meta_u16(&app->pack, "title_image", ANEM_NONE16);
+    app->title_image_normal = meta_u16(
+        &app->pack, "title_image_normal",
+        meta_u16(&app->pack, "title_image", ANEM_NONE16));
+    app->title_image_anemoi = meta_u16(
+        &app->pack, "title_image_anemoi", app->title_image_normal);
+    app->title_image_eternicle = meta_u16(
+        &app->pack, "title_image_eternicle", app->title_image_normal);
+    app->title_image = app->title_image_normal;
+    app->art_image = app->title_image;
+    app->title_level = 0;
     anem_script_new(&app->script, app->flow_scene, true);
     return true;
 }

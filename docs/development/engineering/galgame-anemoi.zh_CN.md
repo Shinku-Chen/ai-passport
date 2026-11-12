@@ -42,14 +42,14 @@ Passport 320×240 横屏：开机直接进作品标题，正文、选项、委�
 | 量 | 字节 | 说明 |
 | --- | ---: | --- |
 | `factory` app 分区 | 8,323,072 | `partitions.csv`，0x7f0000 |
-| 被审 app 镜像 | 8,049,104 | `build-anemoi-A-q24/FoloToy-AI-Passport.bin` |
-| 合并 full 镜像 | 8,114,640 | `build-anemoi-A-q24/FoloToy-AI-Passport-full.bin` |
-| app 内非包部分 | 1,094,302 | app 镜像减 6,954,802 B 的包 |
-| 包的资源上限 | 7,228,770 | 8,323,072 − 1,094,302 |
-| 候选包 | 6,954,802 | sha256 `634c01838d628f5ea2817c0c08c099beb8795f5134659ce186566adb5a770eef` |
-| app/flash 剩余 | 273,968 | app 分区的 3% |
+| 被审 app 镜像 | 7,396,384 | `build-hotfix/FoloToy-AI-Passport.bin` |
+| 合并 full 镜像 | 7,461,920 | `build-hotfix/FoloToy-AI-Passport-full.bin` |
+| app 内非包部分 | 1,094,594 | app 镜像减 6,301,790 B 的包 |
+| 包的资源上限 | 7,228,478 | 8,323,072 − 1,094,594 |
+| 候选包 | 6,301,790 | sha256 `68eec3ca5e332ea734cce94360a9c81609e9cc72a5ba3da57d7d2cfed1ec8160` |
+| app/flash 剩余 | 926,688 | app 分区的 11% |
 
-合并 full 镜像为 8,114,640 B，8 MB flash 仍余 273,968 B。full 镜像 = app
+合并 full 镜像为 7,461,920 B，8 MB flash 仍余 926,688 B。full 镜像 = app
 镜像 + 65,536 B 的 bootloader/分区表，因此用 app 分区和用整片 flash 算出的
 包上限相同。
 
@@ -59,16 +59,28 @@ Passport 320×240 横屏：开机直接进作品标题，正文、选项、委�
 
 | 候选 | 版面 / 调色板 / JPEG | 包字节 | 结果 |
 | --- | --- | ---: | --- |
-| A-q30 | 0.52 / 32 / q30 | 7,527,695 | 装不下：超过 7,228,770 B 上限 298,925 B |
-| **A-q24（选用）** | **0.52 / 32 / q24** | **6,954,802** | 可装，余 273,968 B；保持原版面和调色板 |
+| A-q30 | 0.52 / 32 / q30 | 7,527,695 | 装不下：超过 7,228,478 B 上限 299,217 B |
+| **A-q24（选用）** | **0.52 / 32 / q24** | **6,301,790** | 可装，余 926,688 B；保持原版面和调色板 |
 | B | 0.46 / 16 / q25 | 6,470,206 | 可装，但只作为画质对照，不选用 |
 
-A-q24 只调整场景 JPEG 质量，不删除台词、选项、图片或表情，也不改变立绘版面/
-调色板。资源口径以二进制 SEC_IMAGE 行数为准：release 2,000 -> candidate
-2,065（+65）；kind 0 scene 行 +13（322 -> 335），kind 1 body/face 行
-+52（1,676 -> 1,728），kind 2 solid 行不变（2）。65 个新正文字形是独立的
-字库口径。source image key 与二进制行不是 1:1，因此这里不用 source-key 计数
-代替行数。
+本次修补包保持已审阅的 80 场景 manifest、版面和 JPEG 质量，实现源 UI 的
+object-fit:contain + #fcfaf0 纸色底（RGB565 0xFFDE）：场景/CG 按可见尺寸
+记录并居中，不再复制边缘列，也不补 8 像素黑边。标题选择按
+title-buttons.js：fresh/normal 用 title-bg.jpg，level 1/2 用
+title-eternicle.jpg，level 3/4 用 title-anemoi.jpg。立绘量化给 alpha<8 的
+像素保留独立 clear 项，并把可见 RGB 项拆成不透明/低半透明/高半透明三个
+alpha 桶（32 个 RGB 色，最多 97 项，实测最大 75），在不增加整帧 RGBA 缓冲
+的前提下按 3 个 alpha 桶近似保留半透明边缘。标题 source blob 不可用时构建硬失败；读取使用
+固定 source_commit。不删除台词、选项、图片或表情，也不改变立绘版面。资源
+口径以二进制 SEC_IMAGE 行数为准：release 2,000 -> candidate 2,068
+（+68）；kind 0 scene 行 +16（322 -> 338），kind 1 body/face 行 +52
+（1,676 -> 1,728），kind 2 solid 行不变（2）。65 个新正文字形是独立的
+字库口径。标题图来自固定 source 的 title-bg.jpg（sha256
+44ba039e08ab7cd9b42cebf46350a8a48dc180a7153059d2c0be9ec082ed3241）、
+title-anemoi.jpg（sha256
+2546fd25849e26d6e067dedb861616e50f768bb3e7452055d06a4814e085ad48）和
+title-eternicle.jpg，均打包为 151x180，不是伪造图。END 时 progress flush 取脚本计算 level 与已加载全局 level 的较大值；END→flush→reload 选择已获得标题，NewGame/Continue 的旧 slot 变量不会降低已有解锁。source image key 与
+二进制行不是 1:1，因此这里不用 source-key 计数代替行数。
 
 作为对照，B 候选也已实际构建：app 7,564,512 B / full 7,630,048 B，包 sha256
 `5320c42c2b91dbbc376189b0fb1eddf3022599f5afbe25e997af5e93d2206767`。
@@ -151,7 +163,14 @@ commit、scope manifest hash、打包参数、字库 hash、容量、分段表�
 `image_row_kinds`，以及 `scope_notes`（说明 `included_scenes`/
 `scope_manifest` 是权威范围、source image key 与二进制行不是 1:1）。
 `main/anemoi_data/anemoi_pack.bin` 仍是 release 产物（gitignore）。可选的
-`--source-overlay` 是显式、记录 hash 的兼容机制；本次**未使用**。
+`--source-overlay` 是显式、记录 hash 的兼容机制；本次**未使用**。source 快照可能是 sparse
+checkout，缺少 src/common/ui；打包器会用 git show HEAD:src/common/ui/title-anemoi.jpg
+读取固定 blob，并在 manifest 的 title_sources 字段记录各图 hash；任一张
+不可用时构建硬失败。标题按 source_commit 读取 title-bg.jpg、title-anemoi.jpg
+和 title-eternicle.jpg。本作 gate 运行图像编码/包元数据测试、生产 C 的
+1729/1739 留边、标题 gutter 与立绘 alpha 像素测试，以及独立 12 行 source
+contain 参考（band RMS <= 12）。不使用边缘复制拉伸、cover、模糊或整帧 RGBA
+缓冲。
 
 ### 二进制审计
 
@@ -174,17 +193,21 @@ source commit 错误、scope 范围越界；每个都必须以对应的 coverage
 
 | 命令 | 结果 | 日志 |
 | --- | --- | --- |
-| `ANEMOI_SOURCE=... bash tools/validate.sh --static` | PASS | `audit/repairs/anemoi-full-static-final.log` |
-| `ANEMOI_SOURCE=... python3 tests/test_anemoi_scope.py` | PASS | `audit/repairs/anemoi-scope-final.log` |
+| `ANEMOI_SOURCE=... bash tools/validate.sh --static` | PASS | `audit/repairs/anemoi-device-hotfix/logs/static-final.log` |
+| `ANEMOI_SOURCE=... python3 tests/test_anemoi_scope.py` | PASS | `audit/repairs/anemoi-device-hotfix/logs/scope-final.log` |
 | `python3 tools/gal_font.py --check --sizes 16` | PASS | `build/anemoi-gate-static/font.log` |
-| `ANEMOI_SOURCE=... ANEMOI_RELEASE_PACK=... bash tools/anemoi_gate.sh build/anemoi-gate-final4` | PASS (26/0/0) | `audit/repairs/anemoi-gate-final4.log` |
-| `python3 tools/anemoi_binary_audit.py --source ... --baseline-pack ...` | PASS (61,257/61,257; 15,620 targets; 333 refs) | `audit/repairs/anemoi-binary-audit.log` |
-| `python3 tests/test_anemoi_binary_audit.py` | PASS (positive + 6 negatives) | `audit/repairs/anemoi-binary-audit-negatives.log` |
-| `idf.py -B build-anemoi-A-q24 build` | PASS | `audit/repairs/anemoi-idf-final-build2.log` |
-| `idf.py -B build-anemoi-A-q24 merge-bin` | PASS | `audit/repairs/anemoi-merge-final.log` |
-| `python3 tools/verify_firmware.py build-anemoi-A-q24` | PASS | `audit/repairs/anemoi-verify-final.log` |
-| `python3 tools/archive_firmware.py create build-anemoi-A-q24 --archive-root build/firmware` | PASS | `audit/repairs/anemoi-archive-create.log` |
-| `python3 tools/archive_firmware.py verify build/firmware/4000d07b...` | PASS | `audit/repairs/anemoi-archive-verify.log` |
+| `ANEMOI_SOURCE=... bash tools/anemoi_gate.sh build/anemoi-gate-final` | PASS (31/0/0) | `audit/repairs/anemoi-device-hotfix/logs/gate-final.log` |
+| `python3 tools/anemoi_binary_audit.py --source ... --baseline-pack ...` | PASS (61,257/61,257; 15,620 targets; 333 refs) | `audit/repairs/anemoi-device-hotfix/logs/binary-audit-final.log` |
+| `python3 tests/test_anemoi_image_encoder.py` | PASS | `audit/repairs/anemoi-device-hotfix/logs/image-encoder-final.log` |
+| production-C pixel ref (1729/1739/title/alpha) | PASS | `audit/repairs/anemoi-device-hotfix/logs/pixel-ref-final.log` |
+| `python3 hotfix_scene_reference.py` (12 contain rows, band RMS <= 12) | PASS | `audit/repairs/anemoi-device-hotfix/logs/scene-reference-final.log` |
+| tracked app fake-NVS title persistence (END/flush/reload, levels 0/2/4, history, write retry) | PASS | `audit/repairs/anemoi-device-hotfix/logs/title-persist-final.log` |
+| `python3 tests/test_anemoi_binary_audit.py` | PASS (positive + 6 negatives) | `audit/repairs/anemoi-device-hotfix/logs/binary-audit-negatives-final.log` |
+| `idf.py -B build-hotfix build` | PASS | `audit/repairs/anemoi-device-hotfix/logs/build-title-persist.log` |
+| `idf.py -B build-hotfix merge-bin` | PASS | `audit/repairs/anemoi-device-hotfix/logs/merge-title-persist.log` |
+| `python3 tools/verify_firmware.py build-hotfix` | PASS | `audit/repairs/anemoi-device-hotfix/logs/verify-title-persist.log` |
+| `python3 tools/archive_firmware.py create build-hotfix --archive-root build/firmware` | PASS | `audit/repairs/anemoi-device-hotfix/logs/archive-title-persist.log` |
+| `python3 tools/archive_firmware.py verify build/firmware/381704e7...` | PASS | `audit/repairs/anemoi-device-hotfix/logs/archive-title-persist.log` |
 | 82-item 翻译后生产 C 重放 | PASS | `audit/repairs/anemoi-normal-items-translated/receipt.json` |
 
 真机测试为 **NOT RUN**：未进行 USB/烧录操作；运行时 free/largest block 和
@@ -198,10 +221,10 @@ demo runtime 测试使用原生 `-dead_strip`，替代 GNU `--gc-sections`。
 
 flash 余量不是 RAM。最终 ESP32-C3 MAP/ELF 报告：
 
-- `.dram0.data` 7,300 B；`.dram0.bss` 240,968 B。
+- `.dram0.data` 7,300 B；`.dram0.bss` 240,976 B。
 - 静态 bss 包括 canvas 115,200 B、LVGL pool 65,536 B、应用状态 32,832 B、
   block buffer 8,224 B、tinfl 状态 10,992 B，以及 palette/行缓冲/LVGL global
-  2,208 B；其余 bss 约 5,976 B。
+  2,208 B；其余 bss 约 5,984 B。
 - `_data_start = 0x3fc90e00`，`_heap_start = 0x3fccd7e0`；静态数据保留区
   248,288 B。
 - Heap 区 A（`_heap_start..APP_USABLE_DRAM_END 0x3fcdc710`）为 61,232 B。
@@ -213,7 +236,7 @@ timer task 3,584 B、event task 2,304 B = 46,592 B。
 - 源码锚点：draw buffer `components/bsp/src/bsp_display_lvgl.c:97`；
   LVGL task `managed_components/espressif__esp_lvgl_port/include/esp_lvgl_port.h:68`；
   input task `main/main.c:283-288`；main stack `sdkconfig.defaults:38`；
-  timer/event `build-anemoi-A-q24/config/sdkconfig.h:488,512`；
+  timer/event `build-hotfix/config/sdkconfig.h:488,512`；
   `APP_USABLE_DRAM_END` `components/heap/port/esp32c3/memory_layout.c`；
   ROM stack `components/soc/esp32c3/include/soc/soc.h:205-206`。
 - 扣除后到 LVGL 对象/NVS/驱动/碎片之前：A 区余 14,640 B；A+B 余 29,216 B。
@@ -227,4 +250,7 @@ timer task 3,584 B、event task 2,304 B = 46,592 B。
 3. Spica/小詠/六花的证据覆盖已打包的资格/play 范围和路线边界，不是未导入
    整本的完整结局。
 4. 本卷不编译 20px 字体变体。
-5. 真机验收 NOT RUN。
+5. 本修补候选的真机验收 NOT RUN。已发布的 v1.0.1 在真机上 FAILED：标题图
+   缺失、部分立绘背景不透明且为黑色、ef_avan_bg01 背景左侧出现拉伸条纹。
+   本候选已实现三项修复并通过 host 像素门禁；必须重新烧录并复测后才能
+   写 Device PASS。
