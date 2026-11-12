@@ -56,3 +56,10 @@
 - Updated software-design and project README references for the new documentation structure.
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
+
+## v1.0.1-clannad - 2026-11-12
+
+- Expand the VM variable table to 512 slots with a 3/4 probe ceiling; the observed 195-variable state now fits and round-trips.
+- Expand the save raw budget to 3 KiB and the progress codec to 128 entries/1 KiB; worst observed 195-variable save is 1,415 bytes.
+- Progress apply counts only keys that are actually absent, counts duplicate keys once, and keeps zero-valued overlays; old 64-entry blobs remain readable.
+- True-ending 67-entry progress is 414 bytes and applies as an overlay without rolling back existing g[] values.
