@@ -168,16 +168,23 @@ python3 tools/gal_font.py --check --out-dir assets/fonts   # 只检查
 
 ### 7.2 剧情锁
 
-三类解锁状态存在 `gal_unlock`（位掩码，最多 32 个）：
+永久 CG / 章节 / 结局解锁位存在 gal_unlock（位掩码，最多 32 个）。周目剧情
+标记是 gal_app.flags 的独立位掩码，手动存档和自动进度各自携带一份。
 
-- 台词：`require_flag` 不满足时该事件**自动跳过**（这就是条件分支）。
-- 选项：`require_flag` 不满足时置灰，按确定提示「条件不足」；`flag_set` 在选中后写入。
-- CG / 章节：到达 `unlock_event` 时解锁；章节还可要求 `require_flag`。
-- 事件本身可携带 `flag_set`（例如章节过场写「已到第二章」、结局写「已通关」）。
-- 标记枚举写在 `gal_content.h` 的 `GAL_FLAG_*`，作品自行增删。
+- 台词：require_flag 不满足时该事件自动跳过（这就是条件分支）。
+- 选项：require_flag 不满足时置灰，按确定提示「条件不足」；flag_set 在选中后写入当前周目。
+- `GAL_FLAG_CLEARED` 是永久资格，不是本周目选线标记：app 从
+  `gal_unlock.ending` 的任意永久结局位派生。NewGame 后需要“走完一次结局”的
+  隐藏选项/章节仍然可用，A/B/C 与到达章节等本周目标记仍随周目清零。
+  事件或选项的 flag_set 为 CLEARED 时不会写入 `gal_app.flags`。
+- CG / 章节：到达 unlock_event 时永久解锁；章节还可要求当前周目标记。
+- 事件本身可携带 flag_set（例如章节过场写「已到第二章」）；CLEARED 不写入
+  周目标记，由 `gal_unlock.ending` 派生。
+- 标记枚举写在 gal_content.h 的 GAL_FLAG_*，作品自行增删。
+- NewGame 清空当前周目标记；读档从槽位恢复，继续游戏从自动进度恢复。版本 1 的旧
+  存档/进度兼容读取，缺失的 flags 按 0 处理；galunlock 里的旧全局 flag 字段不再参与判断。
 
-解锁记录跨存档长期保存，存档槽只记位置，不复制解锁状态。
-
+永久 CG / 章节 / 结局解锁跨存档保存；存档槽存当前周目标记和位置，不复制永久解锁位。
 ### 7.3 字体
 
 新增文案后重跑字体生成（见 §3），`--check` 已在 `validate.sh` 里，缺字会让门禁失败。
@@ -196,9 +203,9 @@ python3 tools/gal_font.py --check --out-dir assets/fonts   # 只检查
 | NVS 命名空间 | key | 内容 | 写入时机 |
 | --- | --- | --- | --- |
 | `galcfg` | `cfg` | 文字速度、字号档、自动阅读、对话透明度 | 设置项改变时 |
-| `galsave` | `slots` | 3 个手动存档槽（事件 + 页 + 章节名） | 存档页手动保存时 |
-| `galprog` | `pos` | 自动阅读进度（事件 + 页） | 推进剧情后节流写（≤2 秒一次），深睡前强制落盘 |
-| `galunlock` | `bits` | CG / 章节 / 结局解锁位 + 剧情标记 | 有变化时（到达解锁事件 / 选项写入标记） |
+| galsave | slots | 3 个手动存档槽（事件 + 页 + 章节名 + 当前周目标记） | 存档页手动保存时 |
+| galprog | pos | 自动阅读进度（事件 + 页 + 当前周目标记） | 推进剧情后节流写，深睡前强制落盘 |
+| galunlock | bits | 永久 CG / 章节 / 结局解锁位；旧 flag 字段忽略 | 永久解锁变化时 |
 
 进度节流是为了控制 NVS 擦写次数；`gal_app_flush()` 用于关键节点（深睡）强制落盘。
 

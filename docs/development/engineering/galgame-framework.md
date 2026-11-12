@@ -171,18 +171,30 @@ Replace `GAL_CONTENT_TITLE` / `SUBTITLE` / `LOGO_SUB` / `VERSION` with the title
 
 ### 7.2 Story locks
 
-`gal_unlock` stores three kinds of state as bitmasks (up to 32 each):
+gal_unlock stores permanent CG / chapter / ending bits (up to 32 each). Story
+flags are a separate per-playthrough bitmask in gal_app.flags; they are copied
+into manual save slots and the automatic progress record.
 
-- Lines: an unmet `require_flag` makes the event **skip itself** (that is how branches work).
-- Options: an unmet `require_flag` greys the row out and reports "requirements not met";
-  `flag_set` is written when the option is chosen.
-- CGs / chapters: unlocked on reaching `unlock_event`; chapters may also require a flag.
-- Events can carry `flag_set` themselves (e.g. a transition writes "reached chapter 2",
-  an ending writes "cleared").
-- Flag constants live in `gal_content.h` as `GAL_FLAG_*`; titles add or remove their own.
+- Lines: an unmet require_flag makes the event skip itself (that is how branches work).
+- Options: an unmet require_flag greys the row out and reports requirements not met;
+  flag_set is written to the current playthrough when the option is chosen.
+- `GAL_FLAG_CLEARED` is a permanent qualification, not a current-run choice flag:
+  the app derives it from any permanent ending bit in gal_unlock.ending. New Game
+  therefore keeps hidden options/chapters that require a completed ending
+  available, while A/B/C and reached-chapter flags still clear with the run.
+  An event/option whose flag_set is CLEARED does not write that bit to
+  gal_app.flags.
+- CGs / chapters: unlocked permanently on reaching unlock_event; a chapter may also
+  require a current-playthrough flag.
+- Events can carry flag_set themselves (e.g. a transition writes reached chapter 2).
+  CLEARED is never written to the run flags; it comes from gal_unlock.ending.
+- Flag constants live in gal_content.h as GAL_FLAG_*; titles add or remove their own.
+- New Game clears the current-playthrough flags. Loading restores them from the slot
+  (or from automatic progress). Version-1 save/progress blobs load with flags reset
+  to zero; the legacy global flag field in galunlock is ignored.
 
-Unlock state persists across saves; save slots only store a position and never copy it.
-
+Permanent CG / chapter / ending unlock persists across saves; save slots store the
+current-run flags and position, never the permanent unlock bits.
 ### 7.3 Fonts
 
 Regenerate after adding text (see §3). `--check` already runs inside `validate.sh`, so
@@ -204,9 +216,9 @@ missing glyphs fail the gate.
 | NVS namespace | Key | Contents | Written when |
 | --- | --- | --- | --- |
 | `galcfg` | `cfg` | Text speed, font tier, auto-play, panel transparency | A setting changes |
-| `galsave` | `slots` | 3 manual save slots (event + page + chapter) | Saving from the save page |
-| `galprog` | `pos` | Automatic reading progress (event + page) | Throttled after advancing (≤ once per 2s), forced before deep sleep |
-| `galunlock` | `bits` | CG / chapter / ending unlock bits and flags | On change (reaching an unlock event, writing a flag) |
+| galsave | slots | 3 manual save slots (event + page + chapter + current-run flags) | Saving from the save page |
+| galprog | pos | Automatic reading progress (event + page + current-run flags) | Throttled after advancing, forced before deep sleep |
+| galunlock | bits | Permanent CG / chapter / ending unlock bits; legacy flag field ignored | On permanent unlock change |
 
 Progress is throttled to limit NVS wear; `gal_app_flush()` forces a write at key moments
 such as entering deep sleep.

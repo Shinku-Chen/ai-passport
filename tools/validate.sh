@@ -78,6 +78,22 @@ run_static_checks() {
         tests/test_gal_tone.c main/gal/gal_tone.c \
         -o "${test_dir}/test_gal_tone"
     "${test_dir}/test_gal_tone"
+    # GalGame 框架:周目 flag 与永久解锁分离、旧 save/progress 兼容。
+    cc -std=c11 -Wall -Wextra -Werror \
+        -Itests/gal_stubs -Imain/gal \
+        tests/test_gal_state.c main/gal/gal_save.c main/gal/gal_progress.c \
+        main/gal/gal_unlock.c tests/gal_stubs/nvs_stub.c \
+        -o "$test_dir/test_gal_state"
+    "$test_dir/test_gal_state"
+    # GalGame 框架:生产 app 的 NewGame/choice/save/load/continue/restart 状态链。
+    cc -std=c11 -Wall -Wextra -Werror \
+        -Itests/gal_app_stubs -Itests/gal_stubs -Imain/gal \
+        tests/test_gal_app_flow.c main/gal/gal_app.c main/gal/gal_save.c \
+        main/gal/gal_progress.c main/gal/gal_unlock.c main/gal/gal_settings.c \
+        main/gal/gal_content.c main/gal/gal_text.c \
+        tests/gal_app_stubs/gal_app_hal_stub.c tests/gal_stubs/nvs_stub.c \
+        -o "$test_dir/test_gal_app_flow"
+    "$test_dir/test_gal_app_flow"
     PYTHONDONTWRITEBYTECODE=1 python3 tools/gal_font.py --check --out-dir assets/fonts
     for demo in audio low_power ble wifi; do
         "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \

@@ -36,6 +36,25 @@ static void goto_page(gal_app_t *app, gal_page_t page);
 static bool settings_from_reader(const gal_app_t *app);
 
 // ---------------------------------------------------------------- 剧情锁
+// CLEARED 是内容层的永久资格(“走过一次结局”),由 gal_unlock.ending 派生;
+// A/B/C 与 CHAPTER_2 等本周目标记仍只读 app.flags。
+static bool requirement_met(const gal_app_t *app, uint8_t flag)
+{
+    if (flag == GAL_UNLOCK_NONE) return true;
+    if (flag == GAL_FLAG_CLEARED) {
+        return gal_unlock_has_any_ending(&app->unlock);
+    }
+    return gal_flags_has(app->flags, flag);
+}
+
+// CLEARED is derived from the permanent ending table, never stored as a run
+// flag. Other flags remain per-playthrough and travel with save/progress.
+static void set_run_flag(gal_app_t *app, uint8_t flag)
+{
+    if (flag == GAL_UNLOCK_NONE || flag == GAL_FLAG_CLEARED) return;
+    app->flags = gal_flags_set(app->flags, flag);
+}
+
 // 事件的可见性:条件台词只有满足标记才出现。
 static bool event_visible(const gal_app_t *app, int event_index)
 {
@@ -43,7 +62,7 @@ static bool event_visible(const gal_app_t *app, int event_index)
     const gal_event_t *ev = &gal_content_events[event_index];
     if (ev->kind != GAL_EV_LINE) return true;
     const uint8_t need = gal_content_lines[ev->index].require_flag;
-    return need == GAL_UNLOCK_NONE || gal_unlock_has_flag(&app->unlock, need);
+    return requirement_met(app, need);
 }
 
 static bool cg_unlocked(const gal_app_t *app, int index)
@@ -62,8 +81,7 @@ static bool chapter_unlocked(const gal_app_t *app, int index)
         !gal_unlock_has_chapter(&app->unlock, (uint8_t)index)) {
         return false;
     }
-    if (c->require_flag != GAL_UNLOCK_NONE &&
-        !gal_unlock_has_flag(&app->unlock, c->require_flag)) {
+    if (!requirement_met(app, c->require_flag)) {
         return false;
     }
     return true;
@@ -84,9 +102,7 @@ static void unlock_visit(gal_app_t *app)
             gal_unlock_grant_chapter(&app->unlock, (uint8_t)i);
         }
     }
-    if (event->flag_set != GAL_UNLOCK_NONE) {
-        gal_unlock_set_flag(&app->unlock, event->flag_set);
-    }
+    set_run_flag(app, event->flag_set);
     if (event->kind == GAL_EV_ENDING) {
         gal_unlock_grant_ending(&app->unlock, event->index);
     }
@@ -188,6 +204,7 @@ static void enter_event(gal_app_t *app)
     app->progress.valid = 1;
     app->progress.event_index = (uint16_t)app->event_index;
     app->progress.page_index = (uint16_t)app->page_index;
+    app->progress.flags = app->flags;
     app->progress_dirty = true;
     app->progress_accum_ms = 0;
     app->page = event_page(&gal_content_events[app->event_index]);
@@ -260,6 +277,7 @@ static void show_line(gal_app_t *app, int line_index)
     app->progress.valid = 1;
     app->progress.event_index = (uint16_t)app->event_index;
     app->progress.page_index = (uint16_t)app->page_index;
+    app->progress.flags = app->flags;
     app->progress_dirty = true;
 
     if (app->page_index == 0) history_add(app, line);
@@ -293,6 +311,7 @@ static void do_save(gal_app_t *app, int slot)
     s->occupied = 1;
     s->event_index = (uint16_t)app->event_index;
     s->page_index = (uint16_t)app->page_index;
+    s->flags = app->flags;
     snprintf(s->chapter, sizeof(s->chapter), "%s", chapter_name_at(app->event_index));
     if (!gal_save_store(&app->save)) {
         show_notice(app, "保存失败");
@@ -312,6 +331,7 @@ static void do_load(gal_app_t *app, int slot)
     }
     app->event_index = s->event_index;
     app->page_index = s->page_index;
+    app->flags = s->flags;
     app->shown_line = -1;
     app->choice_sel = 0;
     enter_event(app);
@@ -335,6 +355,7 @@ static void start_new_game(gal_app_t *app)
     app->choice_sel = 0;
     app->event_index = 0;
     app->page_index = 0;
+    app->flags = 0;                       // 周目 flag 不跨 NewGame
     gal_progress_clear(&app->progress);   // 新游戏不沿用上次进度
     enter_event(app);
 }
@@ -638,7 +659,7 @@ static void render_page(gal_app_t *app)
         // 条件不满足的选项置灰(剧情锁)。
         for (int i = 0; i < choice->count && i < GAL_LIST_MAX_ROWS; ++i) {
             const uint8_t need = choice->options[i].require_flag;
-            const bool ok = need == GAL_UNLOCK_NONE || gal_unlock_has_flag(&app->unlock, need);
+            const bool ok = requirement_met(app, need);
             gal_ui_set_row_enabled(&app->ui, GAL_LIST_CHOICE, i, ok);
         }
         return;
@@ -760,6 +781,7 @@ static void handle_title(gal_app_t *app, const gal_key_t *key)
             show_notice(app, "没有进度");
             return;
         }
+        app->flags = app->progress.flags;   // 周目标记以自动进度为准
         app->event_index = app->progress.event_index;
         app->page_index = app->progress.page_index;
         app->shown_line = -1;
@@ -847,16 +869,12 @@ static void handle_choice(gal_app_t *app, const gal_key_t *key)
     if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
         const gal_option_t *opt = &choice->options[app->choice_sel];
         // 剧情锁:条件不满足的选项不能选。
-        if (opt->require_flag != GAL_UNLOCK_NONE &&
-            !gal_unlock_has_flag(&app->unlock, opt->require_flag)) {
+        if (!requirement_met(app, opt->require_flag)) {
             show_notice(app, "条件不足");
             return;
         }
         // 选中的分支会写剧情标记,后面的台词与解锁都看它。
-        if (opt->flag_set != GAL_UNLOCK_NONE) {
-            gal_unlock_set_flag(&app->unlock, opt->flag_set);
-            (void)gal_unlock_store(&app->unlock);
-        }
+        set_run_flag(app, opt->flag_set);
         app->choice_sel = 0;
         advance_event(app);
     }
@@ -1414,6 +1432,7 @@ bool gal_app_init(gal_app_t *app)
     } else {
         (void)gal_progress_load(&app->progress);
         if (app->progress.valid) {
+            app->flags = app->progress.flags;
             ESP_LOGI(TAG, "找到上次进度:事件 %u 第 %u 页",
                      (unsigned)app->progress.event_index,
                      (unsigned)app->progress.page_index + 1);

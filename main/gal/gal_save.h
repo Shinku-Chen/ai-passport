@@ -16,6 +16,7 @@ typedef struct {
     uint16_t page_index;                   // 事件内的页
     char chapter[GAL_SAVE_CHAPTER_LEN];    // 章节名(槽位里显示)
     uint8_t reserved;
+    uint32_t flags;                        // 本周目剧情标记(不跨 NewGame)
 } gal_slot_t;
 
 typedef struct {
