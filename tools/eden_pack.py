@@ -165,8 +165,18 @@ class Source:
                       re.S).group(1))
         self.image_dir = os.path.join(common, "images")
         self.story_dir = os.path.join(common, "story")
-        gallery_path = os.path.join(self.root, "reports", "gallery-source.json")
-        self.gallery = json.load(open(gallery_path, encoding="utf-8")) if os.path.exists(gallery_path) else []
+        # The pack's 295 gallery groups include the pre-dedupe duplicate label
+        # `CG · ev_add02_up04` (same frame as `CG · ev_add02_up02`).  The
+        # post-dedupe `gallery-source.json` is a review artifact and would
+        # silently drop that label; a missing report must fail, never become
+        # an empty gallery.
+        gallery_path = os.path.join(self.root, "reports",
+                                    "gallery-source-before-dedupe.json")
+        if not os.path.exists(gallery_path):
+            raise SystemExit(
+                "missing tracked source report: " + gallery_path +
+                " (the packer needs reports/gallery-source-before-dedupe.json)")
+        self.gallery = json.load(open(gallery_path, encoding="utf-8"))
         self._atlas_cache = {}
 
     # -- images ------------------------------------------------------------

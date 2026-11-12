@@ -16,6 +16,10 @@ Checks
                        least one if/goto target crosses it
   4. counts            dialogue lines, speakers, distinct frames
   5. chapter order     catalog.chapters order == the pack's CHAP table
+  6. frame map         sorted union of camera-source and pre-dedupe gallery
+                       equals the pack FRAME count and every text frame index
+  7. gallery           pre-dedupe labels == the pack GAL table (295 groups,
+                       including CG - ev_add02_up04)
 
 Usage: EDEN_SOURCE=<eden-rw5 checkout> python3 tests/test_eden_source_audit.py
 """
@@ -28,9 +32,11 @@ import re
 import struct
 import sys
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
+import eden_source_map
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PACK = os.path.join(ROOT, "main", "eden_data", "eden_pack.bin")
-FRAME_MAP = os.path.join(ROOT, "build", "analysis", "eden_frame_map.json")
 
 SEC_TEXT, SEC_TXIDX, SEC_OPS, SEC_SCENE, SEC_IMAGE, SEC_FRAME, SEC_CHAP, SEC_GAL, SEC_BLOB, SEC_PATCH = range(10)
 OP_TEXT, OP_SET, OP_IF, OP_GOTO, OP_JUMP, OP_END = range(6)
@@ -168,11 +174,15 @@ def main() -> int:
     scenes = read_source_scenes(os.path.join(common, "story"))
     pack = Pack(open(PACK, "rb").read())
 
-    frame_map_path = FRAME_MAP
-    if not os.path.exists(frame_map_path):
-        print(f"缺画面对照表 {frame_map_path};请用 --frame-map 重新打包。", file=sys.stderr)
+    try:
+        frame_index, manifest = eden_source_map.build_frame_map(source)
+    except SystemExit as exc:
+        print(str(exc), file=sys.stderr)
         return 2
-    frame_index = json.load(open(frame_map_path, encoding="utf-8"))["frames"]
+    check(len(frame_index) == pack.count(SEC_FRAME),
+          f"独立源画面表 {len(frame_index)} != pack FRAME {pack.count(SEC_FRAME)}")
+    notes.append(f"frame map: {len(frame_index)} frames from " +
+                 ", ".join(report["path"] for report in manifest["reports"]))
 
     # 1) chunk 完整性:拼接后的指令数必须等于 catalog 声明。
     declared = {int(key): int(value["length"]) for key, value in catalog["scenes"].items()}
@@ -255,6 +265,18 @@ def main() -> int:
               f"章节 {index}: pack 场景 {scene} != catalog id {chapter['id']}")
         check(pack.text(name) == chapter["name"],
               f"章节 {index}: 名字 {pack.text(name)!r} != {chapter['name']!r}")
+
+    # 6) 鉴赏表:独立源报告（含 dedupe 前的重复标签）必须与 pack GAL 逐行一致。
+    expected_gallery = eden_source_map.build_gallery_groups(source, frame_index)
+    raw_gallery = pack.raw(SEC_GAL)
+    got_gallery = []
+    for index in range(pack.count(SEC_GAL)):
+        frame, group, label = struct.unpack_from("<HHH", raw_gallery, index * 6)
+        got_gallery.append((frame, group, pack.text(label)))
+    check(expected_gallery == got_gallery,
+          f"鉴赏表 {len(got_gallery)} 行与独立源 {len(expected_gallery)} 行不一致")
+    extra = [row for row in expected_gallery if row[2] == "CG · ev_add02_up04"]
+    check(len(extra) == 1, "独立源缺 pre-dedupe 标签 CG · ev_add02_up04")
 
     print(f"source ops: {total_ops}, dialogue lines: {text_ops}, "
           f"speakers: {len(speakers)}, frames referenced: {len(frames_used)}, "

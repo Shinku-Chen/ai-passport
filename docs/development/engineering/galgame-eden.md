@@ -235,3 +235,22 @@ Device tests: **NOT RUN**. Landscape orientation, real pagination/glyph coverage
 BSP key timing, on-device RAM watermark, JPEG decode cost, NVS durability across power loss,
 deep-sleep wake, and battery display all remain to be accepted on hardware. The static RAM accounting
 in §5b is not a pass result.
+
+### Independent source metadata
+
+The strict source gate builds its expected frame table from two tracked files
+in the pinned eden-rw5 source, never from the pack or a build-time map:
+
+- `reports/camera-source.json`: 8,860 text-op rows / 2,116 unique frames.
+- `reports/gallery-source-before-dedupe.json`: 2,341 gallery rows / 2,076
+  unique images, including the duplicate label `CG · ev_add02_up04`
+  (frame `f_875f65e14322ae714110`, pack frame index 1,091 / gallery group 261).
+
+The two sets union to 2,178 sorted frame ids, exactly the committed pack's
+FRAME count; all 8,860 text ops and all 295 gallery rows match. The
+post-dedupe `reports/gallery-source.json` removes that duplicate label
+(`reports/gallery-deduplication.json` lists it as the only removed group),
+so using it would produce 2,177 frames and a false 1,727-op mismatch. The
+packer now requires `gallery-source-before-dedupe.json` and fails loudly when
+a tracked report is missing; it never silently substitutes an empty gallery.
+`tools/eden_source_map.py` writes the same independent map for tests.

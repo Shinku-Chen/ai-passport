@@ -28,6 +28,9 @@ import os
 import struct
 import sys
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
+import eden_source_map
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PACK = os.path.join(ROOT, "main", "eden_data", "eden_pack.bin")
 FONTS = os.path.join(ROOT, "assets", "fonts", "gal_cjk_symbols.txt")
@@ -266,13 +269,13 @@ def check_decode(pack: Pack, frames_seen: set):
             camera.add(row.get("frame"))
     sample = plain[:6] + patched[:6] + [fid for fid in sorted(camera) if fid in frames_js][:6]
 
-    # 包内画面按"剧本引用顺序"编号,和源仓库的 frames 表顺序不同,所以需要构建期导出的
-    # 对照表(build/analysis/eden_frame_map.json,--frame-map 生成,不进固件)。
-    map_path = os.path.join(ROOT, "build", "analysis", "eden_frame_map.json")
-    if not os.path.exists(map_path):
-        print("  SKIP 解码对照:缺 build/analysis/eden_frame_map.json(用 --frame-map 重新打包)")
+    # 包内画面按排序后的 frame id 编号;由 pinned source 的两份 tracked report
+    # 独立生成,不读取包内 d 字段,也不依赖构建期临时 map。
+    try:
+        frame_map, _manifest = eden_source_map.build_frame_map(source_root)
+    except SystemExit as exc:
+        check(False, str(exc))
         return 0
-    frame_map = json.load(open(map_path, encoding="utf-8"))["frames"]
 
     compared = 0
     for fid in sample:

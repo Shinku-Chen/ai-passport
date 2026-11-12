@@ -211,3 +211,21 @@ Lead 侧证据(在本项目内,Worker 未改动):
 Device tests:**NOT RUN**。横屏方向、两档字号的实际分页与缺字、BSP 按键时序、真机 RAM 水位、
 JPEG 解码耗时、断电后的 NVS 持久性、深睡唤醒、电量显示都还待设备验收;§5b 的静态 RAM 账
 不作为通过结论。
+
+### 独立源元数据
+
+严格源审计不再使用 pack 推导或构建期临时 frame map，而是从 pinned
+eden-rw5 源里的两份 tracked 文件构建期望画面表：
+
+- `reports/camera-source.json`：8,860 条 text op / 2,116 个唯一 frame。
+- `reports/gallery-source-before-dedupe.json`：2,341 条鉴赏行 / 2,076 个
+  唯一 image，包含重复标签 `CG · ev_add02_up04`（frame
+  `f_875f65e14322ae714110`，pack frame index 1,091 / gallery group 261）。
+
+两者取并集排序后正好 2,178 个 frame，与 committed pack 的 FRAME 数一致；
+8,860 条 text op 与 295 行鉴赏全部匹配。post-dedupe 的
+`reports/gallery-source.json` 会删掉这个重复标签
+（`reports/gallery-deduplication.json` 记录它是唯一 removed group），
+用它只能得到 2,177 个 frame，并制造 1,727 条假 mismatch。packer 现在要求
+`gallery-source-before-dedupe.json`，缺 tracked report 时明确失败，不再静默
+使用空鉴赏表；`tools/eden_source_map.py` 为测试生成同一份独立 map。

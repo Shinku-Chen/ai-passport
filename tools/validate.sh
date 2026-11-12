@@ -13,10 +13,17 @@ run_static_checks() {
     local cc_bin
     local case_dir
     local case_log
+    local dead_strip_flag
     local passed=0
     local failed=0
     local skipped=0
     local skip_notes=()
+
+    # Apple ld does not accept --gc-sections; -dead_strip is the equivalent.
+    dead_strip_flag="-Wl,--gc-sections"
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        dead_strip_flag="-Wl,-dead_strip"
+    fi
 
     # 每个用例的输出、二进制都留在 build 内,不删:交付要能回看单条失败。
     case_dir="${repo_root}/build/logs/host-tests/$(date +%Y%m%d-%H%M%S)"
@@ -166,12 +173,12 @@ run_static_checks() {
     # 基线硬件自检 demo:靠 --gc-sections 丢掉引用 LVGL/ui_pixel 的 demo_enter。
     # GNU ld 会安静丢弃,LLD(Windows 的 zig 兜底)在链接期报未定义符号。
     if "${cc_bin}" -std=c11 -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \
-            tests/test_demo_audio_runtime.c -Wl,--gc-sections \
+            tests/test_demo_audio_runtime.c "${dead_strip_flag}" \
             -o "${case_dir}/probe_demo" >"${case_dir}/probe_demo.log" 2>&1; then
         for demo in audio low_power ble wifi; do
             run_case "demo_${demo}_runtime" "${cc_bin}" -std=c11 -Wall -Wextra -Werror \
                 -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \
-                "tests/test_demo_${demo}_runtime.c" -Wl,--gc-sections \
+                "tests/test_demo_${demo}_runtime.c" "${dead_strip_flag}" \
                 -o "${case_dir}/test_demo_${demo}_runtime"
             run_case "demo_${demo}_runtime_run" "${case_dir}/test_demo_${demo}_runtime"
         done
@@ -197,6 +204,7 @@ run_static_checks() {
 
     # eden 资源包 / 解码对照 / 字库覆盖 / 分页容量
     run_py eden_artifacts tests/test_eden_artifacts.py
+    run_py eden_source_map_tests tests/test_eden_source_map.py
     # 源 ⇄ 包逐条审计:必须对着源仓库跑。
     if [[ -n "${EDEN_SOURCE:-}" ]]; then
         case_log="${case_dir}/eden_source_audit.log"
