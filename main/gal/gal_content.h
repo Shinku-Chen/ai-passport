@@ -1,77 +1,75 @@
-// main/gal/gal_content.h —— 框架骨架的占位内容。
+// main/gal/gal_content.h —— 爱上火车 · 二六线（GalGame 框架内容层）。
 //
-// 骨架固件刻意不携带任何具体作品:这里只有一组演示用的占位对白与文案,
-// 用来驱动原型里的全部逻辑屏。接入真实作品时,把本文件替换为内容层
-// (或资源包读取层)即可,界面与交互保持不变。
+// 内容表由 tools/maitetsu_assets.py 从固定提交的 RW5 二六线素材生成，
+// 本文件只声明结构与作品级常量。
 //
-// 剧情锁:内容层只声明“条件”。永久 CG/章节/结局由 gal_unlock 维护；
-// 台词/选项用的周目标记由 gal_app.flags 维护并随存档/自动进度保存:
-//   台词  按 require_flag 决定是否出现(条件分支)
-//   选项  按 require_flag 决定是否可选,选中后写 flag_set
-//   CG    到达 unlock_event 时永久解锁
-//   章节  到达 unlock_event 时永久解锁; require_flag 可作周目附加条件
+// 本作是线性剧情：1,537 段对白、四章、一个结局，没有分支选项。框架的
+// 选项 / 周目标记机制保留（其他作品在用），这里不产生 CHOICE 事件。
+//
+// 剧情锁：永久 CG / 章节 / 结局由 gal_unlock 维护；台词 / 选项用的周目标记
+// 由 gal_app.flags 维护并随存档 / 自动进度保存。章节与回想入口是“试读”，
+// 只有完整走完四章才授予永久结局资格（见 gal_app.c 的 run_mask）。
 #pragma once
 
 #include "gal_unlock.h"
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
-// 骨架约定的剧情标记(作品可自行增删;最多 32 个)。
+// 框架约定的永久资格标记：由 gal_unlock.ending 派生，绝不写入周目标记。
 enum {
-    GAL_FLAG_CHOICE_A = 0,   // 选择了「追上去」
-    GAL_FLAG_CHOICE_B,       // 选择了「留在原地」
-    GAL_FLAG_CHOICE_C,       // 选择了「询问站务员」
-    GAL_FLAG_CHAPTER_2,      // 到达第二章
-    GAL_FLAG_CLEARED,        // 走过一次结局(永久资格,由 gal_unlock.ending 派生)
+    GAL_FLAG_CLEARED = 0,
 };
 
 // ---------------------------------------------------------------- 对白
 typedef struct {
     const char *speaker;   // NULL 或空串 = 旁白
-    const char *text;      // UTF-8 正文(一段 = 一屏,内部按行/页自动切分)
-    uint8_t require_flag;  // 需要该标记才出现;GAL_UNLOCK_NONE = 总是出现
-    const void *image;     // 该句的背景图(lv_image_dsc_t*);NULL = 程序绘制的渐变
-    const void *body;      // 该句的立绘(同上);NULL = 不显示立绘
+    const char *text;      // UTF-8 正文（一段 = 一屏，内部按行/页自动切分）
+    uint16_t scene;        // 媒体包场景下标；GAL_SCENE_NONE = 程序绘制的渐变
+    uint8_t require_flag;  // 需要该标记才出现；GAL_UNLOCK_NONE = 总是出现
+    const void *image;     // 兼容框架：直接背景图描述符；本作使用 scene
+    const void *body;      // 兼容框架：直接立绘描述符；本作使用 scene
 } gal_line_t;
+
+#define GAL_SCENE_NONE 0xFFFF
 
 // ---------------------------------------------------------------- 选项
 typedef struct {
     const char *label;
-    uint8_t flag_set;      // 选中后写入的标记;GAL_UNLOCK_NONE = 不写
-    uint8_t require_flag;  // 需要该标记才可选;GAL_UNLOCK_NONE = 无条件
+    uint8_t flag_set;
+    uint8_t require_flag;
 } gal_option_t;
 
 typedef struct {
-    const char *prompt;              // 选项前的最后一句台词(留在底部对话框)
+    const char *prompt;
     int count;
     const gal_option_t *options;
 } gal_choice_t;
 
 // ---------------------------------------------------------------- 剧情事件
-// 骨架的剧情就是一条占位事件序列:顺序读下来即是一个完整流程。
 typedef enum {
-    GAL_EV_LINE = 0,     // index = gal_lines 下标
-    GAL_EV_CHOICE,       // index = gal_choices 下标
-    GAL_EV_TRANSITION,   // index = gal_transitions 下标(章节过场)
-    GAL_EV_ENDING,       // index = gal_endings 下标
+    GAL_EV_LINE = 0,
+    GAL_EV_CHOICE,
+    GAL_EV_TRANSITION,
+    GAL_EV_ENDING,
 } gal_event_kind_t;
 
 typedef struct {
     unsigned char kind;
-    unsigned short index;     // 对白 / 选项 / 过场 / 结局的下标(uint16)
-    unsigned char flag_set;   // 到达该事件时写入的标记;GAL_UNLOCK_NONE = 不写
+    unsigned short index;     // 对白 / 选项 / 过场 / 结局的下标（uint16）
+    unsigned char flag_set;   // 到达该事件时写入的标记；GAL_UNLOCK_NONE = 不写
 } gal_event_t;
 
 typedef struct {
-    const char *chapter;    // 进度归属的章节名(存档页显示)
-    const char *eyebrow;    // 过场小标(CHAPTER 02)
-    const char *title;      // 过场标题
-    const char *subtitle;   // 过场副标题
+    const char *chapter;
+    const char *eyebrow;
+    const char *title;
+    const char *subtitle;
 } gal_transition_t;
 
 typedef struct {
-    const char *eyebrow;             // TRUE END
+    const char *eyebrow;
     const char *title;
     const char *body;
 } gal_ending_t;
@@ -79,19 +77,20 @@ typedef struct {
 // ---------------------------------------------------------------- 鉴赏室与章节
 typedef struct {
     const char *label;      // CG 01
-    const char *caption;    // 夜行列车 · 初遇
-    unsigned short unlock_event;   // 到达该事件解锁;GAL_EVENT_NONE = 初始解锁
-    const void *image;      // CG 图(lv_image_dsc_t*);NULL = 程序绘制的占位块
-    bool unlocked;          // 运行时填充:界面用(由 gal_unlock 状态换算)
+    const char *caption;    // 篇章 + 差分序号
+    unsigned short unlock_event;   // GAL_EVENT_NONE = 初始解锁
+    unsigned short media;   // 媒体包图像下标（全图，320x180 内居中）
+    bool unlocked;          // 运行时填充
+    const void *image;      // 运行时指向媒体描述符
 } gal_cg_t;
 
 typedef struct {
     const char *name;
     const char *summary;
     const char *progress;
-    unsigned short unlock_event;   // 到达该事件解锁;GAL_EVENT_NONE = 不依赖事件
-    uint8_t require_flag;   // 额外需要的标记;GAL_UNLOCK_NONE = 不需要
-    bool unlocked;          // 运行时填充:界面用
+    unsigned short unlock_event;   // 到达该事件永久解锁该章
+    uint8_t require_flag;
+    bool unlocked;          // 运行时填充
 } gal_chapter_t;
 
 typedef struct {
@@ -99,34 +98,30 @@ typedef struct {
     const char *value;
 } gal_about_row_t;
 
-// ---------------------------------------------------------------- CG 回想与音乐鉴赏
-// 回想:需要对应 CG 已解锁(等于“看过那一段”),从 event_index 重新开始演。
+// ---------------------------------------------------------------- CG 回想与音乐
 typedef struct {
-    const char *title;        // 场景名
-    const char *chapter;      // 所在章节(列表右侧显示)
+    const char *title;
+    const char *chapter;
     uint8_t cg_index;         // 需要该 CG 已解锁
-    unsigned short event_index;   // 从该事件开始重看
+    unsigned short event_index;   // 从该事件开始重看（试读，不计通关）
 } gal_recall_t;
 
-// 音乐:骨架不带音频资源,用方波按 notes 合成一段短旋律循环播放。
-// notes 是音高表下标(见 gal_music.c),GAL_NOTE_REST = 休止。
 #define GAL_NOTE_REST 0xFF
 
 typedef struct {
     const char *title;
-    const char *duration;     // 显示用时长(占位文本)
-    uint8_t cg_index;         // 需要该 CG 已解锁(听过那一段)
-    const uint8_t *notes;
+    const char *duration;     // 显示用时长
+    uint8_t cg_index;         // GAL_UNLOCK_NONE = 不需要 CG
+    const uint8_t *notes;     // 框架方波音源（本作用媒体包，保留字段）
     uint8_t note_count;
+    uint8_t media;            // 媒体包音轨下标（0 = 标题曲）
 } gal_track_t;
 
-// 作品信息(由作品配置替换)。
-#define GAL_CONTENT_TITLE    "未定作品"
-#define GAL_CONTENT_SUBTITLE "一段尚未写完的旅程"
-#define GAL_CONTENT_LOGO_SUB "GALGAME FRAMEWORK"
+#define GAL_CONTENT_TITLE    "爱上火车"
+#define GAL_CONTENT_SUBTITLE "二六线 · 全四章"
+#define GAL_CONTENT_LOGO_SUB "MAITETSU · NIIROKU"
 #define GAL_CONTENT_VERSION  "v0.1.0"
 
-// 标题页封面(可为 NULL)。
 extern const void *gal_content_title_image;
 
 extern const gal_line_t gal_content_lines[];
@@ -159,13 +154,10 @@ extern const int gal_content_recall_count;
 extern const gal_track_t gal_content_tracks[];
 extern const int gal_content_track_count;
 
-// 标题页菜单与游戏内快捷菜单(名称固定,可用状态由存档决定)。
 extern const char *const gal_content_title_menu[];
 extern const int gal_content_title_menu_count;
 extern const char *const gal_content_quick_menu[];
 extern const int gal_content_quick_menu_count;
-
-// 鉴赏室分类入口。
 extern const char *const gal_content_gallery_menu[];
 extern const int gal_content_gallery_menu_count;
 
@@ -176,7 +168,6 @@ enum {
     GAL_GALLERY_MUSIC,
 };
 
-// 标题页菜单项下标(供状态机使用)。
 enum {
     GAL_TITLE_MENU_NEW = 0,
     GAL_TITLE_MENU_CONTINUE,
@@ -186,7 +177,6 @@ enum {
     GAL_TITLE_MENU_ABOUT,
 };
 
-// 游戏内快捷菜单项下标。
 enum {
     GAL_MENU_RESUME = 0,
     GAL_MENU_SAVE,
@@ -196,17 +186,18 @@ enum {
     GAL_MENU_TITLE,
 };
 
-// 关于页正文(在页头标题栏下方滚动)。
 #define GAL_CONTENT_ABOUT \
-    "本固件是 GalGame 框架的骨架,不含任何具体作品内容:\n" \
-    "启动页、标题页、对话页、选项、菜单、存档、设置、\n" \
-    "历史、鉴赏室、章节、过场、结局与关于页都已经就位。\n" \
+    "本固件是《爱上火车》二六线的离线阅读版，不含原作其他路线。\n" \
     "\n" \
-    "剧情锁:台词与选项按剧情标记出现或可选,CG 与章节\n" \
-    "随剧情推进解锁,解锁记录与标记跨存档保存。\n" \
+    "范围：正和四十一年·小仓、御一夜旅行、小仓风暴、尾声\n" \
+    "四章，共 1,537 段、675 个场景、6 组 35 张 CG。\n" \
     "\n" \
-    "排版按框架规范:对话框贴底、每页固定行数、字号两档\n" \
-    "(16px / 20px),对话框透明度可在设置里调节。\n" \
+    "素材来源：xuanyide01/maitetsu-rw5（固定提交），\n" \
+    "原作 Lose，HIKARI FIELD 发行；文本、图像、标志与音乐\n" \
+    "的权利归各权利人所有，本项目只做离线移植。\n" \
     "\n" \
-    "接入真实作品时,替换 main/gal/gal_content.c 即可,\n" \
-    "界面与交互保持不变."
+    "操作：短按 OK / 上 / 下 均为推进正文；长按 OK 打开菜单；\n" \
+    "长按上快进（松手停），长按下切换自动阅读。\n" \
+    "\n" \
+    "存档：3 个手动槽位 + 自动进度；章节与 CG 回想属于试读，\n" \
+    "只有完整读完四章才记录永久通关。"

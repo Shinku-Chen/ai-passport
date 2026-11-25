@@ -59,3 +59,30 @@ Decoded 80-byte SHA-256:
 `fa7365671093ef449c5bdcfb4adb279e3d275f888109f50b6b2f21e9b96220d5`.
 This is a fuel-gauge profile, not a charging configuration or a generic profile
 for every 500 mAh cell; see the [hardware guide](../docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md#9-cw2017-fuel-gauge).
+
+## Maitetsu media pack
+
+[`maitetsu/`](maitetsu/) holds the generated media for the Niiroku reader, built from
+[`xuanyide01/maitetsu-rw5`](https://github.com/xuanyide01/maitetsu-rw5) at
+`9c008406853affe973ceb80f62128696054365e7` (input digest
+`082babe851a5efd6a4c6ab28bb4363fc1e8bf35448bea32466abe926ee8d07f2`). Do not edit
+these files by hand; regenerate them with the pinned checkout:
+
+```bash
+python tools/maitetsu_assets.py --source <maitetsu-rw5>
+python tools/maitetsu_assets.py --source <maitetsu-rw5> --check
+```
+
+- `maitetsu_media.bin` — 5,773,642 bytes, `MTMEDIA1`. 759 images (353 backgrounds,
+  335 composited patches, 35 CGs, 35 64×36 thumbnails, 1 title key visual) as 3,994
+  independent 30-row JPEG strips with shared quantisation/Huffman prefixes.
+  SHA-256 `29de5b56366a77c069f6d204806544729be30a5f82d0044343ec8e3474439665`.
+- `maitetsu_title.bin` — 585,588 bytes. The complete 283.88 s, 4 kHz mono title theme
+  as 4-bit IMA ADPCM in 4,436 independent blocks. SHA-256
+  `c746e291fa0c65382517eb26f8a4f7d4a15bdf369b1ccedceab3b1fe2478c9e0`.
+- `media_manifest.json` — source pin/digest, counts, quality settings and the hashes
+  above, regenerated together with the binaries.
+
+Text, artwork, logos and music remain with Lose, HIKARI FIELD and their rights
+holders; the repository's MIT license does not cover these assets. See
+[the port document](../docs/development/engineering/maitetsu-port.md).

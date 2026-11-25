@@ -55,3 +55,29 @@ BSP 在 `components/bsp/src/bsp_battery.c` 中嵌入这 80 字节，主机检查
 `fa7365671093ef449c5bdcfb4adb279e3d275f888109f50b6b2f21e9b96220d5`。
 这是电量计参数，不是充电配置，也不能通用于所有 500 mAh 电芯；详见
 [硬件指南](../docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.zh_CN.md#9-cw2017-电池计)。
+
+## 爱上火车媒体包（maitetsu）
+
+[`maitetsu/`](maitetsu/) 存放二六线阅读器的生成资源，来源是
+[`xuanyide01/maitetsu-rw5`](https://github.com/xuanyide01/maitetsu-rw5) 的
+`9c008406853affe973ceb80f62128696054365e7`（输入摘要
+`082babe851a5efd6a4c6ab28bb4363fc1e8bf35448bea32466abe926ee8d07f2`）。不要手改这些
+文件，用固定检出重新生成：
+
+```bash
+python tools/maitetsu_assets.py --source <maitetsu-rw5>
+python tools/maitetsu_assets.py --source <maitetsu-rw5> --check
+```
+
+- `maitetsu_media.bin` —— 5,773,642 字节，`MTMEDIA1`。759 张图像（353 张背景、
+  335 个合成补丁、35 张 CG、35 张 64×36 缩略图、1 张标题主视觉），切成 3,994 条独立的
+  30 行 JPEG 条带，量化表 / Huffman 表按质量档共享前缀。SHA-256
+  `29de5b56366a77c069f6d204806544729be30a5f82d0044343ec8e3474439665`。
+- `maitetsu_title.bin` —— 585,588 字节。完整 283.88 秒、4 kHz 单声道标题曲，4 位
+  IMA ADPCM，4,436 个独立块。SHA-256
+  `c746e291fa0c65382517eb26f8a4f7d4a15bdf369b1ccedceab3b1fe2478c9e0`。
+- `media_manifest.json` —— 源固定提交 / 摘要、数量、质量参数与上面两个哈希，和二进制
+  一起重新生成。
+
+文本、图像、标志与音乐的权利归 Lose、HIKARI FIELD 及各权利人所有，仓库的 MIT 许可
+不覆盖这些素材。详见[移植文档](../docs/development/engineering/maitetsu-port.zh_CN.md)。

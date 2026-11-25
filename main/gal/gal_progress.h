@@ -13,6 +13,8 @@ typedef struct {
     uint16_t event_index;
     uint16_t page_index;
     uint32_t flags;           // 本周目剧情标记
+    uint8_t run_mask;         // 本局实际走过的章节(结局资格)
+    uint8_t preview;          // 1 = 本局从章节/回想试读开始
 } gal_progress_t;
 
 // NVS 准备(失败时进度只在本次运行内有效)。

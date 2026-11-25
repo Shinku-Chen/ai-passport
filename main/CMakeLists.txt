@@ -1,4 +1,4 @@
-# GalGame 框架骨架:只编译框架应用的源码。
+# 《爱上火车》二六线：框架应用 + 媒体包。
 # baseline 的 demo_*.c / ui_pixel.c 仍留在仓库里(可切回硬件自检 demo),
 # 但不再参与本应用的构建,也不再注册到菜单。
 idf_component_register(
@@ -13,8 +13,15 @@ idf_component_register(
          "gal/gal_music.c"
          "gal/gal_ui.c"
          "gal/gal_app.c"
+         "gal/maitetsu_assets.c"
+         "gal/maitetsu_pack.c"
+         "gal/maitetsu_media.c"
+         "gal/maitetsu_media_embed.c"
     INCLUDE_DIRS "." "gal"
-    REQUIRES bsp lvgl esp_timer nvs_flash esp_hw_support
+    REQUIRES bsp lvgl esp_timer nvs_flash esp_hw_support esp_jpeg
+    # 场景 / CG 媒体包（6.3 MB，条带 JPEG）与标题曲（586 KB，IMA ADPCM）。
+    EMBED_FILES "../assets/maitetsu/maitetsu_media.bin"
+                "../assets/maitetsu/maitetsu_title.bin"
 )
 
 # 中文字体子集(assets/fonts 下由 tools/gal_font.py 生成;源字体不入库)。

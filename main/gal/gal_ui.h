@@ -1,12 +1,12 @@
-// main/gal/gal_ui.h —— 框架骨架的 LVGL 界面层（竖屏 240x320）。
+// main/gal/gal_ui.h —— GalGame 框架界面层（横屏 320x240）。
 //
-// 版面(框架规范,与原型 240x320 竖屏一致):
-//   画面区      y 0..209   :程序绘制的渐变背景
+// 版面（320x240）：
+//   画面区      y 0..179   : 媒体包场景（背景 + 已合成的立绘补丁，320x180 精确 16:9）
 //   名牌        对话框面板上沿外侧、左对齐
-//   对话框面板  y 210..319 :正文(贴底、可调透明度)
-// 全屏页面盖住整屏;启动页、标题页、对话页与过场、结局共用同一层背景。
+//   对话框面板  y 180..239 : 正文（贴底、可调透明度，16px 3 行 / 20px 2 行）
+// 全屏页面盖住整屏；启动页、标题页、对话页与过场、结局共用同一层背景。
 //
-// 本模块只负责“把给定的内容画出来”,页面切换与按键语义在 gal_app.c。
+// 本模块只负责“把给定的内容画出来”，页面切换与按键语义在 gal_app.c。
 #pragma once
 
 #include "gal_content.h"
@@ -15,24 +15,24 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define GAL_UI_W 240
-#define GAL_UI_H 320
+#define GAL_UI_W 320
+#define GAL_UI_H 240
 
-// 对话框面板:贴底 110px(框架竖屏规范:16px 档 5 行 / 20px 档 4 行)。
-#define GAL_PANEL_H 110
+// 对话框面板：贴底 60px（横屏规范：16px 档 3 行 / 20px 档 2 行）。
+#define GAL_PANEL_H 60
 #define GAL_PANEL_Y (GAL_UI_H - GAL_PANEL_H)
-#define GAL_TEXT_X 10
+#define GAL_TEXT_X 8
 #define GAL_TEXT_W (GAL_UI_W - 2 * GAL_TEXT_X)
 #define GAL_LINE_H_SMALL 20
 #define GAL_LINE_H_LARGE 24
-#define GAL_TEXT_LINES_SMALL 5
-#define GAL_TEXT_LINES_LARGE 4
-#define GAL_LIST_MAX_ROWS 32   // 大作品(章节 / 回想列表)需要更长
+#define GAL_TEXT_LINES_SMALL 3
+#define GAL_TEXT_LINES_LARGE 2
+#define GAL_LIST_MAX_ROWS 32   // 章节 / 回想列表需要更长
 #define GAL_TEXT_CAPACITY 1024
-#define GAL_CG_TILES 8
-#define GAL_PAGE_MODAL GAL_PAGE_COUNT   // 弹窗层:不在页面枚举里
+#define GAL_CG_TILES 8         // 4 列 x 2 行的缩略图页
+#define GAL_PAGE_MODAL GAL_PAGE_COUNT   // 弹窗层：不在页面枚举里
 
-// 全部逻辑屏(与原型 docs/design/galgame-ui-wireframes/prototype.html 对应)。
+// 全部逻辑屏（与原型 docs/design/galgame-ui-wireframes/prototype.html 对应）。
 typedef enum {
     GAL_PAGE_START = 0,     // 启动画面
     GAL_PAGE_TITLE,         // 标题页
@@ -111,8 +111,10 @@ typedef struct {
     lv_obj_t *brand_title;    // 启动页/标题页上的作品名
     lv_obj_t *brand_sub;      // 副标题
 
-    lv_obj_t *scene_img;      // 对话页背景图(可为空)
-    lv_obj_t *body_img;       // 立绘(可为空)
+    lv_obj_t *scene_bg;       // 对话页背景图(可为空)
+    lv_obj_t *scene_patch[2]; // 场景补丁（立绘 / 表情，已与背景合成）
+    uint16_t scene_shown;     // 已应用的场景下标（相同场景不重复 set_src）
+    bool scene_valid;         // scene_shown 是否有效
     lv_obj_t *title_img;      // 标题封面(可为空)
     lv_obj_t *cg_image;       // CG 全屏图
     lv_obj_t *tile_img[GAL_CG_TILES];   // 鉴赏室缩略图
@@ -124,6 +126,8 @@ typedef struct {
     lv_obj_t *battery;        // 右上角电量
     lv_obj_t *notice;         // 顶部提示(存读档等)
     lv_obj_t *mode_auto;      // “自动”指示(快进不另显示文字)
+    lv_obj_t *asset_error;    // 媒体包损坏/缺资源时的可见错误面板
+    lv_obj_t *asset_error_text;   // 该面板上的文字
 
     lv_obj_t *titles[GAL_PAGE_COUNT];   // 各页页头标题
     lv_obj_t *choice_box;               // 选项框
@@ -139,7 +143,7 @@ typedef struct {
     lv_obj_t *transition_title;
     lv_obj_t *transition_sub;
 
-    lv_obj_t *ending_eyebrow;           // 结局:TRUE END
+    lv_obj_t *ending_eyebrow;           // 结局:EPILOGUE
     lv_obj_t *ending_title;
     lv_obj_t *ending_body;
 
@@ -148,9 +152,9 @@ typedef struct {
     lv_obj_t *about_view;               // 关于正文的滚动容器
     lv_obj_t *about_text;
 
-    lv_obj_t *cg_tiles[GAL_CG_TILES];   // 鉴赏室缩略图
+    lv_obj_t *cg_tiles[GAL_CG_TILES];   // 鉴赏室缩略图格子
     lv_obj_t *cg_tiles_label[GAL_CG_TILES];
-    lv_obj_t *cg_index;                 // CG 浏览:CG 01 / 08
+    lv_obj_t *cg_index;                 // CG 浏览:CG 01 / 35
     lv_obj_t *cg_name;
     lv_obj_t *cg_caption;
 
@@ -181,13 +185,19 @@ void gal_ui_show_page(gal_ui_t *ui, gal_page_t page);
 // 启动页/标题页上的作品名与副标题。
 void gal_ui_set_brand(gal_ui_t *ui, const char *title, const char *subtitle);
 
-// 正文页与选项页。
+// 正文页与选项页。scene = 媒体包场景下标，GAL_SCENE_NONE = 程序绘制的渐变。
 void gal_ui_set_text(gal_ui_t *ui, const char *speaker, const char *page_text,
-                     uint32_t ms_per_char, const void *image, const void *body);
+                     uint32_t ms_per_char, uint16_t scene);
 void gal_ui_show_full_text(gal_ui_t *ui);
 bool gal_ui_typing(const gal_ui_t *ui);
 void gal_ui_set_choice(gal_ui_t *ui, const char *prompt, const gal_option_t *options,
                        int count, int selected);
+
+// 场景合成：背景 + 最多两个补丁（位置来自媒体包表）。
+void gal_ui_set_scene(gal_ui_t *ui, uint16_t scene);
+
+// 媒体包不可用时的可见错误（盖住画面区并阻止继续阅读）。
+void gal_ui_show_asset_error(gal_ui_t *ui, const char *text);
 
 // 自动阅读指示(快进只在视觉上变化,不显示文字)。
 void gal_ui_set_mode(gal_ui_t *ui, bool auto_play);
@@ -215,7 +225,7 @@ void gal_ui_set_footer(gal_ui_t *ui, gal_page_t page, const char *text);
 void gal_ui_set_chapter_info(gal_ui_t *ui, const char *text);
 void gal_ui_set_action_hint(gal_ui_t *ui, const char *text);
 
-// 鉴赏室与 CG 浏览。
+// 鉴赏室与 CG 浏览（一次最多 GAL_CG_TILES 个条目，由调用方分页）。
 void gal_ui_set_gallery(gal_ui_t *ui, const gal_cg_t *items, int count, int selected);
 void gal_ui_set_cg(gal_ui_t *ui, const char *index_text, const char *name,
                    const char *caption, const void *image);

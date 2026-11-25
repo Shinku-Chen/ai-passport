@@ -1,0 +1,55 @@
+{
+  "audio": {
+    "block_count": 4436,
+    "block_samples": 256,
+    "duration_preserved": true,
+    "pack_bytes": 585588,
+    "pack_sha256": "c746e291fa0c65382517eb26f8a4f7d4a15bdf369b1ccedceab3b1fe2478c9e0",
+    "payload_bytes": 585552,
+    "pcm_bytes": 2271040,
+    "sample_count": 1135520,
+    "seconds": 283.88,
+    "snr_db": 22.155,
+    "source_rate": 4000
+  },
+  "chapters": [
+    354,
+    345,
+    368,
+    470
+  ],
+  "gallery_cgs": 35,
+  "gallery_groups": 6,
+  "media": {
+    "art": [
+      320,
+      180
+    ],
+    "background_images": 353,
+    "band_rows": 30,
+    "bands": 3994,
+    "cg_images": 35,
+    "cg_thumbs": 35,
+    "format": "MTMEDIA1",
+    "images": 759,
+    "pack_bytes": 5773642,
+    "pack_sha256": "29de5b56366a77c069f6d204806544729be30a5f82d0044343ec8e3474439665",
+    "patch_images": 335,
+    "patch_instances": 335,
+    "prefixes": 4,
+    "quality": {
+      "background": 60,
+      "cg": 68,
+      "patch": 74,
+      "thumb": 74,
+      "title": 82
+    },
+    "title_image": 758,
+    "verified_strips": 3994
+  },
+  "paragraphs": 1537,
+  "scenes": 675,
+  "source_commit": "9c008406853affe973ceb80f62128696054365e7",
+  "source_digest": "082babe851a5efd6a4c6ab28bb4363fc1e8bf35448bea32466abe926ee8d07f2",
+  "source_repo": "https://github.com/xuanyide01/maitetsu-rw5"
+}

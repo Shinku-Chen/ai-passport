@@ -1,0 +1,8 @@
+dependencies:
+  # Keep the framework's validated LVGL release instead of resolving a newer
+  # one when this manifest is added to the project.
+  lvgl/lvgl: "9.5.0"
+  # Banded RGB565 JPEG decoding for the offline scene pack.
+  # The default ROM TJpgDec is RGB888-only and cannot decode into the
+  # bounded 320x30 strip buffer this application uses.
+  espressif/esp_jpeg: "1.3.1"

@@ -56,3 +56,11 @@
 - Updated software-design and project README references for the new documentation structure.
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
+
+## v1.0.0-maitetsu - 2026-11-25
+
+- Added the offline reader for the Niiroku route ported from the pinned RW5 watch release: four chapters, 1,537 paragraphs, 675 scenes, 35 CGs in six groups, and one ending.
+- Added the three-key reading flow: short OK/UP/DOWN advance (a press while typing completes the page and advances), long OK opens the in-game menu, long UP fast-forwards to the next sentence and stops on release, long DOWN toggles auto-play.
+- Added three manual save slots plus automatic progress, in-game history, 16/20 px text sizes, and the gallery entries for CGs, recollections, chapters and the title track.
+- Chapter and recollection entries are explicit preview reads: they keep their reading position across save/load but never grant the ending; only a New Game run that covers all four chapters records it.
+- Known limits: only the four chapters present in the RW5 watch port are included, not every route of the original; the story is linear with no choices; the title theme is the complete source track and is looped, not re-recorded. Device checks covered fast-forward and one complete title-theme pass; audio quality, long soak and power-loss behaviour are not certified.

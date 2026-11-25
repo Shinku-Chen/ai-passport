@@ -10,6 +10,7 @@
 #include "gal_content.h"
 #include "gal_music.h"
 #include "gal_text.h"
+#include "maitetsu_media.h"
 
 #include "esp_log.h"
 #include "lvgl.h"
@@ -19,9 +20,8 @@
 
 static const char *TAG = "gal";
 
-// 快进:按住“上”期间每 180ms 推进一步。自动阅读:每句打完后再等 900ms;
-// 章节过场自动停留 1600ms 后继续,不打断自动。
-#define GAL_FAST_FORWARD_MS 180u
+// 快进:按住“上”期间每个输入拍(50ms)推进一句,不等打字机/自动/句内分页。
+// 自动阅读:每句打完后再等 900ms;章节过场自动停留 1600ms 后继续,不打断自动。
 #define GAL_AUTO_ADVANCE_MS 900u
 #define GAL_AUTO_TRANSITION_MS 1600u
 // 自动进度最多每 2 秒落盘一次:NVS 擦写寿命有限,而且不需要更实时。
@@ -53,6 +53,54 @@ static void set_run_flag(gal_app_t *app, uint8_t flag)
 {
     if (flag == GAL_UNLOCK_NONE || flag == GAL_FLAG_CLEARED) return;
     app->flags = gal_flags_set(app->flags, flag);
+}
+
+// ---------------------------------------------------------------- 媒体失败
+// 条带 CRC / 解码失败发生在 LVGL 任务里。收口分两步：
+//   settle  不需要锁：关掉阅读资格（绝不恢复），记下原因；
+//   submit  需要已持有 LVGL 锁：把错误层真正画出来。
+// “停止推进”和“错误层已提交”是两件事：第一次拿不到锁时保持未提交，
+// 由下一次 tick 重试，直到成功；绝不因为重试而恢复 media_ok。
+static void settle_media_fault(gal_app_t *app)
+{
+    if (!app->media_ok || !maitetsu_media_faulted()) return;
+    app->media_ok = false;
+    snprintf(app->media_error_text, sizeof(app->media_error_text), "%s",
+             maitetsu_media_fault_text());
+    ESP_LOGE(TAG, "媒体解码失败: %s", app->media_error_text);
+}
+
+static void submit_media_error_locked(gal_app_t *app)
+{
+    if (app->error_shown || app->media_ok) return;
+    static char text[112];
+    const char *reason = app->media_error_text[0] ? app->media_error_text
+                                                  : maitetsu_media_error();
+    snprintf(text, sizeof(text), "资源损坏，无法继续\n%s", reason);
+    gal_ui_show_asset_error(&app->ui, text);
+    app->error_shown = true;
+}
+
+// 需要已持有 LVGL 锁：立即停止阅读并提交错误层。
+static void fail_media_locked(gal_app_t *app, const char *reason)
+{
+    if (app->media_ok) {
+        app->media_ok = false;
+        snprintf(app->media_error_text, sizeof(app->media_error_text), "%s", reason);
+        ESP_LOGE(TAG, "媒体不可用: %s", reason);
+    }
+    submit_media_error_locked(app);
+}
+
+// 已报告的资源失败必须挡住所有“推进正文/开始快进/自动推进/过场/选项执行”，
+// 否则会跳过一段没有成功显示的正文，甚至从最后一句直接进结局。
+static bool reading_blocked(gal_app_t *app, const gal_key_t *key)
+{
+    if (app->media_ok) return false;
+    if (key->ev == BSP_BTN_RELEASE || key->ev == BSP_BTN_PRESS) return false;
+    // 菜单 / 返回 / 存档等离开阅读页的按键仍然允许，只挡推进类动作。
+    if (key->btn == BSP_BTN_OK && key->ev == BSP_BTN_LONG) return false;
+    return true;
 }
 
 // 事件的可见性:条件台词只有满足标记才出现。
@@ -95,7 +143,7 @@ static void unlock_visit(gal_app_t *app)
     const gal_unlock_t before = app->unlock;
 
     for (int i = 0; i < gal_content_cg_count; ++i) {
-        if (gal_content_cgs[i].unlock_event == ev) gal_unlock_grant_cg(&app->unlock, (uint8_t)i);
+        if (gal_content_cgs[i].unlock_event == ev) gal_unlock_grant_cg(&app->unlock, (uint16_t)i);
     }
     for (int i = 0; i < gal_content_chapter_count; ++i) {
         if (gal_content_chapters[i].unlock_event == ev) {
@@ -103,8 +151,17 @@ static void unlock_visit(gal_app_t *app)
         }
     }
     set_run_flag(app, event->flag_set);
+    const uint8_t full_run_mask = (uint8_t)((1u << gal_content_chapter_count) - 1u);
+    app->ending_preview = false;
     if (event->kind == GAL_EV_ENDING) {
-        gal_unlock_grant_ending(&app->unlock, event->index);
+        // 章节 / 回想入口是“试读”：即使从第一章试读读到结尾，也不是正式周目。
+        // 只有 New Game 开始、且本局真的走过全部四章，才记录永久结局。
+        const bool formal_run = !app->preview && app->run_mask == full_run_mask;
+        if (formal_run) {
+            gal_unlock_grant_ending(&app->unlock, event->index);
+        } else {
+            app->ending_preview = true;
+        }
     }
 
     // 只在真的变了时才写 NVS(NVS 擦写寿命有限)。
@@ -128,14 +185,14 @@ static const char *speed_label(const gal_app_t *app)
     return LABEL[idx];
 }
 
-// 竖屏排版(框架规范):16px 档 13 字/行 × 5 行,20px 档 10 字/行 × 4 行。
+// 横屏排版:304px 正文宽 => 16px 档 19 字/行 × 3 行,20px 档 15 字/行 × 2 行。
 static void layout_for(const gal_app_t *app, int *units_per_line, int *lines_per_page)
 {
     if (app->settings.font_large) {
-        *units_per_line = 20;
+        *units_per_line = 30;
         *lines_per_page = GAL_TEXT_LINES_LARGE;
     } else {
-        *units_per_line = 26;
+        *units_per_line = 38;
         *lines_per_page = GAL_TEXT_LINES_SMALL;
     }
 }
@@ -169,11 +226,10 @@ static const char *chapter_name_at(int event_index)
     return name;
 }
 
-// 某章节的第一个事件(章节页从这里开始)。
+// 某章节的第一个事件(章节页从这里开始)。chapter 从 0 起：每章以过场事件开头。
 static int chapter_first_event(int chapter)
 {
-    if (chapter <= 0) return 0;
-    int seen = 0;
+    int seen = -1;
     for (int i = 0; i < gal_content_event_count; ++i) {
         if (gal_content_events[i].kind == GAL_EV_TRANSITION) {
             if (++seen == chapter) return i;
@@ -199,26 +255,37 @@ static void enter_event(gal_app_t *app)
     if (app->event_index < 0 || app->event_index >= gal_content_event_count) {
         app->event_index = gal_content_event_count - 1;
     }
+    const gal_event_t *event = &gal_content_events[app->event_index];
+    // 走到某一章的过场 = 本局真的走过这一章（结局资格按此累计）。
+    if (event->kind == GAL_EV_TRANSITION && event->index < 8) {
+        app->run_mask |= (uint8_t)(1u << event->index);
+    }
     unlock_visit(app);   // 到这里就算看过:解锁 CG / 章节并写入事件标记
     // 自动进度:记下当前事件与页,继续游戏就从这里接上。
     app->progress.valid = 1;
     app->progress.event_index = (uint16_t)app->event_index;
     app->progress.page_index = (uint16_t)app->page_index;
     app->progress.flags = app->flags;
+    app->progress.run_mask = app->run_mask;
+    app->progress.preview = app->preview ? 1 : 0;
     app->progress_dirty = true;
     app->progress_accum_ms = 0;
-    app->page = event_page(&gal_content_events[app->event_index]);
-    // 快进碰到选项、过场或结局就停下,把操作交回给玩家(render_page 会同步指示);
-    // 自动阅读不解除,过场自己会走过去,所以计时从头开始。
-    if (app->page != GAL_PAGE_GAME) {
+    app->page = event_page(event);
+    // 快进只停在需要玩家确认的页面（选项 / 结局）；过场继续推进。
+    // 自动阅读在过场里自己走，所以计时从头开始。
+    if (app->page != GAL_PAGE_GAME && app->page != GAL_PAGE_TRANSITION) {
         app->fast_forward = false;
-        app->auto_accum_ms = 0;
     }
+    if (app->page != GAL_PAGE_GAME) app->auto_accum_ms = 0;
     render_page(app);
 }
 
 static void advance_event(gal_app_t *app)
 {
+    if (!app->media_ok) {
+        show_notice(app, "资源损坏，无法继续");
+        return;
+    }
     // 跳过条件不满足的台词(分支的另一半)。
     int next = app->event_index + 1;
     while (next < gal_content_event_count && !event_visible(app, next)) next++;
@@ -246,8 +313,8 @@ static void show_line(gal_app_t *app, int line_index)
     if (line_index < 0 || line_index >= gal_content_line_count) return;
     const gal_line_t *line = &gal_content_lines[line_index];
 
-    int units = 26;
-    int lines = 5;
+    int units = 38;
+    int lines = 3;
     layout_for(app, &units, &lines);
 
     uint32_t offsets[GAL_TEXT_MAX_PAGES + 1];
@@ -266,10 +333,15 @@ static void show_line(gal_app_t *app, int line_index)
     memcpy(page_text, line->text + begin, len);
     page_text[len] = '\0';
 
+    // 场景引用必须能在媒体包里解析，否则给出可见错误而不是留在旧画面。
+    if (line->scene != GAL_SCENE_NONE && app->media_ok &&
+        !maitetsu_media_scene(line->scene)) {
+        fail_media_locked(app, "场景资源损坏");
+        show_notice(app, "资源损坏");
+    }
     // 快进时直接整页显示,不再走打字机。
     gal_ui_set_text(&app->ui, line->speaker, page_text,
-                    app->fast_forward ? 0 : speed_ms(app),
-                    line->image, line->body);
+                    app->fast_forward ? 0 : speed_ms(app), line->scene);
     gal_ui_set_chapter(&app->ui, chapter_name_at(app->event_index));
     app->shown_line = line_index;
     app->shown_page = app->page_index;
@@ -286,14 +358,25 @@ static void show_line(gal_app_t *app, int line_index)
 // 推进一句(打字中先全显;页内翻页优先,再前进到下一个事件)。
 static void advance_reading(gal_app_t *app, bool fast)
 {
+    if (!app->media_ok) {
+        // 资源不可用时不允许推进到新的一段，旧工作区状态也不会被“半成功”污染。
+        show_notice(app, "资源损坏，无法继续");
+        return;
+    }
     const gal_event_t *ev = &gal_content_events[app->event_index];
     if (ev->kind != GAL_EV_LINE) {
         advance_event(app);
         return;
     }
-    if (!fast && gal_ui_typing(&app->ui)) {
-        gal_ui_show_full_text(&app->ui);
+    if (fast) {
+        // 用户契约:快进是“跳到下一句”,跳过当前句剩余分页;短按仍逐页推进。
+        advance_event(app);
         return;
+    }
+    if (!fast && gal_ui_typing(&app->ui)) {
+        // 用户要求：短按在打字状态也推进到下一句。先补全当前页（历史/正文不丢），
+        // 同一次按键继续执行一个分页单元的推进，不等第二次按键。
+        gal_ui_show_full_text(&app->ui);
     }
     if (app->page_index + 1 < app->page_count) {
         app->page_index++;
@@ -312,6 +395,8 @@ static void do_save(gal_app_t *app, int slot)
     s->event_index = (uint16_t)app->event_index;
     s->page_index = (uint16_t)app->page_index;
     s->flags = app->flags;
+    s->run_mask = app->run_mask;
+    s->preview = app->preview ? 1 : 0;
     snprintf(s->chapter, sizeof(s->chapter), "%s", chapter_name_at(app->event_index));
     if (!gal_save_store(&app->save)) {
         show_notice(app, "保存失败");
@@ -329,9 +414,16 @@ static void do_load(gal_app_t *app, int slot)
         show_notice(app, "空槽位");
         return;
     }
+    if (s->event_index >= gal_content_event_count) {
+        // 长度/版本都对但字段越界：不把坏记录应用到当前运行状态。
+        show_notice(app, "存档损坏");
+        return;
+    }
     app->event_index = s->event_index;
     app->page_index = s->page_index;
     app->flags = s->flags;
+    app->run_mask = s->run_mask;
+    app->preview = s->preview != 0;
     app->shown_line = -1;
     app->choice_sel = 0;
     enter_event(app);
@@ -356,6 +448,9 @@ static void start_new_game(gal_app_t *app)
     app->event_index = 0;
     app->page_index = 0;
     app->flags = 0;                       // 周目 flag 不跨 NewGame
+    app->run_mask = 0;                    // 结局资格按本局实际走过的章节累计
+    app->preview = false;                 // New Game 是正式周目
+    app->ending_preview = false;
     gal_progress_clear(&app->progress);   // 新游戏不沿用上次进度
     enter_event(app);
 }
@@ -497,7 +592,7 @@ static void fill_chapters(gal_app_t *app)
     static char info[192];
     snprintf(info, sizeof(info), "%s\n%s\n%s", c->name, c->summary, c->progress);
     gal_ui_set_chapter_info(&app->ui, info);
-    gal_ui_set_action_hint(&app->ui, "单路线作品可省略此页");
+    gal_ui_set_action_hint(&app->ui, "章节入口为试读，不计入通关");
 }
 
 static void fill_about(gal_app_t *app)
@@ -593,24 +688,37 @@ static void fill_cg(gal_app_t *app)
     const gal_cg_t *cg = &gal_content_cgs[app->cg_sel];
     char index_text[24];
     snprintf(index_text, sizeof(index_text), "%s / %02d", cg->label, gal_content_cg_count);
-    gal_ui_set_cg(&app->ui, index_text, cg->caption, "", cg->image);
+    const lv_image_dsc_t *image = maitetsu_media_cg((uint16_t)app->cg_sel);
+    gal_ui_set_cg(&app->ui, index_text, cg->caption, "", image);
 }
 
 // 鉴赏室缩略图:解锁状态由剧情锁的观看记录换算;未解锁只显示问号。
+// 35 张 CG 分页浏览：每页 8 张，超过旧框架 32 位上限的 33..35 也能显示。
 static void fill_gallery(gal_app_t *app)
 {
     static gal_cg_t items[GAL_CG_TILES];
-    static char footer[32];
-    int count = gal_content_cg_count;
+    static char footer[64];
+    if (gal_content_cg_count <= 0) {
+        gal_ui_set_gallery(&app->ui, NULL, 0, 0);
+        return;
+    }
+    const int pages = (gal_content_cg_count + GAL_CG_TILES - 1) / GAL_CG_TILES;
+    int page = app->cg_sel / GAL_CG_TILES;
+    if (page >= pages) page = pages - 1;
+    if (page < 0) page = 0;
+    const int first = page * GAL_CG_TILES;
+    int count = gal_content_cg_count - first;
     if (count > GAL_CG_TILES) count = GAL_CG_TILES;
     int unlocked = 0;
     for (int i = 0; i < count; ++i) {
-        items[i] = gal_content_cgs[i];
-        items[i].unlocked = cg_unlocked(app, i);
+        items[i] = gal_content_cgs[first + i];
+        items[i].unlocked = cg_unlocked(app, first + i);
         if (items[i].unlocked) unlocked++;
+        items[i].image = (const void *)maitetsu_media_cg_thumb((uint16_t)(first + i));
     }
-    gal_ui_set_gallery(&app->ui, items, count, app->cg_sel);
-    snprintf(footer, sizeof(footer), "已解锁 %d / %d", unlocked, count);
+    gal_ui_set_gallery(&app->ui, items, count, app->cg_sel - first);
+    snprintf(footer, sizeof(footer), "第 %d/%d 页 · 已解锁 %d/%d 张",
+             page + 1, pages, unlocked, gal_content_cg_count);
     gal_ui_set_footer(&app->ui, GAL_PAGE_CG_LIST, footer);
 }
 
@@ -728,6 +836,8 @@ static void render_page(gal_app_t *app)
         if (ev->kind != GAL_EV_ENDING) return;
         const gal_ending_t *ending = &gal_content_endings[ev->index];
         gal_ui_set_ending(&app->ui, ending->eyebrow, ending->title, ending->body);
+        // 试读到这里时明确告诉玩家：结局看到了，但没有记录通关。
+        if (app->ending_preview) show_notice(app, "试读结局：未记录通关");
         return;
     }
     case GAL_PAGE_ABOUT:
@@ -771,6 +881,13 @@ static void handle_title(gal_app_t *app, const gal_key_t *key)
     }
     if (key->ev != BSP_BTN_CLICK || key->btn != BSP_BTN_OK) return;
 
+    // 资源不可用时不要开始新的阅读（会立刻停在错误层），但设置/鉴赏/关于仍可用。
+    if (!app->media_ok &&
+        (app->title_sel == GAL_TITLE_MENU_NEW || app->title_sel == GAL_TITLE_MENU_CONTINUE ||
+         app->title_sel == GAL_TITLE_MENU_LOAD)) {
+        show_notice(app, "资源损坏，无法开始阅读");
+        return;
+    }
     switch (app->title_sel) {
     case GAL_TITLE_MENU_NEW:
         start_new_game(app);
@@ -782,6 +899,8 @@ static void handle_title(gal_app_t *app, const gal_key_t *key)
             return;
         }
         app->flags = app->progress.flags;   // 周目标记以自动进度为准
+        app->run_mask = app->progress.run_mask;
+        app->preview = app->progress.preview != 0;
         app->event_index = app->progress.event_index;
         app->page_index = app->progress.page_index;
         app->shown_line = -1;
@@ -810,10 +929,18 @@ static void handle_title(gal_app_t *app, const gal_key_t *key)
 
 static void handle_game(gal_app_t *app, const gal_key_t *key)
 {
-    // 短按(确定/上/下任意一个):下一句(打字中先全显)。
+    if (reading_blocked(app, key)) {
+        show_notice(app, "资源损坏，无法继续");
+        return;
+    }
+    // 短按(确定/上/下任意一个):推进正文。用户在打字/自动状态下的这次操作
+    // 必须生效：打字中先补全当前页(不丢正文)，再按进入下一句；自动模式保持。
     if (key->ev == BSP_BTN_CLICK &&
         (key->btn == BSP_BTN_OK || key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
-        app->fast_forward = false;
+        if (app->fast_forward) {
+            app->fast_forward = false;
+        }
+        app->auto_accum_ms = 0;
         advance_reading(app, false);
         return;
     }
@@ -824,20 +951,7 @@ static void handle_game(gal_app_t *app, const gal_key_t *key)
         goto_page(app, GAL_PAGE_MENU);
         return;
     }
-    // 长按上:快进,松开停(快进不显示文字提示)。
-    if (key->btn == BSP_BTN_UP) {
-        if (key->ev == BSP_BTN_LONG) {
-            app->fast_forward = true;
-            app->ff_accum_ms = 0;
-            gal_ui_show_full_text(&app->ui);
-            return;
-        }
-        if (key->ev == BSP_BTN_RELEASE) {
-            app->fast_forward = false;
-            return;
-        }
-    }
-    // 长按下:自动阅读开关(任意键停止,不另做提示)。
+    // 长按下:自动阅读开关（只做切换；短按仍然推进，不会被吞掉）。
     if (key->btn == BSP_BTN_DOWN && key->ev == BSP_BTN_LONG) {
         app->settings.auto_play = app->settings.auto_play ? 0 : 1;
         gal_settings_store(&app->settings);
@@ -867,6 +981,10 @@ static void handle_choice(gal_app_t *app, const gal_key_t *key)
         return;
     }
     if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
+        if (!app->media_ok) {
+            show_notice(app, "资源损坏，无法继续");
+            return;
+        }
         const gal_option_t *opt = &choice->options[app->choice_sel];
         // 剧情锁:条件不满足的选项不能选。
         if (!requirement_met(app, opt->require_flag)) {
@@ -1084,7 +1202,7 @@ static void handle_cg_list(gal_app_t *app, const gal_key_t *key)
     }
     if (key->ev == BSP_BTN_CLICK && (key->btn == BSP_BTN_UP || key->btn == BSP_BTN_DOWN)) {
         move_selection(&app->cg_sel, gal_content_cg_count, key->btn == BSP_BTN_UP ? -1 : 1);
-        gal_ui_set_gallery(&app->ui, gal_content_cgs, gal_content_cg_count, app->cg_sel);
+        fill_gallery(app);
         return;
     }
     if (key->ev == BSP_BTN_CLICK && key->btn == BSP_BTN_OK) {
@@ -1113,11 +1231,21 @@ static void handle_chapter(gal_app_t *app, const gal_key_t *key)
             show_notice(app, "章节未解锁");
             return;
         }
+        if (!app->media_ok) {
+            show_notice(app, "资源损坏，无法开始试读");
+            return;
+        }
+        // 章节鉴赏是试读：本局只“走过”这一章，结局资格不会因此满足。
         app->event_index = chapter_first_event(app->chapter_sel);
         app->page_index = 0;
         app->shown_line = -1;
         app->history_count = 0;
+        app->flags = 0;
+        app->run_mask = (uint8_t)(1u << app->chapter_sel);
+        app->preview = true;              // 章节入口一律试读
+        app->ending_preview = false;
         enter_event(app);
+        show_notice(app, "试读：不计通关");
     }
 }
 
@@ -1125,6 +1253,10 @@ static void handle_transition(gal_app_t *app, const gal_key_t *key)
 {
     // 过场没有多余的“继续”按钮:任意短按进入下一段剧情。
     if (key->ev == BSP_BTN_CLICK) {
+        if (!app->media_ok) {
+            show_notice(app, "资源损坏，无法继续");
+            return;
+        }
         advance_event(app);
     }
 }
@@ -1178,12 +1310,26 @@ static void handle_recall(gal_app_t *app, const gal_key_t *key)
     if (s_recall_shown <= 0) return;
 
     // 回想:直接回到那一段的事件,重新演一遍。
+    if (!app->media_ok) {
+        show_notice(app, "资源损坏，无法开始试读");
+        return;
+    }
     const int index = s_recall_map[app->recall_sel];
     app->event_index = gal_content_recalls[index].event_index;
     app->page_index = 0;
     app->shown_line = -1;
+    app->history_count = 0;
+    app->flags = 0;
+    // 回想同样只是试读：重置本局覆盖面，只保留被回看的那一章。
+    app->run_mask = 0;
+    app->preview = true;                  // 回想入口一律试读
+    if (app->event_index < gal_content_event_count &&
+        gal_content_events[app->event_index].kind == GAL_EV_TRANSITION) {
+        app->run_mask = (uint8_t)(1u << gal_content_events[app->event_index].index);
+    }
+    app->ending_preview = false;
     enter_event(app);
-    show_notice(app, "回想");
+    show_notice(app, "试读：不计通关");
 }
 
 static void handle_music(gal_app_t *app, const gal_key_t *key)
@@ -1239,6 +1385,25 @@ static void handle_modal(gal_app_t *app, const gal_key_t *key)
     if (from == GAL_PAGE_TITLE) goto_page(app, GAL_PAGE_TITLE);
 }
 
+// ---------------------------------------------------------------- 快进
+// 长按上键在任何阅读页面都立即开始快进：过场直接翻过去，正文立即推进一句。
+// 松手立刻停；到选项 / 结局时 enter_event 已经清掉快进。
+static void start_fast_forward(gal_app_t *app)
+{
+    if (!app->media_ok) {
+        show_notice(app, "资源损坏，无法继续");
+        return;
+    }
+    app->fast_forward = true;
+    app->auto_accum_ms = 0;
+    if (app->page == GAL_PAGE_TRANSITION) {
+        advance_event(app);
+        return;
+    }
+    gal_ui_show_full_text(&app->ui);
+    advance_reading(app, true);
+}
+
 // ---------------------------------------------------------------- 入口
 void gal_app_key(gal_app_t *app, const gal_key_t *key)
 {
@@ -1259,6 +1424,11 @@ void gal_app_key(gal_app_t *app, const gal_key_t *key)
         return;
     }
 
+    // 已报告的解码失败必须在解释这次按键之前收口：input_task 先送按键再 tick，
+    // 所以不能只靠 tick 阻断。这里已持有 LVGL 锁，直接提交错误层。
+    settle_media_fault(app);
+    if (!app->media_ok) submit_media_error_locked(app);
+
     // 弹窗优先:它盖在当前页面上。
     if (app->modal != GAL_MODAL_NONE) {
         handle_modal(app, key);
@@ -1266,14 +1436,15 @@ void gal_app_key(gal_app_t *app, const gal_key_t *key)
         return;
     }
 
-    // 自动阅读中按任意键:退出自动阅读(右上角的“自动”指示会隐藏),并吃掉这次按键。
-    // PRESS/RELEASE 不算“按键”:否则下键长按进入自动后,松手就会把它关掉。
-    if (app->auto_mode && key->ev != BSP_BTN_PRESS && key->ev != BSP_BTN_RELEASE) {
-        app->auto_mode = false;
-        app->auto_accum_ms = 0;
-        app->settings.auto_play = 0;
-        gal_settings_store(&app->settings);
-        gal_ui_set_mode(&app->ui, false);
+    // 快进入口与出口对阅读页 / 过场页统一处理（长按只做长按动作）。
+    if (key->btn == BSP_BTN_UP && key->ev == BSP_BTN_LONG &&
+        (app->page == GAL_PAGE_GAME || app->page == GAL_PAGE_TRANSITION)) {
+        start_fast_forward(app);
+        bsp_lvgl_unlock();
+        return;
+    }
+    if (key->btn == BSP_BTN_UP && key->ev == BSP_BTN_RELEASE) {
+        app->fast_forward = false;
         bsp_lvgl_unlock();
         return;
     }
@@ -1305,22 +1476,37 @@ void gal_app_key(gal_app_t *app, const gal_key_t *key)
 void gal_app_tick(gal_app_t *app, uint32_t elapsed_ms)
 {
     if (!app) return;
+    settle_media_fault(app);
+    if (!app->media_ok && !app->error_shown) {
+        // 首次错误屏拿锁失败：保持“未提交”，下一拍继续尝试；media_ok 不恢复。
+        if (bsp_lvgl_lock(100)) {
+            submit_media_error_locked(app);
+            bsp_lvgl_unlock();
+        }
+    }
     app->idle_ms += elapsed_ms;
 
-    if (app->fast_forward && app->page == GAL_PAGE_GAME) {
-        app->ff_accum_ms += elapsed_ms;
-        if (app->ff_accum_ms >= GAL_FAST_FORWARD_MS) {
-            app->ff_accum_ms = 0;
-            if (bsp_lvgl_lock(100)) {
+    // 快进：每个输入拍最多推进一句（跳过当前句剩余分页），不等打字机、
+    // 不等自动间隔。输入任务 50ms 一拍，约 20 句/秒；按拍推进是有界的，
+    // 不会因为卡了一拍就把欠下的推进一口气补完。
+    // 到选项 / 结局 / 其他确认页面时 enter_event 已把快进停掉。
+    if (app->fast_forward &&
+        (app->page == GAL_PAGE_GAME || app->page == GAL_PAGE_TRANSITION)) {
+        if (bsp_lvgl_lock(100)) {
+            if (app->page == GAL_PAGE_TRANSITION) {
+                advance_event(app);
+            } else {
                 advance_reading(app, true);
-                bsp_lvgl_unlock();
             }
+            bsp_lvgl_unlock();
         }
+        // 按住快进期间不算空闲：不能读到一半先调暗/熄屏。
+        app->idle_ms = 0;
     }
 
     // 自动阅读:当前页打完之后才开始计时,每 900ms 推进一步;
-    // 章节过场停留固定时长后自动继续(自动模式不解除)。
-    if (app->auto_mode && app->page == GAL_PAGE_GAME) {
+    // 章节过场停留固定时长后自动继续(自动模式不解除)。快进期间不叠加自动。
+    if (!app->fast_forward && app->auto_mode && app->page == GAL_PAGE_GAME) {
         if (gal_ui_typing(&app->ui)) {
             app->auto_accum_ms = 0;
         } else {
@@ -1335,7 +1521,7 @@ void gal_app_tick(gal_app_t *app, uint32_t elapsed_ms)
         }
         // 自动阅读期间不算空闲:不调暗、不息屏、不进 deep sleep。
         app->idle_ms = 0;
-    } else if (app->auto_mode && app->page == GAL_PAGE_TRANSITION) {
+    } else if (!app->fast_forward && app->auto_mode && app->page == GAL_PAGE_TRANSITION) {
         app->auto_accum_ms += elapsed_ms;
         if (app->auto_accum_ms >= GAL_AUTO_TRANSITION_MS) {
             app->auto_accum_ms = 0;
@@ -1431,6 +1617,11 @@ bool gal_app_init(gal_app_t *app)
         ESP_LOGW(TAG, "进度存储不可用,本次运行内有效");
     } else {
         (void)gal_progress_load(&app->progress);
+        if (app->progress.valid && app->progress.event_index >= gal_content_event_count) {
+            ESP_LOGW(TAG, "进度事件越界(%u)，忽略这条记录",
+                     (unsigned)app->progress.event_index);
+            gal_progress_clear(&app->progress);
+        }
         if (app->progress.valid) {
             app->flags = app->progress.flags;
             ESP_LOGI(TAG, "找到上次进度:事件 %u 第 %u 页",
@@ -1445,10 +1636,21 @@ bool gal_app_init(gal_app_t *app)
         ESP_LOGE(TAG, "LVGL 未就绪");
         return false;
     }
+    // 媒体解码器注册会改动 LVGL 的解码器链表：必须在这把锁里面做。
+    app->media_ok = maitetsu_media_init();
+    if (!app->media_ok) {
+        ESP_LOGE(TAG, "媒体包不可用: %s", maitetsu_media_error());
+    }
     const bool ui_ok = gal_ui_create(&app->ui, &gal_cjk_16, &gal_cjk_20);
     if (ui_ok) {
         gal_ui_set_brand(&app->ui, GAL_CONTENT_TITLE, GAL_CONTENT_SUBTITLE);
+        gal_content_title_image = (const void *)maitetsu_media_title();
         gal_ui_set_title_image(&app->ui, gal_content_title_image);
+        if (!app->media_ok) {
+            snprintf(app->media_error_text, sizeof(app->media_error_text), "%s",
+                     maitetsu_media_error());
+            submit_media_error_locked(app);
+        }
         gal_ui_set_battery(&app->ui, app->battery_percent);
         gal_ui_set_font_size(&app->ui, app->settings.font_large != 0);
         gal_ui_set_panel_transparency(&app->ui, app->settings.panel_transparency);

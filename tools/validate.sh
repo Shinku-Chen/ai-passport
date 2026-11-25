@@ -79,21 +79,41 @@ run_static_checks() {
         -o "${test_dir}/test_gal_tone"
     "${test_dir}/test_gal_tone"
     # GalGame 框架:周目 flag 与永久解锁分离、旧 save/progress 兼容。
-    cc -std=c11 -Wall -Wextra -Werror \
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
         -Itests/gal_stubs -Imain/gal \
         tests/test_gal_state.c main/gal/gal_save.c main/gal/gal_progress.c \
         main/gal/gal_unlock.c tests/gal_stubs/nvs_stub.c \
         -o "$test_dir/test_gal_state"
     "$test_dir/test_gal_state"
-    # GalGame 框架:生产 app 的 NewGame/choice/save/load/continue/restart 状态链。
-    cc -std=c11 -Wall -Wextra -Werror \
-        -Itests/gal_app_stubs -Itests/gal_stubs -Imain/gal \
+    # GalGame 框架:内容表形状与启动链（本作 1,537 段 / 四章 / 一个结局）。
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
+        -Itests/gal_app_stubs -Itests/gal_stubs -Imain -Imain/gal \
         tests/test_gal_app_flow.c main/gal/gal_app.c main/gal/gal_save.c \
         main/gal/gal_progress.c main/gal/gal_unlock.c main/gal/gal_settings.c \
         main/gal/gal_content.c main/gal/gal_text.c \
         tests/gal_app_stubs/gal_app_hal_stub.c tests/gal_stubs/nvs_stub.c \
         -o "$test_dir/test_gal_app_flow"
     "$test_dir/test_gal_app_flow"
+    # GalGame 框架:三键语义 / 快进 / 自动 / 试读不计通关（受控时钟）。
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
+        -Itests/gal_app_stubs -Itests/gal_stubs -Imain -Imain/gal \
+        tests/test_gal_keys.c main/gal/gal_app.c main/gal/gal_save.c \
+        main/gal/gal_progress.c main/gal/gal_unlock.c main/gal/gal_settings.c \
+        main/gal/gal_content.c main/gal/gal_text.c \
+        tests/gal_app_stubs/gal_app_hal_stub.c tests/gal_stubs/nvs_stub.c \
+        -o "$test_dir/test_gal_keys"
+    "$test_dir/test_gal_keys"
+    # GalGame 框架:快进在选项页停住 / 长按释放 / 分支标记（最小分支内容）。
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
+        -Itests/gal_app_stubs -Itests/gal_stubs -Imain -Imain/gal \
+        tests/test_gal_choice_ff.c main/gal/gal_app.c main/gal/gal_save.c \
+        main/gal/gal_progress.c main/gal/gal_unlock.c main/gal/gal_settings.c \
+        main/gal/gal_text.c tests/gal_app_stubs/gal_content_choice.c \
+        tests/gal_app_stubs/gal_app_hal_stub.c tests/gal_stubs/nvs_stub.c \
+        -o "$test_dir/test_gal_choice_ff"
+    "$test_dir/test_gal_choice_ff"
+    # 本作内容与媒体包：生成文件结构、条带 CRC、场景合成采样、音频时长。
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_maitetsu_content.py
     PYTHONDONTWRITEBYTECODE=1 python3 tools/gal_font.py --check --out-dir assets/fonts
     for demo in audio low_power ble wifi; do
         "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
@@ -127,6 +147,57 @@ run_firmware_checks() (
     SDKCONFIG_DEFAULTS="${repo_root}/sdkconfig.defaults" \
         idf.py -B "${validation_build_dir}" \
         -D "SDKCONFIG=${validation_build_dir}/sdkconfig" build
+    # 依赖已下载：用设备同款 TJpgDec 解码整包，并与源构图采样对比。
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
+        -Itests/maitetsu_stubs -Imain/gal \
+        -Imanaged_components/espressif__esp_jpeg/tjpgd \
+        tests/test_maitetsu_pack.c main/gal/maitetsu_pack.c \
+        main/gal/maitetsu_assets.c \
+        managed_components/espressif__esp_jpeg/tjpgd/tjpgd.c \
+        -o "${validation_build_dir}/test_maitetsu_pack"
+    "${validation_build_dir}/test_maitetsu_pack" \
+        assets/maitetsu/maitetsu_media.bin tests/fixtures/maitetsu-scene-samples.txt
+
+    # 真实 LVGL 解码器集成：编译完整 LVGL（host），驱动生产 maitetsu_media 的
+    # info/open/get_area/close，交错解码不同宽高的背景/补丁/CG/缩略图并与源构图比对。
+    lvgl_host="${validation_build_dir}/lvgl-host"
+    mkdir -p "${lvgl_host}"
+    find managed_components/lvgl__lvgl/src -name '*.c' \
+        ! -path '*/drivers/opengles/*' > "${lvgl_host}/sources.txt"
+    jobs="$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 2)"
+    xargs -P "${jobs}" -I{} bash -c '
+        src="$1"; dir="$2"; cc="$3"
+        out="${dir}/$(printf "%s" "${src}" | cksum | cut -d" " -f1).o"
+        "${cc}" -std=c11 -O1 -DLV_CONF_SKIP \
+            -Imanaged_components/lvgl__lvgl -Imanaged_components/lvgl__lvgl/src \
+            -c "${src}" -o "${out}" || exit 255
+    ' _ {} "${lvgl_host}" "${CC:-cc}" < "${lvgl_host}/sources.txt" || return 1
+    ar rcs "${lvgl_host}/liblvgl.a" "${lvgl_host}"/*.o
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -DLV_CONF_SKIP \
+        -Itests/maitetsu_stubs -Imain/gal \
+        -Imanaged_components/lvgl__lvgl -Imanaged_components/lvgl__lvgl/src \
+        -Imanaged_components/espressif__esp_jpeg/tjpgd \
+        tests/test_maitetsu_decoder.c main/gal/maitetsu_media.c \
+        main/gal/maitetsu_pack.c main/gal/maitetsu_assets.c \
+        managed_components/espressif__esp_jpeg/tjpgd/tjpgd.c \
+        "${lvgl_host}/liblvgl.a" -lm -o "${lvgl_host}/test_maitetsu_decoder"
+    "${lvgl_host}/test_maitetsu_decoder" \
+        assets/maitetsu/maitetsu_media.bin tests/fixtures/maitetsu-scene-samples.txt
+
+    # 真实 LVGL 错误层可见性：标题 / CG / 缩略图页面、隐藏父页、切页后的实际像素。
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -DLV_CONF_SKIP \
+        -Itests/maitetsu_stubs -Itests/gal_stubs -Imain/gal \
+        -Imanaged_components/lvgl__lvgl -Imanaged_components/lvgl__lvgl/src \
+        -Imanaged_components/espressif__esp_jpeg/tjpgd \
+        tests/test_gal_ui_error.c main/gal/gal_ui.c main/gal/gal_settings.c \
+        main/gal/maitetsu_media.c main/gal/maitetsu_pack.c \
+        main/gal/maitetsu_assets.c \
+        managed_components/espressif__esp_jpeg/tjpgd/tjpgd.c \
+        assets/fonts/gal_cjk_16.c assets/fonts/gal_cjk_20.c \
+        tests/gal_stubs/nvs_stub.c "${lvgl_host}/liblvgl.a" -lm \
+        -o "${lvgl_host}/test_gal_ui_error"
+    "${lvgl_host}/test_gal_ui_error" assets/maitetsu/maitetsu_media.bin
+
     idf.py -B "${validation_build_dir}" merge-bin \
         -o "${validation_build_dir}/FoloToy-AI-Passport-full.bin"
     python3 tools/verify_firmware.py "${validation_build_dir}"

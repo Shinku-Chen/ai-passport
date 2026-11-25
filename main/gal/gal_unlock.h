@@ -20,8 +20,9 @@
 #define GAL_UNLOCK_NONE 0xFF
 #define GAL_EVENT_NONE 0xFFFF
 
+// CG 位图扩展到 64 位：本作 6 组 35 张 CG 超过 32 位上限，33..35 必须可寻址。
 typedef struct {
-    uint32_t cg;
+    uint64_t cg;
     uint32_t chapter;
     uint32_t flag;
     uint32_t ending;
@@ -40,13 +41,13 @@ bool gal_unlock_store(const gal_unlock_t *out);
 void gal_unlock_clear(gal_unlock_t *out);
 
 // 授予(幂等)。
-void gal_unlock_grant_cg(gal_unlock_t *out, uint8_t index);
+void gal_unlock_grant_cg(gal_unlock_t *out, uint16_t index);
 void gal_unlock_grant_chapter(gal_unlock_t *out, uint8_t index);
 void gal_unlock_grant_ending(gal_unlock_t *out, uint8_t index);
 void gal_unlock_set_flag(gal_unlock_t *out, uint8_t index);
 
 // 查询。
-bool gal_unlock_has_cg(const gal_unlock_t *in, uint8_t index);
+bool gal_unlock_has_cg(const gal_unlock_t *in, uint16_t index);
 bool gal_unlock_has_chapter(const gal_unlock_t *in, uint8_t index);
 bool gal_unlock_has_ending(const gal_unlock_t *in, uint8_t index);
 bool gal_unlock_has_any_ending(const gal_unlock_t *in);

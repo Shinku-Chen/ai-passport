@@ -1,10 +1,10 @@
-// main/main.c —— GalGame 框架骨架:开机直接进启动页(竖屏 240x320)。
+// main/main.c —— GalGame 框架:开机直接进启动页(横屏 320x240)。
 //
 // 按键语义(框架规范):
 //   启动页    短按确定进入标题页
 //   标题/列表 上、下移动光标(到顶/到底停住),确定进入,长按确定返回
-//   正文页    短按(确定/上/下)=下一句(打字中先全显);长按确定=游戏内菜单;
-//             长按上=快进,松手停;长按下=自动阅读开关(任意键停)
+//   正文页    短按(确定/上/下)=推进正文(打字中先补全当前页);长按确定=游戏内菜单;
+//             长按上=快进(松手停,跳过打字和句间等待);长按下=自动阅读开关
 //   设置页    上、下移动,确定切换/执行,长按确定返回
 //
 // 线程模型:按键回调只入队;输入任务串行处理事件并驱动应用状态机;
@@ -45,7 +45,7 @@ static gal_app_t s_app;
 static QueueHandle_t s_input_queue;
 static TaskHandle_t s_input_task;
 static volatile bool s_input_ready;
-static uint8_t s_backlight = BACKLIGHT_FULL;
+static uint8_t s_backlight = 0;   // 首帧画完前保持全黑
 
 // 深睡按键唤醒的按键守卫(见 key_guard.h):唤醒键松手前吞掉按键动作。
 #define KEY_GUARD_MAX_US (10LL * 1000 * 1000)
@@ -157,7 +157,7 @@ static void input_task(void *arg)
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "AI Passport GalGame 框架骨架启动");
+    ESP_LOGI(TAG, "AI Passport GalGame 启动：爱上火车 · 二六线（横屏 320x240）");
 
     // deep sleep 唤醒会重启整个应用,把原因打出来便于确认“按键真能唤醒”。
     const esp_sleep_wakeup_cause_t wakeup = esp_sleep_get_wakeup_cause();
@@ -187,11 +187,37 @@ void app_main(void)
                  BSP_LCD_MOSI, BSP_LCD_SCLK, BSP_LCD_CS, BSP_LCD_DC, BSP_LCD_BL);
         return;
     }
-    bsp_display_backlight(BACKLIGHT_FULL);
+    // 横屏 320x240：BSP 用面板 MADCTL 做硬件旋转，不占 CPU、不需要额外缓冲。
+    // 方向是硬依赖：拿不到锁或设置失败就停在这里，绝不在错误方向下继续画。
+    if (!bsp_lvgl_lock(-1)) {
+        ESP_LOGE(TAG, "横屏设置拿不到 LVGL 锁，停止启动");
+        return;
+    }
+    const esp_err_t landscape = bsp_lvgl_set_landscape(true);
+    bsp_lvgl_unlock();
+    if (landscape != ESP_OK) {
+        ESP_LOGE(TAG, "横屏设置失败(%s)，停止启动", esp_err_to_name(landscape));
+        return;
+    }
+    bsp_display_backlight(0);
 
     if (!gal_app_init(&s_app)) {
         ESP_LOGE(TAG, "框架界面初始化失败");
         return;
+    }
+    // 首帧：只有真正拿到 LVGL 锁并提交了一次刷新，才开背光。
+    // lv_refr_now() 是同步刷新请求；这里的日志只声称“已请求并返回”，
+    // 面板上的实际完成仍由 BSP 的刷新回调负责。
+    bool first_frame_requested = false;
+    if (bsp_lvgl_lock(500)) {
+        lv_refr_now(NULL);
+        bsp_lvgl_unlock();
+        first_frame_requested = true;
+    }
+    if (first_frame_requested) {
+        set_backlight(BACKLIGHT_FULL);
+    } else {
+        ESP_LOGW(TAG, "首帧刷新请求未获得 LVGL 锁，保持背光关闭（首次按键时点亮）");
     }
 
     s_input_queue = xQueueCreate(INPUT_QUEUE_DEPTH, sizeof(gal_key_t));
@@ -199,14 +225,19 @@ void app_main(void)
         ESP_LOGE(TAG, "输入队列创建失败");
         return;
     }
-    if (xTaskCreate(input_task, "gal_input", 4096, NULL, 5, &s_input_task) != pdPASS) {
-        ESP_LOGE(TAG, "输入任务创建失败");
+    // 先注册按键，再建消费任务：任务建失败时回调因 s_input_ready=false 丢弃事件。
+    if (bsp_button_init(on_key, NULL) != ESP_OK) {
+        ESP_LOGE(TAG, "按键初始化失败,无法操作阅读器");
         vQueueDelete(s_input_queue);
         s_input_queue = NULL;
         return;
     }
-    if (bsp_button_init(on_key, NULL) != ESP_OK) {
-        ESP_LOGE(TAG, "按键初始化失败,无法操作阅读器");
+    if (xTaskCreate(input_task, "gal_input", 4096, NULL, 5, &s_input_task) != pdPASS) {
+        ESP_LOGE(TAG, "输入任务创建失败");
+        s_input_ready = false;
+        vQueueDelete(s_input_queue);
+        s_input_queue = NULL;
+        s_input_task = NULL;
         return;
     }
     if (s_key_guard.armed) {
@@ -222,7 +253,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "空闲堆 %u 字节,最大连续块 %u 字节", (unsigned)esp_get_free_heap_size(),
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
-    ESP_LOGI(TAG, "就绪:框架骨架;短按任意键=下一句,长按确定=游戏内菜单,"
+    ESP_LOGI(TAG, "就绪:横屏阅读;短按 OK/上/下=推进,长按 OK=菜单,"
                   "长按上=快进,长按下=自动阅读;空闲 %us 调暗,%us 熄屏,%us 休眠",
              (unsigned)(GAL_DIM_MS / 1000), (unsigned)(GAL_SCREEN_OFF_MS / 1000),
              (unsigned)(GAL_SLEEP_MS / 1000));

@@ -3,8 +3,10 @@
 // 按键语义(框架规范,三键):
 //   启动页     短按确定进入标题页
 //   标题菜单   上/下 移动光标,确定 进入,长按确定 返回
-//   对话页     短按(确定/上/下)= 下一句(打字中先全显);长按确定=游戏内菜单;
-//              长按上=快进,松手停;长按下=自动阅读开关(任意键停)
+//   对话页     短按确定/上/下 = 推进正文(打字中先补全当前页,再按进入下一句);
+//              长按确定 = 游戏内菜单;长按上 = 快进(立即跳到下一句,松手停,
+//              跳过句内剩余分页/打字机/句间等待);
+//              长按下 = 自动阅读开关(短按仍会推进,不吞键)
 //   选项/菜单  上/下 移动,确定 执行,长按确定 返回
 //   列表页     上/下 移动,确定 执行(存档/读档/鉴赏室/章节/结局),长按确定 返回
 //   关于页     上/下 滚动正文,长按确定 返回
@@ -32,6 +34,12 @@ typedef struct {
     gal_save_t save;
     gal_unlock_t unlock;            // 永久解锁:CG / 章节 / 结局
     uint32_t flags;                 // 本周目剧情标记(随存档/自动进度保存)
+    uint8_t run_mask;               // 本周目实际走过的章节（决定结局资格）
+    bool media_ok;                  // 媒体包与解码器可用
+    bool preview;                   // 本局来自章节/回想试读（永不授正式结局）
+    bool ending_preview;            // 刚看到的结局是试读（未记永久通关）
+    bool error_shown;               // 媒体错误层已成功提交（LVGL 锁内写入）
+    char media_error_text[72];      // 导致停止推进的原因
     gal_progress_t progress;        // 自动进度(继续游戏用它接上)
     bool progress_dirty;            // 有尚未落盘的进度
     uint32_t progress_accum_ms;
@@ -66,7 +74,6 @@ typedef struct {
     int shown_page;
 
     bool fast_forward;
-    uint32_t ff_accum_ms;
     bool auto_mode;
     uint32_t auto_accum_ms;
 

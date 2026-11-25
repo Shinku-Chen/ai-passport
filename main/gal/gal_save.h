@@ -17,6 +17,8 @@ typedef struct {
     char chapter[GAL_SAVE_CHAPTER_LEN];    // 章节名(槽位里显示)
     uint8_t reserved;
     uint32_t flags;                        // 本周目剧情标记(不跨 NewGame)
+    uint8_t run_mask;                      // 本局实际走过的章节(结局资格)
+    uint8_t preview;                       // 1 = 本局从章节/回想试读开始
 } gal_slot_t;
 
 typedef struct {

@@ -53,3 +53,11 @@
 - 同步更新索引：`docs/software-design/README.md`、`README.en_US.md` / `README.zh_CN.md` 的 `docs/` 目录说明。
 - 参考 cindy 仓库文档组织完善索引：新增 `docs/README.md` 根总索引；AGENTS.md 规则索引按触发场景改写（附触发条件）；`docs/contribution/` 与 `docs/development/` 的 README 补充收录标准。
 - 引入社区治理文档（参照 cindy 改写，放仓库根目录）：新增 `CONTRIBUTING.md` / `.zh_CN.md`（贡献指南，针对 ESP-IDF/AI agent/fork 场景改写）、`CODE_OF_CONDUCT.md` / `.zh_CN.md`（贡献者公约）、`SECURITY.md` / `.zh_CN.md`（安全报告流程）、`SUPPORT.md` / `.zh_CN.md`（支持渠道）；AGENTS.md 与 docs/README.md 同步引用。
+
+## v1.0.0-maitetsu - 2026-11-25
+
+- 新增二六线离线阅读版：来自固定 RW5 手环移植的四章、1,537 段对白、675 个场景、6 组 35 张 CG 与一个结局。
+- 新增三键阅读流程：短按 OK/上/下推进（逐字显示中同一次按键补全当前页并继续），长按 OK 打开游戏内菜单，长按上跳到下一句、松手即停，长按下切换自动阅读。
+- 新增 3 个手动存档与自动进度、游戏内历史、16/20 px 两档字号，以及 CG、回想、章节与标题曲的鉴赏入口。
+- 章节与回想入口是明确的试读：存读档后保留阅读位置，但不会授予结局；只有走完四章的「开始游戏」正式周目才记录结局。
+- 已知限制：只包含 RW5 手环移植里的二六线四章，不是原作全部路线；剧情为线性、没有选项；标题曲为完整源曲循环播放，不是重新录制。设备验证只覆盖快进与完整一轮标题曲；音质、长时间稳定与掉电行为未认证。
