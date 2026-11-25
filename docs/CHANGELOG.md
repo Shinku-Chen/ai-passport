@@ -56,3 +56,36 @@
 - Updated software-design and project README references for the new documentation structure.
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
+
+## v1.0.0-nine-haruiro - 2026-11-25
+
+### Added
+
+- First public release of the complete offline *9-nine- Haruiro* visual-novel
+  reader for AI Passport: 15 chapters, 13 choices, two ending milestones, CG and
+  chapter galleries, two BGM tracks, and the complete 493-frame opening.
+- OP gallery entry: plays the full opening animation and track; natural end,
+  short OK skip, and long OK back return to the same OP row without changing the
+  story.
+- Compact, fitted, semitransparent speaker badge over the full 320×180 art;
+  three 16 px or two 20 px body lines in the lower panel; reading page numbers
+  are no longer displayed, while real pagination and save-page positions remain.
+- Key input retries a transient LVGL lock instead of dropping the action; fast
+  forward advances one whole sentence per input tick and stops on release.
+
+### Fixed
+
+- Restored the complete 5 fps opening (98.62 s) and kept the opening audio
+  continuous during playback.
+- Gallery and title navigation no longer restart music unnecessarily; title
+  cursor movement no longer re-decodes the static background.
+- Gallery OP failures are visible, stop audio, clear the art, and return to the
+  same row without advancing the story or writing progress.
+
+### Limitations
+
+- This is a port of the fixed non-R18 Chinese main-line snapshot; it does not
+  include the excluded R18 scenes or voice tracks.
+- Acceptance covers the listed reading, gallery, OP, save/load, font and key
+  paths on the tested device. Long-run stability, every branch, power-loss
+  behavior during writes, and all hardware peripherals are not claimed.

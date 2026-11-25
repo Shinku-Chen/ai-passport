@@ -1,0 +1,470 @@
+{
+  "cases": [
+    {
+      "name": "conditions",
+      "vars": [
+        "a",
+        "b",
+        "loop1",
+        "loop2",
+        "titleBg"
+      ],
+      "persistent": [
+        "loop1",
+        "loop2",
+        "titleBg"
+      ],
+      "start": "n0",
+      "choose": [
+        1,
+        0
+      ],
+      "nodes": {
+        "n0": {
+          "frames": [
+            "start"
+          ],
+          "nexts": [
+            {
+              "to": "n1"
+            }
+          ]
+        },
+        "n1": {
+          "count": 0,
+          "effects": [
+            [
+              "a",
+              "=",
+              2
+            ],
+            [
+              "b",
+              "=",
+              1
+            ],
+            [
+              "titleBg",
+              "=",
+              1
+            ]
+          ],
+          "choices": [
+            {
+              "text": "never",
+              "to": "n2",
+              "when": [
+                "a",
+                "==",
+                5
+              ]
+            },
+            {
+              "text": "yes",
+              "to": "n2",
+              "when": [
+                "a",
+                "==",
+                2
+              ]
+            },
+            {
+              "text": "also",
+              "to": "n3",
+              "when": [
+                "b",
+                "!=",
+                0
+              ]
+            },
+            {
+              "text": "range",
+              "to": "n3",
+              "when": [
+                "a",
+                ">",
+                1
+              ]
+            },
+            {
+              "text": "no",
+              "to": "n3",
+              "when": [
+                "a",
+                "<",
+                1
+              ]
+            }
+          ]
+        },
+        "n2": {
+          "frames": [
+            "two"
+          ],
+          "effects": [
+            [
+              "titleBg",
+              "+",
+              1
+            ]
+          ],
+          "nexts": [
+            {
+              "to": "n4",
+              "when": [
+                "loop1",
+                "==",
+                0
+              ]
+            },
+            {
+              "to": "n4"
+            }
+          ]
+        },
+        "n3": {
+          "count": 0,
+          "choices": [
+            {
+              "text": "f1",
+              "to": "n4",
+              "when": [
+                "a",
+                "==",
+                99
+              ]
+            },
+            {
+              "text": "f2",
+              "to": "n4",
+              "when": [
+                "b",
+                "==",
+                99
+              ]
+            }
+          ]
+        },
+        "n4": {
+          "frames": [
+            "end"
+          ],
+          "effects": [
+            [
+              "a",
+              "+",
+              3
+            ]
+          ],
+          "complete": [
+            "loop1"
+          ],
+          "nexts": [
+            {
+              "to": "n5"
+            }
+          ]
+        },
+        "n5": {
+          "count": 0,
+          "nexts": [
+            {
+              "to": "@end"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "effect_order",
+      "vars": [
+        "c",
+        "loop1",
+        "titleBg"
+      ],
+      "persistent": [
+        "loop1",
+        "titleBg"
+      ],
+      "start": "n0",
+      "choose": [],
+      "nodes": {
+        "n0": {
+          "frames": [
+            "x"
+          ],
+          "effects": [
+            [
+              "c",
+              "=",
+              1
+            ]
+          ],
+          "nexts": [
+            {
+              "to": "n1",
+              "when": [
+                "c",
+                "==",
+                2
+              ]
+            },
+            {
+              "to": "n2",
+              "when": [
+                "c",
+                "==",
+                1
+              ]
+            },
+            {
+              "to": "n3"
+            }
+          ]
+        },
+        "n1": {
+          "frames": [
+            "wrong"
+          ],
+          "nexts": [
+            {
+              "to": "n4"
+            }
+          ]
+        },
+        "n2": {
+          "frames": [
+            "right"
+          ],
+          "effects": [
+            [
+              "titleBg",
+              "+",
+              1
+            ]
+          ],
+          "complete": [
+            "loop1"
+          ],
+          "nexts": [
+            {
+              "to": "n4"
+            }
+          ]
+        },
+        "n3": {
+          "frames": [
+            "fallback"
+          ],
+          "nexts": [
+            {
+              "to": "n4"
+            }
+          ]
+        },
+        "n4": {
+          "frames": [
+            "done"
+          ],
+          "nexts": [
+            {
+              "to": "@end"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "effect_preview",
+      "vars": [
+        "c",
+        "loop1",
+        "titleBg"
+      ],
+      "persistent": [
+        "loop1",
+        "titleBg"
+      ],
+      "start": "n0",
+      "preview": true,
+      "choose": [],
+      "nodes": {
+        "n0": {
+          "frames": [
+            "x"
+          ],
+          "effects": [
+            [
+              "c",
+              "=",
+              1
+            ]
+          ],
+          "nexts": [
+            {
+              "to": "n1",
+              "when": [
+                "c",
+                "==",
+                2
+              ]
+            },
+            {
+              "to": "n2",
+              "when": [
+                "c",
+                "==",
+                1
+              ]
+            },
+            {
+              "to": "n3"
+            }
+          ]
+        },
+        "n1": {
+          "frames": [
+            "wrong"
+          ],
+          "nexts": [
+            {
+              "to": "n4"
+            }
+          ]
+        },
+        "n2": {
+          "frames": [
+            "right"
+          ],
+          "effects": [
+            [
+              "titleBg",
+              "+",
+              1
+            ]
+          ],
+          "complete": [
+            "loop1"
+          ],
+          "nexts": [
+            {
+              "to": "n4"
+            }
+          ]
+        },
+        "n3": {
+          "frames": [
+            "fallback"
+          ],
+          "nexts": [
+            {
+              "to": "n4"
+            }
+          ]
+        },
+        "n4": {
+          "frames": [
+            "done"
+          ],
+          "nexts": [
+            {
+              "to": "@end"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "all_conditions",
+      "vars": [
+        "x",
+        "y"
+      ],
+      "persistent": [],
+      "start": "n0",
+      "choose": [],
+      "nodes": {
+        "n0": {
+          "frames": [
+            "a"
+          ],
+          "effects": [
+            [
+              "x",
+              "=",
+              1
+            ],
+            [
+              "y",
+              "=",
+              1
+            ]
+          ],
+          "nexts": [
+            {
+              "to": "n1",
+              "when": [
+                "all",
+                [
+                  "x",
+                  "==",
+                  1
+                ],
+                [
+                  "y",
+                  ">",
+                  5
+                ]
+              ]
+            },
+            {
+              "to": "n2",
+              "when": [
+                "all",
+                [
+                  "x",
+                  ">=",
+                  1
+                ],
+                [
+                  "y",
+                  "<=",
+                  1
+                ]
+              ]
+            }
+          ]
+        },
+        "n1": {
+          "frames": [
+            "wrong"
+          ],
+          "nexts": [
+            {
+              "to": "@end"
+            }
+          ]
+        },
+        "n2": {
+          "frames": [
+            "right"
+          ],
+          "nexts": [
+            {
+              "to": "@end"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "hop_limit",
+      "vars": [],
+      "persistent": [],
+      "start": "n0",
+      "chain": 501,
+      "choose": [],
+      "nodes": {}
+    }
+  ]
+}

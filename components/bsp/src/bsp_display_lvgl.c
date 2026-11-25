@@ -9,14 +9,18 @@
 
 static const char *TAG = "bsp_lvgl";
 
-#define BSP_LVGL_DRAW_BUFFER_LINES 40
+#define BSP_LVGL_DRAW_BUFFER_LINES 20
 
 static lv_display_t *s_disp;
 static bool s_port_initialized;
 static bool s_port_init_failed;
+static uint32_t s_flush_count;
+
+uint32_t bsp_lvgl_flush_count(void) { return s_flush_count; }
 
 static void rounded_flush_event(lv_event_t *event)
 {
+    ++s_flush_count;
     lv_display_t *disp = lv_event_get_target(event);
     const lv_area_t *area = lv_event_get_param(event);
     lv_draw_buf_t *draw_buf = lv_display_get_buf_active(disp);

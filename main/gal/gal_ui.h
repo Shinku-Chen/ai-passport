@@ -15,18 +15,30 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef NINE_READER
+// 9-nine-:320x240 landscape reader. Art occupies 320x180 from the top; the
+// text panel starts at y180 (60px high) and never overlaps the artwork.
+#define GAL_UI_W 320
+#define GAL_UI_H 240
+#define GAL_PANEL_H 60
+#define GAL_TEXT_LINES_SMALL 3
+#define GAL_TEXT_LINES_LARGE 2
+#define GAL_TEXT_Y 0
+#else
 #define GAL_UI_W 240
 #define GAL_UI_H 320
-
-// 对话框面板:贴底 110px(框架竖屏规范:16px 档 5 行 / 20px 档 4 行)。
 #define GAL_PANEL_H 110
+#define GAL_TEXT_LINES_SMALL 5
+#define GAL_TEXT_LINES_LARGE 4
+#define GAL_TEXT_Y 20
+#endif
 #define GAL_PANEL_Y (GAL_UI_H - GAL_PANEL_H)
 #define GAL_TEXT_X 10
 #define GAL_TEXT_W (GAL_UI_W - 2 * GAL_TEXT_X)
 #define GAL_LINE_H_SMALL 20
 #define GAL_LINE_H_LARGE 24
-#define GAL_TEXT_LINES_SMALL 5
-#define GAL_TEXT_LINES_LARGE 4
+#define GAL_NAME_ROW_H 20
+#define GAL_NAME_Y (GAL_PANEL_Y - GAL_NAME_ROW_H)
 #define GAL_LIST_MAX_ROWS 32   // 大作品(章节 / 回想列表)需要更长
 #define GAL_TEXT_CAPACITY 1024
 #define GAL_CG_TILES 8
@@ -118,12 +130,14 @@ typedef struct {
     lv_obj_t *tile_img[GAL_CG_TILES];   // 鉴赏室缩略图
 
     lv_obj_t *panel;          // 对话框面板
-    lv_obj_t *name;           // 说话人名牌(面板上沿外侧)
+    lv_obj_t *name;           // 说话人文字
+    lv_obj_t *name_bg;        // 紧凑半透明名牌背景(仅 NINE_READER)
     lv_obj_t *text;           // 正文
     lv_obj_t *chapter;        // 左上角章节
     lv_obj_t *battery;        // 右上角电量
-    lv_obj_t *notice;         // 顶部提示(存读档等)
+    lv_obj_t *notice;         // 文本区提示(存读档等)
     lv_obj_t *mode_auto;      // “自动”指示(快进不另显示文字)
+    lv_obj_t *page_hud;       // 正文页码(文本区内)
 
     lv_obj_t *titles[GAL_PAGE_COUNT];   // 各页页头标题
     lv_obj_t *choice_box;               // 选项框
@@ -195,7 +209,8 @@ void gal_ui_set_mode(gal_ui_t *ui, bool auto_play);
 // 状态栏与提示。
 void gal_ui_set_chapter(gal_ui_t *ui, const char *text);
 void gal_ui_set_battery(gal_ui_t *ui, int percent);
-void gal_ui_set_notice(gal_ui_t *ui, const char *text);   // NULL/空串 = 清除
+void gal_ui_set_notice(gal_ui_t *ui, const char *text);
+void gal_ui_set_page_hud(gal_ui_t *ui, const char *text);   // NULL/空串 = 清除
 
 // 文字大小与对话框透明度。
 void gal_ui_set_font_size(gal_ui_t *ui, bool large);

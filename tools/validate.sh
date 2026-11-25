@@ -79,14 +79,14 @@ run_static_checks() {
         -o "${test_dir}/test_gal_tone"
     "${test_dir}/test_gal_tone"
     # GalGame 框架:周目 flag 与永久解锁分离、旧 save/progress 兼容。
-    cc -std=c11 -Wall -Wextra -Werror \
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
         -Itests/gal_stubs -Imain/gal \
         tests/test_gal_state.c main/gal/gal_save.c main/gal/gal_progress.c \
         main/gal/gal_unlock.c tests/gal_stubs/nvs_stub.c \
         -o "$test_dir/test_gal_state"
     "$test_dir/test_gal_state"
     # GalGame 框架:生产 app 的 NewGame/choice/save/load/continue/restart 状态链。
-    cc -std=c11 -Wall -Wextra -Werror \
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
         -Itests/gal_app_stubs -Itests/gal_stubs -Imain/gal \
         tests/test_gal_app_flow.c main/gal/gal_app.c main/gal/gal_save.c \
         main/gal/gal_progress.c main/gal/gal_unlock.c main/gal/gal_settings.c \
@@ -94,7 +94,9 @@ run_static_checks() {
         tests/gal_app_stubs/gal_app_hal_stub.c tests/gal_stubs/nvs_stub.c \
         -o "$test_dir/test_gal_app_flow"
     "$test_dir/test_gal_app_flow"
-    PYTHONDONTWRITEBYTECODE=1 python3 tools/gal_font.py --check --out-dir assets/fonts
+    # gal_font covers the framework's own strings; 9-nine fonts/strings are
+    # checked by tools/nine_host_tests.sh and tools/nine_font_check.py below.
+    PYTHONDONTWRITEBYTECODE=1 python3 tools/gal_font.py --check --out-dir assets/fonts --source-root main/gal
     for demo in audio low_power ble wifi; do
         "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
             -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \
@@ -108,6 +110,9 @@ run_static_checks() {
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_check_repo.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_verify_firmware.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_archive_firmware.py
+    # 9-nine- reader: source-trajectory differential, VM/save/preview, key state
+    # machine with a controllable clock, real image decode and source audit.
+    bash tools/nine_host_tests.sh
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_install_passport_skills.py
     rm -rf "${test_dir}"
     echo "Host tests: PASS"
