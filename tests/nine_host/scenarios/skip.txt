@@ -1,0 +1,4 @@
+start
+advance 50
+skip
+advance 5

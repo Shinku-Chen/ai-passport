@@ -94,7 +94,34 @@ run_static_checks() {
         tests/gal_app_stubs/gal_app_hal_stub.c tests/gal_stubs/nvs_stub.c \
         -o "$test_dir/test_gal_app_flow"
     "$test_dir/test_gal_app_flow"
-    PYTHONDONTWRITEBYTECODE=1 python3 tools/gal_font.py --check --out-dir assets/fonts
+    # 9-nine- ships its own 16/20px subsets (tests/test_nine_assets.py checks
+    # full story/UI coverage); the skeleton's placeholder fonts are not built.
+    if [[ ! -f "${repo_root}/assets/nine/kokoiro/nine_symbols.txt" ]]; then
+        PYTHONDONTWRITEBYTECODE=1 python3 tools/gal_font.py --check --out-dir assets/fonts
+    fi
+
+    # 9-nine- reader: production pack/VM/image/audio/store/app tests.
+    local nine_pack_dir="${repo_root}/assets/nine/kokoiro"
+    if [[ ! -f "${nine_pack_dir}/nine_script.bin" || ! -f "${nine_pack_dir}/nine_images.bin" ]]; then
+        echo "ERROR: missing 9-nine- pack; run tools/nine_pack.py --episode kokoiro" >&2
+        return 1
+    fi
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_nine_assets.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/nine_host/make_filter_pack.py >/dev/null
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain/nine -Itests/nine_host         tests/test_nine_engine.c main/nine/nine_pack.c main/nine/nine_vm.c         tests/nine_host/tinfl_shim.c -o "${test_dir}/test_nine_engine"
+    "${test_dir}/test_nine_engine" "${nine_pack_dir}/nine_script.bin"         "tests/nine_host/filter-fallback.bin"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain/nine -Itests/nine_host         tests/test_nine_store.c main/nine/nine_pack.c main/nine/nine_vm.c         main/nine/nine_store.c tests/nine_host/nvs_stub.c tests/nine_host/tinfl_shim.c         -o "${test_dir}/test_nine_store"
+    "${test_dir}/test_nine_store" "${nine_pack_dir}/nine_script.bin"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -DNINE_IMAGE_HOST -Imain/nine -Itests/nine_host         tests/test_nine_image.c main/nine/nine_pack.c main/nine/nine_vm.c         main/nine/nine_image.c main/nine/tjpgd/tjpgd.c tests/nine_host/tinfl_shim.c         -o "${test_dir}/test_nine_image"
+    "${test_dir}/test_nine_image" "${nine_pack_dir}/nine_script.bin"         "${nine_pack_dir}/nine_images.bin"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -DNINE_IMAGE_HOST -DNINE_MEDIA_HOST         -Imain/nine -Itests/nine_host         tests/test_nine_media.c main/nine/nine_pack.c main/nine/nine_vm.c         main/nine/nine_image.c main/nine/nine_media.c main/nine/tjpgd/tjpgd.c         tests/nine_host/tinfl_shim.c -o "${test_dir}/test_nine_media"
+    "${test_dir}/test_nine_media" "${nine_pack_dir}/nine_script.bin"         "${nine_pack_dir}/nine_images.bin"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -DNINE_IMAGE_HOST -DNINE_MEDIA_HOST         -Imain -Imain/gal -Imain/nine -Itests/nine_host         tests/test_nine_app.c tests/nine_host/gal_ui_stub.c tests/nine_host/nvs_stub.c         tests/nine_host/tinfl_shim.c main/nine/nine_app.c main/nine/nine_pack.c         main/nine/nine_vm.c main/nine/nine_store.c main/nine/nine_image.c         main/nine/nine_media.c main/nine/tjpgd/tjpgd.c main/gal/gal_text.c         -o "${test_dir}/test_nine_app"
+    "${test_dir}/test_nine_app" "${nine_pack_dir}/nine_script.bin"         "${nine_pack_dir}/nine_images.bin"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -DNINE_IMAGE_HOST -DNINE_MEDIA_HOST         -Imain -Imain/gal -Imain/nine -Itests/nine_host         tests/test_nine_ff.c tests/nine_host/gal_ui_stub.c tests/nine_host/nvs_stub.c         tests/nine_host/tinfl_shim.c main/nine/nine_app.c main/nine/nine_pack.c         main/nine/nine_vm.c main/nine/nine_store.c main/nine/nine_image.c         main/nine/nine_media.c main/nine/tjpgd/tjpgd.c main/gal/gal_text.c         -o "${test_dir}/test_nine_ff"
+    "${test_dir}/test_nine_ff" "${nine_pack_dir}/nine_script.bin"         "${nine_pack_dir}/nine_images.bin"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -DNINE_IMAGE_HOST -DNINE_MEDIA_HOST         -Imain -Imain/gal -Imain/nine -Itests/nine_host         tests/test_nine_menu.c tests/nine_host/gal_ui_stub.c tests/nine_host/nvs_stub.c         tests/nine_host/tinfl_shim.c main/nine/nine_app.c main/nine/nine_pack.c         main/nine/nine_vm.c main/nine/nine_store.c main/nine/nine_image.c         main/nine/nine_media.c main/nine/tjpgd/tjpgd.c main/gal/gal_text.c         -o "${test_dir}/test_nine_menu"
+    "${test_dir}/test_nine_menu" "${nine_pack_dir}/nine_script.bin"         "${nine_pack_dir}/nine_images.bin"
     for demo in audio low_power ble wifi; do
         "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
             -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \
@@ -121,21 +148,20 @@ run_firmware_checks() (
         return 1
     fi
 
-    validation_build_dir="$(mktemp -d /tmp/ai-passport-firmware.XXXXXX)"
-    trap 'case "${validation_build_dir}" in /tmp/ai-passport-firmware.*) rm -rf -- "${validation_build_dir}" ;; esac' EXIT
-
-    SDKCONFIG_DEFAULTS="${repo_root}/sdkconfig.defaults" \
-        idf.py -B "${validation_build_dir}" \
-        -D "SDKCONFIG=${validation_build_dir}/sdkconfig" build
-    idf.py -B "${validation_build_dir}" merge-bin \
-        -o "${validation_build_dir}/FoloToy-AI-Passport-full.bin"
-    python3 tools/verify_firmware.py "${validation_build_dir}"
-    PYTHONDONTWRITEBYTECODE=1 python3 tools/archive_firmware.py create \
-        "${validation_build_dir}" --archive-root "${repo_root}/build/firmware"
+    validation_build_dir="${VALIDATION_BUILD_DIR:-$(mktemp -d /tmp/ai-passport-firmware.XXXXXX)}"
+    mkdir -p "${validation_build_dir}"
+    echo "Firmware evidence: ${validation_build_dir}"
+    # Git Bash passes /d/... paths; the Windows idf.py needs drive-letter form.
+    local idf_build_dir="${validation_build_dir}"
+    if command -v cygpath >/dev/null 2>&1; then idf_build_dir="$(cygpath -m "${validation_build_dir}")"; fi
+    SDKCONFIG_DEFAULTS="${repo_root}/sdkconfig.defaults" idf.py -B "${idf_build_dir}" -D "SDKCONFIG=${idf_build_dir}/sdkconfig" build
+    idf.py -B "${idf_build_dir}" merge-bin -o "${idf_build_dir}/FoloToy-AI-Passport-full.bin"
+    python3 tools/verify_firmware.py "${idf_build_dir}"
+    PYTHONDONTWRITEBYTECODE=1 python3 tools/archive_firmware.py create "${idf_build_dir}" --archive-root "${repo_root}/build/firmware"
     mkdir -p "${repo_root}/build"
-    install -m 0644 \
-        "${validation_build_dir}/FoloToy-AI-Passport-full.bin" \
-        "${repo_root}/build/FoloToy-AI-Passport-full.bin"
+    install -m 0644 "${idf_build_dir}/FoloToy-AI-Passport-full.bin" "${repo_root}/build/FoloToy-AI-Passport-full.bin"
+    # Production-path UI/image startup with real LVGL objects/fonts and pack.
+    bash "${repo_root}/tests/nine_realgl/run_gate.sh"
     echo "Firmware build: PASS"
 )
 

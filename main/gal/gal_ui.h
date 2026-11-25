@@ -15,18 +15,28 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef NINE_READER
+// 9-nine- 阅读器:320x240 横屏。舞台 320x180(源 432x243 等比 16:9),
+// 内部 256x144 解码后 1.25x 显示;对话框 60px:16px 档 3 行 / 20px 档 2 行。
+#define GAL_UI_W 320
+#define GAL_UI_H 240
+#define GAL_PANEL_H 60
+#define GAL_TEXT_X 4
+#define GAL_TEXT_W (GAL_UI_W - 2 * GAL_TEXT_X)
+#define GAL_TEXT_LINES_SMALL 3
+#define GAL_TEXT_LINES_LARGE 2
+#else
 #define GAL_UI_W 240
 #define GAL_UI_H 320
-
-// 对话框面板:贴底 110px(框架竖屏规范:16px 档 5 行 / 20px 档 4 行)。
 #define GAL_PANEL_H 110
-#define GAL_PANEL_Y (GAL_UI_H - GAL_PANEL_H)
 #define GAL_TEXT_X 10
 #define GAL_TEXT_W (GAL_UI_W - 2 * GAL_TEXT_X)
-#define GAL_LINE_H_SMALL 20
-#define GAL_LINE_H_LARGE 24
 #define GAL_TEXT_LINES_SMALL 5
 #define GAL_TEXT_LINES_LARGE 4
+#endif
+#define GAL_PANEL_Y (GAL_UI_H - GAL_PANEL_H)
+#define GAL_LINE_H_SMALL 19
+#define GAL_LINE_H_LARGE 23
 #define GAL_LIST_MAX_ROWS 32   // 大作品(章节 / 回想列表)需要更长
 #define GAL_TEXT_CAPACITY 1024
 #define GAL_CG_TILES 8
@@ -52,6 +62,7 @@ typedef enum {
     GAL_PAGE_ENDING,        // 结局
     GAL_PAGE_ABOUT,         // 关于
     GAL_PAGE_CG,            // CG 全屏浏览
+    GAL_PAGE_OPENING,       // OP 图片序列(320x180 + 原曲)
     GAL_PAGE_COUNT,
 } gal_page_t;
 

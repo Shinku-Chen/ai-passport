@@ -56,3 +56,16 @@
 - Updated software-design and project README references for the new documentation structure.
 - Added the documentation catalog and task-triggered routing based on the earlier repository model.
 - Added bilingual contribution, code-of-conduct, security, and support documents tailored to this ESP-IDF and fork workflow.
+
+## v1.0.0-nine-kokoiro - 2026-11-25
+
+- First community release of the standalone offline 9-nine- Kokoiro reader: all 17
+  chapters, 8049 lines, five choice points, two endings and the full 100-second OP.
+- Complete three-key reading flow with short-press paging, sentence-granular
+  fast-forward, auto reading, menu, 30 save slots, Continue, history, 16/20 px
+  text, chapter preview, CG/gallery and music screens.
+- The gallery OP plays with its original track and returns to the gallery.
+- Known limitation: the two OP-only gallery variants in ev119 remain unverified;
+  no claim is made for every alternate image, long-run stability or power-loss
+  behaviour.
+

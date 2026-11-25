@@ -6,6 +6,7 @@
 
 static lv_display_t display;
 static int panel_present = 1, lock_depth, port_live, display_live, callback_live;
+static int flush_cb_live, refr_cb_live;
 static int fail_lock, fail_port, fail_display, fail_event, init_calls, unlocked_flushes;
 static int panel_token, io_token;
 esp_lcd_panel_handle_t bsp_display_panel(void) { return panel_present ? &panel_token : NULL; }
@@ -42,16 +43,21 @@ lv_display_t *lvgl_port_add_disp(const lvgl_port_display_cfg_t *cfg) {
 }
 esp_err_t lvgl_port_remove_disp(lv_display_t *disp) {
     assert(disp == &display && lock_depth && display_live);
-    display_live = callback_live = 0; return ESP_OK;
+    display_live = callback_live = flush_cb_live = refr_cb_live = 0; return ESP_OK;
 }
 void lv_display_add_event_cb(lv_display_t *disp, void (*cb)(lv_event_t *), int code, void *user) {
     (void)user;
-    assert(lock_depth && disp == &display && code == LV_EVENT_FLUSH_START && cb == rounded_flush_event);
-    if (!fail_event) callback_live = 1;
+    assert(lock_depth && disp == &display);
+    assert((code == LV_EVENT_FLUSH_START && cb == rounded_flush_event) ||
+           (code == LV_EVENT_REFR_READY && cb == first_frame_refr_event));
+    if (fail_event) return;
+    if (code == LV_EVENT_FLUSH_START) flush_cb_live = 1;
+    else refr_cb_live = 1;
+    callback_live = flush_cb_live && refr_cb_live;
 }
 uint32_t lv_display_get_event_count(lv_display_t *disp) {
     assert(disp == &display && lock_depth);
-    return 1 + callback_live; // The display already owns an internal callback.
+    return 1 + flush_cb_live + refr_cb_live; // The display already owns an internal callback.
 }
 // 横屏支持:运行时请求旋转,分辨率 getter 跟着切换(与 LVGL 换逻辑分辨率一致)。
 static int rotation_calls;
@@ -124,5 +130,19 @@ int main(void) {
     // 切回竖屏后分辨率与遮罩都复原。
     assert(bsp_lvgl_set_landscape(false) == ESP_OK);
     assert(rotation_calls == 2 && last_rotation == LV_DISPLAY_ROTATION_0 && !landscape_live);
+
+    // 首帧提交门:arm 后仅 FLUSH_START 仍为 false,完整刷新周期(REFR_READY)才 true。
+    bsp_lvgl_arm_first_frame();
+    assert(!bsp_lvgl_first_frame_submitted());
+    for (int x = 0; x < BSP_LCD_W; ++x) pixels[x] = 0xffff;
+    display.buffer = (lv_draw_buf_t){ .data = (uint8_t *)pixels, .header.stride = sizeof(pixels) };
+    lv_area_t first = { .x1 = 0, .y1 = 0, .x2 = BSP_LCD_W - 1, .y2 = 0 };
+    lv_event_t first_ev = { .target = &display, .area = &first };
+    rounded_flush_event(&first_ev);
+    assert(!bsp_lvgl_first_frame_submitted());
+    first_frame_refr_event(&first_ev);
+    assert(bsp_lvgl_first_frame_submitted());
+    bsp_lvgl_arm_first_frame();
+    assert(!bsp_lvgl_first_frame_submitted());
     puts("BSP LVGL initialization tests: PASS");
 }

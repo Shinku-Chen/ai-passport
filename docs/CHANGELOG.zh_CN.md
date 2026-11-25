@@ -53,3 +53,14 @@
 - 同步更新索引：`docs/software-design/README.md`、`README.en_US.md` / `README.zh_CN.md` 的 `docs/` 目录说明。
 - 参考 cindy 仓库文档组织完善索引：新增 `docs/README.md` 根总索引；AGENTS.md 规则索引按触发场景改写（附触发条件）；`docs/contribution/` 与 `docs/development/` 的 README 补充收录标准。
 - 引入社区治理文档（参照 cindy 改写，放仓库根目录）：新增 `CONTRIBUTING.md` / `.zh_CN.md`（贡献指南，针对 ESP-IDF/AI agent/fork 场景改写）、`CODE_OF_CONDUCT.md` / `.zh_CN.md`（贡献者公约）、`SECURITY.md` / `.zh_CN.md`（安全报告流程）、`SUPPORT.md` / `.zh_CN.md`（支持渠道）；AGENTS.md 与 docs/README.md 同步引用。
+
+## v1.0.0-nine-kokoiro - 2026-11-25
+
+- 《9-nine- 九次九日九重色》首次社区发布：17 章、8049 句、5 个选择点、2 个结局，
+  包含完整约 100 秒 OP。
+- 完整三键阅读流程：短按分页、按句快进、自动阅读、菜单、30 个存档、继续游戏、
+  历史、16/20 px 字号、章节试读、CG/鉴赏与音乐页。
+- 鉴赏室 OP 使用原曲播放，播完返回鉴赏室。
+- 已知限制：ev119 的 2 个仅出现在 OP 的鉴赏差分仍未验证；不声称覆盖所有差分、
+  长时间稳定或掉电场景。
+

@@ -49,6 +49,12 @@ struct _lv_display_t *bsp_lvgl_init(void);
 // LVGL 分辨率变更并重绘)。幂等;LVGL 未就绪返回 ESP_FAIL。
 esp_err_t bsp_lvgl_set_landscape(bool landscape);
 
+// 首帧背光门:建好界面后 arm,等 LVGL 完成一次完整刷新周期(先有 FLUSH_START,
+// 再有 REFR_READY)再开背光。submitted 不是物理传输完成;arm/submitted 只读写
+// volatile 标志。主程序在超时时保持暗屏,不做无条件亮屏兜底。
+void bsp_lvgl_arm_first_frame(void);
+bool bsp_lvgl_first_frame_submitted(void);
+
 // LVGL 非线程安全:在【非 LVGL 任务】里操作任何 lv_* 对象前后必须加解锁。
 // LVGL 尚未就绪或超时时 lock 返回 false；只有 lock 成功后才调用 unlock。
 bool bsp_lvgl_lock(int timeout_ms);

@@ -1,0 +1,6 @@
+start
+advance 40
+previous
+previous
+previous
+advance 5

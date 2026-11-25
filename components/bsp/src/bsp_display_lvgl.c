@@ -9,14 +9,17 @@
 
 static const char *TAG = "bsp_lvgl";
 
-#define BSP_LVGL_DRAW_BUFFER_LINES 40
+#define BSP_LVGL_DRAW_BUFFER_LINES 16
 
 static lv_display_t *s_disp;
+static volatile bool s_first_frame_flush_seen;
+static volatile bool s_first_frame_refr_ready;
 static bool s_port_initialized;
 static bool s_port_init_failed;
 
 static void rounded_flush_event(lv_event_t *event)
 {
+    s_first_frame_flush_seen = true;
     lv_display_t *disp = lv_event_get_target(event);
     const lv_area_t *area = lv_event_get_param(event);
     lv_draw_buf_t *draw_buf = lv_display_get_buf_active(disp);
@@ -55,7 +58,15 @@ static void rounded_flush_event(lv_event_t *event)
             row[x - area->x1] = 0;
         }
     }
+}
 
+// REFR_READY is sent after LVGL has rendered and submitted every dirty area of a
+// refresh cycle. Combined with a prior FLUSH_START this is a full-cycle signal,
+// still not proof that the physical panel transfer completed.
+static void first_frame_refr_event(lv_event_t *event)
+{
+    (void)event;
+    if (s_first_frame_flush_seen) s_first_frame_refr_ready = true;
 }
 
 lv_display_t *bsp_lvgl_init(void) {
@@ -84,8 +95,9 @@ lv_display_t *bsp_lvgl_init(void) {
     const lvgl_port_display_cfg_t dc = {
         .panel_handle = bsp_display_panel(),
         .io_handle    = bsp_display_io(),
-        // ⚠ C3 无 PSRAM,DMA 只能用内部 RAM。40 行单缓冲约 19.2KB，
-        // 可减少窗口命令和队列提交次数；仍保留单缓冲，避免双缓冲挤压音频/Wi-Fi。
+        // ⚠ C3 无 PSRAM,DMA 只能用内部 RAM。16 行单缓冲约 10.2KB：
+        // 9-nine- 的 256x144 舞台画布(73.7KB)与阅读任务栈都要留在内部 RAM,
+        // 因此把刷新带宽换成内存余量;仍保留单缓冲,不做双缓冲。
         .buffer_size   = (uint32_t)BSP_LCD_W * BSP_LVGL_DRAW_BUFFER_LINES,
         .double_buffer = false,
         .hres = BSP_LCD_W, .vres = BSP_LCD_H,
@@ -107,7 +119,8 @@ lv_display_t *bsp_lvgl_init(void) {
         // LVGL 9.5 returns void here; check the list while still holding the lock.
         const uint32_t count = lv_display_get_event_count(disp);
         lv_display_add_event_cb(disp, rounded_flush_event, LV_EVENT_FLUSH_START, NULL);
-        mask_registered = lv_display_get_event_count(disp) == count + 1;
+        lv_display_add_event_cb(disp, first_frame_refr_event, LV_EVENT_REFR_READY, NULL);
+        mask_registered = lv_display_get_event_count(disp) == count + 2;
     }
     if (!mask_registered) {
         ESP_LOGE(TAG, "LVGL display 或圆角回调注册失败");
@@ -126,6 +139,17 @@ lv_display_t *bsp_lvgl_init(void) {
 
     ESP_LOGI(TAG, "LVGL 就绪，全局圆角=%d，外部填充=黑色", BSP_LVGL_SCREEN_RADIUS);
     return s_disp;
+}
+
+void bsp_lvgl_arm_first_frame(void)
+{
+    s_first_frame_flush_seen = false;
+    s_first_frame_refr_ready = false;
+}
+
+bool bsp_lvgl_first_frame_submitted(void)
+{
+    return s_first_frame_flush_seen && s_first_frame_refr_ready;
 }
 
 bool bsp_lvgl_lock(int timeout_ms) {

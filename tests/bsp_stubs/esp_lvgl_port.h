@@ -18,6 +18,7 @@ typedef struct { int unused; } lv_event_dsc_t;
 typedef struct { int unused; } lvgl_port_cfg_t;
 #define ESP_LVGL_PORT_INIT_CONFIG() {0}
 #define LV_EVENT_FLUSH_START 1
+#define LV_EVENT_REFR_READY 2
 #define LV_COLOR_FORMAT_RGB565 1
 typedef struct {
     esp_lcd_panel_handle_t panel_handle;

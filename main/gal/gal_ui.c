@@ -347,6 +347,13 @@ static void build_dialogue(gal_ui_t *ui, gal_page_t page)
     // 名牌挂在对话框上沿外侧、左对齐(不压住正文);父对象是本页,跟着页面一起隐藏。
     if (page == GAL_PAGE_GAME) {
         ui->name = mk_label(root, ui->font_small, COL_NAME);
+        // Keep the name pill compact and, for long names, ellipsized inside the
+        // 160px slot rather than running under the auto indicator/notice.
+        lv_label_set_long_mode(ui->name, LV_LABEL_LONG_MODE_DOTS);
+        lv_obj_set_style_max_width(ui->name, 160, LV_PART_MAIN);
+        // One compact line: the DOTS label keeps its own fitted width, while
+        // this height prevents a long name from wrapping into the body panel.
+        lv_obj_set_height(ui->name, GAL_LINE_H_SMALL + 4);
         lv_obj_set_style_bg_color(ui->name, lv_color_black(), LV_PART_MAIN);
         lv_obj_set_style_bg_opa(ui->name, LV_OPA_50, LV_PART_MAIN);
         lv_obj_set_style_pad_hor(ui->name, 8, LV_PART_MAIN);
@@ -357,11 +364,15 @@ static void build_dialogue(gal_ui_t *ui, gal_page_t page)
     }
 
     ui->text = mk_label(ui->panel, ui->font_small, COL_TEXT);
+#ifdef NINE_READER
+    lv_obj_set_pos(ui->text, GAL_TEXT_X, 1);
+    lv_obj_set_style_text_line_space(ui->text, 0, LV_PART_MAIN);
+#else
     lv_obj_set_pos(ui->text, GAL_TEXT_X, 6);
+    lv_obj_set_style_text_line_space(ui->text, 1, LV_PART_MAIN);
+#endif
     lv_obj_set_width(ui->text, GAL_TEXT_W);
     lv_label_set_long_mode(ui->text, LV_LABEL_LONG_WRAP);
-    // 字体行高为 19/23,补 1px 行距后正好 20/24(框架规范)。
-    lv_obj_set_style_text_line_space(ui->text, 1, LV_PART_MAIN);
 
     // 选项面板:叠在对话页上的分支选择框(原型 choice-panel)。
     if (page == GAL_PAGE_GAME) {
@@ -549,7 +560,11 @@ static void build_cg_list(gal_ui_t *ui)
         // 缩略图:用同一张 CG 图缩到格子大小(scale 以 1/256 为单位)。
         lv_obj_t *thumb = lv_image_create(tile);
         lv_obj_align(thumb, LV_ALIGN_TOP_MID, 0, 2);
+#ifdef NINE_READER
+        lv_image_set_scale(thumb, 256);
+#else
         lv_image_set_scale(thumb, 70);
+#endif
         lv_obj_add_flag(thumb, LV_OBJ_FLAG_HIDDEN);
         ui->tile_img[i] = thumb;
 
@@ -658,6 +673,10 @@ static void build_cg(gal_ui_t *ui)
     lv_obj_set_style_bg_grad_color(image, lv_color_hex(COL_TILE_C), LV_PART_MAIN);
     lv_obj_set_style_bg_grad_dir(image, LV_GRAD_DIR_VER, LV_PART_MAIN);
     lv_obj_set_style_bg_opa(image, LV_OPA_COVER, LV_PART_MAIN);
+#ifdef NINE_READER
+    // The reader draws the real CG in this page above the gradient (320x180).
+    lv_obj_set_style_bg_opa(image, LV_OPA_TRANSP, LV_PART_MAIN);
+#endif
     lv_obj_remove_flag(image, LV_OBJ_FLAG_SCROLLABLE);
 
     // CG 图:居中显示,无图时露出渐变占位。
@@ -765,11 +784,11 @@ bool gal_ui_create(gal_ui_t *ui, const lv_font_t *font_small, const lv_font_t *f
 
     // 左上角章节、右上角电量、模式指示与提示。
     ui->chapter = mk_label(root, font_small, COL_DIM);
-    lv_obj_set_pos(ui->chapter, 9, 4);
+    lv_obj_set_pos(ui->chapter, 9, 8);
 
     ui->battery = mk_label(root, font_small, COL_DIM);
     lv_label_set_text(ui->battery, "--%");
-    lv_obj_align(ui->battery, LV_ALIGN_TOP_RIGHT, -9, 4);
+    lv_obj_align(ui->battery, LV_ALIGN_TOP_RIGHT, -9, 8);
 
     // 自动阅读指示:只有文字,贴在对话框上沿外侧的右上角(位置在对话框建好后算)。
     ui->mode_auto = mk_label(root, font_small, COL_ACCENT);
@@ -797,6 +816,14 @@ bool gal_ui_create(gal_ui_t *ui, const lv_font_t *font_small, const lv_font_t *f
     build_ending(ui);
     build_about(ui);
     build_cg(ui);
+#ifdef NINE_READER
+    lv_obj_t *opening = mk_page(ui, GAL_PAGE_OPENING, 0, false);
+    lv_obj_t *opening_hint = mk_label(opening, ui->font_small, COL_DIM);
+    lv_label_set_text(opening_hint, "按任意键跳过 OP");
+    lv_obj_align(opening_hint, LV_ALIGN_BOTTOM_MID, 0, -10);
+#else
+    (void)mk_page(ui, GAL_PAGE_OPENING, 0, false);
+#endif
     build_modal(ui);
 
     // 对话页最后建:名牌要与对话框同层,且在其它页面之上。
@@ -820,12 +847,129 @@ bool gal_ui_create(gal_ui_t *ui, const lv_font_t *font_small, const lv_font_t *f
     }
     lv_timer_pause(ui->typewriter_timer);
 
+#ifdef NINE_READER
+    // 320x240 landscape reflow. Rows are windowed by nine_app, so object count
+    // never scales with a title's chapter / CG / slot list.
+    lv_obj_align(ui->brand_title, LV_ALIGN_TOP_MID, 0, 78);
+    lv_obj_align(ui->brand_sub, LV_ALIGN_TOP_MID, 0, 104);
+    lv_obj_t *title_box = ui->lists[GAL_LIST_TITLE].box;
+    lv_obj_set_pos(title_box, 166, 30);
+    lv_obj_set_size(title_box, 146, 200);
+    ui->lists[GAL_LIST_TITLE].width = 146;
+    ui->lists[GAL_LIST_TITLE].row_h = 29;
+    ui->lists[GAL_LIST_TITLE].top = 10;
+    lv_obj_set_pos(ui->menu_box, 30, 8);
+    lv_obj_set_size(ui->menu_box, 260, 224);
+    ui->lists[GAL_LIST_MENU].width = 260;
+    ui->lists[GAL_LIST_MENU].row_h = 27;
+    ui->lists[GAL_LIST_MENU].top = 32;
+    lv_obj_set_pos(ui->choice_box, 8, 16);
+    lv_obj_set_size(ui->choice_box, 304, 136);
+    ui->lists[GAL_LIST_CHOICE].row_h = 30;
+    ui->lists[GAL_LIST_CHOICE].top = 10;
+    for (int id = GAL_LIST_SAVE; id <= GAL_LIST_LOAD; ++id) {
+        ui->lists[id].row_h = 24;
+        ui->lists[id].top = 30;
+    }
+    ui->lists[GAL_LIST_SETTINGS].row_h = 26;
+    ui->lists[GAL_LIST_SETTINGS].top = 32;
+    ui->lists[GAL_LIST_HISTORY].row_h = 40;
+    ui->lists[GAL_LIST_HISTORY].top = 30;
+    lv_obj_t *preview_box = lv_obj_get_parent(ui->save_preview);
+    lv_obj_set_pos(preview_box, 12, 198);
+    lv_obj_set_height(preview_box, 32);
+    lv_obj_t *load_root = ui->pages[GAL_PAGE_LOAD];
+    if (lv_obj_get_child_count(load_root) > 1) {
+        lv_obj_t *load_preview = lv_obj_get_child(load_root, 1);
+        lv_obj_set_pos(load_preview, 12, 198);
+        lv_obj_set_height(load_preview, 32);
+    }
+    ui->lists[GAL_LIST_GALLERY].top = 46;
+    ui->lists[GAL_LIST_GALLERY].row_h = 36;
+    ui->lists[GAL_LIST_CHAPTER].top = 30;
+    ui->lists[GAL_LIST_CHAPTER].row_h = 26;
+    lv_obj_t *chapter_box = lv_obj_get_parent(ui->chapter_info);
+    lv_obj_set_pos(chapter_box, 12, 190);
+    lv_obj_set_height(chapter_box, 42);
+    ui->lists[GAL_LIST_MUSIC].row_h = 30;
+    ui->lists[GAL_LIST_MUSIC].top = 32;
+    lv_obj_align(ui->transition_eyebrow, LV_ALIGN_TOP_MID, 0, 58);
+    lv_obj_align(ui->transition_title, LV_ALIGN_TOP_MID, 0, 90);
+    lv_obj_align(ui->transition_sub, LV_ALIGN_TOP_MID, 0, 128);
+    lv_obj_align(ui->ending_eyebrow, LV_ALIGN_TOP_MID, 0, 38);
+    lv_obj_align(ui->ending_title, LV_ALIGN_TOP_MID, 0, 70);
+    lv_obj_align(ui->ending_body, LV_ALIGN_TOP_MID, 0, 106);
+    lv_obj_t *about_view = lv_obj_get_parent(ui->about_text);
+    lv_obj_set_pos(about_view, 12, 86);
+    lv_obj_set_height(about_view, 142);
+    lv_obj_t *cg_bottom = lv_obj_get_parent(ui->cg_name);
+    // CG is exactly 320x180; the info bar starts at the stage edge, no gap.
+    lv_obj_set_pos(cg_bottom, 8, 180);
+    lv_obj_set_height(cg_bottom, 52);
+    lv_obj_set_pos(ui->cg_name, 8, 0);
+    lv_obj_set_pos(ui->cg_caption, 8, 24);
+    lv_obj_set_pos(ui->modal_box, 28, 20);
+    lv_obj_set_size(ui->modal_box, 264, 200);
+    ui->lists[GAL_LIST_MODAL].width = 264;
+    // 启动页的「开始阅读」贴在底部。
+    ui->lists[GAL_LIST_START].top = 168;
+#endif
     gal_ui_set_font_size(ui, false);
     gal_ui_show_page(ui, GAL_PAGE_START);
     return true;
 }
 
 // ---------------------------------------------------------------- 页面与状态
+// Rows are the largest dynamic LVGL allocation. Keep only the rows that belong
+// to the destination page (or its base page for the choice/menu overlays); the
+// app refills a page when it returns to it.
+static void list_delete_rows(gal_list_ui_t *list)
+{
+    for (int i = 0; i < GAL_LIST_MAX_ROWS; ++i) {
+        if (list->rows[i]) {
+            lv_obj_t *row = lv_obj_get_parent(list->rows[i]);
+            if (row) lv_obj_delete(row);
+            list->rows[i] = NULL;
+            list->values[i] = NULL;
+        }
+        list->disabled[i] = false;
+    }
+    list->count = 0;
+    list->selected = 0;
+}
+
+// A list may live inside a box on its page (title/menu/choice), so its
+// parent pointer is not the page root. Map the list id to its owning page.
+static gal_page_t list_owner_page(gal_list_t id)
+{
+    switch (id) {
+    case GAL_LIST_START: return GAL_PAGE_START;
+    case GAL_LIST_TITLE: return GAL_PAGE_TITLE;
+    case GAL_LIST_CHOICE: return GAL_PAGE_GAME;
+    case GAL_LIST_MENU: return GAL_PAGE_MENU;
+    case GAL_LIST_SAVE: return GAL_PAGE_SAVE;
+    case GAL_LIST_LOAD: return GAL_PAGE_LOAD;
+    case GAL_LIST_SETTINGS: return GAL_PAGE_SETTINGS;
+    case GAL_LIST_HISTORY: return GAL_PAGE_HISTORY;
+    case GAL_LIST_GALLERY: return GAL_PAGE_GALLERY;
+    case GAL_LIST_RECALL: return GAL_PAGE_RECALL;
+    case GAL_LIST_MUSIC: return GAL_PAGE_MUSIC;
+    case GAL_LIST_CHAPTER: return GAL_PAGE_CHAPTER;
+    case GAL_LIST_ENDING: return GAL_PAGE_ENDING;
+    default: return GAL_PAGE_MODAL;
+    }
+}
+static void prune_rows(gal_ui_t *ui, gal_page_t base, gal_page_t page)
+{
+    for (int id = 0; id < GAL_LIST_COUNT; ++id) {
+        gal_list_ui_t *list = &ui->lists[id];
+        const gal_page_t owner = list_owner_page((gal_list_t)id);
+        if (owner == base || owner == page) continue;
+        if (!list->rows[0]) continue;
+        list_delete_rows(list);
+    }
+}
+
 void gal_ui_show_page(gal_ui_t *ui, gal_page_t page)
 {
     if (!ui || page >= GAL_PAGE_COUNT) return;
@@ -833,6 +977,7 @@ void gal_ui_show_page(gal_ui_t *ui, gal_page_t page)
     // 选项与游戏内菜单是叠在对话页上的层:底页仍是对话页。
     const gal_page_t base = (page == GAL_PAGE_CHOICE || page == GAL_PAGE_MENU)
                                 ? GAL_PAGE_GAME : page;
+    prune_rows(ui, base, page);
 
     for (int i = 0; i < GAL_PAGE_COUNT; ++i) {
         if (!ui->pages[i]) continue;
@@ -865,8 +1010,15 @@ void gal_ui_show_page(gal_ui_t *ui, gal_page_t page)
     else lv_obj_add_flag(ui->chapter, LV_OBJ_FLAG_HIDDEN);
     if (hud) lv_obj_remove_flag(ui->battery, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(ui->battery, LV_OBJ_FLAG_HIDDEN);
+#ifdef NINE_READER
+    // The reader raises notices on secondary pages too (save errors, locked
+    // CG, missing audio). Leave visibility to gal_ui_set_notice so an error is
+    // never hidden by the page switch that follows it.
+    (void)hud;
+#else
     if (hud) lv_obj_remove_flag(ui->notice, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(ui->notice, LV_OBJ_FLAG_HIDDEN);
+#endif
 
     // 自动阅读指示跟随页面;章节过场也保持(避免看起来像被关掉)。
     const bool auto_hud = base == GAL_PAGE_GAME || base == GAL_PAGE_TRANSITION;
@@ -1119,6 +1271,10 @@ void gal_ui_set_font_size(gal_ui_t *ui, bool large)
     }
     // 作品名始终用大档,标题层级高于正文。
     lv_obj_set_style_text_font(ui->brand_title, ui->font_large, LV_PART_MAIN);
+    // The speaker pill stays on the 16px tier even when body text is 20px; its
+    // bottom stays above the 320x180 art/panel boundary. The pill size follows
+    // the name (max 160px) and its background is drawn by the label itself.
+    lv_obj_set_style_text_font(ui->name, ui->font_small, LV_PART_MAIN);
 }
 
 void gal_ui_set_panel_transparency(gal_ui_t *ui, uint8_t percent)

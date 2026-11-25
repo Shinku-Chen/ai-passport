@@ -1,0 +1,23 @@
+#pragma once
+#include "gal_ui.h"
+#include <stdbool.h>
+typedef struct {
+    gal_page_t page;
+    int rows_count[GAL_LIST_COUNT];
+    char rows[GAL_LIST_COUNT][GAL_LIST_MAX_ROWS][192];
+    bool row_enabled[GAL_LIST_COUNT][GAL_LIST_MAX_ROWS];
+    int choice_count;
+    char choices[GAL_LIST_MAX_ROWS][192];
+    char notice[96];
+    bool auto_mode;
+    bool modal;
+    int modal_sel;
+    char cg[3][192];
+    char ending[3][192];
+    char brand[2][96];
+    char chapter[64];
+    bool large_font;
+    int scrolls;
+} gal_stub_t;
+gal_stub_t *gal_stub(void);
+void gal_stub_reset(void);
