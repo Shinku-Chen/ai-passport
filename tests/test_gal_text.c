@@ -32,6 +32,19 @@ int main(void)
     assert(gal_text_pages("", 26, 5, offsets, GAL_TEXT_MAX_PAGES + 1) == 1);
     assert(gal_text_pages("中中中中", 2, 1, NULL, 0) == 4);
 
+    // On-demand pagination must not be capped by the old 8/16-page array.
+    char many[301];
+    for (int i = 0; i < 100; ++i) memcpy(many + i * 3, "中", 3);
+    many[300] = 0;
+    int pc = 0;
+    assert(gal_text_page_count(many, 2, 1, &pc) && pc == 100);
+    uint32_t pb = 0, pe = 0;
+    assert(gal_text_page_bounds(many, 2, 1, 0, &pb, &pe) && pb == 0 && pe == 3);
+    assert(gal_text_page_bounds(many, 2, 1, 99, &pb, &pe) && pb == 297 && pe == 300);
+    assert(!gal_text_page_bounds(many, 2, 1, 100, &pb, &pe));
+    // Manual newline and half/full-width mixed text preserve the same pages.
+    assert(gal_text_page_count("ab\n中中", 4, 1, &pc) && pc == 2);
+    assert(gal_text_page_bounds("ab\n中中", 4, 1, 1, &pb, &pe) && pb == 3 && pe == 9);
     puts("gal_text pagination: PASS");
     return 0;
 }

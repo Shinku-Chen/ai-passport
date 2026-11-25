@@ -79,14 +79,14 @@ run_static_checks() {
         -o "${test_dir}/test_gal_tone"
     "${test_dir}/test_gal_tone"
     # GalGame 框架:周目 flag 与永久解锁分离、旧 save/progress 兼容。
-    cc -std=c11 -Wall -Wextra -Werror \
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
         -Itests/gal_stubs -Imain/gal \
         tests/test_gal_state.c main/gal/gal_save.c main/gal/gal_progress.c \
         main/gal/gal_unlock.c tests/gal_stubs/nvs_stub.c \
         -o "$test_dir/test_gal_state"
     "$test_dir/test_gal_state"
     # GalGame 框架:生产 app 的 NewGame/choice/save/load/continue/restart 状态链。
-    cc -std=c11 -Wall -Wextra -Werror \
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
         -Itests/gal_app_stubs -Itests/gal_stubs -Imain/gal \
         tests/test_gal_app_flow.c main/gal/gal_app.c main/gal/gal_save.c \
         main/gal/gal_progress.c main/gal/gal_unlock.c main/gal/gal_settings.c \
@@ -94,7 +94,89 @@ run_static_checks() {
         tests/gal_app_stubs/gal_app_hal_stub.c tests/gal_stubs/nvs_stub.c \
         -o "$test_dir/test_gal_app_flow"
     "$test_dir/test_gal_app_flow"
-    PYTHONDONTWRITEBYTECODE=1 python3 tools/gal_font.py --check --out-dir assets/fonts
+    # Cafe Stella: 三键短/长按、NVS 坏 blob、源 engine.js 轨迹、横屏应用状态机、图像参考合成。
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain/cafe         tests/test_cafe_input.c main/cafe/cafe_input.c -o "${test_dir}/test_cafe_input"
+    "${test_dir}/test_cafe_input"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/gal_stubs -Itests/cafe_stubs -Imain/cafe         tests/test_cafe_store.c main/cafe/cafe_store.c main/cafe/cafe_compat.c         tests/cafe_stubs/tinfl_shim.c tests/gal_stubs/nvs_stub.c         -o "${test_dir}/test_cafe_store"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/cafe_stubs -Imain/cafe         tests/test_cafe_inflate.c main/cafe/cafe_compat.c tests/cafe_stubs/tinfl_shim.c         -o "${test_dir}/test_cafe_inflate"
+    "${test_dir}/test_cafe_inflate" assets/cafe/cafe.pak
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Wno-misleading-indentation -Wno-format-truncation -Wno-unused-function         -Itests/cafe_app_stubs -Itests/cafe_stubs -Itests/gal_stubs -Imain/cafe -Imain/gal         tests/test_cafe_recall.c main/cafe/cafe_app.c main/cafe/cafe_pack.c main/cafe/cafe_vm.c         main/cafe/cafe_store.c main/cafe/cafe_input.c main/cafe/cafe_compat.c main/gal/gal_text.c         tests/cafe_app_stubs/cafe_ui_audit_stub.c tests/cafe_app_stubs/cafe_image_stub.c         tests/cafe_app_stubs/cafe_audio_stub.c tests/cafe_stubs/tinfl_shim.c tests/gal_stubs/nvs_stub.c         -o "${test_dir}/test_cafe_recall"
+    "${test_dir}/test_cafe_recall" assets/cafe/cafe.pak
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Wno-misleading-indentation -Wno-format-truncation -Wno-unused-function         -Itests/cafe_app_stubs -Itests/cafe_stubs -Itests/gal_stubs -Imain/cafe -Imain/gal         tests/test_cafe_ff.c main/cafe/cafe_app.c main/cafe/cafe_pack.c main/cafe/cafe_vm.c         main/cafe/cafe_store.c main/cafe/cafe_input.c main/cafe/cafe_compat.c main/gal/gal_text.c         tests/cafe_app_stubs/cafe_ui_audit_stub.c tests/cafe_app_stubs/cafe_image_stub.c         tests/cafe_app_stubs/cafe_audio_stub.c tests/cafe_stubs/tinfl_shim.c tests/gal_stubs/nvs_stub.c         -o "${test_dir}/test_cafe_ff"
+    "${test_dir}/test_cafe_ff" assets/cafe/cafe.pak
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Wno-misleading-indentation -Wno-format-truncation -Wno-unused-function         -Itests/cafe_app_stubs -Itests/cafe_stubs -Itests/gal_stubs -Imain/cafe -Imain/gal         tests/test_cafe_layout.c main/cafe/cafe_app.c main/cafe/cafe_pack.c main/cafe/cafe_vm.c         main/cafe/cafe_store.c main/cafe/cafe_input.c main/cafe/cafe_compat.c main/gal/gal_text.c         tests/cafe_app_stubs/cafe_ui_stub.c tests/cafe_app_stubs/cafe_image_stub.c         tests/cafe_app_stubs/cafe_audio_stub.c tests/cafe_stubs/tinfl_shim.c tests/gal_stubs/nvs_stub.c         -o "${test_dir}/test_cafe_layout"
+    "${test_dir}/test_cafe_layout" assets/cafe/cafe.pak
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Wno-misleading-indentation -Wno-format-truncation -Wno-unused-function         -Itests/cafe_app_stubs -Itests/cafe_stubs -Itests/gal_stubs -Imain/cafe -Imain/gal         tests/test_cafe_ff_cache.c main/cafe/cafe_app.c main/cafe/cafe_pack.c main/cafe/cafe_vm.c         main/cafe/cafe_store.c main/cafe/cafe_input.c main/cafe/cafe_compat.c main/cafe/cafe_image.c         main/cafe/tjpgd.c main/gal/gal_text.c tests/cafe_app_stubs/cafe_ui_stub.c         tests/cafe_app_stubs/cafe_audio_stub.c tests/cafe_stubs/tinfl_shim.c tests/gal_stubs/nvs_stub.c         -o "${test_dir}/test_cafe_ff_cache"
+    "${test_dir}/test_cafe_ff_cache" assets/cafe/cafe.pak
+    "${test_dir}/test_cafe_store"
+    if [[ -f assets/cafe/media/title-bgm-4k.ima && -f assets/cafe/media/opening-bgm-8k.ima ]]; then
+        "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain/cafe tests/test_cafe_audio.c main/cafe/cafe_audio_codec.c -o "${test_dir}/test_cafe_audio"
+        "${test_dir}/test_cafe_audio" assets/cafe/media/title-bgm-4k.ima assets/cafe/media/opening-bgm-8k.ima
+        "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Wno-misleading-indentation -Itests/cafe_audio_player_stubs -Imain/cafe -Imain/gal tests/test_cafe_audio_player.c main/cafe/cafe_audio_codec.c -o "${test_dir}/test_cafe_audio_player"
+        "${test_dir}/test_cafe_audio_player" assets/cafe/media/title-bgm-4k.ima assets/cafe/media/opening-bgm-8k.ima
+    fi
+    if [[ -f assets/cafe/cafe.pak && -f tests/cafe_trace.txt ]]; then
+        "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/cafe_stubs -Imain/cafe             tests/test_cafe_trace.c main/cafe/cafe_pack.c main/cafe/cafe_vm.c             main/cafe/cafe_compat.c tests/cafe_stubs/tinfl_shim.c             -o "${test_dir}/test_cafe_trace"
+        "${test_dir}/test_cafe_trace" assets/cafe/cafe.pak tests/cafe_trace.txt
+        "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/cafe_app_stubs -Itests/cafe_stubs             -Itests/gal_stubs -Imain/cafe -Imain/gal tests/test_cafe_app.c             main/cafe/cafe_app.c main/cafe/cafe_pack.c main/cafe/cafe_vm.c             main/cafe/cafe_store.c main/cafe/cafe_input.c main/cafe/cafe_compat.c             main/gal/gal_text.c tests/cafe_app_stubs/cafe_ui_stub.c             tests/cafe_app_stubs/cafe_image_stub.c tests/cafe_app_stubs/cafe_audio_stub.c tests/cafe_stubs/tinfl_shim.c             tests/gal_stubs/nvs_stub.c -o "${test_dir}/test_cafe_app"
+        "${test_dir}/test_cafe_app" assets/cafe/cafe.pak
+        "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/cafe_app_stubs -Itests/cafe_stubs             -Itests/gal_stubs -Imain/cafe -Imain/gal tests/test_cafe_input_timing.c             main/cafe/cafe_app.c main/cafe/cafe_pack.c main/cafe/cafe_vm.c             main/cafe/cafe_store.c main/cafe/cafe_input.c main/cafe/cafe_compat.c             main/gal/gal_text.c tests/cafe_app_stubs/cafe_ui_stub.c             tests/cafe_app_stubs/cafe_image_stub.c tests/cafe_app_stubs/cafe_audio_stub.c             tests/cafe_stubs/tinfl_shim.c tests/gal_stubs/nvs_stub.c             -o "${test_dir}/test_cafe_input_timing"
+        "${test_dir}/test_cafe_input_timing" assets/cafe/cafe.pak
+        "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/cafe_app_stubs -Itests/cafe_stubs             -Itests/gal_stubs -Imain/cafe -Imain/gal tests/test_cafe_input_overload.c             main/cafe/cafe_app.c main/cafe/cafe_pack.c main/cafe/cafe_vm.c             main/cafe/cafe_store.c main/cafe/cafe_input.c main/cafe/cafe_compat.c             main/gal/gal_text.c tests/cafe_app_stubs/cafe_ui_stub.c             tests/cafe_app_stubs/cafe_image_stub.c tests/cafe_app_stubs/cafe_audio_stub.c             tests/cafe_stubs/tinfl_shim.c tests/gal_stubs/nvs_stub.c             -o "${test_dir}/test_cafe_input_overload"
+        "${test_dir}/test_cafe_input_overload" assets/cafe/cafe.pak
+        "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Wno-misleading-indentation             -Wno-format-truncation -Wno-unused-function             -Itests/cafe_app_stubs -Itests/cafe_stubs -Itests/gal_stubs -Imain/cafe -Imain/gal             tests/test_cafe_nav_pages.c main/cafe/cafe_app.c main/cafe/cafe_pack.c             main/cafe/cafe_vm.c main/cafe/cafe_store.c main/cafe/cafe_input.c             main/cafe/cafe_compat.c main/gal/gal_text.c             tests/cafe_app_stubs/cafe_ui_audit_stub.c             tests/cafe_app_stubs/cafe_image_stub.c tests/cafe_app_stubs/cafe_audio_stub.c             tests/cafe_stubs/tinfl_shim.c tests/gal_stubs/nvs_stub.c             -o "${test_dir}/test_cafe_nav_pages"
+        "${test_dir}/test_cafe_nav_pages" assets/cafe/cafe.pak
+        "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/cafe_stubs -Imain/cafe \
+            tests/test_cafe_ending.c main/cafe/cafe_pack.c main/cafe/cafe_vm.c \
+            main/cafe/cafe_compat.c tests/cafe_stubs/tinfl_shim.c \
+            -o "${test_dir}/test_cafe_ending"
+        "${test_dir}/test_cafe_ending" assets/cafe/cafe.pak
+        "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Wno-misleading-indentation \
+            -Wno-format-truncation -Wno-unused-function \
+            -Itests/cafe_app_stubs -Itests/cafe_stubs -Itests/gal_stubs -Imain/cafe -Imain/gal \
+            tests/test_cafe_menu_flow.c main/cafe/cafe_app.c main/cafe/cafe_pack.c \
+            main/cafe/cafe_vm.c main/cafe/cafe_store.c main/cafe/cafe_input.c \
+            main/cafe/cafe_compat.c main/gal/gal_text.c \
+            tests/cafe_app_stubs/cafe_ui_audit_stub.c \
+            tests/cafe_app_stubs/cafe_image_stub.c tests/cafe_app_stubs/cafe_audio_stub.c \
+            tests/cafe_stubs/tinfl_shim.c tests/gal_stubs/nvs_stub.c \
+            -o "${test_dir}/test_cafe_menu_flow"
+        "${test_dir}/test_cafe_menu_flow" assets/cafe/cafe.pak
+        "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Wno-misleading-indentation \
+            -Wno-format-truncation -Wno-unused-function \
+            -Itests/cafe_app_stubs -Itests/cafe_stubs -Itests/gal_stubs -Imain/cafe -Imain/gal \
+            tests/test_cafe_ending_app.c main/cafe/cafe_app.c main/cafe/cafe_pack.c \
+            main/cafe/cafe_vm.c main/cafe/cafe_store.c main/cafe/cafe_input.c \
+            main/cafe/cafe_compat.c main/gal/gal_text.c \
+            tests/cafe_app_stubs/cafe_ui_audit_stub.c \
+            tests/cafe_app_stubs/cafe_image_stub.c tests/cafe_app_stubs/cafe_audio_stub.c \
+            tests/cafe_stubs/tinfl_shim.c tests/gal_stubs/nvs_stub.c \
+            -o "${test_dir}/test_cafe_ending_app"
+        "${test_dir}/test_cafe_ending_app" assets/cafe/cafe.pak tests/cafe_ending_cases.txt
+        "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/cafe_app_stubs -Itests/cafe_stubs -Itests/gal_stubs -Imain/cafe -Imain/gal tests/test_cafe_failure.c main/cafe/cafe_app.c main/cafe/cafe_pack.c main/cafe/cafe_vm.c main/cafe/cafe_store.c main/cafe/cafe_input.c main/cafe/cafe_compat.c main/cafe/cafe_image.c main/cafe/tjpgd.c main/gal/gal_text.c tests/cafe_app_stubs/cafe_ui_stub.c tests/cafe_app_stubs/cafe_audio_stub.c tests/cafe_stubs/tinfl_shim.c tests/gal_stubs/nvs_stub.c -o "${test_dir}/test_cafe_failure"
+        "${test_dir}/test_cafe_failure" assets/cafe/cafe.pak
+        "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/cafe_app_stubs -Itests/cafe_stubs -Itests/gal_stubs -Imain/cafe -Imain/gal tests/test_cafe_op.c main/cafe/cafe_app.c main/cafe/cafe_pack.c main/cafe/cafe_vm.c main/cafe/cafe_store.c main/cafe/cafe_input.c main/cafe/cafe_compat.c main/gal/gal_text.c tests/cafe_app_stubs/cafe_ui_stub.c tests/cafe_app_stubs/cafe_image_stub.c tests/cafe_app_stubs/cafe_audio_stub.c tests/cafe_stubs/tinfl_shim.c tests/gal_stubs/nvs_stub.c -o "${test_dir}/test_cafe_op"
+        "${test_dir}/test_cafe_op" assets/cafe/cafe.pak
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Wno-misleading-indentation -Itests/cafe_app_stubs -Itests/cafe_stubs -Itests/gal_stubs -Imain/cafe -Imain/gal tests/test_cafe_op_gallery.c main/cafe/cafe_app.c main/cafe/cafe_pack.c main/cafe/cafe_vm.c main/cafe/cafe_store.c main/cafe/cafe_input.c main/cafe/cafe_compat.c main/gal/gal_text.c tests/cafe_app_stubs/cafe_ui_stub.c tests/cafe_app_stubs/cafe_image_stub.c tests/cafe_app_stubs/cafe_audio_stub.c tests/cafe_stubs/tinfl_shim.c tests/gal_stubs/nvs_stub.c -Wl,--wrap=cafe_audio_failed -o "${test_dir}/test_cafe_op_gallery"
+    "${test_dir}/test_cafe_op_gallery" assets/cafe/cafe.pak
+        "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Wno-misleading-indentation -Itests/cafe_app_stubs -Itests/cafe_stubs -Itests/gal_stubs -Imain/cafe -Imain/gal tests/test_cafe_audio_ctx.c main/cafe/cafe_app.c main/cafe/cafe_pack.c main/cafe/cafe_vm.c main/cafe/cafe_store.c main/cafe/cafe_input.c main/cafe/cafe_compat.c main/gal/gal_text.c tests/cafe_app_stubs/cafe_ui_stub.c tests/cafe_app_stubs/cafe_image_stub.c tests/cafe_app_stubs/cafe_audio_stub.c tests/cafe_stubs/tinfl_shim.c tests/gal_stubs/nvs_stub.c -Wl,--wrap=cafe_audio_failed -o "${test_dir}/test_cafe_audio_ctx"
+        "${test_dir}/test_cafe_audio_ctx" assets/cafe/cafe.pak
+        "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/cafe_stubs -Imain/cafe             tests/test_cafe_media.c main/cafe/cafe_pack.c main/cafe/cafe_image.c             main/cafe/cafe_compat.c main/cafe/tjpgd.c tests/cafe_stubs/tinfl_shim.c             -o "${test_dir}/test_cafe_media"
+        "${test_dir}/test_cafe_media" assets/cafe/cafe.pak
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/cafe_stubs -Imain/cafe         tests/test_cafe_jpeg_dedup.c main/cafe/cafe_pack.c main/cafe/cafe_image.c         main/cafe/cafe_compat.c main/cafe/tjpgd.c tests/cafe_stubs/tinfl_shim.c         -o "${test_dir}/test_cafe_jpeg_dedup"
+    "${test_dir}/test_cafe_jpeg_dedup" assets/cafe/cafe.pak
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Wno-misleading-indentation -Itests/cafe_stubs -Imain/cafe         tests/test_cafe_jpeg_guard.c main/cafe/cafe_pack.c main/cafe/cafe_compat.c         main/cafe/cafe_image.c main/cafe/tjpgd.c tests/cafe_stubs/tinfl_shim.c         -o "${test_dir}/test_cafe_jpeg_guard"
+    "${test_dir}/test_cafe_jpeg_guard" assets/cafe/cafe.pak
+        if [[ -x tests/ui_smoke/run.sh && -d managed_components/lvgl__lvgl ]]; then
+            bash tests/ui_smoke/run.sh
+        fi
+        if [[ -f tests/cafe_image_ref.bin ]]; then
+            "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/cafe_stubs -Imain/cafe                 tests/test_cafe_image.c main/cafe/cafe_pack.c main/cafe/cafe_image.c                 main/cafe/cafe_compat.c main/cafe/tjpgd.c tests/cafe_stubs/tinfl_shim.c                 -o "${test_dir}/test_cafe_image"
+            "${test_dir}/test_cafe_image" assets/cafe/cafe.pak tests/cafe_image_ref.bin
+        fi
+    fi
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_cafe_lifecycle_contract.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tools/gal_font.py --check --out-dir assets/fonts --source-root assets/cafe
     for demo in audio low_power ble wifi; do
         "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
             -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \
@@ -128,7 +210,7 @@ run_firmware_checks() (
         idf.py -B "${validation_build_dir}" \
         -D "SDKCONFIG=${validation_build_dir}/sdkconfig" build
     idf.py -B "${validation_build_dir}" merge-bin \
-        -o "${validation_build_dir}/FoloToy-AI-Passport-full.bin"
+        -o FoloToy-AI-Passport-full.bin
     python3 tools/verify_firmware.py "${validation_build_dir}"
     PYTHONDONTWRITEBYTECODE=1 python3 tools/archive_firmware.py create \
         "${validation_build_dir}" --archive-root "${repo_root}/build/firmware"

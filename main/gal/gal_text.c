@@ -138,3 +138,106 @@ int gal_text_pages(const char *utf8, int units_per_line, int lines_per_page,
     }
     return pages;
 }
+
+// Incremental page-boundary iterator.  It mirrors gal_text_pages' wrapping
+// rules but never stores more than one page boundary, so long sentences are not
+// limited by a fixed 16-page array.
+typedef struct {
+    const char *utf8;
+    size_t len;
+    size_t pos;
+    int units;
+    int lines;
+    int line_units;
+    int line_index;
+} gal_text_page_iter_t;
+
+static size_t gal_text_next_page(gal_text_page_iter_t *it)
+{
+    while (it->pos < it->len) {
+        const size_t before = it->pos;
+        const uint32_t cp = utf8_next(it->utf8, it->len, &it->pos);
+        if (cp == '\n') {
+            it->line_units = 0;
+            it->line_index++;
+            if (it->line_index >= it->lines) {
+                it->line_index = 0;
+                return it->pos;
+            }
+            continue;
+        }
+        const int units = codepoint_half_width(cp) ? 1 : 2;
+        if (it->line_units + units > it->units && it->line_units > 0) {
+            if (no_line_start(cp)) {
+                it->line_units = 0;
+                it->line_index++;
+                if (it->line_index >= it->lines) {
+                    it->line_index = 0;
+                    return it->pos;
+                }
+                continue;
+            }
+            it->line_units = units;
+            it->line_index++;
+            if (it->line_index >= it->lines) {
+                it->line_index = 0;
+                return before;
+            }
+            continue;
+        }
+        it->line_units += units;
+    }
+    return it->len;
+}
+
+static void gal_text_iter_init(gal_text_page_iter_t *it, const char *utf8,
+                               size_t start, int units_per_line, int lines_per_page)
+{
+    it->utf8 = utf8 ? utf8 : "";
+    it->len = strlen(it->utf8);
+    it->pos = start;
+    it->units = units_per_line < 2 ? 2 : units_per_line;
+    it->lines = lines_per_page < 1 ? 1 : lines_per_page;
+    it->line_units = 0;
+    it->line_index = 0;
+}
+
+bool gal_text_page_bounds(const char *utf8, int units_per_line, int lines_per_page,
+                          int page, uint32_t *begin, uint32_t *end)
+{
+    if (page < 0) return false;
+    const size_t len = utf8 ? strlen(utf8) : 0;
+    size_t start = 0;
+    for (int p = 0;; ++p) {
+        gal_text_page_iter_t it;
+        gal_text_iter_init(&it, utf8, start, units_per_line, lines_per_page);
+        const size_t next = gal_text_next_page(&it);
+        if (p == page) {
+            if (start > len || next < start) return false;
+            if (begin) *begin = (uint32_t)start;
+            if (end) *end = (uint32_t)next;
+            return true;
+        }
+        if (next >= len) return false;
+        start = next;
+    }
+}
+
+bool gal_text_page_count(const char *utf8, int units_per_line, int lines_per_page,
+                         int *pages_out)
+{
+    const size_t len = utf8 ? strlen(utf8) : 0;
+    int pages = 1;
+    size_t start = 0;
+    while (start < len) {
+        gal_text_page_iter_t it;
+        gal_text_iter_init(&it, utf8, start, units_per_line, lines_per_page);
+        const size_t next = gal_text_next_page(&it);
+        if (next >= len) break;
+        if (next <= start) break;   // malformed text safety
+        start = next;
+        pages++;
+    }
+    if (pages_out) *pages_out = pages;
+    return true;
+}

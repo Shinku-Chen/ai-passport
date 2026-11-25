@@ -1,0 +1,10 @@
+static const int pre_kanna[] = {0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0};
+static const int pre_kanna_n = 12;
+static const int pre_natsume[] = {0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0};
+static const int pre_natsume_n = 13;
+static const int pre_nozomi[] = {0, 1, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0};
+static const int pre_nozomi_n = 13;
+static const int pre_mei[] = {0, 1, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0};
+static const int pre_mei_n = 12;
+static const int pre_suzune[] = {0, 1, 0, 0, 0, 0, 1, 0, 0, 0};
+static const int pre_suzune_n = 10;

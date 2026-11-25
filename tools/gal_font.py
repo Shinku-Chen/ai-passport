@@ -265,7 +265,9 @@ def emit_font(name: str, size: int, codepoints: list, glyphs: dict, line_height:
             continue
         w(f"static const uint16_t unicode_list_{idx}[] = {{\n    ")
         for i, off in enumerate(entry["offsets"]):
-            w(f"0x{off:x}, ")
+            if i:
+                w(" ")
+            w(f"0x{off:x},")
             if (i + 1) % 8 == 0 and i + 1 < len(entry["offsets"]):
                 w("\n    ")
         w("\n};\n\n")

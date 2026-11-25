@@ -1,0 +1,34 @@
+{
+  "pack": "assets\\cafe\\cafe.pak",
+  "bytes": 6424952,
+  "sha256": "39130be057c33ef7252b1fd6fd8526937aa4bf4c225467513890cdd7e6ce7c46",
+  "source_sha256": "ccccc85e54e20d25ff49a86c46ead3733d1426e4a9173d800959ba2f797b9776",
+  "source_commit": "90ddb9e020970907b61ad4181f25c65267e6e98b",
+  "counts": {
+    "nodes": 923,
+    "frames": 53728,
+    "text_frames": 53727,
+    "op_markers": 1,
+    "choice_nodes": 69,
+    "choice_options": 141,
+    "chapters": 189,
+    "after_stories": 5,
+    "endings": 7,
+    "gallery_groups": 121,
+    "gallery_variants": 1631,
+    "assets": 5444,
+    "images": 2284,
+    "text_blocks": 754,
+    "flags": 80,
+    "base_flags": 70,
+    "progress_keys": 13,
+    "story_images": 1997,
+    "op_images": 287
+  },
+  "media": {
+    "manifest_sha256": "b8d0a6743b00bf27194664f07e89ac664d05b57b6f22ea1f55ddeded3fe72a24",
+    "audio_bytes": 889856,
+    "op_frames": 287,
+    "op_jpeg_bytes": 620030
+  }
+}

@@ -1,0 +1,12 @@
+CASE ending_bad ending 0 bad 0,0
+CASE ending_normal ending 0 normal 0,1,0,0,0,0,0
+CASE ending_kanna ending 0 kanna 0,1,0,2,0,0,0,0,0,0,0,0
+CASE ending_natsume ending 0 natsume 0,1,1,0,1,1,0,0,0,0,0,0,0
+CASE ending_nozomi ending 0 nozomi 0,1,0,1,2,0,0,0,0,0,0,0,0
+CASE ending_mei ending 0 mei 0,1,0,0,3,0,0,0,0,0,0,0
+CASE ending_suzune ending 4 suzune 0,1,0,0,0,0,1,0,0,0
+CASE after_kanna after 4 0 0
+CASE after_natsume after 8 1 -
+CASE after_nozomi after 16 2 0,0
+CASE after_mei after 32 3 0,0
+CASE after_suzune after 68 4 0
