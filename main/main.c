@@ -15,8 +15,7 @@
 #include "bsp_display.h"
 #include "bsp_i2c.h"
 #include "bsp_pins.h"
-#include "gal_app.h"
-#include "gal_music.h"
+#include "nine/nine_app.h"
 #include "key_guard.h"
 
 #include "esp_heap_caps.h"
@@ -32,20 +31,20 @@ static const char *TAG = "main";
 
 // 空闲策略:先调暗,再熄屏,最后 deep sleep(任意键唤醒后回到启动页)。
 #define GAL_DIM_MS 60000u
-#define GAL_SCREEN_OFF_MS 180000u
-#define GAL_SLEEP_MS 420000u
+#define GAL_SCREEN_OFF_MS 300000u
+#define GAL_SLEEP_MS 1800000u
 #define BACKLIGHT_FULL 100
 #define BACKLIGHT_DIM 35
 
 #define INPUT_QUEUE_DEPTH 8
 #define INPUT_TICK_MS 50
 
-static gal_app_t s_app;
+static nine_app_t s_app;
 
 static QueueHandle_t s_input_queue;
 static TaskHandle_t s_input_task;
 static volatile bool s_input_ready;
-static uint8_t s_backlight = BACKLIGHT_FULL;
+static uint8_t s_backlight;
 
 // 深睡按键唤醒的按键守卫(见 key_guard.h):唤醒键松手前吞掉按键动作。
 #define KEY_GUARD_MAX_US (10LL * 1000 * 1000)
@@ -71,7 +70,7 @@ static void on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user)
         return;
     }
     if (!s_input_ready || !s_input_queue) return;
-    const gal_key_t key = { .btn = (uint8_t)btn, .ev = (uint8_t)ev };
+    const nine_key_t key = { .btn = (uint8_t)btn, .ev = (uint8_t)ev };
     (void)xQueueSend(s_input_queue, &key, 0);
 }
 
@@ -79,7 +78,7 @@ static void on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user)
 static void enter_sleep(void)
 {
     ESP_LOGI(TAG, "空闲 %u ms,进入 deep sleep(任意按键唤醒)",
-             (unsigned)gal_app_idle_ms(&s_app));
+             (unsigned)nine_app_idle_ms(&s_app));
 
     const esp_err_t wake_err =
         esp_deep_sleep_enable_gpio_wakeup(1ULL << BSP_BTN_GPIO, ESP_GPIO_WAKEUP_GPIO_LOW);
@@ -93,9 +92,7 @@ static void enter_sleep(void)
     vTaskDelay(pdMS_TO_TICKS(500));
 
     // 睡前把自动进度落盘(平时是 2 秒节流写)。
-    gal_app_flush(&s_app);
-    // 正在放的音乐先停掉,等播放任务停写 I2S 再让 codec 休眠。
-    gal_music_stop();
+    nine_app_suspend(&s_app);
     vTaskDelay(pdMS_TO_TICKS(200));
 
     // CW2017 与 ES8311 共用 I2C:先让电量计收尾,再停 codec 与 I2S。
@@ -129,9 +126,10 @@ static void enter_sleep(void)
 static void input_task(void *arg)
 {
     (void)arg;
-    gal_key_t key;
+    nine_key_t key;
     int64_t last_us = esp_timer_get_time();
 
+    while (!s_input_ready) vTaskDelay(pdMS_TO_TICKS(5));
     for (;;) {
         const bool got = xQueueReceive(s_input_queue, &key, pdMS_TO_TICKS(INPUT_TICK_MS)) == pdTRUE;
         const int64_t now_us = esp_timer_get_time();
@@ -140,11 +138,11 @@ static void input_task(void *arg)
 
         if (got) {
             set_backlight(BACKLIGHT_FULL);
-            gal_app_key(&s_app, &key);
+            nine_app_key(&s_app, &key);
         }
-        gal_app_tick(&s_app, elapsed_ms);
+        nine_app_tick(&s_app, elapsed_ms);
 
-        const uint32_t idle = gal_app_idle_ms(&s_app);
+        const uint32_t idle = nine_app_idle_ms(&s_app);
         if (idle >= GAL_SLEEP_MS) {
             enter_sleep();
         } else if (idle >= GAL_SCREEN_OFF_MS) {
@@ -187,26 +185,29 @@ void app_main(void)
                  BSP_LCD_MOSI, BSP_LCD_SCLK, BSP_LCD_CS, BSP_LCD_DC, BSP_LCD_BL);
         return;
     }
-    bsp_display_backlight(BACKLIGHT_FULL);
-
-    if (!gal_app_init(&s_app)) {
-        ESP_LOGE(TAG, "框架界面初始化失败");
+    if (!nine_app_init(&s_app)) {
+        ESP_LOGE(TAG, "阅读器初始化失败（背光保持关闭）");
         return;
     }
 
-    s_input_queue = xQueueCreate(INPUT_QUEUE_DEPTH, sizeof(gal_key_t));
+    // Bring up the input path before lighting the panel: queue -> buttons ->
+    // task -> ready. Any failure rolls back and leaves the backlight off.
+    s_input_queue = xQueueCreate(INPUT_QUEUE_DEPTH, sizeof(nine_key_t));
     if (!s_input_queue) {
-        ESP_LOGE(TAG, "输入队列创建失败");
+        ESP_LOGE(TAG, "输入队列创建失败（背光保持关闭）");
         return;
     }
-    if (xTaskCreate(input_task, "gal_input", 4096, NULL, 5, &s_input_task) != pdPASS) {
-        ESP_LOGE(TAG, "输入任务创建失败");
+    if (bsp_button_init(on_key, NULL) != ESP_OK) {
+        ESP_LOGE(TAG, "按键初始化失败,回滚队列（背光保持关闭）");
         vQueueDelete(s_input_queue);
         s_input_queue = NULL;
         return;
     }
-    if (bsp_button_init(on_key, NULL) != ESP_OK) {
-        ESP_LOGE(TAG, "按键初始化失败,无法操作阅读器");
+    if (xTaskCreate(input_task, "nine_input", 5120, NULL, 5, &s_input_task) != pdPASS) {
+        ESP_LOGE(TAG, "输入任务创建失败,回滚按键与队列（背光保持关闭）");
+        (void)bsp_button_deinit();
+        vQueueDelete(s_input_queue);
+        s_input_queue = NULL;
         return;
     }
     if (s_key_guard.armed) {
@@ -219,11 +220,16 @@ void app_main(void)
         }
     }
     s_input_ready = true;
+    // The reader committed its first frame (or a visible boot error) inside
+    // nine_app_init. lv_refr_now is a refresh request/logical cycle only.
+    bsp_display_backlight(BACKLIGHT_FULL);
+    s_backlight = BACKLIGHT_FULL;
 
     ESP_LOGI(TAG, "空闲堆 %u 字节,最大连续块 %u 字节", (unsigned)esp_get_free_heap_size(),
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
-    ESP_LOGI(TAG, "就绪:框架骨架;短按任意键=下一句,长按确定=游戏内菜单,"
-                  "长按上=快进,长按下=自动阅读;空闲 %us 调暗,%us 熄屏,%us 休眠",
+    ESP_LOGI(TAG, "就绪:9-nine- Episode 4 横屏阅读器;短按任意键=下一句,"
+                  "长按确定=游戏内菜单,长按上=快进,长按下=自动阅读;"
+                  "空闲 %us 调暗,%us 熄屏,%us 休眠",
              (unsigned)(GAL_DIM_MS / 1000), (unsigned)(GAL_SCREEN_OFF_MS / 1000),
              (unsigned)(GAL_SLEEP_MS / 1000));
 }

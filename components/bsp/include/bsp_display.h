@@ -53,3 +53,10 @@ esp_err_t bsp_lvgl_set_landscape(bool landscape);
 // LVGL 尚未就绪或超时时 lock 返回 false；只有 lock 成功后才调用 unlock。
 bool bsp_lvgl_lock(int timeout_ms);
 void bsp_lvgl_unlock(void);
+
+// Bounded LVGL flush diagnostics. Counts FLUSH_START events and records the
+// maximum start-to-start gap and start-to-finish duration (microseconds).
+// These are panel-port flush boundaries, not physical glass response time.
+void bsp_lvgl_flush_stats_reset(void);
+void bsp_lvgl_flush_stats_get(uint32_t *count, uint32_t *max_gap_us,
+                              uint32_t *max_duration_us);

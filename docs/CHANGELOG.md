@@ -10,6 +10,12 @@
 > with `CHANGELOG.zh_CN.md`. The entries currently under `Unreleased` are pending
 > review for the next release; they are not a finalized release history.
 
+## v1.0.0-nine-yukiiro - 2026-11-25
+
+- Added the first AI Passport release of *9-nine- Episode 4: Yuki-iro*: a complete offline story reader with branches, endings, three-key reading, save/load, font sizing, history, CG/chapter/ending galleries and Gallery OP playback.
+- Added the 9-nine reading layout: complete 320×180 artwork, three 16px or two 20px body lines, and a compact speaker label over the artwork.
+- Device acceptance is limited to the checked scope (name/body layout, Gallery OP playback/sound/return, fast-forward release-stop, save/load and font pagination). Every route/ending, long-run stability, power-loss/NVS durability and all hardware remain unverified.
+
 ## Unreleased
 
 - Added the supplied 80-byte CW2017 profile for the specified 520 mAh cell, including content/update-flag checks, verified writes, the required restart sequence, and bounded SOC-readiness polling.

@@ -13,11 +13,12 @@ typedef enum {
     LV_DISPLAY_ROTATION_180,
     LV_DISPLAY_ROTATION_270,
 } lv_display_rotation_t;
-typedef struct { lv_display_t *target; lv_area_t *area; } lv_event_t;
+typedef struct { lv_display_t *target; lv_area_t *area; int code; } lv_event_t;
 typedef struct { int unused; } lv_event_dsc_t;
 typedef struct { int unused; } lvgl_port_cfg_t;
 #define ESP_LVGL_PORT_INIT_CONFIG() {0}
 #define LV_EVENT_FLUSH_START 1
+#define LV_EVENT_FLUSH_FINISH 2
 #define LV_COLOR_FORMAT_RGB565 1
 typedef struct {
     esp_lcd_panel_handle_t panel_handle;
@@ -38,6 +39,7 @@ void lv_display_add_event_cb(lv_display_t *, void (*)(lv_event_t *), int, void *
 uint32_t lv_display_get_event_count(lv_display_t *);
 static inline void *lv_event_get_target(lv_event_t *ev) { return ev->target; }
 static inline void *lv_event_get_param(lv_event_t *ev) { return ev->area; }
+static inline int lv_event_get_code(lv_event_t *ev) { return ev->code; }
 static inline lv_draw_buf_t *lv_display_get_buf_active(lv_display_t *disp) { return &disp->buffer; }
 static inline int lv_display_get_color_format(lv_display_t *disp) { (void)disp; return LV_COLOR_FORMAT_RGB565; }
 static inline int32_t lv_area_get_width(const lv_area_t *a) { return a->x2 - a->x1 + 1; }

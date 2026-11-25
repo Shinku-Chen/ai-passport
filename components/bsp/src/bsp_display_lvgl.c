@@ -5,18 +5,62 @@
 #include "bsp_pins.h"
 #include "esp_lvgl_port.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include <string.h>
 
 static const char *TAG = "bsp_lvgl";
 
-#define BSP_LVGL_DRAW_BUFFER_LINES 40
+#define BSP_LVGL_DRAW_BUFFER_LINES 16
 
 static lv_display_t *s_disp;
 static bool s_port_initialized;
 static bool s_port_init_failed;
 
+static uint32_t s_flush_count;
+static uint32_t s_flush_last_start_us;
+static uint32_t s_flush_current_start_us;
+static uint32_t s_flush_max_gap_us;
+static uint32_t s_flush_max_duration_us;
+static bool s_flush_have_start;
+
+void bsp_lvgl_flush_stats_reset(void)
+{
+    s_flush_count = 0;
+    s_flush_last_start_us = 0;
+    s_flush_current_start_us = 0;
+    s_flush_max_gap_us = 0;
+    s_flush_max_duration_us = 0;
+    s_flush_have_start = false;
+}
+
+void bsp_lvgl_flush_stats_get(uint32_t *count, uint32_t *max_gap_us,
+                              uint32_t *max_duration_us)
+{
+    if (count) *count = s_flush_count;
+    if (max_gap_us) *max_gap_us = s_flush_max_gap_us;
+    if (max_duration_us) *max_duration_us = s_flush_max_duration_us;
+}
+
 static void rounded_flush_event(lv_event_t *event)
 {
+    const int code = lv_event_get_code(event);
+    if (code != LV_EVENT_FLUSH_START && code != LV_EVENT_FLUSH_FINISH) return;
+    int64_t now64 = esp_timer_get_time();
+    uint32_t now = now64 <= 0 ? 0 : (uint32_t)now64;
+    if (code == LV_EVENT_FLUSH_START) {
+        if (s_flush_have_start) {
+            uint32_t gap = now - s_flush_last_start_us;
+            if (gap > s_flush_max_gap_us) s_flush_max_gap_us = gap;
+        }
+        s_flush_last_start_us = now;
+        s_flush_current_start_us = now;
+        s_flush_have_start = true;
+        ++s_flush_count;
+    } else {
+        uint32_t duration = now - s_flush_current_start_us;
+        if (duration > s_flush_max_duration_us) s_flush_max_duration_us = duration;
+        return;
+    }
     lv_display_t *disp = lv_event_get_target(event);
     const lv_area_t *area = lv_event_get_param(event);
     lv_draw_buf_t *draw_buf = lv_display_get_buf_active(disp);
@@ -107,7 +151,8 @@ lv_display_t *bsp_lvgl_init(void) {
         // LVGL 9.5 returns void here; check the list while still holding the lock.
         const uint32_t count = lv_display_get_event_count(disp);
         lv_display_add_event_cb(disp, rounded_flush_event, LV_EVENT_FLUSH_START, NULL);
-        mask_registered = lv_display_get_event_count(disp) == count + 1;
+        lv_display_add_event_cb(disp, rounded_flush_event, LV_EVENT_FLUSH_FINISH, NULL);
+        mask_registered = lv_display_get_event_count(disp) == count + 2;
     }
     if (!mask_registered) {
         ESP_LOGE(TAG, "LVGL display 或圆角回调注册失败");

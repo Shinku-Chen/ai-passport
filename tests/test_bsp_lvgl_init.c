@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "../components/bsp/src/bsp_display_lvgl.c"
 
+int64_t esp_timer_get_time(void) { return 0; }
 static lv_display_t display;
 static int panel_present = 1, lock_depth, port_live, display_live, callback_live;
 static int fail_lock, fail_port, fail_display, fail_event, init_calls, unlocked_flushes;
@@ -46,12 +47,13 @@ esp_err_t lvgl_port_remove_disp(lv_display_t *disp) {
 }
 void lv_display_add_event_cb(lv_display_t *disp, void (*cb)(lv_event_t *), int code, void *user) {
     (void)user;
-    assert(lock_depth && disp == &display && code == LV_EVENT_FLUSH_START && cb == rounded_flush_event);
+    assert(lock_depth && disp == &display && cb == rounded_flush_event);
+    assert(code == LV_EVENT_FLUSH_START || code == LV_EVENT_FLUSH_FINISH);
     if (!fail_event) callback_live = 1;
 }
 uint32_t lv_display_get_event_count(lv_display_t *disp) {
     assert(disp == &display && lock_depth);
-    return 1 + callback_live; // The display already owns an internal callback.
+    return 1 + (callback_live ? 2 : 0); // Internal callback + two stats callbacks.
 }
 // 横屏支持:运行时请求旋转,分辨率 getter 跟着切换(与 LVGL 换逻辑分辨率一致)。
 static int rotation_calls;
@@ -99,7 +101,7 @@ int main(void) {
     for (int x = 0; x < BSP_LCD_W; ++x) pixels[x] = 0xffff;
     display.buffer = (lv_draw_buf_t){ .data = (uint8_t *)pixels, .header.stride = sizeof(pixels) };
     lv_area_t area = { .x1 = 0, .y1 = 0, .x2 = BSP_LCD_W - 1, .y2 = 0 };
-    lv_event_t ev = { .target = &display, .area = &area };
+    lv_event_t ev = { .target = &display, .area = &area, .code = LV_EVENT_FLUSH_START };
     rounded_flush_event(&ev);
     assert(pixels[0] == 0 && pixels[BSP_LCD_W - 1] == 0 && pixels[BSP_LCD_W / 2] == 0xffff);
 
@@ -110,14 +112,14 @@ int main(void) {
     for (int x = 0; x < BSP_LCD_H; ++x) wide[x] = 0xffff;
     display.buffer = (lv_draw_buf_t){ .data = (uint8_t *)wide, .header.stride = sizeof(wide) };
     lv_area_t wide_top = { .x1 = 0, .y1 = 0, .x2 = BSP_LCD_H - 1, .y2 = 0 };
-    lv_event_t wide_ev = { .target = &display, .area = &wide_top };
+    lv_event_t wide_ev = { .target = &display, .area = &wide_top, .code = LV_EVENT_FLUSH_START };
     rounded_flush_event(&wide_ev);
     assert(wide[0] == 0 && wide[BSP_LCD_H - 1] == 0 && wide[BSP_LCD_H / 2] == 0xffff);
 
     // 横屏中间行离圆角足够远:整行保留。
     for (int x = 0; x < BSP_LCD_H; ++x) wide[x] = 0xffff;
     lv_area_t wide_mid = { .x1 = 0, .y1 = 120, .x2 = BSP_LCD_H - 1, .y2 = 120 };
-    lv_event_t mid_ev = { .target = &display, .area = &wide_mid };
+    lv_event_t mid_ev = { .target = &display, .area = &wide_mid, .code = LV_EVENT_FLUSH_START };
     rounded_flush_event(&mid_ev);
     assert(wide[0] == 0xffff && wide[BSP_LCD_H - 1] == 0xffff);
 

@@ -15,20 +15,31 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef NINE_READER
+#define GAL_UI_W 320
+#define GAL_UI_H 240
+#define GAL_PANEL_H 60
+#define GAL_TEXT_LINES_SMALL 3
+#define GAL_TEXT_LINES_LARGE 2
+#define GAL_TEXT_Y 0
+#else
 #define GAL_UI_W 240
 #define GAL_UI_H 320
-
-// 对话框面板:贴底 110px(框架竖屏规范:16px 档 5 行 / 20px 档 4 行)。
 #define GAL_PANEL_H 110
+#define GAL_TEXT_LINES_SMALL 5
+#define GAL_TEXT_LINES_LARGE 4
+#define GAL_TEXT_Y 6
+#endif
+
+// 对话框面板:贴底(竖屏 110px / 横屏阅读器 90px)。
 #define GAL_PANEL_Y (GAL_UI_H - GAL_PANEL_H)
 #define GAL_TEXT_X 10
 #define GAL_TEXT_W (GAL_UI_W - 2 * GAL_TEXT_X)
 #define GAL_LINE_H_SMALL 20
 #define GAL_LINE_H_LARGE 24
-#define GAL_TEXT_LINES_SMALL 5
-#define GAL_TEXT_LINES_LARGE 4
+#define GAL_NAME_MAX_W 160
 #define GAL_LIST_MAX_ROWS 32   // 大作品(章节 / 回想列表)需要更长
-#define GAL_TEXT_CAPACITY 1024
+#define GAL_TEXT_CAPACITY 512
 #define GAL_CG_TILES 8
 #define GAL_PAGE_MODAL GAL_PAGE_COUNT   // 弹窗层:不在页面枚举里
 
@@ -76,6 +87,7 @@ typedef enum {
     GAL_LIST_RECALL,      // CG 回想
     GAL_LIST_MUSIC,       // 音乐鉴赏
     GAL_LIST_CHAPTER,     // 章节 / 路线
+    GAL_LIST_CG,          // CG 鉴赏(窗口滚动)
     GAL_LIST_ENDING,      // 结局后续入口
     GAL_LIST_MODAL,       // 弹窗按钮
     GAL_LIST_COUNT,
@@ -104,6 +116,7 @@ typedef struct {
 } gal_history_row_t;
 
 typedef struct {
+    gal_page_t last_page;     // 上一页:离开时释放该页的懒创建行
     lv_obj_t *bg;             // 全屏渐变背景
 
     lv_obj_t *pages[GAL_PAGE_COUNT + 1];   // 各页面根对象(末尾多一个是弹窗层)

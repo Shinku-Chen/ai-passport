@@ -143,6 +143,11 @@ static esp_err_t register_callbacks(button_handle_t button, void *index) {
     return e;
 }
 
+esp_err_t bsp_button_deinit(void)
+{
+    return button_cleanup();
+}
+
 esp_err_t bsp_button_init(bsp_btn_cb_t cb, void *user) {
     if (s_ready) {
         s_cb = cb;
