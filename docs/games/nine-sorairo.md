@@ -104,8 +104,8 @@ The framework's 19 logical screens are retained. Changes are title-specific:
     press without moving the cursor;
   - long OK opens the menu and does not add a short advance on release;
   - long DOWN toggles auto-play; auto waits for typing and then 900 ms;
-  - holding UP fast-forwards every 120 ms, independent of typing and the auto
-    delay; releasing stops; a choice/ending stops it;
+  - holding UP immediately advances one sentence per control tick, independent
+    of typing and the auto delay; releasing stops; a choice/ending stops it;
   - manual input while auto is on still advances and turns auto off, rather than
     being consumed by the auto-off action;
   - text CRCs or image decode failures show a visible error and leave the VM
