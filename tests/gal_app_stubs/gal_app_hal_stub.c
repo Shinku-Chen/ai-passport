@@ -3,6 +3,7 @@
 #include "gal_music.h"
 #include "gal_ui.h"
 #include "lvgl.h"
+#include <string.h>
 const lv_font_t gal_cjk_16 = {0};
 const lv_font_t gal_cjk_20 = {0};
 int bsp_battery_soc(void) { return 100; }
@@ -14,6 +15,7 @@ void gal_music_stop(void) {}
 int gal_music_current(void) { return -1; }
 bool gal_ui_create(gal_ui_t *ui, const lv_font_t *a, const lv_font_t *b) { (void)ui; (void)a; (void)b; return true; }
 void gal_ui_show_page(gal_ui_t *ui, gal_page_t page) { (void)ui; (void)page; }
+void gal_ui_release_inactive_rows(gal_ui_t *ui, gal_page_t page) { (void)ui; (void)page; }
 void gal_ui_set_brand(gal_ui_t *ui, const char *a, const char *b) { (void)ui; (void)a; (void)b; }
 void gal_ui_set_text(gal_ui_t *ui, const char *a, const char *b, uint32_t c, const void *d, const void *e) { (void)ui; (void)a; (void)b; (void)c; (void)d; (void)e; }
 void gal_ui_show_full_text(gal_ui_t *ui) { (void)ui; }
@@ -55,3 +57,5 @@ void gal_ui_set_about(gal_ui_t *ui, const char *a, const char *b, const char *c)
 void gal_ui_scroll(gal_ui_t *ui, gal_page_t a, int b) { (void)ui; (void)a; (void)b; }
 void gal_ui_show_modal(gal_ui_t *ui, gal_modal_t a, const char *b, const char *c, const char *const *d, int e, int f) { (void)ui; (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; }
 void gal_ui_hide_modal(gal_ui_t *ui) { (void)ui; }
+
+void lv_mem_monitor(lv_mem_monitor_t *mon) { if (mon) memset(mon, 0, sizeof(*mon)); }

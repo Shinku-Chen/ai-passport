@@ -53,3 +53,11 @@ esp_err_t bsp_lvgl_set_landscape(bool landscape);
 // LVGL 尚未就绪或超时时 lock 返回 false；只有 lock 成功后才调用 unlock。
 bool bsp_lvgl_lock(int timeout_ms);
 void bsp_lvgl_unlock(void);
+
+// Bounded LVGL pipeline diagnostics. Render timing is RENDER_START..RENDER_READY;
+// flush timing is FLUSH_START..FLUSH_FINISH. These are port boundaries, not
+// glass response or frame-rate proof.
+void bsp_lvgl_flush_stats_reset(void);
+void bsp_lvgl_flush_stats_get(uint32_t *render_count, uint32_t *render_max_us,
+                              uint32_t *flush_count, uint32_t *flush_gap_us,
+                              uint32_t *flush_dur_us);

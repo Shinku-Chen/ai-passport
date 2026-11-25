@@ -117,11 +117,11 @@ While auto-play is on, **any key first exits auto-play**; that key press is cons
 | Orientation | Resolution | Dialogue panel | 16px tier | 20px tier |
 | --- | --- | --- | --- | --- |
 | Portrait (skeleton firmware) | 240×320 | 110px, bottom-anchored | 13 chars/line, 5 lines/page | 10 chars/line, 4 lines/page |
-| Landscape (BSP API provided) | 320×240 | 90px, bottom-anchored | 19 chars/line, 4 lines/page | 15 chars/line, 3 lines/page |
+| Landscape (BSP API provided) | 320×240 | 60px at y=180, below the full 320×180 art | 13 CJK chars (26 units)/line, 3 lines/page | 10 CJK chars (20 units)/line, 2 lines/page |
 
 - All on-screen text uses the dialogue font tier (16 / 20px); there is no 10–12px text.
-- The speaker plate sits **outside** the panel's top edge, left-aligned; narration has none.
-- The "auto" indicator sits outside the panel's top-right corner as plain text (no border or fill).
+- The speaker plate sits **outside** the panel's top edge, over the bottom of the art, left-aligned; narration has none. It is a compact fitted pill (max 160px including padding) and long names end with an ellipsis.
+- The "auto" indicator and notices occupy the fixed 160–179px row at the right, disjoint from the fitted speaker pill, as plain text (no border or fill).
 - Panel transparency is 10%–55% (5% steps, default 30%) and configurable in settings.
 - Line spacing is the font line height plus 1px (20px at the 16px tier, 24px at the 20px tier).
 

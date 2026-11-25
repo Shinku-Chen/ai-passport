@@ -180,8 +180,8 @@
     .screen--landscape .title-menu { width: 42%; gap: 4px; padding: 7px; }
     .screen--landscape .title-menu .button { min-height: 22px; }
     .dialogue-panel { position: absolute; z-index: 3; right: 0; bottom: 0; left: 0; height: var(--dialogue-panel-height); padding: 5px 10px; border: 0; border-radius: 0; background: rgb(11 16 32 / var(--dialogue-alpha, .70)); box-shadow: inset 0 2px 0 var(--line); }
-    /* 横屏按沙耶参考版：文本框 90px 固定、行高 19/23、每页 4/3 行；文字区 304px 恰好容纳 19 字。 */
-    .screen--landscape { --dialogue-line: 19px; --dialogue-panel-height: 90px; }
+    /* 横屏满幅：画面 320x180，文本框 60px 固定于 y=180；行高 20/24、每页 3/2 行，文字区 300px 容纳 13/10 个汉字。 */
+    .screen--landscape { --dialogue-line: 20px; --dialogue-panel-height: 60px; }
     :root.text-large .screen--landscape { --dialogue-line: 23px; }
     .screen--landscape .dialogue-panel { padding: 7px; }
     .speaker { position: absolute; bottom: 100%; left: 8px; display: inline-flex; min-width: 66px; align-items: center; justify-content: center; padding: 2px 8px; border-radius: 6px; color: var(--accent); background: rgb(0 0 0 / 50%); font-size: var(--dialogue-font); font-weight: 700; }
@@ -315,7 +315,7 @@
     const pages = [
       { id: "start", title: "启动画面", subtitle: "开机首屏，只有开始游戏", note: "开机第一屏，只有一个「开始游戏」入口；短按 OK 进入标题页，之后不再回到这一屏。" },
       { id: "title", title: "标题页", subtitle: "主入口、续玩与作品信息", note: "↑/↓移动菜单焦点，短按 OK 确认；继续游戏在没有存档时置灰。" },
-      { id: "dialogue", title: "对话页", subtitle: "全屏背景与贴底对话底纹", note: "短按 OK/↑/↓ 推进对白（打字中先全显）；长按 OK 打开游戏内菜单；长按 ↑ 快进（松开停止，不显示文字提示）；长按 ↓ 开自动阅读（右上角显示「自动」，任意键停止）。旁白不显示名牌，名牌挂在对话框上沿外侧、左对齐。竖屏 240×320：面板 110px 固定、16px 档每行 13 字 / 5 行，20px 档每行 10 字 / 4 行；横屏 320×240：面板 90px、每行 19/15 字、每页 4/3 行。底纹默认 30% 透明、10%–55% 可调。聚焦画面后可用 ↑/↓/Enter 模拟按键。" },
+      { id: "dialogue", title: "对话页", subtitle: "全屏背景与贴底对话底纹", note: "短按 OK/↑/↓ 推进对白（打字中先全显）；长按 OK 打开游戏内菜单；长按 ↑ 快进（松开停止，不显示文字提示）；长按 ↓ 开自动阅读（右上角显示「自动」，任意键停止）。旁白不显示名牌，名牌挂在对话框上沿外侧、左对齐。竖屏 240×320：面板 110px 固定、16px 档每行 13 字 / 5 行，20px 档每行 10 字 / 4 行；横屏 320×240：画面占满 320×180，面板 60px、16px 档每行 13 字 / 3 行，20px 档每行 10 字 / 2 行。底纹默认 30% 透明、10%–55% 可调。聚焦画面后可用 ↑/↓/Enter 模拟按键。" },
       { id: "choice", title: "选项分支", subtitle: "剧情选择节点", note: "↑/↓选择分支，短按 OK 确认；条件不满足的选项置灰（剧情锁），按确定提示「条件不足」。选项面板居中显示，分支前的最后一句台词留在底部对话框里。" },
       { id: "menu", title: "游戏内菜单", subtitle: "剧情中的快捷入口", note: "对话中长按 OK 打开（不再先经设置页）；↑/↓选择菜单项，短按 OK 执行；返回剧情本身就是一项菜单操作，长按 OK 也直接返回剧情。" },
       { id: "save", title: "存档页", subtitle: "选择槽位并保存进度", note: "聚焦页面后 ↑/↓选槽，短按 OK 直接保存；槽位自身就是操作入口，不另放“保存”按钮。覆盖已有进度时弹出确认弹窗；槽位与预览都是文字，骨架不携带美术资源。" },

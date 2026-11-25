@@ -15,19 +15,32 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef NINE_READER
+// Reader title: 320x240 landscape. Art occupies the full 320x180 from the top;
+// the 60px body panel is strictly y180..239 and never overlays/crops the art.
+#define GAL_UI_W 320
+#define GAL_UI_H 240
+#define GAL_PANEL_H 60
+#define GAL_TEXT_LINES_SMALL 3
+#define GAL_TEXT_LINES_LARGE 2
+#define GAL_TEXT_Y 0
+#define GAL_NAME_Y (GAL_PANEL_Y - 20)
+#define GAL_NAME_ROW_H 20
+#define GAL_NAME_MAX_W 160
+#else
 #define GAL_UI_W 240
 #define GAL_UI_H 320
-
-// 对话框面板:贴底 110px(框架竖屏规范:16px 档 5 行 / 20px 档 4 行)。
 #define GAL_PANEL_H 110
+#define GAL_TEXT_LINES_SMALL 5
+#define GAL_TEXT_LINES_LARGE 4
+#define GAL_TEXT_Y 4
+#endif
 #define GAL_PANEL_Y (GAL_UI_H - GAL_PANEL_H)
 #define GAL_TEXT_X 10
 #define GAL_TEXT_W (GAL_UI_W - 2 * GAL_TEXT_X)
 #define GAL_LINE_H_SMALL 20
 #define GAL_LINE_H_LARGE 24
-#define GAL_TEXT_LINES_SMALL 5
-#define GAL_TEXT_LINES_LARGE 4
-#define GAL_LIST_MAX_ROWS 32   // 大作品(章节 / 回想列表)需要更长
+#define GAL_LIST_MAX_ROWS 24   // chapters/history fit; keeps RAM bounded
 #define GAL_TEXT_CAPACITY 1024
 #define GAL_CG_TILES 8
 #define GAL_PAGE_MODAL GAL_PAGE_COUNT   // 弹窗层:不在页面枚举里
@@ -87,9 +100,15 @@ typedef struct {
     lv_obj_t *title;
     lv_obj_t *rows[GAL_LIST_MAX_ROWS];
     lv_obj_t *values[GAL_LIST_MAX_ROWS];
+    // Text pointers are supplied by the app and stay alive while the page is
+    // active. Only the visible window has LVGL row objects; selection shifts it.
+    const char *label_text[GAL_LIST_MAX_ROWS];
+    const char *value_text[GAL_LIST_MAX_ROWS];
     bool disabled[GAL_LIST_MAX_ROWS];
     int count;
     int selected;
+    int first;
+    int visible;
     int row_h;
     int top;
     int inset;                              // 左右留白
@@ -177,6 +196,10 @@ typedef struct {
 bool gal_ui_create(gal_ui_t *ui, const lv_font_t *font_small, const lv_font_t *font_large);
 
 void gal_ui_show_page(gal_ui_t *ui, gal_page_t page);
+// Release lazily created list rows belonging to non-active pages. The row
+// objects are recreated by the next fill on that page. This keeps the 64 KiB
+// LVGL pool below the image-transform allocation peak when entering CG/viewer.
+void gal_ui_release_inactive_rows(gal_ui_t *ui, gal_page_t keep);
 
 // 启动页/标题页上的作品名与副标题。
 void gal_ui_set_brand(gal_ui_t *ui, const char *title, const char *subtitle);

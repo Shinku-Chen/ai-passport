@@ -277,8 +277,10 @@ int main(void) {
     bsp_audio_set_volume(43);
     assert(bsp_audio_set_format(16000, 16, 1) == ESP_OK);
     assert_active();
+    assert(bsp_audio_set_format(12000, 16, 1) == ESP_OK);
+    assert(tx_channel.hz == 12000 && rx_channel.hz == 12000);
     unsigned created = codec_creations;
-    assert(bsp_audio_set_format(16000, 16, 1) == ESP_OK);
+    assert(bsp_audio_set_format(12000, 16, 1) == ESP_OK);
     assert(codec_creations == created); // Same-format reuse remains cheap.
     assert(bsp_audio_set_format(8000, 16, 1) == ESP_OK);
     assert(tx_channel.hz == 8000 && rx_channel.hz == 8000);

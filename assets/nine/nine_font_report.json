@@ -1,0 +1,20 @@
+{
+  "glyphs": 2258,
+  "fallbackGlyphs": 17,
+  "sizes": {
+    "16": {
+      "bitmapBytes": 267280,
+      "estimatedCompiledBytes": 307940,
+      "sourceBytes": 1995681,
+      "missingGlyphs": 0,
+      "verifiedGlyphs": 2258
+    },
+    "20": {
+      "bitmapBytes": 393966,
+      "estimatedCompiledBytes": 434626,
+      "sourceBytes": 2811240,
+      "missingGlyphs": 0,
+      "verifiedGlyphs": 2258
+    }
+  }
+}

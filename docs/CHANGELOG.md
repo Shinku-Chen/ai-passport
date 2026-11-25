@@ -10,6 +10,25 @@
 > with `CHANGELOG.zh_CN.md`. The entries currently under `Unreleased` are pending
 > review for the next release; they are not a finalized release history.
 
+## v1.0.0-nine-sorairo - 2026-11-25
+
+- First public release of the *9-nine- Sorairo Sorauta Soranooto* offline reader.
+  The branch contains this title only.
+- Complete three-key reading flow with immediate one-unit advance, page/line
+  pagination, choice handling, in-game menu, three save slots, history, font
+  size and panel settings.
+- Full 623-frame @5 fps opening with its 12 kHz audio, plus an independent
+  opening row in the Gallery; natural completion, short press or long press
+  returns to the same row, Gallery browsing stays silent, and title music is
+  restored on return.
+- CG, story recall, chapter list, music, background gallery, save/load and
+  failure handling are included. CRC/bounds/JPEG failures clear the visible
+  frame and block VM advance.
+- Device acceptance for the published build covers the complete Gallery opening
+  picture/audio/return, fast-forward release, save/load, font size and
+  pagination. Complete route traversal, long-run stability and power loss remain
+  unverified; older candidate failures remain in the development archive.
+
 ## Unreleased
 
 - Added the supplied 80-byte CW2017 profile for the specified 520 mAh cell, including content/update-flag checks, verified writes, the required restart sequence, and bounded SOC-readiness polling.

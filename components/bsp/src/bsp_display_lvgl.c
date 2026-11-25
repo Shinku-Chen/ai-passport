@@ -5,6 +5,9 @@
 #include "bsp_pins.h"
 #include "esp_lvgl_port.h"
 #include "esp_log.h"
+#ifdef ESP_PLATFORM
+#include "esp_timer.h"
+#endif
 #include <string.h>
 
 static const char *TAG = "bsp_lvgl";
@@ -14,6 +17,72 @@ static const char *TAG = "bsp_lvgl";
 static lv_display_t *s_disp;
 static bool s_port_initialized;
 static bool s_port_init_failed;
+
+#ifdef ESP_PLATFORM
+static uint32_t s_render_count, s_render_start_us, s_render_max_us;
+static uint32_t s_flush_count, s_flush_last_us, s_flush_start_us;
+static uint32_t s_flush_gap_max_us, s_flush_dur_max_us;
+
+void bsp_lvgl_flush_stats_reset(void)
+{
+    s_render_count = s_render_start_us = s_render_max_us = 0;
+    s_flush_count = s_flush_last_us = s_flush_start_us = 0;
+    s_flush_gap_max_us = s_flush_dur_max_us = 0;
+}
+
+void bsp_lvgl_flush_stats_get(uint32_t *render_count, uint32_t *render_max_us,
+                              uint32_t *flush_count, uint32_t *flush_gap_us,
+                              uint32_t *flush_dur_us)
+{
+    if (render_count) *render_count = s_render_count;
+    if (render_max_us) *render_max_us = s_render_max_us;
+    if (flush_count) *flush_count = s_flush_count;
+    if (flush_gap_us) *flush_gap_us = s_flush_gap_max_us;
+    if (flush_dur_us) *flush_dur_us = s_flush_dur_max_us;
+}
+
+static uint32_t now_us(void)
+{
+    const int64_t t = esp_timer_get_time();
+    return t <= 0 ? 0 : (uint32_t)t;
+}
+
+static void pipeline_stats_event(lv_event_t *event)
+{
+    const lv_event_code_t code = lv_event_get_code(event);
+    const uint32_t now = now_us();
+    if (code == LV_EVENT_RENDER_START) {
+        s_render_start_us = now;
+    } else if (code == LV_EVENT_RENDER_READY) {
+        const uint32_t dur = now - s_render_start_us;
+        ++s_render_count;
+        if (dur > s_render_max_us) s_render_max_us = dur;
+    } else if (code == LV_EVENT_FLUSH_START) {
+        if (s_flush_count) {
+            const uint32_t gap = now - s_flush_last_us;
+            if (gap > s_flush_gap_max_us) s_flush_gap_max_us = gap;
+        }
+        s_flush_last_us = now;
+        s_flush_start_us = now;
+        ++s_flush_count;
+    } else if (code == LV_EVENT_FLUSH_FINISH) {
+        const uint32_t dur = now - s_flush_start_us;
+        if (dur > s_flush_dur_max_us) s_flush_dur_max_us = dur;
+    }
+}
+#else
+void bsp_lvgl_flush_stats_reset(void) {}
+void bsp_lvgl_flush_stats_get(uint32_t *render_count, uint32_t *render_max_us,
+                              uint32_t *flush_count, uint32_t *flush_gap_us,
+                              uint32_t *flush_dur_us)
+{
+    if (render_count) *render_count = 0;
+    if (render_max_us) *render_max_us = 0;
+    if (flush_count) *flush_count = 0;
+    if (flush_gap_us) *flush_gap_us = 0;
+    if (flush_dur_us) *flush_dur_us = 0;
+}
+#endif
 
 static void rounded_flush_event(lv_event_t *event)
 {
@@ -107,7 +176,12 @@ lv_display_t *bsp_lvgl_init(void) {
         // LVGL 9.5 returns void here; check the list while still holding the lock.
         const uint32_t count = lv_display_get_event_count(disp);
         lv_display_add_event_cb(disp, rounded_flush_event, LV_EVENT_FLUSH_START, NULL);
+#ifdef ESP_PLATFORM
+        lv_display_add_event_cb(disp, pipeline_stats_event, LV_EVENT_ALL, NULL);
+        mask_registered = lv_display_get_event_count(disp) == count + 2;
+#else
         mask_registered = lv_display_get_event_count(disp) == count + 1;
+#endif
     }
     if (!mask_registered) {
         ESP_LOGE(TAG, "LVGL display 或圆角回调注册失败");

@@ -79,14 +79,14 @@ run_static_checks() {
         -o "${test_dir}/test_gal_tone"
     "${test_dir}/test_gal_tone"
     # GalGame 框架:周目 flag 与永久解锁分离、旧 save/progress 兼容。
-    cc -std=c11 -Wall -Wextra -Werror \
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
         -Itests/gal_stubs -Imain/gal \
         tests/test_gal_state.c main/gal/gal_save.c main/gal/gal_progress.c \
         main/gal/gal_unlock.c tests/gal_stubs/nvs_stub.c \
         -o "$test_dir/test_gal_state"
     "$test_dir/test_gal_state"
     # GalGame 框架:生产 app 的 NewGame/choice/save/load/continue/restart 状态链。
-    cc -std=c11 -Wall -Wextra -Werror \
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
         -Itests/gal_app_stubs -Itests/gal_stubs -Imain/gal \
         tests/test_gal_app_flow.c main/gal/gal_app.c main/gal/gal_save.c \
         main/gal/gal_progress.c main/gal/gal_unlock.c main/gal/gal_settings.c \
@@ -94,7 +94,63 @@ run_static_checks() {
         tests/gal_app_stubs/gal_app_hal_stub.c tests/gal_stubs/nvs_stub.c \
         -o "$test_dir/test_gal_app_flow"
     "$test_dir/test_gal_app_flow"
-    PYTHONDONTWRITEBYTECODE=1 python3 tools/gal_font.py --check --out-dir assets/fonts
+    PYTHONDONTWRITEBYTECODE=1 python3 tools/gal_font.py --check --source-root main/gal --out-dir assets/fonts
+    # 9-nine- sorairo: real pack/VM/conditions/store/media/image reader tests.
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain/nine -Itests/nine_host tests/test_nine_vm.c main/nine/nine_crc.c main/nine/nine_pack.c main/nine/nine_vm.c tests/nine_host/tinfl_shim.c -o "${test_dir}/test_nine_vm"
+    "${test_dir}/test_nine_vm" assets/nine/nine_script.bin
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain/nine -Itests/nine_host tests/test_nine_conditions.c main/nine/nine_crc.c main/nine/nine_pack.c main/nine/nine_vm.c tests/nine_host/tinfl_shim.c -o "${test_dir}/test_nine_conditions"
+    "${test_dir}/test_nine_conditions" tests/data/nine_conditions.bin
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain/nine tests/test_nine_reader.c main/nine/nine_reader.c -o "${test_dir}/test_nine_reader"
+    "${test_dir}/test_nine_reader"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain/nine tests/test_nine_crc.c main/nine/nine_crc.c -o "${test_dir}/test_nine_crc"
+    "${test_dir}/test_nine_crc"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/nine_host -Itests/gal_stubs -Imain/nine tests/test_nine_store.c main/nine/nine_store.c tests/nine_host/nvs_stub.c -o "${test_dir}/test_nine_store"
+    "${test_dir}/test_nine_store"
+    # Production app path: one long OK on a real CHOICE opens MENU; return restores choice_sel.
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -DNINE_READER -DLV_CONF_SKIP \
+        -Imanaged_components/lvgl__lvgl -Imanaged_components/lvgl__lvgl/src \
+        -Itests/nine_host -Itests/gal_stubs -Itests/gal_app_stubs -Imain/nine -Imain/gal \
+        tests/test_nine_app_menu.c tests/nine_app_menu_stubs.c tests/nine_app_menu_hal.c \
+        main/nine/nine_app.c main/nine/nine_crc.c main/nine/nine_pack.c main/nine/nine_vm.c main/nine/nine_reader.c \
+        main/nine/nine_store.c main/gal/gal_settings.c main/gal/gal_text.c \
+        tests/nine_host/tinfl_shim.c tests/nine_host/nvs_stub.c \
+        -o "${test_dir}/test_nine_app_menu"
+    "${test_dir}/test_nine_app_menu" assets/nine/nine_script.bin assets/nine/nine_images.bin
+    # Production app: instant fast-forward skips the rest of a multi-page
+    # sentence/typing/auto, advances at most once per tick, and stops at
+    # choice/ending/OP/resource error.
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -DNINE_READER -DLV_CONF_SKIP         -Imanaged_components/lvgl__lvgl -Imanaged_components/lvgl__lvgl/src         -Itests/nine_host -Itests/gal_stubs -Itests/gal_app_stubs -Imain/nine -Imain/gal         tests/test_nine_app_ff.c tests/nine_app_menu_stubs.c tests/nine_app_menu_hal.c         main/nine/nine_app.c main/nine/nine_crc.c main/nine/nine_pack.c main/nine/nine_vm.c main/nine/nine_reader.c         main/nine/nine_op_log.c         main/nine/nine_store.c main/gal/gal_settings.c main/gal/gal_text.c         tests/nine_host/tinfl_shim.c tests/nine_host/nvs_stub.c         -o "${test_dir}/test_nine_app_ff"
+    "${test_dir}/test_nine_app_ff" assets/nine/nine_script.bin assets/nine/nine_images.bin
+    # Gallery/CG/recall/chapter browsing is silent; explicit music and title
+    # restore are separate intents; no per-CG stop/play churn.
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -DNINE_READER -DLV_CONF_SKIP         -Imanaged_components/lvgl__lvgl -Imanaged_components/lvgl__lvgl/src         -Itests/nine_host -Itests/gal_stubs -Itests/gal_app_stubs -Imain/nine -Imain/gal         tests/test_nine_app_audio.c tests/nine_app_audio_stubs.c tests/nine_app_menu_hal.c         main/nine/nine_app.c main/nine/nine_crc.c main/nine/nine_pack.c main/nine/nine_vm.c main/nine/nine_reader.c         main/nine/nine_op_log.c         main/nine/nine_store.c main/gal/gal_settings.c main/gal/gal_text.c         tests/nine_host/tinfl_shim.c tests/nine_host/nvs_stub.c         -o "${test_dir}/test_nine_app_audio"
+    "${test_dir}/test_nine_app_audio" assets/nine/nine_script.bin assets/nine/nine_images.bin
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain/nine tests/test_nine_op_stats_log.c main/nine/nine_op_log.c -o "${test_dir}/test_nine_op_stats_log"
+    "${test_dir}/test_nine_op_stats_log"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -DNINE_MEDIA_HOST -Imain/nine -Itests/nine_host tests/test_nine_media.c main/nine/nine_crc.c main/nine/nine_media.c main/nine/nine_pack.c tests/nine_host/tinfl_shim.c -o "${test_dir}/test_nine_media"
+    "${test_dir}/test_nine_media" assets/nine/nine_script.bin assets/nine/nine_images.bin
+    # Non-HOST production audio_worker: metadata rate reaches the BSP/codec.
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/nine_media_rtos_stubs -Imain/nine         tests/test_nine_media_rtos.c tests/nine_media_rtos_test_stubs.c         main/nine/nine_crc.c main/nine/nine_media.c         -o "${test_dir}/test_nine_media_rtos"
+    "${test_dir}/test_nine_media_rtos" assets/nine/nine_script.bin assets/nine/nine_images.bin
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -DNINE_IMAGE_HOST -Imain/nine -Itests/nine_host tests/nine_image_dump.c main/nine/nine_crc.c main/nine/nine_image.c main/nine/nine_pack.c main/nine/tjpgd/tjpgd.c tests/nine_host/tinfl_shim.c -o "${test_dir}/nine_image_dump"
+    python3 tools/nine_image_check.py --pack assets/nine --dump "${test_dir}/nine_image_dump"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -DNINE_IMAGE_HOST -Imain/nine -Itests/nine_host tests/test_nine_image_fail.c main/nine/nine_crc.c main/nine/nine_image.c main/nine/nine_pack.c main/nine/tjpgd/tjpgd.c tests/nine_host/tinfl_shim.c -o "${test_dir}/test_nine_image_fail"
+    "${test_dir}/test_nine_image_fail" assets/nine/nine_script.bin assets/nine/nine_images.bin
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -DNINE_IMAGE_HOST -Imain/nine -Itests/nine_host tests/test_nine_image_cache.c main/nine/nine_crc.c main/nine/nine_image.c main/nine/nine_pack.c main/nine/tjpgd/tjpgd.c tests/nine_host/tinfl_shim.c -o "${test_dir}/test_nine_image_cache"
+    "${test_dir}/test_nine_image_cache" assets/nine/nine_script.bin assets/nine/nine_images.bin
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain/nine -Itests/nine_host tests/nine_trace_cli.c main/nine/nine_crc.c main/nine/nine_pack.c main/nine/nine_vm.c tests/nine_host/tinfl_shim.c -o "${test_dir}/nine_trace_cli"
+    "${test_dir}/nine_trace_cli" assets/nine/nine_script.bin 0,1,0,0,1 20000 > "${test_dir}/trace_01.txt"
+    diff -q tests/data/nine_trace_01.txt "${test_dir}/trace_01.txt"
+    "${test_dir}/nine_trace_cli" assets/nine/nine_script.bin 0,0,1 20000 > "${test_dir}/trace_02.txt"
+    diff -q tests/data/nine_trace_02.txt "${test_dir}/trace_02.txt"
+    "${test_dir}/nine_trace_cli" assets/nine/nine_script.bin 0,2,0,0,1 20000 > "${test_dir}/trace_03.txt"
+    diff -q tests/data/nine_trace_03.txt "${test_dir}/trace_03.txt"
+    PYTHONDONTWRITEBYTECODE=1 python3 tools/nine_font.py --check --out assets/nine
+    if [ -n "${NINE_SOURCE:-}" ]; then
+        PYTHONDONTWRITEBYTECODE=1 python3 tools/nine_audit.py --source "${NINE_SOURCE}" --pack assets/nine --expect-commit 6a8907a5ae576f4377abe4b74f15bd9af13efe07
+    else
+        echo "nine source audit: SKIP (set NINE_SOURCE to the pinned checkout)"
+    fi
     for demo in audio low_power ble wifi; do
         "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
             -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \
