@@ -92,10 +92,6 @@ substitute for the verified merged image.
   power-loss and sleep stability, and every page not individually retested. Host
   tests and a scoped device pass are not a whole-device guarantee.
 
-An earlier `9f985c49…` candidate had an OP audio stutter. That old failure is
-retained in the development archive and does not describe this tested `9a06ff27…`
-opening result.
-
 ## Resources and artifacts
 
 | Item | Actual |
