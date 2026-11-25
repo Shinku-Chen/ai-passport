@@ -6,7 +6,7 @@
 
 A complete offline port candidate of *Café Stella and the Reaper's Butterflies* for **FoloToy AI Passport** (ESP32-C3, 8 MB Flash, no PSRAM, 320×240 landscape). The firmware keeps the `feature/galgame-framework` page/key/persistence contract but replaces its content and reading layer; it is not a demo or a summary.
 
-> Status: the user selected **keep all audio and video**; the new candidate has passed native build/image/archive, **device tests NOT RUN**. Old 7af6 and all historical evidence are preserved. This build uses current BG10/224 + q18 portraits/atlas/title, 4 kHz title / 8 kHz OP audio, and OP 224×126 q15 at 3 fps; full source duration and guard semantics are below.
+> Status: complete offline reader; device acceptance covers the tested Gallery OP (clarity/no overlay/return), ordinary chapters, body text/images, and fast-forward release stop. Full-route, long-run and power-loss behavior are not claimed. All audio/video and source are retained.
 
 ## Fixed input
 

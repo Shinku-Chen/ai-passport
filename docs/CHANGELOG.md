@@ -10,6 +10,13 @@
 > with `CHANGELOG.zh_CN.md`. The entries currently under `Unreleased` are pending
 > review for the next release; they are not a finalized release history.
 
+## v1.0.0-cafestella - 2026-11-25
+
+- Added the complete offline *Café Stella and the Reaper's Butterflies* reader, covering the story, 69 choice groups, seven endings and five after stories.
+- Added three-key reading, auto-play, fast-forward, save/load, two text sizes, history/recall, CG/story/music galleries, and a dedicated OP playback row.
+- Restored the source-native OP frames and removed application titles and hint capsules from the video area; a short control hint now sits below the video, while ordinary chapter transitions keep their titles.
+- Based on the upstream `xuanyide01/cafestella-rw5` project at `90ddb9e`; story and artwork rights remain with their original owners. Device acceptance covers the tested OP, chapter, body-text and fast-forward-release scenarios only; full-route, long-run and power-loss behavior are not claimed.
+
 ## Unreleased
 
 - Added the supplied 80-byte CW2017 profile for the specified 520 mAh cell, including content/update-flag checks, verified writes, the required restart sequence, and bounded SOC-readiness polling.

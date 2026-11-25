@@ -6,7 +6,7 @@
 
 《星光咖啡馆与死神之蝶》（Café Stella and the Reaper's Butterflies）面向 **FoloToy AI Passport**（ESP32-C3、8 MB Flash、无 PSRAM、320×240 横屏）的完整离线移植候选。固件基于 `feature/galgame-framework` 的页面/按键/持久化约定重写内容与阅读层，不是演示或摘要版。
 
-> 当前状态：用户已选择**保留全部音视频**；新候选已完成 native 构建/镜像/归档，**设备测试 NOT RUN**。旧 7af6 与全部历史证据保留；本轮为 current BG10/224 + q18 立绘/图集/标题、4 kHz 标题 / 8 kHz OP 音轨、OP 224×126 q15 3fps，完整源时长与 guard 语义见下文。
+> 当前状态：完整离线阅读版；已在设备上完成限定范围验收（鉴赏室 OP 清晰/无遮挡/返回、普通章节、正文图文、快进松手停止）。不声称全路线、长稳或掉电场景通过；完整音视频与源码已保留。
 
 ## 固定输入
 
