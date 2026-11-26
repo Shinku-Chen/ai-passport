@@ -85,7 +85,7 @@ fork 在此之上承载了**多个独立应用**：已发布到社区的应用�
   （jojo、meme猫、刘华强、哈基米、奶龙等）。**UP/DOWN** 在目录里移动、
   **OK** 播放、**长按 OK** 进设置（音量、电量）。固件自包含 `voicefs` 数据分区
   （`0x210000`），从 `0x0` 一次烧录即可。单机离线。
-- **随身 AI 对讲机（Pocket Intercom）** —— [`pending/openclaw-intercom`](https://github.com/Shinku-Chen/ai-passport/tree/pending/openclaw-intercom)，`v1.14-intercom`
+- **随身 AI 对讲机（Pocket Intercom）** —— [`feature/openclaw-intercom`](https://github.com/Shinku-Chen/ai-passport/tree/feature/openclaw-intercom)，`v1.14-intercom`
   按住 **OK** 说话（指示灯红→绿），配套 Android 应用把语音交给局域网里的 AI 助理，
   回答回显到设备小屏与手机。设备本身不联网、不解析 HTTP、不存密钥；音频以 Opus
   经 BLE 上行，约 3 KB/s。后端可以是 OpenClaw，也可以是兼容 OpenAI 的接口。

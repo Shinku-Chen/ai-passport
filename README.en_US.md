@@ -94,7 +94,7 @@ partition limit, `clannad` has 173,056 B free — check the budget before touchi
   **UP/DOWN** move, **OK** plays, **long OK** opens settings (volume, battery).
   The firmware is self-contained: the `voicefs` data partition (`0x210000`) is merged into
   the image, so a single flash from `0x0` is enough. Standalone, offline.
-- **Pocket Intercom** — [`pending/openclaw-intercom`](https://github.com/Shinku-Chen/ai-passport/tree/pending/openclaw-intercom), `v1.14-intercom`
+- **Pocket Intercom** — [`feature/openclaw-intercom`](https://github.com/Shinku-Chen/ai-passport/tree/feature/openclaw-intercom), `v1.14-intercom`
   Hold **OK** to talk (LED red → green); a companion Android app relays the speech to an AI
   assistant on your LAN and shows the answer on the device and the phone. The device itself
   has no Wi-Fi client, no HTTP and stores no keys; audio goes over BLE as Opus (~3 KB/s).
