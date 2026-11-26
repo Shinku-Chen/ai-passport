@@ -110,7 +110,7 @@ Only `nianniang` and `shinuyakata` are portrait 240×320; the rest are landscape
   holds paired English/Chinese notes on display refresh, deep sleep, CJK fonts,
   packing budgets, three-key semantics, compositing and memory trade-offs.
 - **`docs/*` branches** carry documentation, archive and experience increments
-  that are not upstream yet; each branch README states only that branch's scope.
+  that are not upstream yet; they do not ship application firmware.
 
 ---
 

@@ -104,8 +104,7 @@ fork 在此之上承载多个独立应用：已发布到社区的应用在 `feat
   [`docs/reference/shinku-chen/galgame-port/`](https://github.com/Shinku-Chen/ai-passport/tree/pending/galgame-framework/docs/reference/shinku-chen/galgame-port)。
 - **经验档案**：上游 [`docs/reference/shinku-chen/`](docs/reference/shinku-chen/)
   按主题收录显示刷新、深睡、CJK 字体、打包预算、三键语义、合成与内存权衡等中英成对文档。
-- **`docs/*` 分支**：承载尚未合入上游的文档、归档与经验增量；每个分支的根 README
-  只说明该分支自己的文档范围。
+- **`docs/*` 分支**：承载尚未合入上游的文档、归档与经验增量；不提供应用固件。
 
 ---
 
