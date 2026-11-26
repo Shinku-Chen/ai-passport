@@ -28,7 +28,7 @@
 
 - [Galgame 阅读器移植经验](docs/reference/shinku-chen/galgame-port/README.zh_CN.md)
   —— 共同需求、框架能力、12 条只在真机上暴露的缺陷，以及发版前验收清单。
-- [新一代 Galgame 批量移植经验](https://github.com/FoloToy/ai-passport/blob/main/docs/reference/shinku-chen/newer-galgame-port-lessons.zh_CN.md)
+- [上游 Galgame 经验档案](https://github.com/FoloToy/ai-passport/tree/main/docs/reference/shinku-chen)
   —— 后续八部移植的源固定、试读隔离、分带预算与剧情图对账。
 
 ## 状态

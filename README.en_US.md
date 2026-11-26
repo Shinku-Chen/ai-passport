@@ -37,7 +37,7 @@ persistence contract.
 - [Galgame reader porting notes](docs/reference/shinku-chen/galgame-port/README.md)
   — shared requirements, framework capabilities, twelve hardware-only defects
   and the pre-release checklist.
-- [Newer galgame port lessons](https://github.com/FoloToy/ai-passport/blob/main/docs/reference/shinku-chen/newer-galgame-port-lessons.md)
+- [Upstream galgame reference archive](https://github.com/FoloToy/ai-passport/tree/main/docs/reference/shinku-chen)
   — source pinning, preview isolation, banded budgets and story-graph
   reconciliation from the later eight ports.
 
