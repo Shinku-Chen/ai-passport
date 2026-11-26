@@ -21,7 +21,7 @@ see [`docs/README.md`](docs/README.md), [`AGENTS.md`](AGENTS.md) and
 
 ## 1. Visual-novel readers (28)
 
-### 1.1 v1.0.0 batch (13)
+### 1.1 v1.0.0 batch (12)
 
 | Title | Branch | Latest release | Orientation | Flash | Notes |
 |---|---|---|---|---|---|
@@ -37,10 +37,9 @@ see [`docs/README.md`](docs/README.md), [`AGENTS.md`](AGENTS.md) and
 | eden* | [`feature/port-eden-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-eden-landscape) | `v1.0.0-eden` | Landscape | 93.54% | One scaled image fills the panel; no large contiguous heap |
 | Stella of the End | [`feature/port-stella-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-stella-landscape) | `v1.0.0-stella` | Landscape | 99.20% | 21 chapters; tightest partition in the batch |
 | Paper no Mahou Tsukai | [`feature/port-paper-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-paper-landscape) | `v1.0.1-paper` | Landscape | 75.56% | Fixed BGR-to-RGB565 path; CGs fill the panel |
-| Shinuyakata | [`feature/port-shinuyakata`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-shinuyakata) | `v0.1.3-shinuyakata` | **Portrait** | 98.29% | 198 pages, 17,409 text records, 56 CG groups; silent reader |
-
-Only `nianniang` and `shinuyakata` are portrait 240×320; the rest are landscape
-320×240. The `-landscape` suffix is historical and does not describe orientation.
+Only `nianniang` is portrait 240×320 in this batch; the rest are landscape
+320×240. `shinuyakata` is also portrait, in 1.3. The `-landscape` suffix is
+historical and does not describe orientation.
 
 ### 1.2 2026-11-25 batch (6)
 
@@ -53,10 +52,11 @@ Only `nianniang` and `shinuyakata` are portrait 240×320; the rest are landscape
 | 9-nine- Haruiro | [`feature/nine-haruiro-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-haruiro-20261125) | `v1.0.0-nine-haruiro` | Landscape | 97.66% | 15 chapters, 13 choices, two endings |
 | 9-nine- Yukiiro | [`feature/nine-yukiiro-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-yukiiro-20261125) | `v1.0.0-nine-yukiiro` | Landscape | 99.23% | 23 chapters, 47 choice nodes, two endings |
 
-### 1.3 Earlier ports (9)
+### 1.3 Other ports (10)
 
 | Title | Branch | Latest release | Notes |
 |---|---|---|---|
+| Shinuyakata | [`feature/port-shinuyakata`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-shinuyakata) | `v0.1.3-shinuyakata` | **Portrait**; 198 pages, 17,409 text records, 56 CG groups; silent reader |
 | Asunabi | [`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame) | `v0.1.0-asunabi` | Portrait; 30 chapters, 4,649 lines, one ending, six manual saves |
 | ATRI -My Dear Moments- | [`feature/atri-reader`](https://github.com/Shinku-Chen/ai-passport/tree/feature/atri-reader) | `v1.0.2-atri-reader` | Portrait; 34 chapters, 1,069 scenes, 12,188 lines, three endings |
 | DRACU-RIOT! | [`feature/dracu-riot`](https://github.com/Shinku-Chen/ai-passport/tree/feature/dracu-riot) | `v0.1.0-dracu-riot` | Portrait; five routes, 62 chapter nodes, 244 event CGs |

@@ -18,7 +18,7 @@ fork 在此之上承载多个独立应用：已发布到社区的应用在 `feat
 
 ## 一、视觉小说阅读器（28 部）
 
-### 1.1 v1.0.0 批次（13 部）
+### 1.1 v1.0.0 批次（12 部）
 
 | 作品 | 分支 | 最新版本 | 方向 | Flash | 说明 |
 |---|---|---|---|---|---|
@@ -34,10 +34,8 @@ fork 在此之上承载多个独立应用：已发布到社区的应用在 `feat
 | eden* | [`feature/port-eden-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-eden-landscape) | `v1.0.0-eden` | 横屏 | 93.54% | 真机无大块连续堆，用单图缩放铺满 |
 | 星之终途 | [`feature/port-stella-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-stella-landscape) | `v1.0.0-stella` | 横屏 | 99.20% | 21 章，本批分区最紧 |
 | 纸上的魔法使 | [`feature/port-paper-landscape`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-paper-landscape) | `v1.0.1-paper` | 横屏 | 75.56% | 修正 BGR→RGB565 换序，CG 铺满 |
-| 死馆 | [`feature/port-shinuyakata`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-shinuyakata) | `v0.1.3-shinuyakata` | **竖屏** | 98.29% | 198 页、17,409 条文本、56 组 CG，无声阅读器 |
-
-**方向说明**：本批只有 `nianniang` 与 `shinuyakata` 是竖屏 240×320，其余为横屏 320×240；
-分支名里的 `-landscape` 是历史命名，不代表实际方向。
+**方向说明**：本批只有 `nianniang` 是竖屏 240×320，其余为横屏 320×240；
+`shinuyakata` 也是竖屏，见 1.3。分支名里的 `-landscape` 是历史命名，不代表实际方向。
 
 ### 1.2 2026-11-25 批次（6 部）
 
@@ -50,10 +48,11 @@ fork 在此之上承载多个独立应用：已发布到社区的应用在 `feat
 | 9-nine- 春色春恋春熙风 | [`feature/nine-haruiro-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-haruiro-20261125) | `v1.0.0-nine-haruiro` | 横屏 | 97.66% | 15 章、13 个选项、2 个结局 |
 | 9-nine- 雪色雪花雪之痕 | [`feature/nine-yukiiro-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-yukiiro-20261125) | `v1.0.0-nine-yukiiro` | 横屏 | 99.23% | 23 章、47 个选项节点、2 个结局 |
 
-### 1.3 更早的移植（9 部）
+### 1.3 其他移植（10 部）
 
 | 作品 | 分支 | 最新版本 | 说明 |
 |---|---|---|---|
+| 死馆 | [`feature/port-shinuyakata`](https://github.com/Shinku-Chen/ai-passport/tree/feature/port-shinuyakata) | `v0.1.3-shinuyakata` | **竖屏**；198 页、17,409 条文本、56 组 CG，无声阅读器 |
 | 飞鸟会长不肯认输 | [`feature/asunabi-galgame`](https://github.com/Shinku-Chen/ai-passport/tree/feature/asunabi-galgame) | `v0.1.0-asunabi` | 竖屏；30 章、4,649 句、单结局，6 个手动存档位 |
 | 亚托莉 -My Dear Moments- | [`feature/atri-reader`](https://github.com/Shinku-Chen/ai-passport/tree/feature/atri-reader) | `v1.0.2-atri-reader` | 竖屏；34 章、1,069 幕、12,188 句、3 结局 |
 | DRACU-RIOT! | [`feature/dracu-riot`](https://github.com/Shinku-Chen/ai-passport/tree/feature/dracu-riot) | `v0.1.0-dracu-riot` | 竖屏；五条女主线、62 章节点、244 张事件 CG |
