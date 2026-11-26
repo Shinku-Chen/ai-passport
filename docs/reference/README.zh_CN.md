@@ -124,6 +124,24 @@
 
 - [让持续演化的世界在三键掌机上活下来](jiaqingrun/persistent-world-simulation-on-a-handheld.zh_CN.md) —— 由跳长推导增长、随科技成长的软承载力，以及阻止周期性虫潮反复重置世界的四层反雪球机制。
 - [无 FPU 掌机上的实时浮层、重绘与音频](jiaqingrun/live-overlays-and-audio-on-a-handheld.zh_CN.md) —— 全屏不透明度动画为何拖垮板子、16 kHz 柔和波形音频、缺字门禁，以及能容纳亿级数字的顶部布局。
+- [240 × 320 掌机上的整屏旋转地图页](jiaqingrun/rotated-full-screen-map-page.zh_CN.md) —— 用索引转置代替旋转像素、LVGL 9 换源会重置尺寸与对齐的顺序陷阱，以及整屏图片上叠动画浮层为何是冻住而不是崩溃。
+- [可能还不存在的实体，怎么给它们建网格行](jiaqingrun/grid-rows-for-optional-entities.zh_CN.md) —— 混血尚未出现时一进物种页就重启，「只建一次」的守卫如何同时修好绘制、隐藏与选中，以及「不存在」为何不等于「隐藏」。
+
+**应用档案：**
+
+- [世界之尘 · 上帝模拟器](jiaqingrun/dust-of-worlds/README.zh_CN.md) —— 上帝视角的世界模拟器：六族与四支混血自行演化，五页界面、三位固定统治者、祈愿与奇观，玩家只降灾、赐福与回应。
+
+### arthas276
+
+**应用档案：**
+
+- [口袋密码卡](arthas276/pocket-password-card/README.zh_CN.md) —— 离线派生密码卡：128-bit 种子生成固定 8 × 10 字符网格，站点=行+列+长度+模式，密码默认遮蔽 8 秒显示；PIN 模式永不印上钱包卡，种子 CRC-8 校验加机上录入实现免电脑换机迁移。
+
+### jakegu10086
+
+**应用档案：**
+
+- [物理题闯关](jakegu10086/physics-quiz/README.zh_CN.md) — 60 道离线物理题，每轮随机抽 10 道，提交即判分并给出一句话解析，最后按正确率结算本轮成绩。
 
 ## 新增经验条目
 

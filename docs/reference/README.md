@@ -131,6 +131,24 @@ The engineering rules themselves live under
 
 - [Keeping a Persistent World Alive on a Three-Key Handheld](jiaqingrun/persistent-world-simulation-on-a-handheld.md) — tick-length-derived growth, soft tech-driven capacity, and four anti-snowball mechanisms that stop recurring swarms from repeatedly resetting a world.
 - [Live Overlays, Redraws and Audio on a No-FPU Handheld](jiaqingrun/live-overlays-and-audio-on-a-handheld.md) — why a full-screen opacity animation stalls the board, a 16 kHz soft-wave audio path, a glyph-coverage gate, and a header that survives billion-scale numbers.
+- [A Rotated Full-Screen Map Page on a 240 × 320 Handheld](jiaqingrun/rotated-full-screen-map-page.md) — rotating a map by transposing the writer's index instead of the pixels, the LVGL 9 image-property ordering trap, and why animated overlays over a full-screen image froze the board instead of crashing it.
+- [Grid Rows for Entities That May Not Exist Yet](jiaqingrun/grid-rows-for-optional-entities.md) — a species grid that rebooted on page entry whenever a hybrid had not appeared yet, the create-once guard that fixes drawing, hiding and selection together, and why absent is not the same state as hidden.
+
+**Application archives:**
+
+- [Dust of Worlds — God Simulator](jiaqingrun/dust-of-worlds/README.md) — a god-view world simulator where six species and four hybrids evolve on their own across five pages, three fixed rulers, prayers and wonders, and the player only intervenes with disasters and blessings.
+
+### arthas276
+
+**Application playbooks:**
+
+- [Pocket Password Card](arthas276/pocket-password-card/README.md) — an offline derived-password card: one fixed 8 × 10 grid from a 128-bit seed, sites as row + column + length + mode, masked 8-second reveals, a PIN mode that never appears on the printable card, and on-device seed migration with a CRC-8 checksum.
+
+### jakegu10086
+
+**Application playbooks:**
+
+- [Pocket Physics Quiz](jakegu10086/physics-quiz/README.md) — a 60-question offline physics drill that draws ten random questions per round, checks each answer instantly with a one-line explanation, and scores the round by accuracy.
 
 ## Adding an experience entry
 

@@ -5,11 +5,54 @@ mode="${1:---all}"
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 
 usage() {
-    echo "Usage: $0 [--all|--static|--firmware]" >&2
+    cat >&2 <<USAGE
+Usage: $0 [--all|--static|--firmware]
+
+Environment:
+  ACTIONLINT=fetch    (default) use ACTIONLINT_BIN, actionlint on PATH, or the
+                      cached binary; otherwise download the checksum-pinned release.
+  ACTIONLINT=offline  never download; use a local binary if one exists, otherwise
+                      report "actionlint: SKIPPED" and continue.
+  ACTIONLINT=<path>   use this actionlint executable.
+  ACTIONLINT_BIN      preinstalled actionlint, honoured by fetch and offline.
+USAGE
+}
+
+# Print the actionlint executable to use, or nothing when offline mode finds none.
+resolve_actionlint() {
+    local mode="${ACTIONLINT:-fetch}"
+    local candidate
+
+    case "${mode}" in
+        fetch|offline) ;;
+        *)
+            if [[ -f "${mode}" && -x "${mode}" ]]; then
+                printf '%s\n' "${mode}"
+                return 0
+            fi
+            echo "ERROR: ACTIONLINT must be fetch, offline, or an executable path (got '${mode}')" >&2
+            return 2
+            ;;
+    esac
+
+    candidate="${ACTIONLINT_BIN:-}"
+    if [[ -z "${candidate}" ]]; then
+        candidate="$(command -v actionlint || true)"
+    fi
+    if [[ -n "${candidate}" && -x "${candidate}" ]]; then
+        printf '%s\n' "${candidate}"
+        return 0
+    fi
+    if [[ "${mode}" == "offline" ]]; then
+        ./tools/install-actionlint.sh --cached-only || true
+        return 0
+    fi
+    ./tools/install-actionlint.sh
 }
 
 run_static_checks() {
     local actionlint_bin
+    local actionlint_skipped=0
     local test_dir
     local dead_strip_flag
 
@@ -20,15 +63,16 @@ run_static_checks() {
     fi
 
     python3 tools/check_repo.py
+    python3 tools/check_glyphs.py
 
-    actionlint_bin="${ACTIONLINT_BIN:-}"
-    if [[ -z "${actionlint_bin}" ]]; then
-        actionlint_bin="$(command -v actionlint || true)"
+    actionlint_bin="$(resolve_actionlint)"
+    if [[ -n "${actionlint_bin}" ]]; then
+        "${actionlint_bin}" -color .github/workflows/*.yml
+        echo "actionlint: PASS"
+    else
+        actionlint_skipped=1
+        echo "actionlint: SKIPPED (offline mode: ACTIONLINT=offline and no local binary)"
     fi
-    if [[ -z "${actionlint_bin}" || ! -x "${actionlint_bin}" ]]; then
-        actionlint_bin="$(./tools/install-actionlint.sh)"
-    fi
-    "${actionlint_bin}" -color .github/workflows/*.yml
 
     test_dir="$(mktemp -d /tmp/ai-passport-host-tests.XXXXXX)"
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
@@ -46,6 +90,10 @@ run_static_checks() {
         tests/test_bsp_display_rounding.c components/bsp/src/bsp_display_rounding.c \
         -o "${test_dir}/test_bsp_display_rounding"
     "${test_dir}/test_bsp_display_rounding"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Icomponents/bsp/include \
+        tests/test_bsp_display_capture.c components/bsp/src/bsp_display_capture.c \
+        -o "${test_dir}/test_bsp_display_capture"
+    "${test_dir}/test_bsp_display_capture"
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Icomponents/bsp/src \
         tests/test_bsp_es8311_sleep_check.c components/bsp/src/bsp_es8311_sleep_check.c \
         -o "${test_dir}/test_bsp_es8311_sleep_check"
@@ -61,6 +109,7 @@ run_static_checks() {
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
         -Itests/bsp_stubs -Icomponents/bsp/include \
         tests/test_bsp_lvgl_init.c components/bsp/src/bsp_display_rounding.c \
+        components/bsp/src/bsp_display_capture.c \
         -o "${test_dir}/test_bsp_lvgl_init"
     "${test_dir}/test_bsp_lvgl_init"
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
@@ -79,11 +128,15 @@ run_static_checks() {
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_deep_sleep_contract.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_key_wake_contract.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_check_repo.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_check_glyphs.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_verify_firmware.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_archive_firmware.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_install_passport_skills.py
     rm -rf "${test_dir}"
     echo "Host tests: PASS"
+    if [[ "${actionlint_skipped}" == 1 ]]; then
+        echo "Static checks: PASS with actionlint SKIPPED (report it as not run)"
+    fi
 }
 
 run_firmware_checks() (
@@ -123,6 +176,9 @@ case "${mode}" in
         ;;
     --firmware)
         run_firmware_checks
+        ;;
+    -h|--help)
+        usage
         ;;
     *)
         usage
