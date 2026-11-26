@@ -9,8 +9,8 @@ Upstream is the development baseline for [FoloToy AI Passport](https://ai-passpo
 an **ESP32-C3** wearable with a **240×320** colour display, **three keys**,
 **8 MB of flash and no PSRAM**.
 
-The fork hosts several independent applications; each lives on its own `feature/*` branch
-and publishes firmware through this repository's
+The fork hosts several independent applications; a published application lives on a
+`feature/*` branch, while an unpublished one stays on a `pending/*` branch. Firmware is published through this repository's
 [Releases](https://github.com/Shinku-Chen/ai-passport/releases). Every branch README
 describes only its own project — this file is the overview. Board facts, the BSP and the
 development workflow come from upstream: see [`docs/README.md`](docs/README.md),
@@ -94,16 +94,16 @@ partition limit, `clannad` has 173,056 B free — check the budget before touchi
   **UP/DOWN** move, **OK** plays, **long OK** opens settings (volume, battery).
   The firmware is self-contained: the `voicefs` data partition (`0x210000`) is merged into
   the image, so a single flash from `0x0` is enough. Standalone, offline.
-- **Pocket Intercom** — [`feature/openclaw-intercom`](https://github.com/Shinku-Chen/ai-passport/tree/feature/openclaw-intercom), `v1.14-intercom`
+- **Pocket Intercom** — [`pending/openclaw-intercom`](https://github.com/Shinku-Chen/ai-passport/tree/pending/openclaw-intercom), `v1.14-intercom`
   Hold **OK** to talk (LED red → green); a companion Android app relays the speech to an AI
   assistant on your LAN and shows the answer on the device and the phone. The device itself
   has no Wi-Fi client, no HTTP and stores no keys; audio goes over BLE as Opus (~3 KB/s).
   Backend can be OpenClaw or any OpenAI-compatible endpoint.
   **Requires the Android app plus a reachable LAN backend.**
-- **DLNA Audio Receiver** — [`feature/dlna-receiver`](https://github.com/Shinku-Chen/ai-passport/tree/feature/dlna-receiver)
+- **DLNA Audio Receiver** — [`pending/dlna-receiver`](https://github.com/Shinku-Chen/ai-passport/tree/pending/dlna-receiver)
   Turns the device into a DLNA renderer on the local network, fed by a phone or desktop.
   **Requires a LAN and a casting source.**
-- **DLNA Player** — [`feature/netease-dlna-player`](https://github.com/Shinku-Chen/ai-passport/tree/feature/netease-dlna-player)
+- **DLNA Player** — [`pending/netease-dlna-player`](https://github.com/Shinku-Chen/ai-passport/tree/pending/netease-dlna-player)
   DLNA casting playback: boots straight into the player, MP3 decoded on-device. Works with
   NetEase Cloud Music and other casting sources.
 
@@ -118,10 +118,10 @@ partition limit, `clannad` has 173,056 B free — check the budget before touchi
 - **What to Eat Today** — [`feature/cheerful-goodall`](https://github.com/Shinku-Chen/ai-passport/tree/feature/cheerful-goodall)
   A button-driven food roulette: hold a key to cycle recommendations, release to land on
   one; boots straight into the app. **Long OK** switches the render path. Standalone.
-- **Tuner** — [`feature/tuner`](https://github.com/Shinku-Chen/ai-passport/tree/feature/tuner)
+- **Tuner** — [`pending/tuner`](https://github.com/Shinku-Chen/ai-passport/tree/pending/tuner)
   Twelve-tone equal-temperament tuner using the onboard microphone; AUTO and MANUAL modes,
   **long OK** opens a debug page with gain adjustment. Standalone.
-- **Shengzi Cards** — [`feature/shengzi-cards`](https://github.com/Shinku-Chen/ai-passport/tree/feature/shengzi-cards), `v1.0.0`
+- **Shengzi Cards** — [`pending/shengzi-cards`](https://github.com/Shinku-Chen/ai-passport/tree/pending/shengzi-cards), `v1.0.0`
   Flash-card drill for Chinese characters with BROWSE / TEST / SPELL modes and NVS-backed
   progress. Standalone.
 
@@ -129,8 +129,8 @@ partition limit, `clannad` has 173,056 B free — check the budget before touchi
 
 ## 5. Framework and experience docs
 
-- **`feature/galgame-framework`** — shared capabilities and pitfalls of the twelve ports:
-  [`docs/reference/shinku-chen/galgame-port/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/galgame-framework/docs/reference/shinku-chen/galgame-port)
+- **`pending/galgame-framework`** — shared capabilities and pitfalls of the twelve ports:
+  [`docs/reference/shinku-chen/galgame-port/`](https://github.com/Shinku-Chen/ai-passport/tree/pending/galgame-framework/docs/reference/shinku-chen/galgame-port)
   (English + Chinese): requirements, capabilities, twelve "symptom → root cause → fix"
   entries, an acceptance checklist and the branch table.
 - **`docs/*` branches** — topic notes (deep sleep and wake, display refresh, CJK font

@@ -8,7 +8,8 @@
 上游是 [FoloToy AI Passport](https://ai-passport.folotoy.cn) 的开发基线：**ESP32-C3**、
 **240×320** 彩屏、**三个按键**、**8 MB Flash、无 PSRAM**、开源可穿戴。
 
-fork 在此之上承载了**多个独立应用**：每个应用一个 `feature/*` 分支，固件发布挂在
+fork 在此之上承载了**多个独立应用**：已发布到社区的应用在 `feature/*` 分支，尚未发布的
+在 `pending/*` 分支，固件发布挂在
 本仓库的 [Releases](https://github.com/Shinku-Chen/ai-passport/releases)；每个分支的
 根 README 只介绍它自己那个项目，本文件是总览。板卡事实、BSP 与开发流程来自上游——
 见 [`docs/README.md`](docs/README.md)、[`AGENTS.md`](AGENTS.md)、
@@ -84,14 +85,14 @@ fork 在此之上承载了**多个独立应用**：每个应用一个 `feature/*
   （jojo、meme猫、刘华强、哈基米、奶龙等）。**UP/DOWN** 在目录里移动、
   **OK** 播放、**长按 OK** 进设置（音量、电量）。固件自包含 `voicefs` 数据分区
   （`0x210000`），从 `0x0` 一次烧录即可。单机离线。
-- **随身 AI 对讲机（Pocket Intercom）** —— [`feature/openclaw-intercom`](https://github.com/Shinku-Chen/ai-passport/tree/feature/openclaw-intercom)，`v1.14-intercom`
+- **随身 AI 对讲机（Pocket Intercom）** —— [`pending/openclaw-intercom`](https://github.com/Shinku-Chen/ai-passport/tree/pending/openclaw-intercom)，`v1.14-intercom`
   按住 **OK** 说话（指示灯红→绿），配套 Android 应用把语音交给局域网里的 AI 助理，
   回答回显到设备小屏与手机。设备本身不联网、不解析 HTTP、不存密钥；音频以 Opus
   经 BLE 上行，约 3 KB/s。后端可以是 OpenClaw，也可以是兼容 OpenAI 的接口。
   **依赖：配套 Android 应用 + 可达的局域网后端。**
-- **DLNA 音频接收器** —— [`feature/dlna-receiver`](https://github.com/Shinku-Chen/ai-passport/tree/feature/dlna-receiver)
+- **DLNA 音频接收器** —— [`pending/dlna-receiver`](https://github.com/Shinku-Chen/ai-passport/tree/pending/dlna-receiver)
   把设备变成局域网内的 DLNA 渲染端，由手机/电脑推流播放。**依赖：局域网 + 推流源。**
-- **DLNA 投屏播放器** —— [`feature/netease-dlna-player`](https://github.com/Shinku-Chen/ai-passport/tree/feature/netease-dlna-player)
+- **DLNA 投屏播放器** —— [`pending/netease-dlna-player`](https://github.com/Shinku-Chen/ai-passport/tree/pending/netease-dlna-player)
   DLNA 投屏播放：开机直达播放器，板载 MP3 解码。配合网易云等支持投屏的音源使用。
 
 ---
@@ -104,18 +105,18 @@ fork 在此之上承载了**多个独立应用**：每个应用一个 `feature/*
 - **今天吃啥（What to Eat Today）** —— [`feature/cheerful-goodall`](https://github.com/Shinku-Chen/ai-passport/tree/feature/cheerful-goodall)
   按键驱动的食物轮盘：按住一个键让推荐轮转，松手停在想吃的那一项上；
   开机直达应用，无主菜单。**长按 OK** 可切换渲染路径。单机离线。
-- **调音器（Tuner）** —— [`feature/tuner`](https://github.com/Shinku-Chen/ai-passport/tree/feature/tuner)
+- **调音器（Tuner）** —— [`pending/tuner`](https://github.com/Shinku-Chen/ai-passport/tree/pending/tuner)
   十二平均律调音器，用板载麦克风做音高检测；AUTO / MANUAL 两种模式，
   **长按 OK** 进入调试并可调增益。单机离线。
-- **生字卡片识记（Shengzi Cards）** —— [`feature/shengzi-cards`](https://github.com/Shinku-Chen/ai-passport/tree/feature/shengzi-cards)，`v1.0.0`
+- **生字卡片识记（Shengzi Cards）** —— [`pending/shengzi-cards`](https://github.com/Shinku-Chen/ai-passport/tree/pending/shengzi-cards)，`v1.0.0`
   生字卡片背诵工具：BROWSE / TEST / SPELL 三种模式，进度用 NVS 持久化。单机离线。
 
 ---
 
 ## 五、框架与经验文档
 
-- **`feature/galgame-framework`** —— 12 部移植共用的能力与踩坑记录：
-  [`docs/reference/shinku-chen/galgame-port/`](https://github.com/Shinku-Chen/ai-passport/tree/feature/galgame-framework/docs/reference/shinku-chen/galgame-port)
+- **`pending/galgame-framework`** —— 12 部移植共用的能力与踩坑记录：
+  [`docs/reference/shinku-chen/galgame-port/`](https://github.com/Shinku-Chen/ai-passport/tree/pending/galgame-framework/docs/reference/shinku-chen/galgame-port)
   （中英成对，含需求、能力、12 条"现象→根因→修法"、验收清单与 12 部分支表）。
 - **`docs/*` 分支** —— 按主题沉淀经验（深度睡眠与唤醒、显示刷新、CJK 字体子集、
   打包预算、三键事件语义、线性页表、合成与内存权衡等），正文在
