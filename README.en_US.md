@@ -41,16 +41,19 @@ Only `nianniang` is portrait 240×320 in this batch; the rest are landscape
 320×240. `shinuyakata` is also portrait, in 1.3. The `-landscape` suffix is
 historical and does not describe orientation.
 
+> The Flash column is the application-partition usage of the v1.0.0 build; use
+> the matching release for later v1.0.1 / v1.0.2 point releases.
+
 ### 1.2 2026-11-25 batch (6)
 
-| Title | Branch | Release | Orientation | Flash | Notes |
-|---|---|---|---|---|---|
-| Café Stella and the Reaper's Butterflies | [`feature/cafestella-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/cafestella-20261125) | `v1.0.0-cafestella` | Landscape | 99.87% | 923 nodes, seven endings, five after stories, full audio and OP |
-| Maitetsu · Niiroku Route | [`feature/maitetsu-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/maitetsu-20261125) | `v1.0.0-maitetsu` | Landscape | 94.02% | Four Niiroku chapters, 35 CGs, complete 283.88 s title theme |
-| 9-nine- Kokoiro | [`feature/nine-kokoiro-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-kokoiro-20261125) | `v1.0.0-nine-kokoiro` | Landscape | 64.94% | 17 chapters, two endings, 30 manual save slots |
-| 9-nine- Sorairo | [`feature/nine-sorairo-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-sorairo-20261125) | `v1.0.0-nine-sorairo` | Landscape | 87.31% | 21 chapters, 22 CG groups, gallery opening |
-| 9-nine- Haruiro | [`feature/nine-haruiro-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-haruiro-20261125) | `v1.0.0-nine-haruiro` | Landscape | 97.66% | 15 chapters, 13 choices, two endings |
-| 9-nine- Yukiiro | [`feature/nine-yukiiro-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-yukiiro-20261125) | `v1.0.0-nine-yukiiro` | Landscape | 99.23% | 23 chapters, 47 choice nodes, two endings |
+| Title | Branch | Release | Orientation | Notes |
+|---|---|---|---|---|
+| Café Stella and the Reaper's Butterflies | [`feature/cafestella-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/cafestella-20261125) | `v1.0.0-cafestella` | Landscape | 923 nodes, seven endings, five after stories, full audio and OP |
+| Maitetsu · Niiroku Route | [`feature/maitetsu-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/maitetsu-20261125) | `v1.0.0-maitetsu` | Landscape | Four Niiroku chapters, 35 CGs, complete 283.88 s title theme |
+| 9-nine- Kokoiro | [`feature/nine-kokoiro-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-kokoiro-20261125) | `v1.0.0-nine-kokoiro` | Landscape | 17 chapters, two endings, 30 manual save slots |
+| 9-nine- Sorairo | [`feature/nine-sorairo-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-sorairo-20261125) | `v1.0.0-nine-sorairo` | Landscape | 21 chapters, 22 CG groups, gallery opening |
+| 9-nine- Haruiro | [`feature/nine-haruiro-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-haruiro-20261125) | `v1.0.0-nine-haruiro` | Landscape | 15 chapters, 13 choices, two endings |
+| 9-nine- Yukiiro | [`feature/nine-yukiiro-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-yukiiro-20261125) | `v1.0.0-nine-yukiiro` | Landscape | 23 chapters, 47 choice nodes, two endings |
 
 ### 1.3 Other ports (10)
 

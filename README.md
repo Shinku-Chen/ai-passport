@@ -37,16 +37,18 @@ fork 在此之上承载多个独立应用：已发布到社区的应用在 `feat
 **方向说明**：本批只有 `nianniang` 是竖屏 240×320，其余为横屏 320×240；
 `shinuyakata` 也是竖屏，见 1.3。分支名里的 `-landscape` 是历史命名，不代表实际方向。
 
+> Flash 列是 v1.0.0 构建时的应用分区占用；后续 v1.0.1 / v1.0.2 小版本以对应 release 为准。
+
 ### 1.2 2026-11-25 批次（6 部）
 
-| 作品 | 分支 | 版本 | 方向 | Flash | 说明 |
-|---|---|---|---|---|---|
-| 星光咖啡馆与死神之蝶 | [`feature/cafestella-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/cafestella-20261125) | `v1.0.0-cafestella` | 横屏 | 99.87% | 923 节点、7 结局、5 后日谈，完整音频与 OP |
-| 爱上火车·二六线 | [`feature/maitetsu-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/maitetsu-20261125) | `v1.0.0-maitetsu` | 横屏 | 94.02% | 二六线 4 章、35 张 CG、完整 283.88s 标题曲 |
-| 9-nine- 九次九日九重色 | [`feature/nine-kokoiro-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-kokoiro-20261125) | `v1.0.0-nine-kokoiro` | 横屏 | 64.94% | 17 章、2 结局、30 个手动存档位 |
-| 9-nine- 天色天歌天籁音 | [`feature/nine-sorairo-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-sorairo-20261125) | `v1.0.0-nine-sorairo` | 横屏 | 87.31% | 21 章、22 组 CG、OP 鉴赏 |
-| 9-nine- 春色春恋春熙风 | [`feature/nine-haruiro-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-haruiro-20261125) | `v1.0.0-nine-haruiro` | 横屏 | 97.66% | 15 章、13 个选项、2 个结局 |
-| 9-nine- 雪色雪花雪之痕 | [`feature/nine-yukiiro-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-yukiiro-20261125) | `v1.0.0-nine-yukiiro` | 横屏 | 99.23% | 23 章、47 个选项节点、2 个结局 |
+| 作品 | 分支 | 版本 | 方向 | 说明 |
+|---|---|---|---|---|
+| 星光咖啡馆与死神之蝶 | [`feature/cafestella-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/cafestella-20261125) | `v1.0.0-cafestella` | 横屏 | 923 节点、7 结局、5 后日谈，完整音频与 OP |
+| 爱上火车·二六线 | [`feature/maitetsu-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/maitetsu-20261125) | `v1.0.0-maitetsu` | 横屏 | 二六线 4 章、35 张 CG、完整 283.88s 标题曲 |
+| 9-nine- 九次九日九重色 | [`feature/nine-kokoiro-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-kokoiro-20261125) | `v1.0.0-nine-kokoiro` | 横屏 | 17 章、2 结局、30 个手动存档位 |
+| 9-nine- 天色天歌天籁音 | [`feature/nine-sorairo-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-sorairo-20261125) | `v1.0.0-nine-sorairo` | 横屏 | 21 章、22 组 CG、OP 鉴赏 |
+| 9-nine- 春色春恋春熙风 | [`feature/nine-haruiro-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-haruiro-20261125) | `v1.0.0-nine-haruiro` | 横屏 | 15 章、13 个选项、2 个结局 |
+| 9-nine- 雪色雪花雪之痕 | [`feature/nine-yukiiro-20261125`](https://github.com/Shinku-Chen/ai-passport/tree/feature/nine-yukiiro-20261125) | `v1.0.0-nine-yukiiro` | 横屏 | 23 章、47 个选项节点、2 个结局 |
 
 ### 1.3 其他移植（10 部）
 
