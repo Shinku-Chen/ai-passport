@@ -131,6 +131,25 @@ Before terminal deep sleep, stop new page work and hold the LVGL lock long enoug
 
 LVGL is not thread-safe. Timer callbacks in LVGL context may access objects directly. Button callbacks must not access LVGL; they enqueue input for the lifecycle task. The lifecycle task and other workers must use `bsp_lvgl_lock()`/`bsp_lvgl_unlock()` for short UI operations. Stop producers before deleting a page and clear static object pointers afterward.
 
+### Screen frame capture
+
+`bsp_display_capture_begin(cb)` / `bsp_display_capture_end()` (see
+`bsp_display_capture.h`) hand every flushed area of the next refresh to
+`cb` as `{x, y, w, h, pixels, stride}` - the masked RGB565 exactly as it
+ships to the panel link, with no additional full-screen buffer. Call
+`begin` under `bsp_lvgl_lock()` (or before `bsp_lvgl_init()`), invalidate
+the screen, and accumulate the areas by coordinates inside the callback.
+Three caveats are contractual: `stride` is bytes per row and may exceed
+`w * 2`; areas arrive in flush order and only cover the whole frame after
+a full refresh; `pixels` is renderer-owned and valid only inside the
+callback. The callback runs inside the LVGL render task, so it may only do
+a bounded copy: never send pixels over UART/USB, write flash, take the LVGL
+lock or block on a queue there; transmit from your own task afterwards.
+The bytes are LVGL-native little-endian RGB565 (the panel swap
+happens later; black is 0 either way). `end()` may be called from inside
+the callback to stop after the current area. The host test
+`tests/test_bsp_display_capture.c` freezes this state machine.
+
 ## 6. ADC button ladder
 
 GPIO0 has an external 10 kΩ pull-up to 3.3 V. UP, DOWN, and OK connect it to ground through 0 Ω, 1 kΩ, and 2.2 kΩ respectively.
@@ -142,7 +161,11 @@ GPIO0 has an external 10 kΩ pull-up to 3.3 V. UP, DOWN, and OK connect it to gr
 | OK | about 595 mV | `[447, 1900)` mV |
 | Released | about 3300 mV | outside all windows |
 
-Do not replace the external resistor with the inaccurate internal pull-up. The BSP owns one ADC1 oneshot unit and calibration handle, shared by its static drivers through the public `iot_button` driver interface and by voltage reads. Attenuation is `ADC_ATTEN_DB_12`; one averaged sample is reused across the three keys in each polling cycle. Half-open windows prevent overlapping keys at a boundary. Calibration failure aborts initialization and rolls back; read/conversion failures are inactive readings, never a zero-voltage UP press. The BSP avoids the dependency's ADC index registry so partial allocation failure cannot strand an occupied index on retry. The BSP also passes the press timing explicitly (`BSP_BTN_SHORT_PRESS_MS` = 180 ms, `BSP_BTN_LONG_PRESS_MS` = 500 ms, in `bsp_pins.h`) instead of relying on the component's Kconfig defaults of 180 / 1500 ms: holding a key for 1.5 s before a long press registers is slow on this three-key device. The component's `BUTTON_LONG_PRESS_TIME_MS` Kconfig lower bound is also 500 ms, so a shorter long press can only be passed in code. Callbacks originate in the button component's shared `esp_timer` task and must only enqueue work or perform similarly bounded operations.
+Do not replace the external resistor with the inaccurate internal pull-up. The BSP owns one ADC1 oneshot unit and calibration handle, shared by its static drivers through the public `iot_button` driver interface and by voltage reads. Attenuation is `ADC_ATTEN_DB_12`; one averaged sample is reused across the three keys in each polling cycle. Half-open windows prevent overlapping keys at a boundary. Calibration failure aborts initialization and rolls back; read/conversion failures are inactive readings, never a zero-voltage UP press. The BSP avoids the dependency's ADC index registry so partial allocation failure cannot strand an occupied index on retry. The BSP also passes the press timing explicitly (`BSP_BTN_SHORT_PRESS_MS` = 180 ms, `BSP_BTN_LONG_PRESS_MS` = 500 ms, in `bsp_pins.h`) instead of relying on the component's Kconfig defaults of 180 / 1500 ms: holding a key for 1.5 s before a long press registers is slow on this three-key device. The component's `BUTTON_LONG_PRESS_TIME_MS` Kconfig lower bound is also 500 ms, so a shorter long press can only be passed in code.
+
+The pad reports one key at a time: two keys held together produce a voltage outside every window, so applications must not design two-key gestures. The three drivers share one decoded key with a key lock: from idle, a window must stay stable for `BSP_BTN_CONFIRM_MS` (40 ms) before it is reported as pressed, which also skips the windows the voltage sweeps through while a key goes down; once a key is locked, any other reading, including the released level, must last `BSP_BTN_HOLD_MS` (120 ms) before the decoded key changes. A brief contact break inside a held key sweeps the node voltage up through every window above it and lasts longer than the button component's ~10 ms debounce, so without the lock a held key could report its neighbour or end early. The cost is that press events arrive about 40 ms later and release events about 120 ms later, and the measured press duration grows by about 80 ms. `bsp_button_glitch_count()` counts readings absorbed by the lock; a count that grows during long presses indicates an intermittent contact. Read failures count as no key: they cannot press a key, and a held key survives them within the hold time. See the [long-press misread write-up](../reference/shinku-chen/adc-ladder-keypad-long-press-misread.md) for the measurements behind these values.
+
+Callbacks originate in the button component's shared `esp_timer` task and must only enqueue work or perform similarly bounded operations.
 
 Calibrate thresholds using multiple boards, charge levels, and reasonable temperatures; leave margin between measured distributions rather than relying only on divider theory.
 
@@ -200,7 +223,7 @@ with the firmware. It replaces the previous cell profile; equal nominal capacity
 does not make profiles interchangeable. This change does not alter the charging
 circuit, current, voltage limits, pin map, Flash partitions, or NVS format.
 
-Initialization reads VERSION and checks the profile update flag plus all 80 profile bytes. When needed, it puts the gauge to sleep, writes and verifies the configured profile, sets the update flag, restarts the gauge with the required `0x30` to `0x00` sequence, and waits up to five seconds for a valid SOC. A matching profile is reused without rewriting. The ready log reports observed SOC and voltage (`-1` means an unavailable read). Replacing the cell requires a matching vendor-generated profile and renewed charge/discharge validation.
+Initialization reads VERSION and checks the profile update flag plus all 80 profile bytes. When needed, it puts the gauge to sleep, writes and verifies the configured profile, sets the update flag, restarts the gauge with the required `0x30` to `0x00` sequence, and waits up to five seconds for a valid SOC (both SOC and voltage must be plausible; the zero pair read inside the post-restart recompute window does not pass). A timeout degrades softly: the handle is kept, runtime reads keep returning the gauge's live values, and a retry re-runs only the wait. A matching profile is reused without rewriting. The ready log reports observed SOC and voltage (`-1` means an unavailable read). Replacing the cell requires a matching vendor-generated profile and renewed charge/discharge validation.
 
 The readiness check accepts SOC in the range 0..100; it does not wait for a
 nonzero voltage measurement. A successful initialization therefore does not

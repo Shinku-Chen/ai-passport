@@ -50,19 +50,43 @@
 - [ADC 阶梯键盘会把长按读成另一个键](shinku-chen/adc-ladder-keypad-long-press-misread.zh_CN.md) — 三个键共用一个 ADC 引脚靠电压窗口区分；按住的键触点短暂失联时电压会扫过别的键的窗口、把它报成一次单击；修掉它的键位锁，以及把每个事件当时的 ADC 毫伏值记下来的按键黑匣子。
 - [无 PSRAM 把视觉小说装进 8 MB](shinku-chen/packing-a-visual-novel-into-8mb-no-psram.zh_CN.md) — 在最大连续空闲块只有 7.7 KB 的前提下塞进 5.26 MB 图片包与 1.43 MB 剧本包：ROM inflate 为何不可用、3 KB 块上限及其压缩率代价、按设备原生几何打包，以及两次由固定上限导致的静默失败。
 
+- [Galgame 阅读器移植经验](shinku-chen/galgame-port-lessons.zh_CN.md) —— 十二部视觉小说共用的阅读器需求、打包与分带渲染能力、只在真机上才暴露的十二个缺陷（LVGL 9 标签换行模式、tjpgd 的 BGR 输出、`lv_image_set_src` 重置对象尺寸、带高之和超过屏幕导致 root 滚动条、每带独立缓冲、栈大小与吞点击的坑），以及发版前的验收清单。
+- [新一代 Galgame 批量移植经验](shinku-chen/newer-galgame-port-lessons.zh_CN.md) — 八部 2026 移植共用的规则：固定手环源、短按立即推进的按键语义、试读隔离、分带显示预算、永久进度分离、OP 降帧与源剧情图对账。
+- [AI Passport 网络音频流与内存预算](shinku-chen/network-audio-streaming.zh_CN.md) — 无 PSRAM 的 ESP32-C3 上从 HTTP 流到 ES8311 的有界播放链路：流式解码、I2S DMA 大小、真正会触发崩溃的 JSON/TLS 内存峰值，以及如何判断是哪一类预算先耗尽。
+- [AI Passport SoftAP 配网、DHCP 与强制门户](shinku-chen/softap-provisioning.zh_CN.md) — 带 DHCP、强制门户探测与有界 HTTP 表单的配网热点：启动 Wi-Fi 前要释放哪些资源、如何限制每一段请求长度，以及应先检查的故障特征。
 **应用档案：**
 
 - [音效钥匙扣](shinku-chen/voice-keychain/README.zh_CN.md) — 把 AI Passport 变成口袋音频播放器的音效钥匙扣。
 - [今天吃啥](shinku-chen/eat-what/README.zh_CN.md) — 按键驱动的食物轮盘，把 AI Passport 变成「今天吃什么」小转盘。
 - [四子棋](shinku-chen/connect-four/README.zh_CN.md) — 横屏 10 列 × 7 行的四子连珠游戏，带三档电脑难度、双人模式、合成音效与空闲自动深睡。
 - [飞鸟会长不肯认输](shinku-chen/asunabi/README.zh_CN.md) — 竖屏视觉小说阅读器，承载完整的 30 章故事（原作是小米手环快应用），带六个存档位、选章与自动阅读。
-- [沙耶之歌](shinku-chen/saya-no-uta/README.zh_CN.md) — 横屏视觉小说阅读器：44 章、3,828 段对白、3 个结局，全程离线，三个按键读完。
+- [沙耶之歌](shinku-chen/saya-no-uta/README.zh_CN.md) — 横屏视觉小说阅读器：44 章、4,078 段对白、3 个结局，全程离线，三个按键读完。
 - [亚托莉阅读器](shinku-chen/atri-reader/README.zh_CN.md) — 把完整《亚托莉 -My Dear Moments-》剧情装进 AI Passport 的竖屏视觉小说阅读器：34 章、1,069 幕、12,188 句对白、立绘跟说话人、三个结局，全程离线。
 - [星空列车与白的旅行](shinku-chen/starry-sky-railroad/README.zh_CN.md) — 把 39 章的同人移植剧本离线装进机身的竖屏视觉小说阅读器，立绘跟随说话人、每次换场景自动存档。
 - [千恋＊万花](shinku-chen/senren-banka/README.zh_CN.md) — 竖屏视觉小说阅读器，把整部剧情连通背景、立绘与事件插图装进设备，支持自动阅读、快进、跳过章节与多档存档。
 - [魔女的夜宴](shinku-chen/sanoba-witch/README.zh_CN.md) — 101 章、五条线五个结局、全部装进 Flash 的竖屏视觉小说阅读器。
 - [随身 AI 对讲机](shinku-chen/intercom/README.zh_CN.md) — 挂在手机上的 AI 对讲机：按住 OK 说话，配套安卓应用把话交给自己的 AI 助理，回答回到设备屏与手机；设备本身不联网，只有三个键。
 - [Galgame 阅读器移植经验](shinku-chen/galgame-port/README.zh_CN.md) — 十二部视觉小说移植共用的阅读器契约，以及只在真机上才暴露的坑（单行标签、BGR 颜色顺序、无 PSRAM 下的分带渲染），附分支与发布对照表。
+- [anemoi](shinku-chen/port-anemoi/README.zh_CN.md) — 《anemoi》共通篇的横屏阅读器：覆盖 71/264 场景，身体与表情两层立绘、30 个手动存档加自动档。
+- [命运石之门](shinku-chen/port-steins/README.zh_CN.md) — 把《命运石之门》完整剧本、背景、立绘与事件 CG 离线装进机身的横屏阅读器。
+- [命运石之门0](shinku-chen/port-steins0/README.zh_CN.md) — 《命运石之门0》横屏阅读器：104 个章节入口、6 个结局、34 字节带版本解锁 blob。
+- [CLANNAD](shinku-chen/port-clannad/README.zh_CN.md) — 212 场景 / 195 章的《CLANNAD》横屏阅读器，立绘跟随说话人、对话框贴底。
+- [Summer Pockets REFLECTION BLUE](shinku-chen/port-summer/README.zh_CN.md) — 422 场景、81,040 句正文的《Summer Pockets REFLECTION BLUE》横屏阅读器，14 条路线、136 组 CG。
+- [魔法少女的魔女审判](shinku-chen/port-manosaba/README.zh_CN.md) — 包内是源引擎指令的《魔法少女的魔女审判》横屏阅读器：C 虚拟机执行 90,243 条指令。
+- [PARQUET](shinku-chen/port-parquet/README.zh_CN.md) — 用双带画布渲染的《PARQUET》横屏阅读器，带章节自动续播与按内容去重的立绘。
+- [男娘恋爱物语](shinku-chen/port-nianniang/README.zh_CN.md) — 《男娘恋爱物语》竖屏 240×320 阅读器：13 场景、4 结局、四条独立渲染分带。
+- [想成为Galgame领域大神！！！](shinku-chen/port-galgod/README.zh_CN.md) — 自带阅读层的《想成为Galgame领域大神！！！》横屏阅读器：条带画布 pivot 修正、按内容去重立绘。
+- [eden*](shinku-chen/port-eden/README.zh_CN.md) — 《eden\*》横屏阅读器：真机没有大块连续堆，所以用单图缩放铺满而不是分带。
+- [星之终途](shinku-chen/port-stella/README.zh_CN.md) — 21 章的《星之终途》横屏阅读器，本批分区最紧（99.20%）。
+- [纸上的魔法使](shinku-chen/port-paper/README.zh_CN.md) — 《纸上的魔法使》横屏阅读器：修正 BGR→RGB565 换序，CG 铺满比按画布高度运行时计算。
+- [天使☆騒々 RE-BOOT!](shinku-chen/tsxx-reboot/README.zh_CN.md) — 竖屏阅读器：61,436 页剧本、六条女主线、十五个结局，由原作的数据驱动分支系统驱动。
+- [死馆](shinku-chen/shinuyakata/README.zh_CN.md) — 无声竖屏阅读器：198 个运行页、17,409 条文本记录、56 组 CG；保留源中未解析节点，不虚构内容。
+- [星光咖啡馆与死神之蝶](shinku-chen/cafestella/README.zh_CN.md) — 横屏阅读器：923 个剧情节点、七个结局、五个后日谈，保留完整音频与 OP 视频，画面用三条 224×42 条带绘制。
+- [爱上火车·二六线](shinku-chen/maitetsu/README.zh_CN.md) — 横屏阅读器：二六线四章、35 张 CG、鉴赏室试读不授予永久结局，并保留完整 283.88 秒标题曲。
+- [9-nine- 九次九日九重色](shinku-chen/nine-kokoiro/README.zh_CN.md) — 横屏阅读器：17 章、两个二周目结局、30 个手动存档位，并把永久进度放在独立记录中。
+- [9-nine- 天色天歌天籁音](shinku-chen/nine-sorairo/README.zh_CN.md) — 横屏阅读器：21 章、22 组 CG，鉴赏室 OP 从本地资源包播放且不需要通关。
+- [9-nine- 春色春恋春熙风](shinku-chen/nine-haruiro/README.zh_CN.md) — 横屏阅读器：15 章、13 个选项、两个结局，对白与源剧情图逐行对账。
+- [9-nine- 雪色雪花雪之痕](shinku-chen/nine-yukiiro/README.zh_CN.md) — 横屏阅读器：23 章、47 个选项节点、两个结局，章节预览不会写入永久进度。
 
 ### PhoenixZHC
 
@@ -99,6 +123,37 @@
 **应用档案：**
 
 - [小诺简录（语音 AI 清单）](noah-1106/xiaonuo-jianlu/README.zh_CN.md) — 按住说话、由自托管中枢用 AI 整理的简录系统：堆叠卡片清单 UI、断网可录可回放、BLUFI + mDNS 零配置首配、工作域看门狗。
+
+### Raymond-Fan
+
+**应用档案：**
+
+- [拼音易错题](raymond-fan/pinyin-quiz/README.zh_CN.md) — 48 道只收易错点的拼音练习，干扰项复现真实写错方式，错题本要答对才逐次移出。
+
+### Jiaqingrun
+
+**经验条目：**
+
+- [让持续演化的世界在三键掌机上活下来](jiaqingrun/persistent-world-simulation-on-a-handheld.zh_CN.md) —— 由跳长推导增长、随科技成长的软承载力，以及阻止周期性虫潮反复重置世界的四层反雪球机制。
+- [无 FPU 掌机上的实时浮层、重绘与音频](jiaqingrun/live-overlays-and-audio-on-a-handheld.zh_CN.md) —— 全屏不透明度动画为何拖垮板子、16 kHz 柔和波形音频、缺字门禁，以及能容纳亿级数字的顶部布局。
+- [240 × 320 掌机上的整屏旋转地图页](jiaqingrun/rotated-full-screen-map-page.zh_CN.md) —— 用索引转置代替旋转像素、LVGL 9 换源会重置尺寸与对齐的顺序陷阱，以及整屏图片上叠动画浮层为何是冻住而不是崩溃。
+- [可能还不存在的实体，怎么给它们建网格行](jiaqingrun/grid-rows-for-optional-entities.zh_CN.md) —— 混血尚未出现时一进物种页就重启，「只建一次」的守卫如何同时修好绘制、隐藏与选中，以及「不存在」为何不等于「隐藏」。
+
+**应用档案：**
+
+- [世界之尘 · 上帝模拟器](jiaqingrun/dust-of-worlds/README.zh_CN.md) —— 上帝视角的世界模拟器：六族与四支混血自行演化，五页界面、三位固定统治者、祈愿与奇观，玩家只降灾、赐福与回应。
+
+### arthas276
+
+**应用档案：**
+
+- [口袋密码卡](arthas276/pocket-password-card/README.zh_CN.md) —— 离线派生密码卡：128-bit 种子生成固定 8 × 10 字符网格，站点=行+列+长度+模式，密码默认遮蔽 8 秒显示；PIN 模式永不印上钱包卡，种子 CRC-8 校验加机上录入实现免电脑换机迁移。
+
+### jakegu10086
+
+**应用档案：**
+
+- [物理题闯关](jakegu10086/physics-quiz/README.zh_CN.md) — 60 道离线物理题，每轮随机抽 10 道，提交即判分并给出一句话解析，最后按正确率结算本轮成绩。
 
 ## 新增经验条目
 

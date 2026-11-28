@@ -57,19 +57,43 @@ The engineering rules themselves live under
 - [An ADC Ladder Keypad Can Read a Long Press as Another Key](shinku-chen/adc-ladder-keypad-long-press-misread.md) — three keys on one ADC pin behind voltage windows, how a momentary contact break in a held key sweeps the voltage through another key's window and its watchers, the key-identity lock that fixes it, and the key-event black box that records the ADC millivolts behind every event.
 - [Packing a Visual Novel into 8 MB with No PSRAM](shinku-chen/packing-a-visual-novel-into-8mb-no-psram.md) — a 5.26 MB image pack and a 1.43 MB script pack around a 7.7 KB largest free block: why the ROM's inflate did not fit, the 3 KB block ceilings and the compression ratio they cost, native-geometry packing, and two silent failures caused by fixed-size limits.
 
+- [Galgame Reader Porting Lessons](shinku-chen/galgame-port-lessons.md) — the shared reader requirements, packing and banded-rendering capabilities, twelve defects that only surfaced on hardware (LVGL 9 label wrap modes, tjpgd's BGR output, `lv_image_set_src` resetting the object size, a root scrollbar from oversized bands, per-band buffers, stack-size and click-swallow traps), and the pre-release acceptance checklist across twelve visual-novel ports.
+- [Porting the Newer Galgame Batch](shinku-chen/newer-galgame-port-lessons.md) — shared rules from eight late-2026 ports: pinned watch sources, immediate-advance key semantics, preview isolation, banded display budgets, separate permanent progress, opening-video downsampling, and source-graph reconciliation.
+- [Network Audio Streaming and Memory Budgeting on AI Passport](shinku-chen/network-audio-streaming.md) — a bounded HTTP-to-ES8311 playback pipeline on the no-PSRAM ESP32-C3: streaming decode, I2S DMA sizing, the JSON and TLS peaks that actually crash it, and how to tell which memory budget ran out.
+- [SoftAP Provisioning, DHCP, and Captive Portal on AI Passport](shinku-chen/softap-provisioning.md) — a provisioning hotspot with DHCP, captive-portal probing and a bounded HTTP form: what to release before Wi-Fi starts, how to cap every request length, and the failure signatures to check first.
 **Application playbooks:**
 
 - [Voice Keychain](shinku-chen/voice-keychain/README.md) — a sound-effects keychain that turns the AI Passport into a pocket audio player.
 - [What to Eat Today](shinku-chen/eat-what/README.md) — a button-driven food roulette that turns the AI Passport into a "what should I eat?" spinner.
 - [Connect Four](shinku-chen/connect-four/README.md) — a landscape 10 × 7 four-in-a-row game with three computer difficulty levels, a two-player mode, synthesized sound, and an idle deep sleep.
 - [Asunabi](shinku-chen/asunabi/README.md) — a portrait visual-novel reader that carries a complete 30-chapter story, originally a Xiaomi Band quick app, with six save slots, chapter select, and auto-play.
-- [Saya no Uta](shinku-chen/saya-no-uta/README.md) — a landscape visual-novel reader with 44 chapters, 3,828 dialogue lines and three endings, read fully offline with three keys.
+- [Saya no Uta](shinku-chen/saya-no-uta/README.md) — a landscape visual-novel reader with 44 chapters, 4,078 dialogue lines and three endings, read fully offline with three keys.
 - [ATRI Reader](shinku-chen/atri-reader/README.md) — a portrait visual-novel reader that plays the complete *ATRI -My Dear Moments-* story offline: 34 chapters, 1,069 scenes, 12,188 dialogue lines, speaker-driven full-body sprites and three endings.
 - [Starry Sky Railroad and Shiro's Journey](shinku-chen/starry-sky-railroad/README.md) — a portrait visual-novel reader carrying a 39-chapter fan port offline, with per-speaker sprites and an automatic save on every scene.
 - [Senren * Banka](shinku-chen/senren-banka/README.md) — a portrait visual novel reader that carries the whole game — story, backgrounds, sprites and event illustrations — on the device, with auto-read, fast-forward, chapter skipping and save slots.
 - [Sanoba Witch](shinku-chen/sanoba-witch/README.md) — a portrait visual novel reader with 101 chapters, five routes and five endings, packed entirely into Flash.
 - [Pocket Intercom](shinku-chen/intercom/README.md) — a phone-tethered AI intercom: hold OK to talk through a companion Android app, with the answer back on the device screen and in the phone, three buttons, and no network setup on the device itself.
 - [Galgame Porting Notes](shinku-chen/galgame-port/README.md) — the shared reader contract behind twelve visual-novel ports plus the traps that only appear on hardware (single-line labels, BGR colour order, banded rendering on a no-PSRAM part), with a branch and release map.
+- [anemoi](shinku-chen/port-anemoi/README.md) — a landscape reader for the common route of *anemoi*: 71 of 264 source scenes, layered body and face sprites, 30 save slots and an automatic slot.
+- [Steins;Gate](shinku-chen/port-steins/README.md) — a landscape reader carrying the complete *Steins;Gate* script, backgrounds, sprites and event CGs offline.
+- [Steins;Gate 0](shinku-chen/port-steins0/README.md) — a landscape reader for *Steins;Gate 0* with 104 chapter entries, six endings and a versioned 34-byte unlock blob.
+- [CLANNAD](shinku-chen/port-clannad/README.md) — a landscape reader for the 212-scene, 195-chapter *CLANNAD* build, with per-speaker faces and a panel flush to the bottom edge.
+- [Summer Pockets REFLECTION BLUE](shinku-chen/port-summer/README.md) — a landscape reader for 422 scenes and 81,040 lines of *Summer Pockets REFLECTION BLUE*, with 14 routes and 136 CG groups.
+- [Mahou Shojo no Majo Saiban](shinku-chen/port-manosaba/README.md) — a landscape reader whose pack carries source engine commands: a C virtual machine runs 90,243 commands of *Mahou Shojo no Majo Saiban*.
+- [PARQUET](shinku-chen/port-parquet/README.md) — a landscape reader for *PARQUET* built on a two-band canvas, with chapter auto-continue and content de-duplicated sprites.
+- [NianNiang Love Story](shinku-chen/port-nianniang/README.md) — the portrait 240x320 reader for *NianNiang Love Story*: 13 scenes, four endings and four independent render bands.
+- [Galgame Master](shinku-chen/port-galgod/README.md) — a landscape reader for *Galgame Master* with its own reader layer, a strip canvas pivot fix and content-based sprite de-duplication.
+- [eden*](shinku-chen/port-eden/README.md) — a landscape reader for *eden\** that fills the panel with one scaled image instead of bands, because the device gives no large contiguous heap.
+- [Stella of the End](shinku-chen/port-stella/README.md) — a landscape reader for the 21-chapter *Stella of the End*, the tightest partition of the batch at 99.20%.
+- [Paper no Mahou Tsukai](shinku-chen/port-paper/README.md) — a landscape reader for *Paper no Mahou Tsukai* with a fixed BGR-to-RGB565 path and a runtime CG cover ratio.
+- [Tenshi☆Sousou RE-BOOT!](shinku-chen/tsxx-reboot/README.md) — a portrait reader with 61,436 script pages, six heroine routes and fifteen endings, driven by the original flag-gated branch system.
+- [Shinuyakata](shinku-chen/shinuyakata/README.md) — a silent portrait reader with 198 runtime pages, 17,409 text records and 56 CG groups, preserving unresolved source nodes rather than inventing content.
+- [Café Stella and the Reaper's Butterflies](shinku-chen/cafestella/README.md) — a landscape reader with 923 story nodes, seven endings, five after stories, complete audio and OP video, packed into three 224×42 bands.
+- [Maitetsu · Niiroku Route](shinku-chen/maitetsu/README.md) — a landscape reader for the four Niiroku chapters, with 35 CGs, preview-only gallery runs and the complete 283.88-second title theme.
+- [9-nine- Kokoiro](shinku-chen/nine-kokoiro/README.md) — a landscape reader with 17 chapters, two loop-gated endings, 30 manual saves and a separate permanent-progress record.
+- [9-nine- Sorairo](shinku-chen/nine-sorairo/README.md) — a landscape reader with 21 chapters, 22 CG groups and a gallery opening that plays from the local pack without clearing the story.
+- [9-nine- Haruiro](shinku-chen/nine-haruiro/README.md) — a landscape reader with 15 chapters, 13 choices and two endings, reconciled line by line against the source graph.
+- [9-nine- Yukiiro](shinku-chen/nine-yukiiro/README.md) — a landscape reader with 23 chapters, 47 choice nodes and two endings, keeping chapter previews out of permanent progress.
 
 ### PhoenixZHC
 
@@ -106,6 +130,37 @@ The engineering rules themselves live under
 **Application playbooks:**
 
 - [Xiaonuo Jianlu (Voice Notes & Lists)](noah-1106/xiaonuo-jianlu/README.md) — hold-to-talk AI notes organized by a self-hosted hub, a stacked-card list UI, offline capture with on-device playback, BLUFI + mDNS zero-config setup, and a work-domain watchdog.
+
+### Raymond-Fan
+
+**Application playbooks:**
+
+- [Tricky Pinyin](raymond-fan/pinyin-quiz/README.md) — a 48-question pinyin drill that keeps only the sounds beginners get wrong, with distractors that reproduce real mistakes and a review book that clears a question only after it is answered right.
+
+### Jiaqingrun
+
+**Experience entries:**
+
+- [Keeping a Persistent World Alive on a Three-Key Handheld](jiaqingrun/persistent-world-simulation-on-a-handheld.md) — tick-length-derived growth, soft tech-driven capacity, and four anti-snowball mechanisms that stop recurring swarms from repeatedly resetting a world.
+- [Live Overlays, Redraws and Audio on a No-FPU Handheld](jiaqingrun/live-overlays-and-audio-on-a-handheld.md) — why a full-screen opacity animation stalls the board, a 16 kHz soft-wave audio path, a glyph-coverage gate, and a header that survives billion-scale numbers.
+- [A Rotated Full-Screen Map Page on a 240 × 320 Handheld](jiaqingrun/rotated-full-screen-map-page.md) — rotating a map by transposing the writer's index instead of the pixels, the LVGL 9 image-property ordering trap, and why animated overlays over a full-screen image froze the board instead of crashing it.
+- [Grid Rows for Entities That May Not Exist Yet](jiaqingrun/grid-rows-for-optional-entities.md) — a species grid that rebooted on page entry whenever a hybrid had not appeared yet, the create-once guard that fixes drawing, hiding and selection together, and why absent is not the same state as hidden.
+
+**Application archives:**
+
+- [Dust of Worlds — God Simulator](jiaqingrun/dust-of-worlds/README.md) — a god-view world simulator where six species and four hybrids evolve on their own across five pages, three fixed rulers, prayers and wonders, and the player only intervenes with disasters and blessings.
+
+### arthas276
+
+**Application playbooks:**
+
+- [Pocket Password Card](arthas276/pocket-password-card/README.md) — an offline derived-password card: one fixed 8 × 10 grid from a 128-bit seed, sites as row + column + length + mode, masked 8-second reveals, a PIN mode that never appears on the printable card, and on-device seed migration with a CRC-8 checksum.
+
+### jakegu10086
+
+**Application playbooks:**
+
+- [Pocket Physics Quiz](jakegu10086/physics-quiz/README.md) — a 60-question offline physics drill that draws ten random questions per round, checks each answer instantly with a one-line explanation, and scores the round by accuracy.
 
 ## Adding an experience entry
 
