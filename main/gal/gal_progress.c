@@ -11,7 +11,20 @@ static const char *TAG = "gal_prog";
 #define GAL_PROGRESS_NAMESPACE "galprog"
 #define GAL_PROGRESS_KEY "pos"
 #define GAL_PROGRESS_MAGIC 0x50u
-#define GAL_PROGRESS_VERSION 1u
+#define GAL_PROGRESS_VERSION 2u
+
+typedef struct {
+    uint8_t valid;
+    uint16_t event_index;
+    uint16_t page_index;
+} gal_progress_v1_t;
+
+typedef struct {
+    uint8_t magic;
+    uint8_t version;
+    uint8_t reserved[2];
+    gal_progress_v1_t progress;
+} gal_progress_blob_v1_t;
 
 typedef struct {
     uint8_t magic;
@@ -47,20 +60,30 @@ bool gal_progress_load(gal_progress_t *out)
     gal_progress_clear(out);
     if (!s_ready) return false;
 
-    gal_progress_blob_t blob = { 0 };
-    size_t len = sizeof(blob);
-    const esp_err_t err = nvs_get_blob(s_handle, GAL_PROGRESS_KEY, &blob, &len);
+    uint8_t raw[sizeof(gal_progress_blob_t)] = { 0 };
+    size_t len = sizeof(raw);
+    const esp_err_t err = nvs_get_blob(s_handle, GAL_PROGRESS_KEY, raw, &len);
     if (err == ESP_ERR_NVS_NOT_FOUND) return false;
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "读进度失败: %s", esp_err_to_name(err));
         return false;
     }
-    if (len != sizeof(blob) || blob.magic != GAL_PROGRESS_MAGIC ||
-        blob.version != GAL_PROGRESS_VERSION) {
+    if (len == sizeof(gal_progress_blob_v1_t) && raw[0] == GAL_PROGRESS_MAGIC &&
+        raw[1] == 1u) {
+        gal_progress_blob_v1_t old;
+        memcpy(&old, raw, sizeof(old));
+        out->valid = old.progress.valid;
+        out->event_index = old.progress.event_index;
+        out->page_index = old.progress.page_index;
+        out->flags = 0;
+        return out->valid != 0;
+    }
+    if (len != sizeof(gal_progress_blob_t) || raw[0] != GAL_PROGRESS_MAGIC ||
+        raw[1] != GAL_PROGRESS_VERSION) {
         ESP_LOGW(TAG, "进度记录格式不认识(长度 %u),忽略", (unsigned)len);
         return false;
     }
-    *out = blob.progress;
+    memcpy(out, raw + 4, sizeof(*out));
     return out->valid != 0;
 }
 

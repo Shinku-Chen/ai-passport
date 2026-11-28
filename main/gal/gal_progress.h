@@ -12,6 +12,7 @@ typedef struct {
     uint8_t valid;            // 0 = 还没有任何进度
     uint16_t event_index;
     uint16_t page_index;
+    uint32_t flags;           // 本周目剧情标记
 } gal_progress_t;
 
 // NVS 准备(失败时进度只在本次运行内有效)。

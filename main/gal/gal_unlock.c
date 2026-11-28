@@ -126,7 +126,23 @@ bool gal_unlock_has_ending(const gal_unlock_t *in, uint8_t index)
     return in && bit_has(in->ending, index);
 }
 
+bool gal_unlock_has_any_ending(const gal_unlock_t *in)
+{
+    return in && in->ending != 0;
+}
+
 bool gal_unlock_has_flag(const gal_unlock_t *in, uint8_t index)
 {
     return in && bit_has(in->flag, index);
+}
+
+bool gal_flags_has(uint32_t flags, uint8_t index)
+{
+    return bit_has(flags, index);
+}
+
+uint32_t gal_flags_set(uint32_t flags, uint8_t index)
+{
+    bit_add(&flags, index);
+    return flags;
 }

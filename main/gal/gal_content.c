@@ -112,7 +112,7 @@ const gal_chapter_t gal_content_chapters[] = {
     { "林线 · 雨停之前", "雨停之前,站台长椅上还有一段没有被说完的话。", "完成度　1 / 3",
       11, GAL_UNLOCK_NONE, false },
     { "隐藏线 · 星轨", "走完一次结局后解锁。", "完成度　0 / 3",
-      GAL_UNLOCK_NONE, GAL_FLAG_CLEARED, false },
+      GAL_EVENT_NONE, GAL_FLAG_CLEARED, false },
 };
 
 const int gal_content_chapter_count =

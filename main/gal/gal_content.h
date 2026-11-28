@@ -4,11 +4,12 @@
 // 用来驱动原型里的全部逻辑屏。接入真实作品时,把本文件替换为内容层
 // (或资源包读取层)即可,界面与交互保持不变。
 //
-// 剧情锁:内容层只声明“条件”,运行时状态由 gal_unlock 维护:
+// 剧情锁:内容层只声明“条件”。永久 CG/章节/结局由 gal_unlock 维护；
+// 台词/选项用的周目标记由 gal_app.flags 维护并随存档/自动进度保存:
 //   台词  按 require_flag 决定是否出现(条件分支)
 //   选项  按 require_flag 决定是否可选,选中后写 flag_set
-//   CG    到达 unlock_event 时解锁
-//   章节  到达 unlock_event 且满足 require_flag 时解锁
+//   CG    到达 unlock_event 时永久解锁
+//   章节  到达 unlock_event 时永久解锁; require_flag 可作周目附加条件
 #pragma once
 
 #include "gal_unlock.h"
@@ -22,7 +23,7 @@ enum {
     GAL_FLAG_CHOICE_B,       // 选择了「留在原地」
     GAL_FLAG_CHOICE_C,       // 选择了「询问站务员」
     GAL_FLAG_CHAPTER_2,      // 到达第二章
-    GAL_FLAG_CLEARED,        // 走过一次结局
+    GAL_FLAG_CLEARED,        // 走过一次结局(永久资格,由 gal_unlock.ending 派生)
 };
 
 // ---------------------------------------------------------------- 对白

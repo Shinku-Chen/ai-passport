@@ -30,7 +30,8 @@ typedef struct {
     gal_ui_t ui;
     gal_settings_t settings;
     gal_save_t save;
-    gal_unlock_t unlock;            // 剧情锁:观看记录与剧情标记
+    gal_unlock_t unlock;            // 永久解锁:CG / 章节 / 结局
+    uint32_t flags;                 // 本周目剧情标记(随存档/自动进度保存)
     gal_progress_t progress;        // 自动进度(继续游戏用它接上)
     bool progress_dirty;            // 有尚未落盘的进度
     uint32_t progress_accum_ms;
