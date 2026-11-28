@@ -30,7 +30,10 @@ ROOT_MARKDOWN_ALLOWLIST = {
     "AGENTS.md",
     "AGENTS.zh_CN.md",
     "README.md",
+    "README.en_US.md",
 }
+CHINESE_DEFAULT_DOCUMENTS = {"README.md"}
+ENGLISH_PEER_SUFFIX = ".en_US.md"
 ROOT_README_RE = re.compile(r"README(?:\.[A-Za-z0-9_-]+)?\.md\Z")
 # Register only concrete, vendored component directories, e.g. "components/foo".
 # These exemptions never change the input to sensitive-content/conflict checks.
@@ -229,6 +232,7 @@ def check_document_languages(
         # The language exemption applies only to root README files.
         if path.parent == ROOT and ROOT_README_RE.fullmatch(path.name):
             continue
+
         if name.endswith(".zh_CN.md"):
             default_name = f"{name[:-len('.zh_CN.md')]}.md"
             default_path = path.with_name(default_name)
