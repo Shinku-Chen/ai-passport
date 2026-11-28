@@ -17,7 +17,7 @@ typedef struct {
 } slot_v1_t;
 typedef struct {
     uint8_t magic, version, reserved[2];
-    slot_v1_t slots[GAL_SAVE_SLOTS];
+    slot_v1_t slots[GAL_SAVE_LEGACY_SLOTS];
 } save_v1_t;
 typedef struct {
     uint8_t valid;

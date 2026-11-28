@@ -14,6 +14,10 @@
 
 static const char *TAG = "gal_ui";
 
+static bool ensure_page(gal_ui_t *ui, gal_page_t page);
+static void release_pages(gal_ui_t *ui);
+static gal_page_t list_page(gal_list_t id);
+
 // 骨架配色:深蓝紫渐变 + 青绿色强调(与原型 docs/design 一致)。
 #define COL_BG_TOP    0x1C2A4A
 #define COL_BG_BOT    0x2E2440
@@ -99,6 +103,7 @@ void gal_ui_set_text(gal_ui_t *ui, const char *speaker, const char *page_text,
                      uint32_t ms_per_char, const void *image, const void *body)
 {
     if (!ui) return;
+    if (!ensure_page(ui, GAL_PAGE_GAME) || !ui->text) return;
     apply_image(ui->scene_img, image);
     apply_image(ui->body_img, body);
     lv_label_set_text(ui->name, speaker ? speaker : "");
@@ -186,6 +191,8 @@ void gal_ui_set_rows(gal_ui_t *ui, gal_list_t id, const char *const *labels,
                      const char *const *values, int count, int selected)
 {
     if (!ui) return;
+    const gal_page_t page = list_page(id);
+    if (page == GAL_PAGE_COUNT || !ensure_page(ui, page)) return;
     gal_list_ui_t *list = &ui->lists[id];
     if (count > GAL_LIST_MAX_ROWS) count = GAL_LIST_MAX_ROWS;
     list->count = count;
@@ -338,7 +345,7 @@ static void build_dialogue(gal_ui_t *ui, gal_page_t page)
     lv_obj_set_pos(ui->panel, 0, GAL_PANEL_Y);
     lv_obj_set_style_bg_color(ui->panel, lv_color_hex(COL_PANEL), LV_PART_MAIN);
     // 默认 30% 透明(70% 不透明),初始化时按设置覆盖。
-    lv_obj_set_style_bg_opa(ui->panel, LV_OPA_70, LV_PART_MAIN);
+    lv_obj_set_style_bg_opa(ui->panel, (lv_opa_t)gal_panel_opa(ui->panel_opa_percent), LV_PART_MAIN);
     lv_obj_set_style_border_color(ui->panel, lv_color_hex(COL_FRAME), LV_PART_MAIN);
     lv_obj_set_style_border_width(ui->panel, 1, LV_PART_MAIN);
     lv_obj_set_style_border_side(ui->panel, LV_BORDER_SIDE_TOP, LV_PART_MAIN);
@@ -356,6 +363,7 @@ static void build_dialogue(gal_ui_t *ui, gal_page_t page)
         lv_obj_add_flag(ui->name, LV_OBJ_FLAG_HIDDEN);
     }
 
+    lv_obj_align_to(ui->mode_auto, ui->panel, LV_ALIGN_OUT_TOP_RIGHT, -8, -2);
     ui->text = mk_label(ui->panel, ui->font_small, COL_TEXT);
     lv_obj_set_pos(ui->text, GAL_TEXT_X, 6);
     lv_obj_set_width(ui->text, GAL_TEXT_W);
@@ -397,6 +405,7 @@ static void build_title(gal_ui_t *ui)
     ui->title_img = lv_image_create(page);
     lv_obj_align(ui->title_img, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_add_flag(ui->title_img, LV_OBJ_FLAG_HIDDEN);
+    apply_image(ui->title_img, ui->title_image_dsc);
     // 作品名要压在封面之上。
     lv_obj_move_foreground(ui->brand_title);
     lv_obj_move_foreground(ui->brand_sub);
@@ -735,10 +744,120 @@ static void build_modal(gal_ui_t *ui)
     list_create(ui, GAL_LIST_MODAL, box, box, "", 36, 106, 12, 206, false);
 }
 
+static void release_pages(gal_ui_t *ui)
+{
+    if (!ui) return;
+    typing_stop(ui);
+    for (int i = 0; i <= GAL_PAGE_COUNT; ++i) {
+        if (ui->pages[i]) {
+            lv_obj_del(ui->pages[i]);
+            ui->pages[i] = NULL;
+        }
+    }
+    memset(ui->titles, 0, sizeof(ui->titles));
+    memset(ui->footers, 0, sizeof(ui->footers));
+    memset(ui->lists, 0, sizeof(ui->lists));
+    ui->scene_img = NULL;
+    ui->body_img = NULL;
+    ui->title_img = NULL;
+    ui->cg_image = NULL;
+    memset(ui->tile_img, 0, sizeof(ui->tile_img));
+    ui->panel = NULL;
+    ui->name = NULL;
+    ui->text = NULL;
+    ui->choice_box = NULL;
+    ui->menu_box = NULL;
+    ui->dim = NULL;
+    ui->save_preview = NULL;
+    ui->chapter_info = NULL;
+    ui->action_hint = NULL;
+    ui->transition_eyebrow = NULL;
+    ui->transition_title = NULL;
+    ui->transition_sub = NULL;
+    ui->ending_eyebrow = NULL;
+    ui->ending_title = NULL;
+    ui->ending_body = NULL;
+    ui->about_logo = NULL;
+    ui->about_logo_sub = NULL;
+    ui->about_view = NULL;
+    ui->about_text = NULL;
+    memset(ui->cg_tiles, 0, sizeof(ui->cg_tiles));
+    memset(ui->cg_tiles_label, 0, sizeof(ui->cg_tiles_label));
+    ui->cg_index = NULL;
+    ui->cg_name = NULL;
+    ui->cg_caption = NULL;
+    ui->modal_box = NULL;
+    ui->modal_title = NULL;
+    ui->modal_body = NULL;
+    ui->modal_mark = NULL;
+    ui->current_page = GAL_PAGE_COUNT;
+}
+
+static bool ensure_page(gal_ui_t *ui, gal_page_t page)
+{
+    if (!ui) return false;
+    if (page == GAL_PAGE_CHOICE) return ensure_page(ui, GAL_PAGE_GAME);
+    if (page > GAL_PAGE_COUNT) return false;
+    if (ui->pages[page]) return true;
+
+    switch (page) {
+    case GAL_PAGE_START: build_start(ui); break;
+    case GAL_PAGE_TITLE: build_title(ui); break;
+    case GAL_PAGE_GAME:
+        mk_page(ui, GAL_PAGE_GAME, 0, false);
+        build_dialogue(ui, GAL_PAGE_GAME);
+        break;
+    case GAL_PAGE_MENU: build_menu(ui); break;
+    case GAL_PAGE_SAVE: build_save_load(ui, GAL_PAGE_SAVE, GAL_LIST_SAVE, "保存进度"); break;
+    case GAL_PAGE_LOAD: build_save_load(ui, GAL_PAGE_LOAD, GAL_LIST_LOAD, "读取存档"); break;
+    case GAL_PAGE_SETTINGS: build_settings(ui); break;
+    case GAL_PAGE_HISTORY: build_history(ui); break;
+    case GAL_PAGE_GALLERY: build_gallery(ui); break;
+    case GAL_PAGE_CG_LIST: build_cg_list(ui); break;
+    case GAL_PAGE_RECALL:
+        build_simple_list(ui, GAL_PAGE_RECALL, GAL_LIST_RECALL, "CG 回想", ROW_H);
+        break;
+    case GAL_PAGE_MUSIC:
+        build_simple_list(ui, GAL_PAGE_MUSIC, GAL_LIST_MUSIC, "音乐鉴赏", ROW_H);
+        break;
+    case GAL_PAGE_CHAPTER: build_chapter(ui); break;
+    case GAL_PAGE_TRANSITION: build_transition(ui); break;
+    case GAL_PAGE_ENDING: build_ending(ui); break;
+    case GAL_PAGE_ABOUT: build_about(ui); break;
+    case GAL_PAGE_CG: build_cg(ui); break;
+    case GAL_PAGE_MODAL: build_modal(ui); break;
+    default: break;
+    }
+    return ui->pages[page] != NULL;
+}
+
+static gal_page_t list_page(gal_list_t id)
+{
+    switch (id) {
+    case GAL_LIST_START: return GAL_PAGE_START;
+    case GAL_LIST_TITLE: return GAL_PAGE_TITLE;
+    case GAL_LIST_CHOICE: return GAL_PAGE_GAME;
+    case GAL_LIST_MENU: return GAL_PAGE_MENU;
+    case GAL_LIST_SAVE: return GAL_PAGE_SAVE;
+    case GAL_LIST_LOAD: return GAL_PAGE_LOAD;
+    case GAL_LIST_SETTINGS: return GAL_PAGE_SETTINGS;
+    case GAL_LIST_HISTORY: return GAL_PAGE_HISTORY;
+    case GAL_LIST_GALLERY: return GAL_PAGE_GALLERY;
+    case GAL_LIST_RECALL: return GAL_PAGE_RECALL;
+    case GAL_LIST_MUSIC: return GAL_PAGE_MUSIC;
+    case GAL_LIST_CHAPTER: return GAL_PAGE_CHAPTER;
+    case GAL_LIST_ENDING: return GAL_PAGE_ENDING;
+    case GAL_LIST_MODAL: return GAL_PAGE_MODAL;
+    default: return GAL_PAGE_COUNT;
+    }
+}
+
 bool gal_ui_create(gal_ui_t *ui, const lv_font_t *font_small, const lv_font_t *font_large)
 {
     if (!ui || !font_small || !font_large) return false;
     memset(ui, 0, sizeof(*ui));
+    ui->current_page = GAL_PAGE_COUNT;
+    ui->panel_opa_percent = 70;
     ui->font_small = font_small;
     ui->font_large = font_large;
 
@@ -781,38 +900,6 @@ bool gal_ui_create(gal_ui_t *ui, const lv_font_t *font_small, const lv_font_t *f
     lv_obj_add_flag(ui->notice, LV_OBJ_FLAG_HIDDEN);
 
     // 各逻辑屏(顺序与原型一致)。
-    build_start(ui);
-    build_title(ui);
-    build_menu(ui);
-    build_save_load(ui, GAL_PAGE_SAVE, GAL_LIST_SAVE, "保存进度");
-    build_save_load(ui, GAL_PAGE_LOAD, GAL_LIST_LOAD, "读取存档");
-    build_settings(ui);
-    build_history(ui);
-    build_gallery(ui);
-    build_cg_list(ui);
-    build_simple_list(ui, GAL_PAGE_RECALL, GAL_LIST_RECALL, "CG 回想", ROW_H);
-    build_simple_list(ui, GAL_PAGE_MUSIC, GAL_LIST_MUSIC, "音乐鉴赏", ROW_H);
-    build_chapter(ui);
-    build_transition(ui);
-    build_ending(ui);
-    build_about(ui);
-    build_cg(ui);
-    build_modal(ui);
-
-    // 对话页最后建:名牌要与对话框同层,且在其它页面之上。
-    mk_page(ui, GAL_PAGE_GAME, 0, false);
-    build_dialogue(ui, GAL_PAGE_GAME);
-
-    // 快进不显示文字;自动阅读指示贴在对话框上沿外侧的右上角。
-    lv_obj_align_to(ui->mode_auto, ui->panel, LV_ALIGN_OUT_TOP_RIGHT, -8, -2);
-
-    // 对话页是最后创建的,会盖住先建的对象;叠加层与顶部文字再提到最前:
-    // 弹窗 → 游戏内菜单 → 自动指示 → 提示。
-    lv_obj_move_foreground(ui->pages[GAL_PAGE_MENU]);
-    lv_obj_move_foreground(ui->pages[GAL_PAGE_MODAL]);
-    lv_obj_move_foreground(ui->mode_auto);
-    lv_obj_move_foreground(ui->notice);
-
     ui->typewriter_timer = lv_timer_create(typing_cb, 40, ui);
     if (!ui->typewriter_timer) {
         ESP_LOGE(TAG, "打字机定时器创建失败");
@@ -833,6 +920,13 @@ void gal_ui_show_page(gal_ui_t *ui, gal_page_t page)
     // 选项与游戏内菜单是叠在对话页上的层:底页仍是对话页。
     const gal_page_t base = (page == GAL_PAGE_CHOICE || page == GAL_PAGE_MENU)
                                 ? GAL_PAGE_GAME : page;
+
+    if (ui->current_page != page) {
+        release_pages(ui);
+        ui->current_page = page;
+    }
+    if (!ensure_page(ui, base)) return;
+    if (page != base) (void)ensure_page(ui, page);
 
     for (int i = 0; i < GAL_PAGE_COUNT; ++i) {
         if (!ui->pages[i]) continue;
@@ -937,19 +1031,24 @@ void gal_ui_set_notice(gal_ui_t *ui, const char *text)
 void gal_ui_set_page_title(gal_ui_t *ui, gal_page_t page, const char *title)
 {
     if (!ui || page >= GAL_PAGE_COUNT) return;
+    if (!ensure_page(ui, page)) return;
     if (!ui->titles[page]) return;
     lv_label_set_text(ui->titles[page], title ? title : "");
 }
 
 void gal_ui_set_save_preview(gal_ui_t *ui, const char *text)
 {
-    if (!ui || !ui->save_preview) return;
+    if (!ui) return;
+    const gal_page_t page = (ui->current_page == GAL_PAGE_LOAD)
+                                ? GAL_PAGE_LOAD : GAL_PAGE_SAVE;
+    if (!ensure_page(ui, page) || !ui->save_preview) return;
     lv_label_set_text(ui->save_preview, text ? text : "");
 }
 
 void gal_ui_set_footer(gal_ui_t *ui, gal_page_t page, const char *text)
 {
     if (!ui || page >= GAL_PAGE_COUNT) return;
+    if (!ensure_page(ui, page)) return;
     lv_obj_t *footer = ui->footers[page];
     if (!footer) return;
     lv_label_set_text(footer, text ? text : "");
@@ -957,19 +1056,22 @@ void gal_ui_set_footer(gal_ui_t *ui, gal_page_t page, const char *text)
 
 void gal_ui_set_chapter_info(gal_ui_t *ui, const char *text)
 {
-    if (!ui || !ui->chapter_info) return;
+    if (!ui) return;
+    if (!ensure_page(ui, GAL_PAGE_CHAPTER) || !ui->chapter_info) return;
     lv_label_set_text(ui->chapter_info, text ? text : "");
 }
 
 void gal_ui_set_action_hint(gal_ui_t *ui, const char *text)
 {
-    if (!ui || !ui->action_hint) return;
+    if (!ui) return;
+    if (ui->current_page == GAL_PAGE_COUNT || !ensure_page(ui, ui->current_page) || !ui->action_hint) return;
     lv_label_set_text(ui->action_hint, text ? text : "");
 }
 
 void gal_ui_set_gallery(gal_ui_t *ui, const gal_cg_t *items, int count, int selected)
 {
     if (!ui) return;
+    if (!ensure_page(ui, GAL_PAGE_CG_LIST)) return;
     for (int i = 0; i < GAL_CG_TILES; ++i) {
         const bool filled = items && i < count;
         const bool unlocked = filled && items[i].unlocked;
@@ -1002,6 +1104,7 @@ void gal_ui_set_cg(gal_ui_t *ui, const char *index_text, const char *name,
                    const char *caption, const void *image)
 {
     if (!ui) return;
+    if (!ensure_page(ui, GAL_PAGE_CG)) return;
     lv_label_set_text(ui->cg_index, index_text ? index_text : "");
     lv_label_set_text(ui->cg_name, name ? name : "");
     lv_label_set_text(ui->cg_caption, caption ? caption : "");
@@ -1011,13 +1114,15 @@ void gal_ui_set_cg(gal_ui_t *ui, const char *index_text, const char *name,
 void gal_ui_set_title_image(gal_ui_t *ui, const void *image)
 {
     if (!ui) return;
-    apply_image(ui->title_img, image);
+    ui->title_image_dsc = image;
+    if (ui->title_img) apply_image(ui->title_img, image);
 }
 
 void gal_ui_set_transition(gal_ui_t *ui, const char *eyebrow, const char *title,
                            const char *subtitle)
 {
     if (!ui) return;
+    if (!ensure_page(ui, GAL_PAGE_TRANSITION)) return;
     lv_label_set_text(ui->transition_eyebrow, eyebrow ? eyebrow : "");
     lv_label_set_text(ui->transition_title, title ? title : "");
     lv_label_set_text(ui->transition_sub, subtitle ? subtitle : "");
@@ -1026,6 +1131,7 @@ void gal_ui_set_transition(gal_ui_t *ui, const char *eyebrow, const char *title,
 void gal_ui_set_ending(gal_ui_t *ui, const char *eyebrow, const char *title, const char *body)
 {
     if (!ui) return;
+    if (!ensure_page(ui, GAL_PAGE_ENDING)) return;
     lv_label_set_text(ui->ending_eyebrow, eyebrow ? eyebrow : "");
     lv_label_set_text(ui->ending_title, title ? title : "");
     lv_label_set_text(ui->ending_body, body ? body : "");
@@ -1034,6 +1140,7 @@ void gal_ui_set_ending(gal_ui_t *ui, const char *eyebrow, const char *title, con
 void gal_ui_set_about(gal_ui_t *ui, const char *logo, const char *logo_sub, const char *text)
 {
     if (!ui) return;
+    if (!ensure_page(ui, GAL_PAGE_ABOUT)) return;
     lv_label_set_text(ui->about_logo, logo ? logo : "");
     lv_label_set_text(ui->about_logo_sub, logo_sub ? logo_sub : "");
     lv_label_set_text(ui->about_text, text ? text : "");
@@ -1053,6 +1160,7 @@ void gal_ui_show_modal(gal_ui_t *ui, gal_modal_t kind, const char *title, const 
                        const char *const *actions, int count, int selected)
 {
     if (!ui || kind == GAL_MODAL_NONE) return;
+    if (!ensure_page(ui, GAL_PAGE_MODAL)) return;
     lv_label_set_text(ui->modal_title, title ? title : "");
     lv_label_set_text(ui->modal_body, body ? body : "");
 
@@ -1124,5 +1232,7 @@ void gal_ui_set_font_size(gal_ui_t *ui, bool large)
 void gal_ui_set_panel_transparency(gal_ui_t *ui, uint8_t percent)
 {
     if (!ui) return;
+    ui->panel_opa_percent = percent;
+    if (!ui->panel) return;
     lv_obj_set_style_bg_opa(ui->panel, (lv_opa_t)gal_panel_opa(percent), LV_PART_MAIN);
 }

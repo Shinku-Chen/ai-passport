@@ -121,10 +121,22 @@ typedef struct {
 } gal_track_t;
 
 // 作品信息(由作品配置替换)。
-#define GAL_CONTENT_TITLE    "未定作品"
-#define GAL_CONTENT_SUBTITLE "一段尚未写完的旅程"
+#ifdef GAL_CONTENT_CONFIG
+#include GAL_CONTENT_CONFIG
+#endif
+
+#ifndef GAL_CONTENT_TITLE
+#define GAL_CONTENT_TITLE "Unconfigured title"
+#endif
+#ifndef GAL_CONTENT_SUBTITLE
+#define GAL_CONTENT_SUBTITLE "An unconfigured story"
+#endif
+#ifndef GAL_CONTENT_LOGO_SUB
 #define GAL_CONTENT_LOGO_SUB "GALGAME FRAMEWORK"
-#define GAL_CONTENT_VERSION  "v0.1.0"
+#endif
+#ifndef GAL_CONTENT_VERSION
+#define GAL_CONTENT_VERSION "v0.1.0"
+#endif
 
 // 标题页封面(可为 NULL)。
 extern const void *gal_content_title_image;

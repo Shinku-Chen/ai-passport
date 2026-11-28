@@ -3,7 +3,7 @@
 #include <string.h>
 #define MAX_NS 4
 #define MAX_ITEMS 8
-#define MAX_BLOB 256
+#define MAX_BLOB 4096
 typedef struct { char ns[24], key[16]; unsigned char data[MAX_BLOB]; size_t len; int used; } item_t;
 static item_t items[MAX_ITEMS];
 static char namespaces[MAX_NS][24];

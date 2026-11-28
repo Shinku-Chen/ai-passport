@@ -15,18 +15,26 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#if defined(GAL_UI_LANDSCAPE)
+#define GAL_UI_W 320
+#define GAL_UI_H 240
+#define GAL_PANEL_H 90
+#define GAL_TEXT_LINES_SMALL 4
+#define GAL_TEXT_LINES_LARGE 3
+#else
 #define GAL_UI_W 240
 #define GAL_UI_H 320
+#define GAL_PANEL_H 110
+#define GAL_TEXT_LINES_SMALL 5
+#define GAL_TEXT_LINES_LARGE 4
+#endif
 
 // 对话框面板:贴底 110px(框架竖屏规范:16px 档 5 行 / 20px 档 4 行)。
-#define GAL_PANEL_H 110
 #define GAL_PANEL_Y (GAL_UI_H - GAL_PANEL_H)
 #define GAL_TEXT_X 10
 #define GAL_TEXT_W (GAL_UI_W - 2 * GAL_TEXT_X)
 #define GAL_LINE_H_SMALL 20
 #define GAL_LINE_H_LARGE 24
-#define GAL_TEXT_LINES_SMALL 5
-#define GAL_TEXT_LINES_LARGE 4
 #define GAL_LIST_MAX_ROWS 32   // 大作品(章节 / 回想列表)需要更长
 #define GAL_TEXT_CAPACITY 1024
 #define GAL_CG_TILES 8
@@ -171,6 +179,12 @@ typedef struct {
     uint32_t typing_total;
     uint32_t typing_step_ms;
     bool typing_active;
+
+    // Lazy page lifecycle: only the current page (and the dialogue base page
+    // for overlays) is kept in the 16 KiB LVGL pool.
+    gal_page_t current_page;
+    const void *title_image_dsc;
+    uint8_t panel_opa_percent;
 } gal_ui_t;
 
 // 建界面(需持有 LVGL 锁)。

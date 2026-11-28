@@ -7,7 +7,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define GAL_SAVE_SLOTS 3
+#define GAL_SAVE_SLOTS 30
+#define GAL_SAVE_LEGACY_SLOTS 3
 #define GAL_SAVE_CHAPTER_LEN 28
 
 typedef struct {

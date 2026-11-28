@@ -392,39 +392,49 @@ static void close_modal(gal_app_t *app)
 // ---------------------------------------------------------------- 渲染
 static void fill_slots(gal_app_t *app, gal_list_t list, int selected)
 {
-    static char labels[GAL_SAVE_SLOTS][12];
-    static char values[GAL_SAVE_SLOTS][GAL_SAVE_CHAPTER_LEN + 8];
-    const char *label_ptrs[GAL_SAVE_SLOTS];
-    const char *value_ptrs[GAL_SAVE_SLOTS];
+    // 30 slots exist in NVS, but LVGL only materializes a five-row window.
+    // This keeps the 16 KiB pool viable while retaining the full 30-slot model.
+    enum { WINDOW = 5 };
+    static char labels[WINDOW][12];
+    static char values[WINDOW][GAL_SAVE_CHAPTER_LEN + 8];
+    const char *label_ptrs[WINDOW];
+    const char *value_ptrs[WINDOW];
 
-    for (int i = 0; i < GAL_SAVE_SLOTS; ++i) {
-        snprintf(labels[i], sizeof(labels[i]), "槽位 %02d", i + 1);
-        label_ptrs[i] = labels[i];
-        const gal_slot_t *s = &app->save.slots[i];
+    if (selected < 0) selected = 0;
+    if (selected >= GAL_SAVE_SLOTS) selected = GAL_SAVE_SLOTS - 1;
+    int first = selected - WINDOW / 2;
+    if (first < 0) first = 0;
+    if (first > GAL_SAVE_SLOTS - WINDOW) first = GAL_SAVE_SLOTS - WINDOW;
+
+    for (int row = 0; row < WINDOW; ++row) {
+        const int slot = first + row;
+        snprintf(labels[row], sizeof(labels[row]), "槽位 %02d", slot + 1);
+        label_ptrs[row] = labels[row];
+        const gal_slot_t *s = &app->save.slots[slot];
         if (s->occupied) {
-            snprintf(values[i], sizeof(values[i]), "%s", s->chapter);
+            snprintf(values[row], sizeof(values[row]), "%s", s->chapter);
         } else {
-            snprintf(values[i], sizeof(values[i]), "空槽位");
+            snprintf(values[row], sizeof(values[row]), "空槽位");
         }
-        value_ptrs[i] = values[i];
+        value_ptrs[row] = values[row];
     }
-    gal_ui_set_rows(&app->ui, list, label_ptrs, value_ptrs, GAL_SAVE_SLOTS, selected);
-    // 读档页的空槽位不可选(存档页的空槽位是可以写入的)。
-    for (int i = 0; i < GAL_SAVE_SLOTS; ++i) {
-        const bool usable = list == GAL_LIST_SAVE || app->save.slots[i].occupied;
-        gal_ui_set_row_enabled(&app->ui, list, i, usable);
+    gal_ui_set_rows(&app->ui, list, label_ptrs, value_ptrs, WINDOW,
+                    selected - first);
+    for (int row = 0; row < WINDOW; ++row) {
+        const int slot = first + row;
+        const bool usable = list == GAL_LIST_SAVE || app->save.slots[slot].occupied;
+        gal_ui_set_row_enabled(&app->ui, list, row, usable);
     }
 
-    // 槽位预览 + 页脚。
     const gal_slot_t *sel = &app->save.slots[selected];
     if (sel->occupied) {
         gal_ui_set_save_preview(&app->ui, sel->chapter);
     } else {
         gal_ui_set_save_preview(&app->ui, "空槽位\n选择一个槽位后再操作");
     }
-    gal_ui_set_footer(&app->ui, GAL_PAGE_SAVE, "共 3 个槽位");
+    gal_ui_set_footer(&app->ui, GAL_PAGE_SAVE, "共 30 个槽位");
     gal_ui_set_footer(&app->ui, GAL_PAGE_LOAD,
-                      gal_save_any(&app->save) ? "共 3 个槽位" : "暂无存档");
+                      gal_save_any(&app->save) ? "共 30 个槽位" : "暂无存档");
 }
 
 static void fill_settings(gal_app_t *app)

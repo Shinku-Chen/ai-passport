@@ -11,7 +11,7 @@ static const char *TAG = "gal_save";
 #define GAL_SAVE_NAMESPACE "galsave"
 #define GAL_SAVE_KEY "slots"
 #define GAL_SAVE_MAGIC 0x53u
-#define GAL_SAVE_VERSION 2u
+#define GAL_SAVE_VERSION 3u
 
 // 落盘格式:魔数 + 版本 + 槽位,便于以后扩展。
 // 版本 1 没有 flags;版本 2 在每个槽位末尾增加 uint32_t flags。
@@ -27,7 +27,7 @@ typedef struct {
     uint8_t magic;
     uint8_t version;
     uint8_t reserved[2];
-    gal_slot_v1_t slots[GAL_SAVE_SLOTS];
+    gal_slot_v1_t slots[GAL_SAVE_LEGACY_SLOTS];
 } gal_save_blob_v1_t;
 
 typedef struct {
@@ -76,7 +76,7 @@ bool gal_save_load(gal_save_t *save)
         raw[1] == 1u) {
         gal_save_blob_v1_t old;
         memcpy(&old, raw, sizeof(old));
-        for (int i = 0; i < GAL_SAVE_SLOTS; ++i) {
+        for (int i = 0; i < GAL_SAVE_LEGACY_SLOTS; ++i) {
             save->slots[i].occupied = old.slots[i].occupied;
             save->slots[i].event_index = old.slots[i].event_index;
             save->slots[i].page_index = old.slots[i].page_index;
